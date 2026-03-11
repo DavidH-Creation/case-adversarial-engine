@@ -14,12 +14,41 @@
 
 当前职责不是堆更多 agent，而是先把案件工作区、任务状态、对象模型和评测口径固定住。
 
+## 当前基线
+
+当前仓库已经补上最小工程骨架：
+
+```text
+schemas/
+  case/
+  procedure/
+  reporting/
+engines/
+  case_structuring/
+  procedure_setup/
+  simulation_run/
+  report_generation/
+  interactive_followup/
+benchmarks/
+  fixtures/
+  acceptance/
+tests/
+  contracts/
+  smoke/
+.bulwark/
+  policies/
+  tasks/
+```
+
+这一步只解决后续任务的稳定落点，不代表已经开始实现业务逻辑。
+
 ## 本轮只做什么
 
 - 保持 `v0.5` 的单案种离线边界不变
 - 让输出兼容未来 `CaseWorkspace`
 - 让后续任务顺序变成基础设施优先
 - 固定工作流对象、任务状态与报告追问的契约
+- 使用 `.bulwark/tasks/` 承载可自动执行的 task contracts
 
 ## 本轮明确不做什么
 
@@ -31,7 +60,7 @@
 - 不做在线协作
 - 不做社交平台 action space
 - 不做高自由人格模拟
-- 不新增 `tasks/` 文件
+- 不在这一轮选择具体后端框架
 
 ## 依赖文件
 
@@ -43,14 +72,16 @@
 
 ## 任务顺序
 
-1. `case workspace design`
-2. `job manager design`
-3. `schema refinement`
-4. `evidence indexer`
-5. `issue extractor`
-6. `report engine`
-7. `interactive followup contract`
-8. `scenario engine design`
+1. `repo layout bootstrap`
+2. `case workspace design`
+3. `job manager design`
+4. `schema refinement`
+5. `benchmark contract`
+6. `evidence indexer`
+7. `issue extractor`
+8. `report engine`
+9. `interactive followup contract`
+10. `scenario engine design`
 
 约束：
 
@@ -58,7 +89,7 @@
 - 每个任务都要先声明将修改的文件清单
 - 每个任务都要带测试与验收结果
 - 不允许顺手扩到 `ui` 或社交仿真能力
-- 不新增 `tasks/` 文件，但任务名称和依赖顺序在此写死
+- `Bulwark` 任务一次只推进一个合同，不跨版本串行扩写
 
 ## 验收脚本
 
@@ -72,6 +103,7 @@ rg "^## v" docs/01_product_roadmap.md
 rg "Party|Claim|Defense|Issue|Evidence|Burden|ProcedureState|AgentOutput" docs/03_case_object_model.md
 rg "private|submitted|challenged|admitted_for_discussion" docs/02_architecture.md docs/03_case_object_model.md
 rg "private 证据泄漏|Hard Fail|evidence_id" docs/04_eval_and_acceptance.md
+Get-ChildItem schemas,engines,benchmarks,tests
 ```
 
 通过条件：
@@ -81,6 +113,7 @@ rg "private 证据泄漏|Hard Fail|evidence_id" docs/04_eval_and_acceptance.md
 - `03_case_object_model.md` 定义完整的核心对象
 - `04_eval_and_acceptance.md` 明确 hard fail
 - 工作流对象与任务状态契约已经写入文档
+- 最小工程骨架与 `.bulwark/tasks/` 已经存在
 
 ## 风险点
 
@@ -91,6 +124,7 @@ rg "private 证据泄漏|Hard Fail|evidence_id" docs/04_eval_and_acceptance.md
 - 文档术语不统一导致后续实现跑偏
 - 工作流状态机与法律程序状态机被混用
 - `Job` / `Run` / `CaseWorkspace` 定义不闭合
+- task contract 的 stop condition 过紧导致自动执行中断
 
 ## 输出物
 
@@ -100,3 +134,4 @@ rg "private 证据泄漏|Hard Fail|evidence_id" docs/04_eval_and_acceptance.md
 - 统一评测口径
 - 基础设施优先的任务顺序
 - 兼容未来五阶段工作流的输出合同
+- 可供 `Bulwark` 执行的 task contracts

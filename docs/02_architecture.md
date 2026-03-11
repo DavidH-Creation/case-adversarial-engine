@@ -2,7 +2,7 @@
 
 ## 定位
 
-本仓库是多角色案件对抗推演系统的系统仓库。当前版本只提交文档，不创建代码目录；但这里冻结的是未来工程实现必须遵守的模块边界、状态流转方式和访问控制原则。
+本仓库是多角色案件对抗推演系统的系统仓库。当前版本已经补上最小工程骨架，但仍然不绑定具体框架；这里冻结的是未来工程实现必须遵守的模块边界、状态流转方式和访问控制原则。
 
 系统的设计原则不是“多角色自由对话”，而是“对象模型 + 程序驱动 + 证据约束 + 权限隔离 + 可审计输出”。
 
@@ -28,11 +28,42 @@
 
 法律程序状态机继续保留原有回合语义，不被 UI 或产品流程替代。
 
+## Repository Baseline
+
+当前最小工程骨架如下：
+
+```text
+schemas/
+  case/
+  procedure/
+  reporting/
+engines/
+  case_structuring/
+  procedure_setup/
+  simulation_run/
+  report_generation/
+  interactive_followup/
+benchmarks/
+  fixtures/
+  acceptance/
+tests/
+  contracts/
+  smoke/
+```
+
+该骨架只提供稳定落点，不代表已经确定运行时、服务分层或部署方式。
+
 ## System Modules
 
 ### schemas
 
 职责：定义所有核心对象和枚举，作为系统唯一数据契约来源。
+
+当前最小目录分层：
+
+- `case/`
+- `procedure/`
+- `reporting/`
 
 至少覆盖：
 
@@ -55,7 +86,7 @@
 
 职责：承载系统行为，而不是承载业务话术。
 
-核心子模块：
+逻辑子模块边界：
 
 - `access_control`
 - `case_manager`
@@ -67,6 +98,14 @@
 - `interaction_engine`
 - `scenario_engine`
 - `evaluator`
+
+当前最小目录分层：
+
+- `case_structuring/`
+- `procedure_setup/`
+- `simulation_run/`
+- `report_generation/`
+- `interactive_followup/`
 
 职责边界：
 
@@ -125,6 +164,11 @@
 ### benchmarks
 
 职责：提供版本回放、验收和回归比较的标准案件集。
+
+当前最小目录分层：
+
+- `fixtures/`
+- `acceptance/`
 
 未来至少按案型组织：
 
@@ -281,6 +325,7 @@
 
 ## 当前实现边界
 
-- 本次初始化不创建 `schemas/`、`engines/`、`templates/`、`agents/`、`benchmarks/`、`ui/` 实体目录
-- 本次初始化只冻结系统架构，不落代码
+- 当前已创建 `schemas/`、`engines/`、`benchmarks/`、`tests/` 最小目录骨架，但目录内仍以占位说明为主
+- 本阶段仍不创建 `templates/`、`agents/`、`ui/` 实体目录
+- 当前骨架只冻结模块落点，不代表已经落地业务代码
 - 后续任何代码任务都必须把本文件作为模块边界约束

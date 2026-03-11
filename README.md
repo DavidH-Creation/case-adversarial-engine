@@ -67,6 +67,29 @@ docs/
   04_eval_and_acceptance.md
 plans/
   current_plan.md
+.bulwark/
+  policies/
+  tasks/
+schemas/
+  README.md
+  case/
+  procedure/
+  reporting/
+engines/
+  README.md
+  case_structuring/
+  procedure_setup/
+  simulation_run/
+  report_generation/
+  interactive_followup/
+benchmarks/
+  README.md
+  fixtures/
+  acceptance/
+tests/
+  README.md
+  contracts/
+  smoke/
 ```
 
 推荐阅读顺序：
@@ -91,6 +114,18 @@ plans/
 - 社交媒体式 action space
 - 高自由 persona 生成
 - 把外部图谱/记忆平台设为不可替代底座
+
+## Repository Bootstrap
+
+`v0.5` 现在已经有最小工程骨架，但仍然保持 pre-framework：
+
+- `schemas/`：版本化数据契约和交换边界
+- `engines/`：与五阶段工作流对齐的执行边界
+- `benchmarks/`：回归评测输入与验收参考
+- `tests/`：契约测试与 smoke 测试占位
+- `.bulwark/`：面向 Codex / Claude 的任务合同与策略控制平面
+
+这一步只做结构准备，不代表已经选定运行时、框架或部署方案。
 
 ## Near-Term Direction
 
