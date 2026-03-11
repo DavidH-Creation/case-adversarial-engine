@@ -1,0 +1,26 @@
+name: v0-5-issue-extractor-contract
+task_id: v0-5-issue-extractor-contract
+description: Define the issue extraction contract that links Claim, Defense, Issue, Burden, and Evidence for v0.5 without introducing multi-round simulation logic.
+risk_level: medium
+version: "1.0"
+acceptance_criteria:
+  - Define a stable issue_tree artifact contract for civil loan cases.
+  - Include fixture examples that map claims and defenses into issue_ids and burden assignments.
+  - Do not add judge-agent logic, multi-round debate, or UI behavior.
+allowed_paths:
+  - "schemas/**"
+  - "benchmarks/**"
+  - "docs/02_architecture.md"
+  - "docs/03_case_object_model.md"
+  - "docs/04_eval_and_acceptance.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "ui/**"
+timeout_seconds: 360
+stop_conditions:
+  max_files_changed: 12
+  max_total_lines: 650

@@ -1,0 +1,13 @@
+require_task_contract: true
+protected_paths:
+  - ".github/workflows/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+forbidden_patterns:
+  - "(?i)api[_-]?key\\s*=\\s*['\\\"][^'\\\"]+['\\\"]"
+  - "(?i)secret\\s*=\\s*['\\\"][^'\\\"]+['\\\"]"
+  - "(?i)password\\s*=\\s*['\\\"][^'\\\"]+['\\\"]"
+  - "(?i)private[_-]?key"
+test_command: ""
+require_contract_update_when: []

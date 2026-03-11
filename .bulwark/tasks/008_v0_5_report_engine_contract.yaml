@@ -1,0 +1,26 @@
+name: v0-5-report-engine-contract
+task_id: v0-5-report-engine-contract
+description: Define the report artifact contract and traceability requirements for v0.5 without adding conversational follow-up or presentation-layer code.
+risk_level: medium
+version: "1.0"
+acceptance_criteria:
+  - Define the section structure and metadata contract for ReportArtifact.
+  - Ensure every key conclusion in the example artifact links back to evidence_id and output_id.
+  - Do not add chat UI, free-form chatbot behavior, or scenario comparison logic.
+allowed_paths:
+  - "schemas/**"
+  - "benchmarks/**"
+  - "docs/02_architecture.md"
+  - "docs/03_case_object_model.md"
+  - "docs/04_eval_and_acceptance.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "ui/**"
+timeout_seconds: 360
+stop_conditions:
+  max_files_changed: 12
+  max_total_lines: 650

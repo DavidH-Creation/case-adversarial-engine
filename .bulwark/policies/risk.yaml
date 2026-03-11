@@ -1,0 +1,27 @@
+default_level: low
+levels:
+  low:
+    required_phases: [validate, execute, check]
+    require_human_approval: false
+    max_retries: 1
+  medium:
+    required_phases: [validate, plan, execute, check]
+    require_human_approval: false
+    max_retries: 2
+  high:
+    required_phases: [validate, plan, execute, check, review]
+    require_human_approval: true
+    max_retries: 3
+    required_checks: [replay_guard, invariant_guard]
+    fail_closed: true
+escalation_paths:
+  - pattern: ".github/**"
+    escalate_to: high
+  - pattern: ".bulwark/policies/**"
+    escalate_to: high
+  - pattern: "docs/00_north_star.md"
+    escalate_to: high
+  - pattern: "docs/01_product_roadmap.md"
+    escalate_to: high
+  - pattern: "docs/04_eval_and_acceptance.md"
+    escalate_to: high

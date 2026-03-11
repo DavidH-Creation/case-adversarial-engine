@@ -1,0 +1,27 @@
+name: v0-5-evidence-index-contract
+task_id: v0-5-evidence-index-contract
+description: Define the input, output, and acceptance contract for the v0.5 evidence indexer without implementing OCR, retrieval, or search.
+risk_level: medium
+version: "1.0"
+acceptance_criteria:
+  - Define a stable evidence_index artifact contract for civil loan cases.
+  - Include one example input fixture and one example output fixture linked by evidence_id.
+  - Keep evidence status and access domain semantics aligned with the canonical model.
+allowed_paths:
+  - "schemas/**"
+  - "benchmarks/**"
+  - "docs/02_architecture.md"
+  - "docs/03_case_object_model.md"
+  - "docs/04_eval_and_acceptance.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "ui/**"
+  - "search/**"
+timeout_seconds: 360
+stop_conditions:
+  max_files_changed: 12
+  max_total_lines: 600

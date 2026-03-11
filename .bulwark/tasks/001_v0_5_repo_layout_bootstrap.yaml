@@ -1,0 +1,27 @@
+name: v0-5-repo-layout-bootstrap
+task_id: v0-5-repo-layout-bootstrap
+description: Create a minimal future-facing repository layout for v0.5 without choosing a framework or implementing business logic.
+risk_level: low
+version: "1.0"
+acceptance_criteria:
+  - Add only the top-level directories needed to stage v0.5 implementation work.
+  - Each new directory contains a short README or placeholder describing its responsibility.
+  - Do not introduce a language-specific framework, deployment stack, or UI code.
+allowed_paths:
+  - "README.md"
+  - "schemas/**"
+  - "engines/**"
+  - "benchmarks/**"
+  - "tests/**"
+  - "docs/02_architecture.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "docs/04_eval_and_acceptance.md"
+timeout_seconds: 300
+stop_conditions:
+  max_files_changed: 12
+  max_total_lines: 500

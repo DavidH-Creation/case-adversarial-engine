@@ -1,0 +1,25 @@
+name: v0-5-job-manager-contract
+task_id: v0-5-job-manager-contract
+description: Define the Job lifecycle, recovery semantics, and progress contract for long-running v0.5 tasks without implementing queue infrastructure.
+risk_level: medium
+version: "1.0"
+acceptance_criteria:
+  - Define the machine-readable contract for Job using the canonical job_status enum.
+  - Document status transitions, recovery expectations, and result references.
+  - Do not introduce external queue, worker, or cloud dependencies.
+allowed_paths:
+  - "schemas/**"
+  - "docs/02_architecture.md"
+  - "docs/03_case_object_model.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "docs/04_eval_and_acceptance.md"
+  - "ui/**"
+timeout_seconds: 300
+stop_conditions:
+  max_files_changed: 8
+  max_total_lines: 350

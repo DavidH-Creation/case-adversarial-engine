@@ -1,0 +1,26 @@
+name: v0-5-case-workspace-contract
+task_id: v0-5-case-workspace-contract
+description: Define the contract for CaseWorkspace and Run so all v0.5 outputs can be persisted and replayed from a single case context.
+risk_level: medium
+version: "1.0"
+acceptance_criteria:
+  - Define a machine-readable contract for CaseWorkspace and Run aligned with docs/03_case_object_model.md.
+  - Include at least one example fixture showing how v0.5 artifacts are indexed inside a workspace.
+  - Keep names and fields identical to the canonical object model.
+allowed_paths:
+  - "schemas/**"
+  - "benchmarks/**"
+  - "docs/02_architecture.md"
+  - "docs/03_case_object_model.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "docs/04_eval_and_acceptance.md"
+  - "ui/**"
+timeout_seconds: 300
+stop_conditions:
+  max_files_changed: 10
+  max_total_lines: 450

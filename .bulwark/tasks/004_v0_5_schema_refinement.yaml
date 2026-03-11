@@ -1,0 +1,25 @@
+name: v0-5-schema-refinement
+task_id: v0-5-schema-refinement
+description: Build the initial machine-readable schema package for the v0.5 canonical objects and enums without changing product scope.
+risk_level: medium
+version: "1.0"
+acceptance_criteria:
+  - Add schema files for the v0.5 object set and shared enums.
+  - Keep schema names, field names, and enum values identical to docs/03_case_object_model.md.
+  - Add at least one sample case fixture that validates the schema package.
+allowed_paths:
+  - "schemas/**"
+  - "benchmarks/**"
+  - "docs/03_case_object_model.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "docs/04_eval_and_acceptance.md"
+  - "ui/**"
+timeout_seconds: 450
+stop_conditions:
+  max_files_changed: 12
+  max_total_lines: 700

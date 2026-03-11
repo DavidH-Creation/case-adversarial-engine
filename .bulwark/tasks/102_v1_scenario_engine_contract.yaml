@@ -1,0 +1,26 @@
+name: v1-scenario-engine-contract
+task_id: v1-scenario-engine-contract
+description: Define the Scenario contract for what-if changes and diff replay without implementing the simulation engine itself.
+risk_level: medium
+version: "1.0"
+acceptance_criteria:
+  - Define the Scenario change_set and diff_summary contract aligned with the canonical object model.
+  - Include one example showing how a baseline run and a changed run are related.
+  - Do not add speculative strategy generation beyond the documented workflow.
+allowed_paths:
+  - "schemas/**"
+  - "benchmarks/**"
+  - "docs/02_architecture.md"
+  - "docs/03_case_object_model.md"
+  - "docs/04_eval_and_acceptance.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "ui/**"
+timeout_seconds: 300
+stop_conditions:
+  max_files_changed: 10
+  max_total_lines: 450

@@ -1,0 +1,26 @@
+name: v1-interactive-followup-contract
+task_id: v1-interactive-followup-contract
+description: Define the contract for report follow-up turns so post-report questioning remains evidence-bound and issue-bound.
+risk_level: medium
+version: "1.0"
+acceptance_criteria:
+  - Define the InteractionTurn contract and any supporting schema needed for report follow-up.
+  - Preserve the rule that answers remain linked to issue_ids and evidence_ids.
+  - Do not add chat UI, free-form memory systems, or social persona simulation.
+allowed_paths:
+  - "schemas/**"
+  - "benchmarks/**"
+  - "docs/02_architecture.md"
+  - "docs/03_case_object_model.md"
+  - "docs/04_eval_and_acceptance.md"
+  - "plans/current_plan.md"
+forbidden_paths:
+  - ".github/**"
+  - ".bulwark/policies/**"
+  - "docs/00_north_star.md"
+  - "docs/01_product_roadmap.md"
+  - "ui/**"
+timeout_seconds: 300
+stop_conditions:
+  max_files_changed: 10
+  max_total_lines: 450
