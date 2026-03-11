@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "case_id",
+    "workspace_id",
+    "scenario_id",
+    "trigger_type",
+    "input_snapshot",
+    "output_refs",
+    "started_at",
+    "finished_at",
+    "status"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "trigger_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input_snapshot": {
+      "$ref": "../indexing.schema.json#/$defs/input_snapshot"
+    },
+    "output_refs": {
+      "$ref": "../indexing.schema.json#/$defs/output_refs"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Canonical status field for the run. The object model freezes the field name but does not currently bind it to a named enum."
+    }
+  },
+  "description": "Run is a replayable execution snapshot. input_snapshot and output_refs are constrained to structured references back into CaseWorkspace indexes so runs can be replayed without relying on free-form text."
+}

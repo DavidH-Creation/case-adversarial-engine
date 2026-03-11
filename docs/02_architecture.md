@@ -75,12 +75,17 @@ tests/
 - `Burden`
 - `ProcedureState`
 - `AgentOutput`
+- `CaseWorkspace`
+- `Run`
 
 约束：
 
 - 字段命名只能来自 `docs/03_case_object_model.md`
 - 新案型不得另造同义对象
 - `schemas` 的变化必须同步更新评测基线
+- `CaseWorkspace` contract 放在 `schemas/case/`
+- `Run` contract 放在 `schemas/procedure/`
+- 共享索引与可追溯引用定义可以放在 `schemas/` 下复用，但不能另造新的工作流对象名
 
 ### engines
 
@@ -110,7 +115,7 @@ tests/
 职责边界：
 
 - `access_control` 只负责“谁能看什么、谁能在当前阶段写什么”
-- `case_manager` 只负责案件级上下文持久化和产物索引
+- `case_manager` 只负责案件级上下文持久化和产物索引，并且必须把 `CaseWorkspace` 当作 `Run`、`AgentOutput`、`ReportArtifact`、`InteractionTurn`、`Scenario` 的单一持久化容器
 - `job_manager` 只负责长任务状态、进度与恢复
 - `round_engine` 只负责程序化回合推进，不负责生成具体法律立场
 - `evidence_state_machine` 只负责证据生命周期与合法迁移
@@ -119,6 +124,7 @@ tests/
 - `interaction_engine` 只负责报告后的深度追问和 drill-down
 - `scenario_engine` 只负责 `what-if` 变量注入与差异比较
 - `evaluator` 只负责版本评测与回归比较
+- 工作流阶段切换与回放入口都必须先经过 `CaseWorkspace`，不能直接绕开工作区写入孤立产物
 
 ### templates
 

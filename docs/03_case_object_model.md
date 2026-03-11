@@ -350,10 +350,20 @@
 - `active_scenario_id`
 - `status`
 
+### 字段说明
+
+- `current_workflow_stage`：必须来自统一 `workflow_stage` 枚举，表示当前案件工作流推进到的产品阶段
+- `material_index`：案件输入材料与程序化基础对象的持久化索引，必须按 canonical object name 分组，并且每个索引项都要能通过对象类型 + 对象标识回到持久化记录
+- `artifact_index`：工作流输出产物的持久化索引，至少要稳定承载 `AgentOutput`、`ReportArtifact`、`InteractionTurn`、`Scenario` 的按类型分组索引，并且每个索引项都要能通过对象类型 + 对象标识回到持久化记录
+- `run_ids`：当前 `CaseWorkspace` 已登记的 `Run` 标识列表，所有可回放执行都必须先在这里登记
+- `active_scenario_id`：当前激活的 `Scenario` 标识；若尚未进入场景分支，可显式为空值，但字段本身不能缺失
+- `status`：案件工作区的状态字段，字段名冻结为 `status`
+
 ### Constraints
 
 - 所有案件产物都必须可从 `CaseWorkspace` 找回
 - 工作流切换不能绕开 `CaseWorkspace`
+- `material_index` 与 `artifact_index` 不得退化为自由文本描述，必须能稳定支持按对象类型和对象标识回查
 
 ## `Run`
 
@@ -374,10 +384,20 @@
 - `finished_at`
 - `status`
 
+### 字段说明
+
+- `scenario_id`：该次执行绑定的 `Scenario` 标识；若为 baseline 执行，可显式为空值，但字段本身不能缺失
+- `trigger_type`：触发该次执行快照的工作流动作或系统动作
+- `input_snapshot`：该次执行使用的输入快照，必须由可追溯引用组成，并能回到 `CaseWorkspace.material_index` 或 `CaseWorkspace.artifact_index`
+- `output_refs`：该次执行产出的输出引用，必须由可追溯引用组成，并能回到 `CaseWorkspace.artifact_index`
+- `started_at` / `finished_at`：执行开始与结束时间戳；未结束执行可显式保留空值，但字段本身不能缺失
+- `status`：执行快照的状态字段，字段名冻结为 `status`
+
 ### Constraints
 
 - `Run` 必须能回放
 - `Run` 的输入快照和输出引用必须可追溯
+- `Run.output_refs` 不得写成自由文本列表，必须能解析到 `CaseWorkspace` 中已登记的持久化产物
 
 ## `Job`
 

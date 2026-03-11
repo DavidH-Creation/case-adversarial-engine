@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkspaceIndexing",
+  "type": "object",
+  "$defs": {
+    "case_type": {
+      "type": "string",
+      "enum": [
+        "civil",
+        "criminal",
+        "admin"
+      ]
+    },
+    "workflow_stage": {
+      "type": "string",
+      "enum": [
+        "case_structuring",
+        "procedure_setup",
+        "simulation_run",
+        "report_generation",
+        "interactive_followup"
+      ]
+    },
+    "material_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_type",
+        "object_id",
+        "storage_ref"
+      ],
+      "properties": {
+        "object_type": {
+          "type": "string",
+          "enum": [
+            "Party",
+            "Claim",
+            "Defense",
+            "Issue",
+            "Evidence",
+            "Burden",
+            "ProcedureState"
+          ]
+        },
+        "object_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storage_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "artifact_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_type",
+        "object_id",
+        "storage_ref"
+      ],
+      "properties": {
+        "object_type": {
+          "type": "string",
+          "enum": [
+            "AgentOutput",
+            "ReportArtifact",
+            "InteractionTurn",
+            "Scenario"
+          ]
+        },
+        "object_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storage_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "material_index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Party",
+        "Claim",
+        "Defense",
+        "Issue",
+        "Evidence",
+        "Burden",
+        "ProcedureState"
+      ],
+      "properties": {
+        "Party": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material_entry"
+          }
+        },
+        "Claim": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material_entry"
+          }
+        },
+        "Defense": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material_entry"
+          }
+        },
+        "Issue": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material_entry"
+          }
+        },
+        "Evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material_entry"
+          }
+        },
+        "Burden": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material_entry"
+          }
+        },
+        "ProcedureState": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material_entry"
+          }
+        }
+      }
+    },
+    "artifact_index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "AgentOutput",
+        "ReportArtifact",
+        "InteractionTurn",
+        "Scenario"
+      ],
+      "properties": {
+        "AgentOutput": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact_entry"
+          }
+        },
+        "ReportArtifact": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact_entry"
+          }
+        },
+        "InteractionTurn": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact_entry"
+          }
+        },
+        "Scenario": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact_entry"
+          }
+        }
+      }
+    },
+    "material_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index_name",
+        "object_type",
+        "object_id",
+        "storage_ref"
+      ],
+      "properties": {
+        "index_name": {
+          "const": "material_index"
+        },
+        "object_type": {
+          "type": "string",
+          "enum": [
+            "Party",
+            "Claim",
+            "Defense",
+            "Issue",
+            "Evidence",
+            "Burden",
+            "ProcedureState"
+          ]
+        },
+        "object_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storage_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index_name",
+        "object_type",
+        "object_id",
+        "storage_ref"
+      ],
+      "properties": {
+        "index_name": {
+          "const": "artifact_index"
+        },
+        "object_type": {
+          "type": "string",
+          "enum": [
+            "AgentOutput",
+            "ReportArtifact",
+            "InteractionTurn",
+            "Scenario"
+          ]
+        },
+        "object_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storage_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "input_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "material_refs",
+        "artifact_refs"
+      ],
+      "properties": {
+        "material_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/material_ref"
+          }
+        },
+        "artifact_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact_ref"
+          }
+        }
+      }
+    },
+    "output_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact_ref"
+      }
+    }
+  }
+}

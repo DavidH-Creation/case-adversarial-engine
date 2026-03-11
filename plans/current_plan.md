@@ -135,3 +135,17 @@ Get-ChildItem schemas,engines,benchmarks,tests
 - 基础设施优先的任务顺序
 - 兼容未来五阶段工作流的输出合同
 - 可供 `Bulwark` 执行的 task contracts
+
+## 最近完成
+
+- `v0-5-case-workspace-contract`
+- 交付物：
+  `schemas/indexing.schema.json`
+  `schemas/case/case_workspace.schema.json`
+  `schemas/procedure/run.schema.json`
+  `benchmarks/fixtures/case_workspace_run_replay.json`
+- 结果：
+  `CaseWorkspace` 与 `Run` 已有 machine-readable contract，且 fixture 证明了 `CaseWorkspace.run_ids -> Run.output_refs -> artifact_index` 的回放路径
+- 后续留给 `v0.5` 之外：
+  为 `Job`、`ReportArtifact`、`InteractionTurn`、`Scenario` 补独立 schema
+  增加基于 schema 的自动 contract validation

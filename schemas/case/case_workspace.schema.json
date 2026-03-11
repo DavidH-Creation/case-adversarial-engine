@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CaseWorkspace",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "workspace_id",
+    "case_id",
+    "case_type",
+    "current_workflow_stage",
+    "material_index",
+    "artifact_index",
+    "run_ids",
+    "active_scenario_id",
+    "status"
+  ],
+  "properties": {
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_type": {
+      "$ref": "../indexing.schema.json#/$defs/case_type"
+    },
+    "current_workflow_stage": {
+      "$ref": "../indexing.schema.json#/$defs/workflow_stage"
+    },
+    "material_index": {
+      "$ref": "../indexing.schema.json#/$defs/material_index"
+    },
+    "artifact_index": {
+      "$ref": "../indexing.schema.json#/$defs/artifact_index"
+    },
+    "run_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "active_scenario_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Canonical status field for the workspace. The object model freezes the field name but does not currently bind it to a named enum."
+    }
+  },
+  "description": "CaseWorkspace is the single case-level persistence container for v0.5 workflow outputs. Persisted case materials are indexed in material_index, persisted workflow outputs are indexed in artifact_index, workflow stage changes route through current_workflow_stage on this object, and replay entry points are anchored by run_ids plus active_scenario_id."
+}

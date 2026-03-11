@@ -1,0 +1,220 @@
+{
+  "CaseWorkspace": {
+    "workspace_id": "workspace-civil-loan-001",
+    "case_id": "case-civil-loan-001",
+    "case_type": "civil",
+    "current_workflow_stage": "report_generation",
+    "material_index": {
+      "Party": [
+        {
+          "object_type": "Party",
+          "object_id": "party-plaintiff-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/parties/party-plaintiff-001.json"
+        },
+        {
+          "object_type": "Party",
+          "object_id": "party-defendant-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/parties/party-defendant-001.json"
+        }
+      ],
+      "Claim": [
+        {
+          "object_type": "Claim",
+          "object_id": "claim-repayment-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/claims/claim-repayment-001.json"
+        }
+      ],
+      "Defense": [],
+      "Issue": [
+        {
+          "object_type": "Issue",
+          "object_id": "issue-default-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/issues/issue-default-001.json"
+        }
+      ],
+      "Evidence": [
+        {
+          "object_type": "Evidence",
+          "object_id": "evidence-promissory-note-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/evidence/evidence-promissory-note-001.json"
+        }
+      ],
+      "Burden": [
+        {
+          "object_type": "Burden",
+          "object_id": "burden-repayment-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/burdens/burden-repayment-001.json"
+        }
+      ],
+      "ProcedureState": [
+        {
+          "object_type": "ProcedureState",
+          "object_id": "state-output-branching-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/procedure_states/state-output-branching-001.json"
+        }
+      ]
+    },
+    "artifact_index": {
+      "AgentOutput": [
+        {
+          "object_type": "AgentOutput",
+          "object_id": "output-argument-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/agent_outputs/output-argument-001.json"
+        }
+      ],
+      "ReportArtifact": [
+        {
+          "object_type": "ReportArtifact",
+          "object_id": "report-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/reports/report-001.json"
+        }
+      ],
+      "InteractionTurn": [
+        {
+          "object_type": "InteractionTurn",
+          "object_id": "turn-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/interaction_turns/turn-001.json"
+        }
+      ],
+      "Scenario": [
+        {
+          "object_type": "Scenario",
+          "object_id": "scenario-baseline-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/scenarios/scenario-baseline-001.json"
+        }
+      ]
+    },
+    "run_ids": [
+      "run-report-001"
+    ],
+    "active_scenario_id": "scenario-baseline-001",
+    "status": "active"
+  },
+  "Run": [
+    {
+      "run_id": "run-report-001",
+      "case_id": "case-civil-loan-001",
+      "workspace_id": "workspace-civil-loan-001",
+      "scenario_id": "scenario-baseline-001",
+      "trigger_type": "report_generation",
+      "input_snapshot": {
+        "material_refs": [
+          {
+            "index_name": "material_index",
+            "object_type": "Issue",
+            "object_id": "issue-default-001",
+            "storage_ref": "cases/case-civil-loan-001/materials/issues/issue-default-001.json"
+          },
+          {
+            "index_name": "material_index",
+            "object_type": "Evidence",
+            "object_id": "evidence-promissory-note-001",
+            "storage_ref": "cases/case-civil-loan-001/materials/evidence/evidence-promissory-note-001.json"
+          }
+        ],
+        "artifact_refs": [
+          {
+            "index_name": "artifact_index",
+            "object_type": "Scenario",
+            "object_id": "scenario-baseline-001",
+            "storage_ref": "cases/case-civil-loan-001/artifacts/scenarios/scenario-baseline-001.json"
+          }
+        ]
+      },
+      "output_refs": [
+        {
+          "index_name": "artifact_index",
+          "object_type": "AgentOutput",
+          "object_id": "output-argument-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/agent_outputs/output-argument-001.json"
+        },
+        {
+          "index_name": "artifact_index",
+          "object_type": "ReportArtifact",
+          "object_id": "report-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/reports/report-001.json"
+        }
+      ],
+      "started_at": "2026-03-12T09:00:00Z",
+      "finished_at": "2026-03-12T09:04:30Z",
+      "status": "completed"
+    }
+  ],
+  "AgentOutput": [
+    {
+      "output_id": "output-argument-001",
+      "case_id": "case-civil-loan-001",
+      "run_id": "run-report-001",
+      "state_id": "state-output-branching-001",
+      "phase": "output_branching",
+      "round_index": 1,
+      "agent_role_code": "plaintiff_agent",
+      "owner_party_id": "party-plaintiff-001",
+      "issue_ids": [
+        "issue-default-001"
+      ],
+      "title": "逾期还款主张摘要",
+      "body": "被告未按借条约定期限归还借款。",
+      "evidence_citations": [
+        "evidence-promissory-note-001"
+      ],
+      "statement_class": "fact",
+      "risk_flags": [],
+      "created_at": "2026-03-12T09:01:10Z"
+    }
+  ],
+  "ReportArtifact": [
+    {
+      "report_id": "report-001",
+      "case_id": "case-civil-loan-001",
+      "run_id": "run-report-001",
+      "title": "案件摘要报告",
+      "section_index": [
+        "事实概览",
+        "争点分析",
+        "证据链"
+      ],
+      "summary": "报告回连 AgentOutput 并保留证据链。",
+      "linked_output_ids": [
+        "output-argument-001"
+      ],
+      "linked_evidence_ids": [
+        "evidence-promissory-note-001"
+      ],
+      "created_at": "2026-03-12T09:04:30Z"
+    }
+  ],
+  "InteractionTurn": [
+    {
+      "turn_id": "turn-001",
+      "case_id": "case-civil-loan-001",
+      "report_id": "report-001",
+      "run_id": "run-report-001",
+      "question": "报告引用的核心证据是什么？",
+      "answer": "核心证据是借条原件，对应 evidence-promissory-note-001。",
+      "issue_ids": [
+        "issue-default-001"
+      ],
+      "evidence_ids": [
+        "evidence-promissory-note-001"
+      ],
+      "created_at": "2026-03-12T09:05:00Z"
+    }
+  ],
+  "Scenario": [
+    {
+      "scenario_id": "scenario-baseline-001",
+      "case_id": "case-civil-loan-001",
+      "baseline_run_id": "run-report-001",
+      "change_set": [],
+      "diff_summary": "baseline",
+      "affected_issue_ids": [
+        "issue-default-001"
+      ],
+      "affected_evidence_ids": [
+        "evidence-promissory-note-001"
+      ],
+      "status": "completed"
+    }
+  ]
+}
