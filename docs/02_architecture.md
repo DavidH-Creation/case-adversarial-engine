@@ -6,6 +6,28 @@
 
 系统的设计原则不是“多角色自由对话”，而是“对象模型 + 程序驱动 + 证据约束 + 权限隔离 + 可审计输出”。
 
+## Product Workflow State Machine
+
+这是产品体验层的状态机，用来组织律师使用系统的步骤，不替代法律程序状态。
+
+统一工作流：
+
+1. `case_structuring`
+2. `procedure_setup`
+3. `simulation_run`
+4. `report_generation`
+5. `interactive_followup`
+
+约束：
+
+- 工作流状态只描述产品阶段，不描述法律程序正当性
+- 每个工作流阶段都要消费前一阶段的结构化产物
+- 所有工作流产物都要落回统一案件上下文
+
+## Legal Procedure State Machine
+
+法律程序状态机继续保留原有回合语义，不被 UI 或产品流程替代。
+
 ## System Modules
 
 ### schemas
@@ -36,17 +58,27 @@
 核心子模块：
 
 - `access_control`
+- `case_manager`
+- `job_manager`
 - `round_engine`
 - `evidence_state_machine`
 - `citation_trace`
+- `report_engine`
+- `interaction_engine`
+- `scenario_engine`
 - `evaluator`
 
 职责边界：
 
 - `access_control` 只负责“谁能看什么、谁能在当前阶段写什么”
+- `case_manager` 只负责案件级上下文持久化和产物索引
+- `job_manager` 只负责长任务状态、进度与恢复
 - `round_engine` 只负责程序化回合推进，不负责生成具体法律立场
 - `evidence_state_machine` 只负责证据生命周期与合法迁移
 - `citation_trace` 只负责结论与证据、规则、回合的追溯链
+- `report_engine` 只负责把推演结果整理成律师可消费产物
+- `interaction_engine` 只负责报告后的深度追问和 drill-down
+- `scenario_engine` 只负责 `what-if` 变量注入与差异比较
 - `evaluator` 只负责版本评测与回归比较
 
 ### templates
@@ -114,7 +146,11 @@
 
 未来可能包含：
 
-- `workspace`
+- `process`
+- `run`
+- `report`
+- `interaction`
+- `history`
 - `issue_board`
 - `evidence_board`
 - `audit_log`
@@ -123,6 +159,16 @@
 
 - `ui` 不是 `v0.5` 范围
 - 任何 UI 设计都不能倒逼对象模型重命名
+
+## Service / API Surfaces
+
+为了避免把所有行为塞进单一接口，后续服务/API 至少按以下切面组织：
+
+- `case`：案件、材料、工作区与产物索引
+- `workflow`：产品工作流状态与阶段切换
+- `simulation`：对抗回合、程序推进、场景运行
+- `report`：报告生成、报告读取、报告后追问
+- `audit`：审计日志、引用链、权限拦截记录
 
 ## Access Control
 
@@ -223,6 +269,15 @@
 3. `citation traceability`
 4. `access isolation`
 5. `versioned evaluation`
+
+## Explicitly Not Adopted
+
+以下能力只作为参考对象，不作为本系统核心方案：
+
+- 社交媒体式 action space
+- 高自由 persona 生成
+- 把外部图谱/记忆平台设为不可替代底座
+- 用“平行世界仿真”替代法律程序与证据约束
 
 ## 当前实现边界
 

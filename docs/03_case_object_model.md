@@ -44,6 +44,23 @@
 - `inference`
 - `assumption`
 
+### `workflow_stage`
+
+- `case_structuring`
+- `procedure_setup`
+- `simulation_run`
+- `report_generation`
+- `interactive_followup`
+
+### `job_status`
+
+- `created`
+- `pending`
+- `running`
+- `completed`
+- `failed`
+- `cancelled`
+
 ## `Party`
 
 ### 作用
@@ -285,6 +302,7 @@
 
 - `output_id`
 - `case_id`
+- `run_id`
 - `state_id`
 - `phase`
 - `round_index`
@@ -300,6 +318,7 @@
 
 ### 字段说明
 
+- `run_id`：该输出属于哪次运行快照
 - `agent_role_code`：输出来源角色
 - `issue_ids`：该输出覆盖的争点
 - `body`：规范化输出正文
@@ -313,6 +332,146 @@
 - `AgentOutput` 不允许无 `evidence_citations` 的关键结论
 - `statement_class = assumption` 时必须显式标识为假设，不得伪装成事实
 
+## `CaseWorkspace`
+
+### 作用
+
+表示案件级持久化上下文，是工作流五阶段共享的容器。
+
+### Required Fields
+
+- `workspace_id`
+- `case_id`
+- `case_type`
+- `current_workflow_stage`
+- `material_index`
+- `artifact_index`
+- `run_ids`
+- `active_scenario_id`
+- `status`
+
+### Constraints
+
+- 所有案件产物都必须可从 `CaseWorkspace` 找回
+- 工作流切换不能绕开 `CaseWorkspace`
+
+## `Run`
+
+### 作用
+
+表示一次推演、报告生成或场景重跑的执行快照。
+
+### Required Fields
+
+- `run_id`
+- `case_id`
+- `workspace_id`
+- `scenario_id`
+- `trigger_type`
+- `input_snapshot`
+- `output_refs`
+- `started_at`
+- `finished_at`
+- `status`
+
+### Constraints
+
+- `Run` 必须能回放
+- `Run` 的输入快照和输出引用必须可追溯
+
+## `Job`
+
+### 作用
+
+表示系统中的长任务状态与进度。
+
+### Required Fields
+
+- `job_id`
+- `case_id`
+- `workspace_id`
+- `job_type`
+- `job_status`
+- `progress`
+- `message`
+- `result_ref`
+- `error`
+- `created_at`
+- `updated_at`
+
+### Constraints
+
+- `job_status` 只能使用统一枚举
+- `Job` 状态必须与真实产物一致
+
+## `ReportArtifact`
+
+### 作用
+
+表示生成后的报告及其追溯结构。
+
+### Required Fields
+
+- `report_id`
+- `case_id`
+- `run_id`
+- `title`
+- `section_index`
+- `summary`
+- `linked_output_ids`
+- `linked_evidence_ids`
+- `created_at`
+
+### Constraints
+
+- `ReportArtifact` 必须能回连 `AgentOutput`
+- 关键结论必须带 `linked_evidence_ids`
+
+## `InteractionTurn`
+
+### 作用
+
+表示报告生成后的单次追问记录。
+
+### Required Fields
+
+- `turn_id`
+- `case_id`
+- `report_id`
+- `run_id`
+- `question`
+- `answer`
+- `issue_ids`
+- `evidence_ids`
+- `created_at`
+
+### Constraints
+
+- 报告后追问必须继续绑定 `issue_ids`
+- 报告后追问必须继续绑定 `evidence_ids`
+
+## `Scenario`
+
+### 作用
+
+表示一次 `what-if` 变量注入及其与 baseline 的差异结果。
+
+### Required Fields
+
+- `scenario_id`
+- `case_id`
+- `baseline_run_id`
+- `change_set`
+- `diff_summary`
+- `affected_issue_ids`
+- `affected_evidence_ids`
+- `status`
+
+### Constraints
+
+- `Scenario` 必须记录相对 baseline 的变更项
+- `Scenario` 差异结果必须可解释
+
 ## Relationship Rules
 
 - `Claim` 与 `Defense` 必须通过 `Issue` 发生关系
@@ -320,10 +479,15 @@
 - `ProcedureState` 决定 `AgentOutput` 的合法输入范围
 - `Evidence` 的访问域与状态共同决定其可见性
 - 裁判相关输出只能引用 `admitted_record` 中的证据
+- `AgentOutput` 必须回连 `Run`
+- `ReportArtifact` 必须回连引用的 `AgentOutput` 与 `Evidence`
+- `InteractionTurn` 必须回连 `ReportArtifact`
+- `Scenario` 必须明确 baseline 与差异输出
 
 ## Hard Rules
 
 - 不允许新增同义对象替代这里的八类核心对象
+- 不允许新增工作流对象时绕开这里定义的 `CaseWorkspace`、`Run`、`Job`、`ReportArtifact`、`InteractionTurn`、`Scenario`
 - 不允许把程序控制写进 prompt 而绕开 `ProcedureState`
 - 不允许把证据状态、访问域和争点绑定写成自由文本
 - 不允许输出无引用、无争点绑定、无分类标记的结论

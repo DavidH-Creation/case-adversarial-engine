@@ -46,6 +46,10 @@
 - `run_to_run_consistency`
 - `access_isolation_violations`
 - `state_machine_violations`
+- `job_recoverability`
+- `report_followup_traceability`
+- `scenario_diff_validity`
+- `run_replayability`
 
 ### 指标说明
 
@@ -55,6 +59,10 @@
 - `run_to_run_consistency`：同一输入多次运行时结构化结果的一致性
 - `access_isolation_violations`：越权读取、越权引用次数
 - `state_machine_violations`：证据状态非法迁移、非法入轮次数
+- `job_recoverability`：长任务中断后恢复与重启的可靠性
+- `report_followup_traceability`：报告后追问答案继续保持证据与争点追溯的比例
+- `scenario_diff_validity`：what-if 结果差异是否有清晰变更解释
+- `run_replayability`：同一 `Run` 是否可重新还原输入、状态与主要输出
 
 ## Version Acceptance
 
@@ -71,6 +79,7 @@
 - 对抗后新增关键缺证点比例显著高于 `v0.5`
 - 原被告输出中的关键论点全部带 `evidence_id`
 - `access_isolation_violations = 0`
+- `job_recoverability` 基础可用
 
 ## v1.5
 
@@ -78,6 +87,7 @@
 - 证据状态机无非法迁移
 - 裁判倾向必须能回溯到质证记录
 - `private` 证据泄漏为零
+- `report_followup_traceability` 达标
 
 ## v2
 
@@ -85,6 +95,7 @@
 - “争点-证据-抗辩”矩阵可稳定生成
 - 文书框架人工修改量明显下降
 - 对象模型不因案型扩展而破坏兼容
+- `scenario_diff_validity` 达标
 
 ## v2.5
 
@@ -92,6 +103,7 @@
 - 审计链完整
 - 常见敏感信息脱敏不漏检
 - 用户级权限测试通过
+- `run_replayability` 可用于案件历史回放
 
 ## v3
 
@@ -158,6 +170,10 @@
 - 裁判层引用未进入 `admitted_record` 的证据
 - 输出无法区分 `fact` / `inference` / `assumption`
 - 审计链缺失，无法还原“谁在何时基于什么得出什么”
+- 报告追问答案没有证据引用
+- `Scenario` 重跑后差异无法解释
+- `Run` 无法回放还原
+- `Job` 状态与实际产物不一致
 
 ## Unacceptable Regression
 
@@ -178,5 +194,6 @@
 - 证据索引是否完整
 - 举证责任映射是否可读
 - 结构化报告是否具备备战价值
+- 输出格式是否兼容未来 `CaseWorkspace`
 
 在 `v0.5` 之前，不接受“先做功能，评测以后再补”的开发方式。
