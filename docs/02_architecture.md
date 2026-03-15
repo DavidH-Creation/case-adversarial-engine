@@ -77,6 +77,7 @@ tests/
 - `AgentOutput`
 - `CaseWorkspace`
 - `Run`
+- `Job`
 
 约束：
 
@@ -84,7 +85,7 @@ tests/
 - 新案型不得另造同义对象
 - `schemas` 的变化必须同步更新评测基线
 - `CaseWorkspace` contract 放在 `schemas/case/`
-- `Run` contract 放在 `schemas/procedure/`
+- `Run` 与 `Job` contract 放在 `schemas/procedure/`
 - 共享索引与可追溯引用定义可以放在 `schemas/` 下复用，但不能另造新的工作流对象名
 
 ### engines
@@ -116,7 +117,7 @@ tests/
 
 - `access_control` 只负责“谁能看什么、谁能在当前阶段写什么”
 - `case_manager` 只负责案件级上下文持久化和产物索引，并且必须把 `CaseWorkspace` 当作 `Run`、`AgentOutput`、`ReportArtifact`、`InteractionTurn`、`Scenario` 的单一持久化容器
-- `job_manager` 只负责长任务状态、进度与恢复
+- `job_manager` 只负责 `Job` 生命周期、进度与恢复语义，不预设消息队列、外部 worker、broker 或云服务
 - `round_engine` 只负责程序化回合推进，不负责生成具体法律立场
 - `evidence_state_machine` 只负责证据生命周期与合法迁移
 - `citation_trace` 只负责结论与证据、规则、回合的追溯链
@@ -311,6 +312,42 @@ tests/
 - 每轮输出必须绑定 `issue_id`
 - 每轮只能使用当前状态可读材料
 - 只有 `output_branching` 才允许形成路径结论
+
+## Job Lifecycle Contract
+
+`Job` 只定义长任务的持久化生命周期合同，不等同于消息队列、任务 broker、外部 worker 或云编排。`v0.5` 可以在单进程、本地后台线程或未来其他运行方式下实现，只要最终落盘语义一致。
+
+### 状态含义
+
+- `created`：`Job` 已创建并持久化，但尚未开始推进；`progress = 0`
+- `pending`：`Job` 处于待执行或待恢复状态，但当前未主动推进；既可表示首次等待，也可表示中断后的恢复准备
+- `running`：`Job` 正在推进；`progress` 只能反映已经持久化的确定性里程碑
+- `completed`：终止状态；必须已有有效 `result_ref`，且 `progress = 1`
+- `failed`：终止状态；必须带结构化 `error`，且 `progress < 1`
+- `cancelled`：终止状态；表示任务被显式停止且不再推进，且 `progress < 1`
+
+### 允许迁移
+
+- `created -> pending`
+- `created -> running`
+- `created -> cancelled`
+- `created -> failed`
+- `pending -> running`
+- `pending -> cancelled`
+- `pending -> failed`
+- `running -> pending`
+- `running -> completed`
+- `running -> failed`
+- `running -> cancelled`
+
+其中 `completed`、`failed`、`cancelled` 是终止状态。`pending` 与 `running` 可以在不变更状态名的前提下更新 `progress`、`message` 和 `updated_at`。
+
+### 恢复与重试
+
+- 中断恢复必须从已持久化的 `Job`、`CaseWorkspace`、相关 `Run` 与索引化产物重新装载，不能依赖只存在于内存中的临时结果
+- `running -> pending` 只用于表达“执行被中断但可继续恢复”；恢复后的同一 `Job` 可以再次进入 `running`，且 `progress` 只能反映最后一个已持久化里程碑
+- 终止态 `Job` 不得重新打开；如果需要重试，必须创建新的 `job_id`，原 `Job` 保留为审计记录
+- `Job` 只暴露单个主 `result_ref`；完整可回放输入/输出仍通过 `Run.input_snapshot`、`Run.output_refs` 与 `CaseWorkspace` 索引表达
 
 ## Design Priorities
 

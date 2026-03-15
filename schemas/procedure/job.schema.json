@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "job_id",
+    "case_id",
+    "workspace_id",
+    "job_type",
+    "job_status",
+    "progress",
+    "message",
+    "result_ref",
+    "error",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "job_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "job_status": {
+      "$ref": "../indexing.schema.json#/$defs/job_status",
+      "description": "Canonical lifecycle state for the long-running job."
+    },
+    "progress": {
+      "$ref": "../indexing.schema.json#/$defs/job_progress"
+    },
+    "message": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Human-readable progress text. It may help operators understand the current step but is never the authoritative source of state."
+    },
+    "result_ref": {
+      "anyOf": [
+        {
+          "$ref": "../indexing.schema.json#/$defs/result_ref"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "../indexing.schema.json#/$defs/job_error"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "job_status": {
+            "const": "created"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "progress": {
+            "const": 0
+          },
+          "result_ref": {
+            "type": "null"
+          },
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "job_status": {
+            "enum": [
+              "pending",
+              "running"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "progress": {
+            "minimum": 0,
+            "exclusiveMaximum": 1
+          },
+          "result_ref": {
+            "type": "null"
+          },
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "job_status": {
+            "const": "completed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "progress": {
+            "const": 1
+          },
+          "result_ref": {
+            "$ref": "../indexing.schema.json#/$defs/result_ref"
+          },
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "job_status": {
+            "enum": [
+              "failed",
+              "cancelled"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "progress": {
+            "minimum": 0,
+            "exclusiveMaximum": 1
+          },
+          "result_ref": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "job_status": {
+            "const": "failed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "$ref": "../indexing.schema.json#/$defs/job_error"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "description": "Job tracks long-running execution state for v0.5 without implying any queue, worker, broker, or cloud runtime. Replayable inputs and outputs belong to Run and CaseWorkspace; result_ref only points at the canonical persisted artifact produced by a completed job."
+}

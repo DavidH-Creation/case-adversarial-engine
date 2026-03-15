@@ -354,7 +354,7 @@
 
 - `current_workflow_stage`：必须来自统一 `workflow_stage` 枚举，表示当前案件工作流推进到的产品阶段
 - `material_index`：案件输入材料与程序化基础对象的持久化索引，必须按 canonical object name 分组，并且每个索引项都要能通过对象类型 + 对象标识回到持久化记录
-- `artifact_index`：工作流输出产物的持久化索引，至少要稳定承载 `AgentOutput`、`ReportArtifact`、`InteractionTurn`、`Scenario` 的按类型分组索引，并且每个索引项都要能通过对象类型 + 对象标识回到持久化记录
+- `artifact_index`：工作流输出产物的持久化索引，至少要稳定承载 `AgentOutput`、`ReportArtifact`、`InteractionTurn`、`Scenario` 的按类型分组索引，并且每个索引项都要能通过对象类型 + 对象标识回到持久化记录；`Run.output_refs` 与 `Job.result_ref` 都只能解析到这里登记的 canonical artifact
 - `run_ids`：当前 `CaseWorkspace` 已登记的 `Run` 标识列表，所有可回放执行都必须先在这里登记
 - `active_scenario_id`：当前激活的 `Scenario` 标识；若尚未进入场景分支，可显式为空值，但字段本身不能缺失
 - `status`：案件工作区的状态字段，字段名冻结为 `status`
@@ -398,6 +398,7 @@
 - `Run` 必须能回放
 - `Run` 的输入快照和输出引用必须可追溯
 - `Run.output_refs` 不得写成自由文本列表，必须能解析到 `CaseWorkspace` 中已登记的持久化产物
+- `Run` 仍然是可回放执行的 canonical 执行快照；`Job` 只负责长任务生命周期，不替代 `Run`
 
 ## `Job`
 
@@ -419,10 +420,26 @@
 - `created_at`
 - `updated_at`
 
+### 字段说明
+
+- `job_type`：长任务类型，例如索引、模拟运行或报告生成；字段本身不绑定额外枚举，但必须稳定可判别
+- `job_status`：必须来自统一 `job_status` 枚举
+- `progress`：`[0, 1]` 的归一化数值进度；`created` 固定为 `0`，`completed` 固定为 `1`
+- `message`：面向人的进度说明；可显式为空值，但不是权威状态来源
+- `result_ref`：可显式为空值；一旦存在，必须是指向 `CaseWorkspace.artifact_index` 的 canonical artifact 引用；若长任务产出多份结果，该字段只指向主结果入口
+- `error`：可显式为空值；仅 `failed` 终止状态使用的结构化错误对象
+- `created_at` / `updated_at`：任务创建与最近一次持久化更新时间戳
+
 ### Constraints
 
 - `job_status` 只能使用统一枚举
-- `Job` 状态必须与真实产物一致
+- `progress` 必须使用 `[0, 1]` 归一化数值区间；除 `completed` 外不得写成 `1`
+- `message` 只用于人类可读说明，不能覆盖 `job_status`、`progress` 或持久化产物的真实语义
+- `Job` 可在中断后从已持久化状态重新装载；恢复时不得依赖只存在于内存中的中间结果
+- `Job` 绝不能在没有有效 `result_ref` 的情况下声称 `completed`
+- 非 `completed` 状态的 `result_ref` 必须为空
+- `failed` 是唯一必须带 `error` 的终止状态；非 `failed` 状态的 `error` 必须为空
+- `Job.job_status`、`progress` 与产物可见性必须与真实已持久化输出一致
 
 ## `ReportArtifact`
 
@@ -500,6 +517,9 @@
 - `Evidence` 的访问域与状态共同决定其可见性
 - 裁判相关输出只能引用 `admitted_record` 中的证据
 - `AgentOutput` 必须回连 `Run`
+- `Job` 只跟踪长任务生命周期；`Run` 仍然是可回放执行快照
+- `Job.result_ref` 必须解析到 `CaseWorkspace.artifact_index` 中的 canonical artifact，不能写成临时 payload 或自由文本结果
+- 同一长任务若生成多份输出，`Run.output_refs` 记录完整输出集合，`Job.result_ref` 只提供主结果入口
 - `ReportArtifact` 必须回连引用的 `AgentOutput` 与 `Evidence`
 - `InteractionTurn` 必须回连 `ReportArtifact`
 - `Scenario` 必须明确 baseline 与差异输出

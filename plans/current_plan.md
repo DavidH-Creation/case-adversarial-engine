@@ -138,6 +138,18 @@ Get-ChildItem schemas,engines,benchmarks,tests
 
 ## 最近完成
 
+- `v0-5-job-manager-contract`
+- 交付物：
+  `schemas/indexing.schema.json`
+  `schemas/procedure/job.schema.json`
+  `docs/02_architecture.md`
+  `docs/03_case_object_model.md`
+  `plans/current_plan.md`
+- 结果：
+  `Job` 生命周期、恢复语义与进度 contract 已冻结为 machine-readable schema + 文档约束，并与 `Run` / `CaseWorkspace` 的 replayable artifact linkage 对齐
+- scope guard：
+  本里程碑只补 contract / documentation，不引入 queue、worker、broker 或云依赖
+
 - `v0-5-case-workspace-contract`
 - 交付物：
   `schemas/indexing.schema.json`
