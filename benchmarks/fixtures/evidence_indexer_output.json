@@ -1,0 +1,112 @@
+{
+  "description": "Gold output fixture for evidence indexer — civil loan dispute (民间借贷). Produced from evidence_indexer_input.json.",
+  "artifact_id": "artifact-evidence-index-loan-002-001",
+  "job_id": "job-evidence-indexing-loan-002-001",
+  "run_id": "run-case-structuring-loan-002-001",
+  "case_id": "case-civil-loan-002",
+  "workspace_id": "workspace-civil-loan-002",
+  "created_at": "2026-03-24T10:00:00Z",
+  "raw_materials": [
+    {
+      "source_id": "doc-promissory-note-001",
+      "text": "借条。今借到王某某人民币伍万元整（¥50,000.00），借款期限自2024年1月15日至2024年7月15日，月利率1.5%，到期一次性还清本息。借款人：李某某，身份证号：110101199001011234，日期：2024年1月15日。",
+      "metadata": {
+        "document_type": "promissory_note",
+        "date": "2024-01-15",
+        "submitter": "party-plaintiff-002",
+        "language": "zh-CN"
+      }
+    },
+    {
+      "source_id": "doc-bank-transfer-001",
+      "text": "中国工商银行电子回单。付款账户：6222 **** **** 8801（王某某），收款账户：6222 **** **** 3302（李某某），交易金额：人民币50,000.00元，交易时间：2024-01-15 14:32:07，交易流水号：ICBC20240115143207001，备注：借款。",
+      "metadata": {
+        "document_type": "bank_transfer_receipt",
+        "date": "2024-01-15",
+        "submitter": "party-plaintiff-002",
+        "institution": "ICBC",
+        "language": "zh-CN"
+      }
+    },
+    {
+      "source_id": "doc-wechat-collection-001",
+      "text": "微信聊天记录截图（2024-08-10）。王某某：李哥，借条上写的是7月15日还款，现在已经过了快一个月了，方便今天还一下吗？李某某：最近手头紧，再宽限两个月。王某某：宽限可以，但是利息还是要算的。李某某：好的没问题。",
+      "metadata": {
+        "document_type": "instant_message_record",
+        "date": "2024-08-10",
+        "platform": "WeChat",
+        "submitter": "party-plaintiff-002",
+        "language": "zh-CN"
+      }
+    }
+  ],
+  "evidences": [
+    {
+      "evidence_id": "evidence-promissory-note-002-001",
+      "case_id": "case-civil-loan-002",
+      "owner_party_id": "party-plaintiff-002",
+      "title": "借条原件",
+      "source": "doc-promissory-note-001",
+      "summary": "被告李某某于2024年1月15日向原告王某某出具借条，载明借款金额5万元、借款期限至2024年7月15日、月利率1.5%。该借条证明借款合同成立及主要条款。",
+      "evidence_type": "documentary",
+      "target_fact_ids": [
+        "fact-loan-contract-existence-001",
+        "fact-loan-amount-50000-001",
+        "fact-loan-due-date-001"
+      ],
+      "target_issue_ids": [
+        "issue-loan-contract-validity-001",
+        "issue-repayment-obligation-001"
+      ],
+      "access_domain": "owner_private",
+      "status": "private",
+      "submitted_by_party_id": null,
+      "challenged_by_party_ids": [],
+      "admissibility_notes": null
+    },
+    {
+      "evidence_id": "evidence-bank-transfer-002-001",
+      "case_id": "case-civil-loan-002",
+      "owner_party_id": "party-plaintiff-002",
+      "title": "银行转账电子回单",
+      "source": "doc-bank-transfer-001",
+      "summary": "工商银行电子回单显示原告于2024年1月15日向被告转账人民币50,000元，备注「借款」，与借条记载的借款金额及日期吻合，证明出借行为已实际履行。",
+      "evidence_type": "electronic_data",
+      "target_fact_ids": [
+        "fact-loan-disbursement-001",
+        "fact-loan-amount-50000-001"
+      ],
+      "target_issue_ids": [
+        "issue-loan-contract-validity-001",
+        "issue-repayment-obligation-001"
+      ],
+      "access_domain": "owner_private",
+      "status": "private",
+      "submitted_by_party_id": null,
+      "challenged_by_party_ids": [],
+      "admissibility_notes": null
+    },
+    {
+      "evidence_id": "evidence-wechat-collection-002-001",
+      "case_id": "case-civil-loan-002",
+      "owner_party_id": "party-plaintiff-002",
+      "title": "微信催款聊天记录",
+      "source": "doc-wechat-collection-001",
+      "summary": "2024年8月10日微信记录显示被告承认借款到期、以手头紧为由申请延期、并认可继续计息，证明被告知悉还款义务、存在明确违约且未提出抗辩。",
+      "evidence_type": "electronic_data",
+      "target_fact_ids": [
+        "fact-loan-overdue-001",
+        "fact-defendant-acknowledged-debt-001"
+      ],
+      "target_issue_ids": [
+        "issue-repayment-obligation-001",
+        "issue-interest-accrual-001"
+      ],
+      "access_domain": "owner_private",
+      "status": "private",
+      "submitted_by_party_id": null,
+      "challenged_by_party_ids": [],
+      "admissibility_notes": null
+    }
+  ]
+}

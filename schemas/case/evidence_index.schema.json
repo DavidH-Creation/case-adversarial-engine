@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidenceIndexArtifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_id",
+    "job_id",
+    "run_id",
+    "case_id",
+    "workspace_id",
+    "raw_materials",
+    "evidences",
+    "created_at"
+  ],
+  "properties": {
+    "artifact_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique ID for this indexer artifact, referenced by Job.result_ref and Run.output_refs."
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ID of the evidence_indexing Job that produced this artifact."
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ID of the Run that contains this artifact in output_refs."
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "raw_materials": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/raw_material"
+      },
+      "description": "Input: raw case material segments submitted to the indexer. Each item must have a unique source_id within this artifact."
+    },
+    "evidences": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "evidence.schema.json"
+      },
+      "description": "Output: structured Evidence objects produced from raw_materials. Each Evidence must bind at least one target_fact_id and have status='private', access_domain='owner_private'."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "raw_material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "text",
+        "metadata"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable identifier for this raw material segment. Becomes Evidence.source after indexing."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Plain text content of the raw material. v0.5: no OCR, text provided directly."
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Caller-supplied metadata (document_type, date, submitter, etc.). Schema is open for v0.5."
+        }
+      }
+    }
+  },
+  "description": "EvidenceIndexArtifact is the replayable artifact produced by the evidence_indexing Job. It bundles the full raw_materials input and all structured Evidence outputs so that the run can be replayed without external lookups. After the job completes, each Evidence in 'evidences' is written into CaseWorkspace.material_index.Evidence."
+}

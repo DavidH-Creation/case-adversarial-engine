@@ -1,0 +1,40 @@
+{
+  "description": "Sample input for evidence indexer — civil loan dispute (民间借贷). Three raw material segments submitted by the plaintiff party.",
+  "case_id": "case-civil-loan-002",
+  "workspace_id": "workspace-civil-loan-002",
+  "owner_party_id": "party-plaintiff-002",
+  "raw_materials": [
+    {
+      "source_id": "doc-promissory-note-001",
+      "text": "借条。今借到王某某人民币伍万元整（¥50,000.00），借款期限自2024年1月15日至2024年7月15日，月利率1.5%，到期一次性还清本息。借款人：李某某，身份证号：110101199001011234，日期：2024年1月15日。",
+      "metadata": {
+        "document_type": "promissory_note",
+        "date": "2024-01-15",
+        "submitter": "party-plaintiff-002",
+        "language": "zh-CN"
+      }
+    },
+    {
+      "source_id": "doc-bank-transfer-001",
+      "text": "中国工商银行电子回单。付款账户：6222 **** **** 8801（王某某），收款账户：6222 **** **** 3302（李某某），交易金额：人民币50,000.00元，交易时间：2024-01-15 14:32:07，交易流水号：ICBC20240115143207001，备注：借款。",
+      "metadata": {
+        "document_type": "bank_transfer_receipt",
+        "date": "2024-01-15",
+        "submitter": "party-plaintiff-002",
+        "institution": "ICBC",
+        "language": "zh-CN"
+      }
+    },
+    {
+      "source_id": "doc-wechat-collection-001",
+      "text": "微信聊天记录截图（2024-08-10）。王某某：李哥，借条上写的是7月15日还款，现在已经过了快一个月了，方便今天还一下吗？李某某：最近手头紧，再宽限两个月。王某某：宽限可以，但是利息还是要算的。李某某：好的没问题。",
+      "metadata": {
+        "document_type": "instant_message_record",
+        "date": "2024-08-10",
+        "platform": "WeChat",
+        "submitter": "party-plaintiff-002",
+        "language": "zh-CN"
+      }
+    }
+  ]
+}
