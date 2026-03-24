@@ -1,0 +1,26 @@
+[project]
+name = "case-adversarial-engine"
+version = "0.5.0"
+description = "Case Adversarial Engine — 对抗式案件分析引擎"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.39.0",
+    "pydantic>=2.0",
+    "jsonschema>=4.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = [
+    "engines/case_structuring/evidence_indexer/tests",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
