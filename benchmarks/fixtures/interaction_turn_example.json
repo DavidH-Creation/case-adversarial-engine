@@ -1,0 +1,28 @@
+[
+  {
+    "turn_id": "turn-civil-loan-001-01",
+    "case_id": "case-civil-loan-001",
+    "report_id": "report-civil-loan-001-01",
+    "run_id": "run-civil-loan-001-report-01",
+    "turn_index": 1,
+    "question": "借条上的签名是否经过鉴定？",
+    "answer": "根据现有案件材料，借条原件（evidence-civil-loan-001-01）中的签名尚未进行司法笔迹鉴定。目前借条的真实性依据为：（1）借条原件由原告持有并提交法庭；（2）银行转账记录（evidence-civil-loan-001-02）显示的转账时间与借条日期一致，金额吻合，形成间接印证。如被告在诉讼中对签名真实性提出异议并申请笔迹鉴定，法院通常会准许。建议原告方提前做好鉴定准备，确保借条原件保存完好。需要注意的是，如果鉴定结果确认签名真实，将进一步强化原告的证据链；反之，则可能对案件走向产生重大影响。",
+    "issue_ids": ["issue-civil-loan-001-01"],
+    "evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-02"],
+    "statement_class": "fact",
+    "created_at": "2026-03-24T10:15:00Z"
+  },
+  {
+    "turn_id": "turn-civil-loan-001-02",
+    "case_id": "case-civil-loan-001",
+    "report_id": "report-civil-loan-001-01",
+    "run_id": "run-civil-loan-001-report-01",
+    "turn_index": 2,
+    "question": "如果对方主张已还款但没有转账记录，举证责任如何分配？",
+    "answer": "根据《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》及民事诉讼法的举证责任分配原则，被告主张已还款属于权利消灭的抗辩事由，应由被告承担举证责任。具体而言：（1）被告需提供还款的直接证据，如转账记录、收据、银行流水等书证；（2）被告目前仅有证人王五的证言（evidence-civil-loan-001-04），而该证人与被告存在亲属关系，其证言的证明力较弱；（3）在被告无法提供充分还款证据的情况下，法院通常不会采信其还款主张。但需注意，如果被告能够提供其他间接证据形成完整的证据链（如双方的微信聊天记录中提及还款、第三方在场证人等），仍可能影响法院的认定。原告方应准备好反驳被告可能补充的证据。",
+    "issue_ids": ["issue-civil-loan-001-03"],
+    "evidence_ids": ["evidence-civil-loan-001-04", "evidence-civil-loan-001-01"],
+    "statement_class": "inference",
+    "created_at": "2026-03-24T10:20:00Z"
+  }
+]
