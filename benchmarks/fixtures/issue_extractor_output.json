@@ -1,0 +1,183 @@
+{
+  "case_id": "case-civil-loan-001",
+  "run_id": "run-civil-loan-001",
+  "job_id": "job-issue-extraction-001",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "title": "鍊熻捶鍏崇郴鎴愮珛",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-001-01", "claim-civil-loan-001-02"],
+      "related_defense_ids": [],
+      "evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-02"],
+      "burden_ids": ["burden-civil-loan-001-01"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-01",
+          "text": "寮犱笁涓庢潕鍥涗箣闂村瓨鍦ㄥ悎娉曠殑鍊熻捶鍚堟剰",
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-01"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-02",
+          "text": "鍊熸閲戦50涓囧厓宸插疄闄呬氦浠?,
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-02"]
+        }
+      ],
+      "status": "open",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "issue_id": "issue-civil-loan-001-02",
+      "case_id": "case-civil-loan-001",
+      "title": "杩樻浜嬪疄",
+      "issue_type": "factual",
+      "parent_issue_id": "issue-civil-loan-001-01",
+      "related_claim_ids": ["claim-civil-loan-001-01"],
+      "related_defense_ids": ["defense-civil-loan-001-01"],
+      "evidence_ids": ["evidence-civil-loan-001-02", "evidence-civil-loan-001-03"],
+      "burden_ids": ["burden-civil-loan-001-02"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-03",
+          "text": "琚憡鏉庡洓宸插綊杩樺€熸鏈噾20涓囧厓",
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-03"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-04",
+          "text": "灏氫綑鏈噾30涓囧厓鏈綊杩?,
+          "status": "disputed",
+          "linked_evidence_ids": ["evidence-civil-loan-001-02", "evidence-civil-loan-001-03"]
+        }
+      ],
+      "status": "open",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "issue_id": "issue-civil-loan-001-03",
+      "case_id": "case-civil-loan-001",
+      "title": "鍒╂伅绾﹀畾",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-001-01",
+      "related_claim_ids": ["claim-civil-loan-001-02"],
+      "related_defense_ids": ["defense-civil-loan-001-02"],
+      "evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-04"],
+      "burden_ids": ["burden-civil-loan-001-03"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-05",
+          "text": "鍊熸潯涓浇鏄庡埄鎭潯娆?,
+          "status": "disputed",
+          "linked_evidence_ids": ["evidence-civil-loan-001-01"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-06",
+          "text": "寰俊鑱婂ぉ璁板綍涓弻鏂硅璁鸿繃鍒╂伅",
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-04"]
+        }
+      ],
+      "status": "open",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "issue_id": "issue-civil-loan-001-04",
+      "case_id": "case-civil-loan-001",
+      "title": "璇夎鏃舵晥",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-001-01",
+      "related_claim_ids": ["claim-civil-loan-001-01"],
+      "related_defense_ids": [],
+      "evidence_ids": ["evidence-civil-loan-001-01"],
+      "burden_ids": ["burden-civil-loan-001-04"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-07",
+          "text": "鍊熸潯绾﹀畾杩樻鏃ユ湡涓?024骞?鏈?0鏃?,
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-01"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-08",
+          "text": "鍘熷憡浜?026骞?鏈?5鏃ユ彁璧疯瘔璁硷紝鏈秴杩囦笁骞磋瘔璁兼椂鏁?,
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "status": "open",
+      "created_at": "2026-03-20T10:00:00Z"
+    }
+  ],
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "issue_id": "issue-civil-loan-001-01",
+      "bearer_party_id": "party-civil-loan-001-01",
+      "description": "鍘熷憡搴斾妇璇佽瘉鏄庡€熻捶鍏崇郴鎴愮珛锛屽寘鎷€熻捶鍚堟剰鍜屾椤逛氦浠?,
+      "proof_standard": "楂樺害鐩栫劧鎬?,
+      "legal_basis": "銆婃渶楂樹汉姘戞硶闄㈠叧浜庡鐞嗘皯闂村€熻捶妗堜欢閫傜敤娉曞緥鑻ュ共闂鐨勮瀹氥€嬬浜屾潯",
+      "status": "met"
+    },
+    {
+      "burden_id": "burden-civil-loan-001-02",
+      "case_id": "case-civil-loan-001",
+      "issue_id": "issue-civil-loan-001-02",
+      "bearer_party_id": "party-civil-loan-001-02",
+      "description": "琚憡涓诲紶宸茶繕娆撅紝搴斾妇璇佽瘉鏄庤繕娆句簨瀹?,
+      "proof_standard": "楂樺害鐩栫劧鎬?,
+      "legal_basis": "銆婃皯浜嬭瘔璁兼硶銆嬬鍏崄涓冩潯",
+      "status": "partially_met"
+    },
+    {
+      "burden_id": "burden-civil-loan-001-03",
+      "case_id": "case-civil-loan-001",
+      "issue_id": "issue-civil-loan-001-03",
+      "bearer_party_id": "party-civil-loan-001-01",
+      "description": "鍘熷憡涓诲紶鍒╂伅锛屽簲涓捐瘉璇佹槑鍒╂伅绾﹀畾鐨勫瓨鍦ㄥ強鍏蜂綋鍒╃巼",
+      "proof_standard": "楂樺害鐩栫劧鎬?,
+      "legal_basis": "銆婃皯娉曞吀銆嬬鍏櫨鍏崄鏉?,
+      "status": "disputed"
+    },
+    {
+      "burden_id": "burden-civil-loan-001-04",
+      "case_id": "case-civil-loan-001",
+      "issue_id": "issue-civil-loan-001-04",
+      "bearer_party_id": "party-civil-loan-001-02",
+      "description": "濡傝鍛婁富寮犺瘔璁兼椂鏁堟姉杈╋紝搴斾妇璇佽瘉鏄庢椂鏁堝凡杩?,
+      "proof_standard": "楂樺害鐩栫劧鎬?,
+      "legal_basis": "銆婃皯娉曞吀銆嬬涓€鐧惧叓鍗佸叓鏉?,
+      "status": "not_met"
+    }
+  ],
+  "claim_issue_mapping": [
+    {
+      "claim_id": "claim-civil-loan-001-01",
+      "issue_ids": ["issue-civil-loan-001-01", "issue-civil-loan-001-02", "issue-civil-loan-001-04"]
+    },
+    {
+      "claim_id": "claim-civil-loan-001-02",
+      "issue_ids": ["issue-civil-loan-001-01", "issue-civil-loan-001-03"]
+    }
+  ],
+  "defense_issue_mapping": [
+    {
+      "defense_id": "defense-civil-loan-001-01",
+      "issue_ids": ["issue-civil-loan-001-02"]
+    },
+    {
+      "defense_id": "defense-civil-loan-001-02",
+      "issue_ids": ["issue-civil-loan-001-03"]
+    }
+  ],
+  "extraction_metadata": {
+    "total_claims_processed": 2,
+    "total_defenses_processed": 2,
+    "total_evidence_referenced": 4,
+    "extraction_timestamp": "2026-03-20T10:05:00Z"
+  }
+}

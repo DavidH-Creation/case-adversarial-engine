@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "issue_tree.schema.json",
+  "title": "IssueTree",
+  "description": "浜夌偣鏍戜骇鐗?- 鐢变簤鐐规娊鍙栧櫒鐢熸垚锛屽寘鍚彁鍙栫殑浜夌偣鍙婁妇璇佽矗浠诲垎閰?,
+  "type": "object",
+  "properties": {
+    "case_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "job_id": { "type": "string" },
+    "issues": { "type": "array", "items": { "$ref": "issue.schema.json" } },
+    "burdens": { "type": "array", "items": { "$ref": "burden.schema.json" } },
+    "claim_issue_mapping": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim_id": { "type": "string" },
+          "issue_ids": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["claim_id", "issue_ids"]
+      }
+    },
+    "defense_issue_mapping": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "defense_id": { "type": "string" },
+          "issue_ids": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["defense_id", "issue_ids"]
+      }
+    },
+    "extraction_metadata": {
+      "type": "object",
+      "properties": {
+        "total_claims_processed": { "type": "integer" },
+        "total_defenses_processed": { "type": "integer" },
+        "total_evidence_referenced": { "type": "integer" },
+        "extraction_timestamp": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "required": ["case_id", "issues", "burdens", "claim_issue_mapping", "defense_issue_mapping"]
+}
