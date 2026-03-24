@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-tpl-001",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-tpl-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-tpl-001",
+      "evidence_ids": ["evidence-civil-loan-tpl-001", "evidence-civil-loan-tpl-003"],
+      "content": "借条与银行转账记录共同证明借贷关系成立。借条载明金额、期限，转账凭证对应实际交付，两者相互印证，属直接书证。"
+    },
+    {
+      "note_id": "note-civil-loan-tpl-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-tpl-002",
+      "evidence_ids": ["evidence-civil-loan-tpl-003"],
+      "content": "银行转账记录证明资金流向，但仍需排除赠与、投资或其他性质可能。当前无反向证据，推断款项性质为借款成立，但存在被告抗辩风险。"
+    },
+    {
+      "note_id": "note-civil-loan-tpl-003",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-tpl-003",
+      "evidence_ids": ["evidence-civil-loan-tpl-004"],
+      "content": "催款记录表明被告知悉债务且未还款，但催款本身不构成还款期限的直接证明。逾期事实的核心证明仍依赖借条约定期限条款。"
+    },
+    {
+      "note_id": "note-civil-loan-tpl-004",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-tpl-001",
+      "evidence_ids": [],
+      "content": "民间借贷案件中，被告常见抗辩：（1）否认借条真实性；（2）主张款项为归还旧债或投资款；（3）主张已部分还款。建议提前准备回应方案，特别是就微信记录申请电子证据公证。"
+    },
+    {
+      "note_id": "note-civil-loan-tpl-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-tpl-002",
+      "evidence_ids": ["evidence-civil-loan-tpl-003"],
+      "content": "转账金额与借条金额一致是关键。若存在多笔转账或金额不符，需补充说明材料以避免法院对款项性质产生疑问。"
+    }
+  ]
+}

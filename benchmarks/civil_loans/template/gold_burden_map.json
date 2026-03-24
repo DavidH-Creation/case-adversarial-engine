@@ -1,0 +1,41 @@
+{
+  "case_id": "civil-loan-tpl-001",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-tpl-001",
+      "case_id": "civil-loan-tpl-001",
+      "issue_id": "issue-civil-loan-tpl-001",
+      "burden_party_id": "party-civil-loan-tpl-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-tpl-001: 双方于2024年3月就借款金额、期限达成合意",
+      "legal_basis": "《民法典》第667条：借款合同是借款人向贷款人借款，到期返还借款并支付利息的合同。原告主张借贷关系成立，应举证证明。",
+      "shift_condition": "原告提交借条及转账凭证后，举证责任转移至被告就借条真实性或款项用途提出反驳。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-tpl-002",
+      "case_id": "civil-loan-tpl-001",
+      "issue_id": "issue-civil-loan-tpl-002",
+      "burden_party_id": "party-civil-loan-tpl-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-tpl-003: 原告于约定日期通过银行转账向被告账户转入10万元",
+      "legal_basis": "《民法典》第679条：自然人之间的借款合同，自贷款人提供借款时成立。原告须证明款项实际交付。",
+      "shift_condition": "原告提交银行转账凭证后，如被告主张系其他性质款项，由被告举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-tpl-003",
+      "case_id": "civil-loan-tpl-001",
+      "issue_id": "issue-civil-loan-tpl-003",
+      "burden_party_id": "party-civil-loan-tpl-002",
+      "burden_type": "转移后举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "fp-civil-loan-tpl-004: 约定还款日为2024年9月，被告至今未还款",
+      "legal_basis": "《民法典》第675条：借款人应当按照约定的期限返还借款。原告证明约定期限届满后，如被告主张已还款，由被告举证。",
+      "shift_condition": "无；原告证明借贷成立及期限届满后，被告应主动提出并证明已还款事实。",
+      "status": "active"
+    }
+  ]
+}

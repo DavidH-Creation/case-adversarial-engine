@@ -1,0 +1,63 @@
+{
+  "case_id": "civil-loan-tpl-001",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-tpl-001",
+      "case_id": "civil-loan-tpl-001",
+      "title": "借贷关系是否成立",
+      "issue_type": "实体争点",
+      "description": "原被告之间是否存在合法有效的民间借贷关系，包括双方是否达成借贷合意。",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-tpl-001"],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        "fp-civil-loan-tpl-001: 双方于2024年3月就借款金额、期限达成合意",
+        "fp-civil-loan-tpl-002: 借条或借款合同真实存在且系被告自愿签署"
+      ],
+      "burden_ids": ["burden-civil-loan-tpl-001"],
+      "evidence_ids": [
+        "evidence-civil-loan-tpl-001",
+        "evidence-civil-loan-tpl-002"
+      ],
+      "status": "open",
+      "priority": 1
+    },
+    {
+      "issue_id": "issue-civil-loan-tpl-002",
+      "case_id": "civil-loan-tpl-001",
+      "title": "借款是否实际交付",
+      "issue_type": "实体争点",
+      "description": "原告是否依约将10万元实际交付被告，交付方式是否有凭证支持。",
+      "parent_issue_id": "issue-civil-loan-tpl-001",
+      "related_claim_ids": ["claim-civil-loan-tpl-001"],
+      "related_defense_ids": ["defense-civil-loan-tpl-001"],
+      "fact_propositions": [
+        "fp-civil-loan-tpl-003: 原告于约定日期通过银行转账向被告账户转入10万元"
+      ],
+      "burden_ids": ["burden-civil-loan-tpl-002"],
+      "evidence_ids": ["evidence-civil-loan-tpl-003"],
+      "status": "open",
+      "priority": 2
+    },
+    {
+      "issue_id": "issue-civil-loan-tpl-003",
+      "case_id": "civil-loan-tpl-001",
+      "title": "被告是否逾期未还",
+      "issue_type": "实体争点",
+      "description": "约定还款期届满后，被告是否按期足额归还借款本金及利息。",
+      "parent_issue_id": "issue-civil-loan-tpl-001",
+      "related_claim_ids": ["claim-civil-loan-tpl-001"],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        "fp-civil-loan-tpl-004: 约定还款日为2024年9月，被告至今未还款"
+      ],
+      "burden_ids": ["burden-civil-loan-tpl-003"],
+      "evidence_ids": [
+        "evidence-civil-loan-tpl-001",
+        "evidence-civil-loan-tpl-004"
+      ],
+      "status": "open",
+      "priority": 2
+    }
+  ]
+}
