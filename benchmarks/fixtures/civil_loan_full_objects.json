@@ -1,0 +1,312 @@
+{
+  "description": "Complete fixture with all 8 core object types for a 姘戦棿鍊熻捶 (civil loan) case",
+  "Party": [
+    {
+      "object_type": "Party",
+      "party_id": "party-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "role": "plaintiff",
+      "name": "寮犱笁",
+      "id_type": "韬唤璇?,
+      "description": "鍘熷憡锛屽嚭鍊熶汉"
+    },
+    {
+      "object_type": "Party",
+      "party_id": "party-civil-loan-001-02",
+      "case_id": "case-civil-loan-001",
+      "role": "defendant",
+      "name": "鏉庡洓",
+      "id_type": "韬唤璇?,
+      "description": "琚憡锛屽€熸浜?
+    }
+  ],
+  "Claim": [
+    {
+      "object_type": "Claim",
+      "claim_id": "claim-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "party_id": "party-civil-loan-001-01",
+      "title": "褰掕繕鍊熸鏈噾50涓?,
+      "description": "璇锋眰琚憡褰掕繕鍊熸鏈噾浜烘皯甯?00,000鍏?,
+      "amount": 500000,
+      "currency": "CNY",
+      "legal_basis": "銆婃皯娉曞吀銆嬬鍏櫨涓冨崄浜旀潯",
+      "related_evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-02"]
+    },
+    {
+      "object_type": "Claim",
+      "claim_id": "claim-civil-loan-001-02",
+      "case_id": "case-civil-loan-001",
+      "party_id": "party-civil-loan-001-01",
+      "title": "鏀粯鍒╂伅",
+      "description": "璇锋眰琚憡鏀粯鑷€熸涔嬫棩璧疯嚦瀹為檯褰掕繕涔嬫棩姝㈢殑鍒╂伅",
+      "legal_basis": "銆婃皯娉曞吀銆嬬鍏櫨鍏崄鏉?,
+      "related_evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-04"]
+    }
+  ],
+  "Defense": [
+    {
+      "object_type": "Defense",
+      "defense_id": "defense-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "party_id": "party-civil-loan-001-02",
+      "title": "宸插綊杩?0涓?,
+      "description": "琚憡涓诲紶宸查€氳繃閾惰杞处褰掕繕鍊熸鏈噾浜烘皯甯?00,000鍏?,
+      "against_claim_id": "claim-civil-loan-001-01",
+      "related_evidence_ids": ["evidence-civil-loan-001-03"]
+    },
+    {
+      "object_type": "Defense",
+      "defense_id": "defense-civil-loan-001-02",
+      "case_id": "case-civil-loan-001",
+      "party_id": "party-civil-loan-001-02",
+      "title": "鍒╂伅绾﹀畾涓嶆槑",
+      "description": "琚憡涓诲紶鍙屾柟瀵瑰埄鎭湭浣滄槑纭害瀹氾紝鍊熸潯涓湭杞芥槑鍒╃巼",
+      "against_claim_id": "claim-civil-loan-001-02",
+      "related_evidence_ids": ["evidence-civil-loan-001-01"]
+    }
+  ],
+  "Issue": [
+    {
+      "object_type": "Issue",
+      "issue_id": "issue-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "title": "鍊熻捶鍏崇郴鎴愮珛",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-001-01", "claim-civil-loan-001-02"],
+      "related_defense_ids": [],
+      "evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-02"],
+      "burden_ids": ["burden-civil-loan-001-01"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-01",
+          "text": "寮犱笁涓庢潕鍥涗箣闂村瓨鍦ㄥ悎娉曠殑鍊熻捶鍚堟剰",
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-01"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-02",
+          "text": "鍊熸閲戦50涓囧厓宸插疄闄呬氦浠?,
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-02"]
+        }
+      ],
+      "status": "open",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "object_type": "Issue",
+      "issue_id": "issue-civil-loan-001-02",
+      "case_id": "case-civil-loan-001",
+      "title": "杩樻浜嬪疄",
+      "issue_type": "factual",
+      "parent_issue_id": "issue-civil-loan-001-01",
+      "related_claim_ids": ["claim-civil-loan-001-01"],
+      "related_defense_ids": ["defense-civil-loan-001-01"],
+      "evidence_ids": ["evidence-civil-loan-001-02", "evidence-civil-loan-001-03"],
+      "burden_ids": ["burden-civil-loan-001-02"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-03",
+          "text": "琚憡鏉庡洓宸插綊杩樺€熸鏈噾20涓囧厓",
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-03"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-04",
+          "text": "灏氫綑鏈噾30涓囧厓鏈綊杩?,
+          "status": "disputed",
+          "linked_evidence_ids": ["evidence-civil-loan-001-02", "evidence-civil-loan-001-03"]
+        }
+      ],
+      "status": "open",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "object_type": "Issue",
+      "issue_id": "issue-civil-loan-001-03",
+      "case_id": "case-civil-loan-001",
+      "title": "鍒╂伅绾﹀畾",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-001-01",
+      "related_claim_ids": ["claim-civil-loan-001-02"],
+      "related_defense_ids": ["defense-civil-loan-001-02"],
+      "evidence_ids": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-04"],
+      "burden_ids": ["burden-civil-loan-001-03"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-05",
+          "text": "鍊熸潯涓浇鏄庡埄鎭潯娆?,
+          "status": "disputed",
+          "linked_evidence_ids": ["evidence-civil-loan-001-01"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-06",
+          "text": "寰俊鑱婂ぉ璁板綍涓弻鏂硅璁鸿繃鍒╂伅",
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-04"]
+        }
+      ],
+      "status": "open",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "object_type": "Issue",
+      "issue_id": "issue-civil-loan-001-04",
+      "case_id": "case-civil-loan-001",
+      "title": "璇夎鏃舵晥",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-001-01",
+      "related_claim_ids": ["claim-civil-loan-001-01"],
+      "related_defense_ids": [],
+      "evidence_ids": ["evidence-civil-loan-001-01"],
+      "burden_ids": ["burden-civil-loan-001-04"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-07",
+          "text": "鍊熸潯绾﹀畾杩樻鏃ユ湡涓?024骞?鏈?0鏃?,
+          "status": "supported",
+          "linked_evidence_ids": ["evidence-civil-loan-001-01"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-08",
+          "text": "鍘熷憡浜?026骞?鏈?5鏃ユ彁璧疯瘔璁硷紝鏈秴杩囦笁骞磋瘔璁兼椂鏁?,
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "status": "open",
+      "created_at": "2026-03-20T10:00:00Z"
+    }
+  ],
+  "Evidence": [
+    {
+      "object_type": "Evidence",
+      "evidence_id": "evidence-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "title": "鍊熸潯",
+      "evidence_type": "documentary",
+      "description": "鐢辨潕鍥涗翰绗旂鍚嶇殑鍊熸潯锛岃浇鏄庡€熸閲戦50涓囧厓锛屽€熸鏃ユ湡2023骞?鏈?5鏃ワ紝绾﹀畾杩樻鏃ユ湡2024骞?鏈?0鏃?,
+      "submitted_by_party_id": "party-civil-loan-001-01",
+      "authenticity": "undisputed",
+      "source": "鍘熷憡鎻愪氦",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "object_type": "Evidence",
+      "evidence_id": "evidence-civil-loan-001-02",
+      "case_id": "case-civil-loan-001",
+      "title": "杞处璁板綍",
+      "evidence_type": "documentary",
+      "description": "寮犱笁鍚戞潕鍥涢摱琛岃浆璐?0涓囧厓鐨勯摱琛屾祦姘磋褰曪紝杞处鏃ユ湡2023骞?鏈?5鏃?,
+      "submitted_by_party_id": "party-civil-loan-001-01",
+      "authenticity": "undisputed",
+      "source": "閾惰鍑哄叿",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "object_type": "Evidence",
+      "evidence_id": "evidence-civil-loan-001-03",
+      "case_id": "case-civil-loan-001",
+      "title": "杩樻鍑瘉",
+      "evidence_type": "documentary",
+      "description": "鏉庡洓鍚戝紶涓夐摱琛岃浆璐?0涓囧厓鐨勯摱琛屾祦姘磋褰曪紝杞处鏃ユ湡2024骞?鏈?0鏃?,
+      "submitted_by_party_id": "party-civil-loan-001-02",
+      "authenticity": "undisputed",
+      "source": "閾惰鍑哄叿",
+      "created_at": "2026-03-20T10:00:00Z"
+    },
+    {
+      "object_type": "Evidence",
+      "evidence_id": "evidence-civil-loan-001-04",
+      "case_id": "case-civil-loan-001",
+      "title": "寰俊璁板綍",
+      "evidence_type": "electronic",
+      "description": "寮犱笁涓庢潕鍥涗箣闂村叧浜庡€熸銆佸埄鎭€佽繕娆剧殑寰俊鑱婂ぉ璁板綍鎴浘锛屾兜鐩?023骞?鏈堣嚦2024骞?鏈?,
+      "submitted_by_party_id": "party-civil-loan-001-01",
+      "authenticity": "disputed",
+      "source": "鍘熷憡鎵嬫満鎻愬彇",
+      "created_at": "2026-03-20T10:00:00Z"
+    }
+  ],
+  "Burden": [
+    {
+      "object_type": "Burden",
+      "burden_id": "burden-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "issue_id": "issue-civil-loan-001-01",
+      "bearer_party_id": "party-civil-loan-001-01",
+      "description": "鍘熷憡搴斾妇璇佽瘉鏄庡€熻捶鍏崇郴鎴愮珛锛屽寘鎷€熻捶鍚堟剰鍜屾椤逛氦浠?,
+      "proof_standard": "楂樺害鐩栫劧鎬?,
+      "legal_basis": "銆婃渶楂樹汉姘戞硶闄㈠叧浜庡鐞嗘皯闂村€熻捶妗堜欢閫傜敤娉曞緥鑻ュ共闂鐨勮瀹氥€嬬浜屾潯",
+      "status": "met"
+    },
+    {
+      "object_type": "Burden",
+      "burden_id": "burden-civil-loan-001-02",
+      "case_id": "case-civil-loan-001",
+      "issue_id": "issue-civil-loan-001-02",
+      "bearer_party_id": "party-civil-loan-001-02",
+      "description": "琚憡涓诲紶宸茶繕娆撅紝搴斾妇璇佽瘉鏄庤繕娆句簨瀹?,
+      "proof_standard": "楂樺害鐩栫劧鎬?,
+      "legal_basis": "銆婃皯浜嬭瘔璁兼硶銆嬬鍏崄涓冩潯",
+      "status": "partially_met"
+    },
+    {
+      "object_type": "Burden",
+      "burden_id": "burden-civil-loan-001-03",
+      "case_id": "case-civil-loan-001",
+      "issue_id": "issue-civil-loan-001-03",
+      "bearer_party_id": "party-civil-loan-001-01",
+      "description": "鍘熷憡涓诲紶鍒╂伅锛屽簲涓捐瘉璇佹槑鍒╂伅绾﹀畾鐨勫瓨鍦ㄥ強鍏蜂綋鍒╃巼",
+      "proof_standard": "楂樺害鐩栫劧鎬?,
+      "legal_basis": "銆婃皯娉曞吀銆嬬鍏櫨鍏崄鏉?,
+      "status": "disputed"
+    },
+    {
+      "object_type": "Burden",
+      "burden_id": "burden-civil-loan-001-04",
+      "case_id": "case-civil-loan-001",
+      "issue_id": "issue-civil-loan-001-04",
+      "bearer_party_id": "party-civil-loan-001-02",
+      "description": "濡傝鍛婁富寮犺瘔璁兼椂鏁堟姉杈╋紝搴斾妇璇佽瘉鏄庢椂鏁堝凡杩?,
+      "proof_standard": "楂樺害鐩栫劧鎬?,
+      "legal_basis": "銆婃皯娉曞吀銆嬬涓€鐧惧叓鍗佸叓鏉?,
+      "status": "not_met"
+    }
+  ],
+  "ProcedureState": [
+    {
+      "object_type": "ProcedureState",
+      "state_id": "state-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "run_id": "run-civil-loan-001",
+      "phase": "case_structuring",
+      "status": "completed",
+      "current_round": 1,
+      "max_rounds": 3,
+      "created_at": "2026-03-20T10:00:00Z"
+    }
+  ],
+  "AgentOutput": [
+    {
+      "object_type": "AgentOutput",
+      "output_id": "output-civil-loan-001-01",
+      "case_id": "case-civil-loan-001",
+      "run_id": "run-civil-loan-001",
+      "state_id": "state-civil-loan-001-01",
+      "phase": "case_structuring",
+      "round_index": 1,
+      "agent_role_code": "plaintiff_agent",
+      "owner_party_id": "party-civil-loan-001-01",
+      "issue_ids": ["issue-civil-loan-001-01", "issue-civil-loan-001-02"],
+      "title": "鍘熷憡鍏充簬鍊熻捶鍏崇郴鍙婅繕娆句簨瀹炵殑闄堣堪",
+      "body": "鍘熷憡寮犱笁涓诲紶涓庤鍛婃潕鍥涗箣闂村瓨鍦ㄥ悎娉曞€熻捶鍏崇郴锛屽€熸50涓囧厓宸查€氳繃閾惰杞处瀹為檯浜や粯銆傝鍛婁粎褰掕繕20涓囧厓锛屽皻娆犳湰閲?0涓囧厓銆?,
+      "evidence_citations": ["evidence-civil-loan-001-01", "evidence-civil-loan-001-02"],
+      "statement_class": "fact",
+      "risk_flags": [],
+      "created_at": "2026-03-20T10:01:00Z"
+    }
+  ]
+}

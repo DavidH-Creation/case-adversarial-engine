@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "issue.schema.json",
+  "title": "Issue",
+  "description": "浜夌偣瀵硅薄 - 妗堜欢涓殑浜夎鐒︾偣",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "issue_id",
+    "case_id",
+    "title",
+    "issue_type",
+    "fact_propositions"
+  ],
+  "properties": {
+    "issue_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "浜夌偣鍞竴鏍囪瘑"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "浜夌偣鏍囬"
+    },
+    "issue_type": {
+      "type": "string",
+      "enum": ["factual", "legal", "procedural", "mixed"],
+      "description": "浜夌偣绫诲瀷"
+    },
+    "parent_issue_id": {
+      "type": ["string", "null"],
+      "description": "鐖朵簤鐐笽D锛岀敤浜庡眰绾х粨鏋勶紙骞抽摵鍒楄〃锛岄潪宓屽JSON锛?
+    },
+    "related_claim_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "鍏宠仈鐨勮瘔璁艰姹侷D"
+    },
+    "related_defense_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "鍏宠仈鐨勬姉杈㊣D"
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "鍏宠仈鐨勮瘉鎹甀D"
+    },
+    "burden_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "鍏宠仈鐨勪妇璇佽矗浠籌D"
+    },
+    "fact_propositions": {
+      "type": "array",
+      "description": "Structured fact propositions that bridge evidence to issues",
+      "items": {
+        "type": "object",
+        "properties": {
+          "proposition_id": { "type": "string", "description": "Unique identifier for this fact proposition" },
+          "text": { "type": "string", "description": "The fact proposition statement" },
+          "status": {
+            "type": "string",
+            "enum": ["unverified", "supported", "contradicted", "disputed"],
+            "description": "Current verification status"
+          },
+          "linked_evidence_ids": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Evidence IDs supporting or contradicting this proposition"
+          }
+        },
+        "required": ["proposition_id", "text"]
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "resolved", "deferred"],
+      "description": "浜夌偣褰撳墠鐘舵€?
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
