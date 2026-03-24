@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "interaction_turn.schema.json",
+  "title": "InteractionTurn",
+  "description": "交互追问轮次 - 报告后追问的单轮问答记录，保持证据和争点追溯",
+  "type": "object",
+  "properties": {
+    "turn_id": { "type": "string", "description": "追问轮次唯一标识" },
+    "case_id": { "type": "string" },
+    "report_id": { "type": "string", "description": "关联的报告 ID" },
+    "run_id": { "type": "string" },
+    "turn_index": { "type": "integer", "description": "追问轮次序号，从 1 开始" },
+    "question": { "type": "string", "description": "用户提出的追问问题" },
+    "answer": { "type": "string", "description": "系统回答" },
+    "issue_ids": { "type": "array", "items": { "type": "string" }, "description": "本轮追问关联的争点 ID" },
+    "evidence_ids": { "type": "array", "items": { "type": "string" }, "description": "本轮回答引用的证据 ID" },
+    "statement_class": { "type": "string", "enum": ["fact", "inference", "assumption"], "description": "回答的陈述分类" },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["turn_id", "case_id", "report_id", "question", "answer", "issue_ids", "evidence_ids"]
+}
