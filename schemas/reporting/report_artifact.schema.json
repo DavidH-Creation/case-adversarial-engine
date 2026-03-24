@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "report_artifact.schema.json",
+  "title": "ReportArtifact",
+  "description": "诊断报告产物 - 由报告引擎生成，包含结构化章节和完整的证据/推演追溯链",
+  "type": "object",
+  "properties": {
+    "report_id": { "type": "string", "description": "报告唯一标识" },
+    "case_id": { "type": "string", "description": "所属案件 ID" },
+    "run_id": { "type": "string", "description": "产生此报告的 Run ID" },
+    "title": { "type": "string", "description": "报告标题" },
+    "summary": { "type": "string", "description": "报告摘要，律师可在 5 分钟内读懂的概述" },
+    "sections": {
+      "type": "array",
+      "description": "报告章节列表，按 section_index 排序",
+      "items": {
+        "type": "object",
+        "properties": {
+          "section_id": { "type": "string" },
+          "section_index": { "type": "integer", "description": "章节排序序号" },
+          "title": { "type": "string" },
+          "body": { "type": "string", "description": "章节正文内容" },
+          "linked_issue_ids": { "type": "array", "items": { "type": "string" }, "description": "本章节关联的争点 ID" },
+          "linked_output_ids": { "type": "array", "items": { "type": "string" }, "description": "本章节回连的推演输出 ID" },
+          "linked_evidence_ids": { "type": "array", "items": { "type": "string" }, "description": "本章节引用的证据 ID" },
+          "key_conclusions": {
+            "type": "array",
+            "description": "本章节的关键结论，每个结论必须有证据引用",
+            "items": {
+              "type": "object",
+              "properties": {
+                "conclusion_id": { "type": "string" },
+                "text": { "type": "string" },
+                "statement_class": { "type": "string", "enum": ["fact", "inference", "assumption"] },
+                "supporting_evidence_ids": { "type": "array", "items": { "type": "string" } },
+                "supporting_output_ids": { "type": "array", "items": { "type": "string" } }
+              },
+              "required": ["conclusion_id", "text", "statement_class", "supporting_evidence_ids"]
+            }
+          }
+        },
+        "required": ["section_id", "section_index", "title", "body", "linked_evidence_ids"]
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["report_id", "case_id", "run_id", "title", "summary", "sections"]
+}
