@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BenchmarkCaseManifest",
+  "description": "Manifest describing a single civil-loan benchmark case. Every case directory must contain a valid case_manifest.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_id",
+    "case_slug",
+    "case_type",
+    "civil_subtype",
+    "title",
+    "description",
+    "benchmark_version",
+    "created_at",
+    "annotator",
+    "source_materials_dir",
+    "gold_files",
+    "parties"
+  ],
+  "properties": {
+    "case_id": { "type": "string", "minLength": 1 },
+    "case_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "URL-safe slug used as infix in all object IDs for this case."
+    },
+    "case_type": { "const": "civil" },
+    "civil_subtype": { "const": "民间借贷" },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "benchmark_version": { "type": "string", "pattern": "^v\\d+\\.\\d+$" },
+    "created_at": { "type": "string", "format": "date" },
+    "annotator": { "type": "string", "minLength": 1 },
+    "source_materials_dir": {
+      "type": "string",
+      "description": "Relative path to source_materials/ from this manifest file."
+    },
+    "gold_files": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issue_tree", "evidence_index", "burden_map", "lawyer_notes"],
+      "properties": {
+        "issue_tree":     { "type": "string", "minLength": 1 },
+        "evidence_index": { "type": "string", "minLength": 1 },
+        "burden_map":     { "type": "string", "minLength": 1 },
+        "lawyer_notes":   { "type": "string", "minLength": 1 }
+      }
+    },
+    "parties": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["party_id", "name", "side", "role_code"],
+        "properties": {
+          "party_id":  { "type": "string", "minLength": 1 },
+          "name":      { "type": "string", "minLength": 1 },
+          "side":      { "type": "string", "enum": ["plaintiff", "defendant", "neutral"] },
+          "role_code": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

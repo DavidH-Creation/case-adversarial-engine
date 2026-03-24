@@ -1,0 +1,64 @@
+{
+  "$schema_note": "Machine-readable v0.5 acceptance criteria derived from docs/04_eval_and_acceptance.md",
+  "version": "v0.5",
+  "dataset": {
+    "case_type": "civil",
+    "civil_subtype": "民间借贷",
+    "min_gold_cases": 20,
+    "benchmark_dir": "benchmarks/civil_loans/"
+  },
+  "pass_criteria": [
+    {
+      "metric": "issue_extraction_accuracy",
+      "description": "Fraction of gold issues correctly extracted by the system across all 20 cases.",
+      "threshold": 0.80,
+      "operator": "gte",
+      "hard_fail": false
+    },
+    {
+      "metric": "citation_completeness",
+      "description": "Fraction of key conclusions (关键结论) that carry at least one valid evidence_id reference.",
+      "threshold": 1.0,
+      "operator": "eq",
+      "hard_fail": true,
+      "scope": "key_conclusions"
+    },
+    {
+      "metric": "evidence_fact_binding",
+      "description": "Every Evidence object must bind to at least one fact proposition (target_fact_ids non-empty).",
+      "threshold": 1.0,
+      "operator": "eq",
+      "hard_fail": true,
+      "scope": "all_evidence"
+    },
+    {
+      "metric": "access_isolation_violations",
+      "description": "Count of unauthorised cross-domain reads or references (owner_private accessed by non-owner).",
+      "threshold": 0,
+      "operator": "eq",
+      "hard_fail": true
+    },
+    {
+      "metric": "report_readability",
+      "description": "Lawyer can read and judge usefulness of report within 5 minutes. Assessed by human spot-check.",
+      "threshold": null,
+      "operator": "human_review",
+      "hard_fail": false
+    }
+  ],
+  "hard_fail_conditions": [
+    "private evidence leaked to non-owner party",
+    "key conclusion with no evidence_id citation",
+    "evidence_state_machine illegal transition",
+    "judge layer references evidence not in admitted_record",
+    "output with no fact/inference/assumption classification",
+    "audit chain missing — cannot reconstruct who concluded what based on which evidence"
+  ],
+  "unacceptable_regressions": [
+    "issue_extraction_accuracy significant drop vs prior baseline",
+    "citation_completeness decrease",
+    "new access isolation vulnerability introduced",
+    "object model field names silently renamed, breaking existing benchmarks"
+  ],
+  "evaluation_notes": "v0.5 evaluation focuses only on: issue tree stability, evidence index completeness, burden mapping readability, and report combat readiness. No model-specific evaluation code belongs in this file."
+}

@@ -1,0 +1,69 @@
+{
+  "case_id": "civil-loan-tpl-001",
+  "evidence": [
+    {
+      "evidence_id": "evidence-civil-loan-tpl-001",
+      "case_id": "civil-loan-tpl-001",
+      "owner_party_id": "party-civil-loan-tpl-001",
+      "title": "借条原件",
+      "source": "source_materials/loan_agreement.pdf",
+      "summary": "被告李某于2024年3月出具的借条，载明借款金额10万元、还款期限2024年9月、借款人签字。",
+      "evidence_type": "书证",
+      "target_fact_ids": ["fp-civil-loan-tpl-001", "fp-civil-loan-tpl-002", "fp-civil-loan-tpl-004"],
+      "target_issue_ids": ["issue-civil-loan-tpl-001", "issue-civil-loan-tpl-003"],
+      "access_domain": "admitted_record",
+      "status": "admitted_for_discussion",
+      "submitted_by_party_id": "party-civil-loan-tpl-001",
+      "challenged_by_party_ids": [],
+      "admissibility_notes": "书证原件，真实性待被告质证。关联性明确，直接证明借贷合意及还款期限。"
+    },
+    {
+      "evidence_id": "evidence-civil-loan-tpl-002",
+      "case_id": "civil-loan-tpl-001",
+      "owner_party_id": "party-civil-loan-tpl-001",
+      "title": "微信借款沟通记录",
+      "source": "source_materials/communication_records.pdf",
+      "summary": "原被告2024年3月微信聊天记录，显示双方就借款金额及期限协商一致的过程。",
+      "evidence_type": "电子数据",
+      "target_fact_ids": ["fp-civil-loan-tpl-001"],
+      "target_issue_ids": ["issue-civil-loan-tpl-001"],
+      "access_domain": "admitted_record",
+      "status": "admitted_for_discussion",
+      "submitted_by_party_id": "party-civil-loan-tpl-001",
+      "challenged_by_party_ids": [],
+      "admissibility_notes": "电子数据，需核查完整性与未篡改性。与借条相互印证借贷合意。"
+    },
+    {
+      "evidence_id": "evidence-civil-loan-tpl-003",
+      "case_id": "civil-loan-tpl-001",
+      "owner_party_id": "party-civil-loan-tpl-001",
+      "title": "银行转账凭证",
+      "source": "source_materials/transfer_records.pdf",
+      "summary": "原告账户于2024年3月15日向被告账户转账10万元的银行流水记录。",
+      "evidence_type": "书证",
+      "target_fact_ids": ["fp-civil-loan-tpl-003"],
+      "target_issue_ids": ["issue-civil-loan-tpl-002"],
+      "access_domain": "admitted_record",
+      "status": "admitted_for_discussion",
+      "submitted_by_party_id": "party-civil-loan-tpl-001",
+      "challenged_by_party_ids": [],
+      "admissibility_notes": "银行流水官方记录，真实性较高。直接证明款项实际交付。"
+    },
+    {
+      "evidence_id": "evidence-civil-loan-tpl-004",
+      "case_id": "civil-loan-tpl-001",
+      "owner_party_id": "party-civil-loan-tpl-001",
+      "title": "催款短信记录",
+      "source": "source_materials/communication_records.pdf",
+      "summary": "原告于2024年10月至2025年1月多次向被告发送催款短信，被告均未回应。",
+      "evidence_type": "电子数据",
+      "target_fact_ids": ["fp-civil-loan-tpl-004"],
+      "target_issue_ids": ["issue-civil-loan-tpl-003"],
+      "access_domain": "admitted_record",
+      "status": "admitted_for_discussion",
+      "submitted_by_party_id": "party-civil-loan-tpl-001",
+      "challenged_by_party_ids": [],
+      "admissibility_notes": "辅助证明逾期事实及原告积极主张权利。证明力相对有限，需结合其他证据。"
+    }
+  ]
+}
