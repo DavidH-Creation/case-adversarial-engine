@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenario_id",
+    "case_id",
+    "baseline_run_id",
+    "change_set",
+    "diff_summary",
+    "affected_issue_ids",
+    "affected_evidence_ids",
+    "status"
+  ],
+  "properties": {
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this scenario. Non-null on any Run produced by scenario execution."
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The case this scenario belongs to. Must match the case_id on the baseline Run."
+    },
+    "baseline_run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "run_id of the Run used as the baseline for this scenario. The scenario engine diffs its output Run against this baseline."
+    },
+    "change_set": {
+      "type": "array",
+      "description": "Ordered list of variable injections applied to the baseline before re-execution. An empty array denotes a baseline scenario (no changes applied).",
+      "items": {
+        "$ref": "#/$defs/change_item"
+      }
+    },
+    "diff_summary": {
+      "oneOf": [
+        {
+          "type": "string",
+          "const": "baseline",
+          "description": "Sentinel value indicating this is a baseline scenario with no change_set applied."
+        },
+        {
+          "type": "array",
+          "description": "Structured diff entries produced after scenario execution, one per affected issue.",
+          "items": {
+            "$ref": "#/$defs/diff_entry"
+          }
+        }
+      ],
+      "description": "Either the literal string 'baseline' (for baseline scenarios) or a structured array of per-issue impact entries produced after execution."
+    },
+    "affected_issue_ids": {
+      "type": "array",
+      "description": "Issue object_ids whose analysis changed as a result of the change_set. Empty for baseline scenarios.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "affected_evidence_ids": {
+      "type": "array",
+      "description": "Evidence object_ids referenced or mutated by the change_set. Empty for baseline scenarios.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "running", "completed", "failed"],
+      "description": "Lifecycle status of this scenario."
+    }
+  },
+  "$defs": {
+    "change_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_object_type",
+        "target_object_id",
+        "field_path",
+        "old_value",
+        "new_value"
+      ],
+      "description": "A single variable injection: records one field mutation on a case material or artifact object.",
+      "properties": {
+        "target_object_type": {
+          "type": "string",
+          "enum": [
+            "Party",
+            "Claim",
+            "Defense",
+            "Issue",
+            "Evidence",
+            "Burden",
+            "ProcedureState",
+            "AgentOutput",
+            "ReportArtifact"
+          ],
+          "description": "Object type of the target being mutated. Must match a registered type in CaseWorkspace material_index or artifact_index."
+        },
+        "target_object_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "object_id of the target object being mutated."
+        },
+        "field_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Dot-notation path to the mutated field within the target object (e.g. 'amount', 'body', 'evidence_citations.0')."
+        },
+        "old_value": {
+          "description": "Original field value before this change. null is permitted for fields being set for the first time."
+        },
+        "new_value": {
+          "description": "Replacement field value injected by the scenario. null is permitted to represent field removal."
+        }
+      }
+    },
+    "diff_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue_id",
+        "impact_description",
+        "direction"
+      ],
+      "description": "A per-issue summary of how the scenario's change_set affected that issue's analysis.",
+      "properties": {
+        "issue_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "object_id of the Issue whose analysis was affected."
+        },
+        "impact_description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable explanation of how the change affected this issue. Must be traceable to at least one change_item in the change_set."
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["strengthen", "weaken", "neutral"],
+          "description": "Net directional effect on the issue's legal position: 'strengthen' improves the party's position, 'weaken' damages it, 'neutral' records a material change with no net directional effect."
+        }
+      }
+    }
+  },
+  "description": "Scenario captures a counterfactual injection into a baseline Run. The change_set records every field mutation applied before re-execution; the diff_summary records the per-issue impact produced after the output Run is compared to the baseline. A Scenario with an empty change_set and diff_summary='baseline' is the canonical baseline anchor."
+}
