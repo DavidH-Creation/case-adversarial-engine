@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_id",
+    "case_id",
+    "owner_party_id",
+    "title",
+    "source",
+    "summary",
+    "evidence_type",
+    "target_fact_ids",
+    "target_issue_ids",
+    "access_domain",
+    "status",
+    "submitted_by_party_id",
+    "challenged_by_party_ids",
+    "admissibility_notes"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Globally unique evidence identifier. Format: evidence-{slug}-{seq}."
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner_party_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Party that owns this evidence in the owner_private domain."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Material origin or generation source (e.g. document name, system origin)."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable summary of what this evidence shows."
+    },
+    "evidence_type": {
+      "type": "string",
+      "enum": [
+        "documentary",
+        "physical",
+        "witness_statement",
+        "electronic_data",
+        "expert_opinion",
+        "audio_visual",
+        "other"
+      ],
+      "description": "书证 documentary | 物证 physical | 证人证言 witness_statement | 电子数据 electronic_data | 鉴定意见 expert_opinion | 视听资料 audio_visual"
+    },
+    "target_fact_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Fact propositions this evidence is intended to prove. Must have at least one entry."
+    },
+    "target_issue_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Issues this evidence is associated with. May be empty at indexing time."
+    },
+    "access_domain": {
+      "type": "string",
+      "enum": [
+        "owner_private",
+        "shared_common",
+        "admitted_record"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "private",
+        "submitted",
+        "challenged",
+        "admitted_for_discussion"
+      ]
+    },
+    "submitted_by_party_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Null until evidence is submitted to the common pool."
+    },
+    "challenged_by_party_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "admissibility_notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Notes on authenticity, relevance, legality, and probative value. Null at indexing time."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "admitted_for_discussion" }
+        }
+      },
+      "then": {
+        "properties": {
+          "access_domain": { "const": "admitted_record" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "private" }
+        }
+      },
+      "then": {
+        "properties": {
+          "submitted_by_party_id": { "type": "null" }
+        }
+      }
+    }
+  ],
+  "description": "Evidence is a case material object representing a piece of evidence. It is indexed into CaseWorkspace.material_index.Evidence and must bind at least one target_fact_id. Initial status is 'private'; initial access_domain is 'owner_private'."
+}
