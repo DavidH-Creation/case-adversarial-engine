@@ -19,6 +19,7 @@ dev = [
 asyncio_mode = "auto"
 testpaths = [
     "engines/case_structuring/evidence_indexer/tests",
+    "engines/case_structuring/issue_extractor/tests",
 ]
 
 [build-system]
