@@ -1,0 +1,237 @@
+{
+  "_comment": "Demonstrates baseline Run vs. changed scenario Run. The change_set downgrades the key evidence from original to copy, weakening the plaintiff repayment claim.",
+  "Scenario": [
+    {
+      "scenario_id": "scenario-baseline-001",
+      "case_id": "case-civil-loan-001",
+      "baseline_run_id": "run-baseline-001",
+      "change_set": [],
+      "diff_summary": "baseline",
+      "affected_issue_ids": [],
+      "affected_evidence_ids": [],
+      "status": "completed"
+    },
+    {
+      "scenario_id": "scenario-evidence-downgrade-001",
+      "case_id": "case-civil-loan-001",
+      "baseline_run_id": "run-baseline-001",
+      "change_set": [
+        {
+          "target_object_type": "Evidence",
+          "target_object_id": "evidence-promissory-note-001",
+          "field_path": "body",
+          "old_value": "Promissory note original, amount 50000, signed 2024-01-15",
+          "new_value": "Promissory note copy (unverified), original reportedly lost, amount 50000, signed 2024-01-15"
+        },
+        {
+          "target_object_type": "Evidence",
+          "target_object_id": "evidence-promissory-note-001",
+          "field_path": "authenticity_status",
+          "old_value": "original",
+          "new_value": "copy_unverified"
+        }
+      ],
+      "diff_summary": [
+        {
+          "issue_id": "issue-default-001",
+          "impact_description": "The promissory note was downgraded from an original document to an unverified copy with the original reportedly lost. This reduces evidentiary weight of the key instrument establishing the repayment obligation, weakening the plaintiff ability to prove the debt existed on the claimed terms.",
+          "direction": "weaken"
+        },
+        {
+          "issue_id": "issue-document-authenticity-001",
+          "impact_description": "The change_set directly introduces an authenticity dispute where none existed in the baseline. A new credibility issue is raised regarding whether the copy accurately reflects the original agreement.",
+          "direction": "weaken"
+        }
+      ],
+      "affected_issue_ids": [
+        "issue-default-001",
+        "issue-document-authenticity-001"
+      ],
+      "affected_evidence_ids": [
+        "evidence-promissory-note-001"
+      ],
+      "status": "completed"
+    }
+  ],
+  "Run": [
+    {
+      "run_id": "run-baseline-001",
+      "case_id": "case-civil-loan-001",
+      "workspace_id": "workspace-civil-loan-001",
+      "scenario_id": "scenario-baseline-001",
+      "trigger_type": "simulation_run",
+      "input_snapshot": {
+        "material_refs": [
+          {
+            "index_name": "material_index",
+            "object_type": "Issue",
+            "object_id": "issue-default-001",
+            "storage_ref": "cases/case-civil-loan-001/materials/issues/issue-default-001.json"
+          },
+          {
+            "index_name": "material_index",
+            "object_type": "Evidence",
+            "object_id": "evidence-promissory-note-001",
+            "storage_ref": "cases/case-civil-loan-001/materials/evidence/evidence-promissory-note-001.json"
+          }
+        ],
+        "artifact_refs": [
+          {
+            "index_name": "artifact_index",
+            "object_type": "Scenario",
+            "object_id": "scenario-baseline-001",
+            "storage_ref": "cases/case-civil-loan-001/artifacts/scenarios/scenario-baseline-001.json"
+          }
+        ]
+      },
+      "output_refs": [
+        {
+          "index_name": "artifact_index",
+          "object_type": "AgentOutput",
+          "object_id": "output-baseline-argument-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/agent_outputs/output-baseline-argument-001.json"
+        }
+      ],
+      "started_at": "2026-03-20T08:00:00Z",
+      "finished_at": "2026-03-20T08:03:45Z",
+      "status": "completed"
+    },
+    {
+      "run_id": "run-scenario-evidence-downgrade-001",
+      "case_id": "case-civil-loan-001",
+      "workspace_id": "workspace-civil-loan-001",
+      "scenario_id": "scenario-evidence-downgrade-001",
+      "trigger_type": "scenario_execution",
+      "input_snapshot": {
+        "material_refs": [
+          {
+            "index_name": "material_index",
+            "object_type": "Issue",
+            "object_id": "issue-default-001",
+            "storage_ref": "cases/case-civil-loan-001/materials/issues/issue-default-001.json"
+          },
+          {
+            "index_name": "material_index",
+            "object_type": "Evidence",
+            "object_id": "evidence-promissory-note-001",
+            "storage_ref": "cases/case-civil-loan-001/materials/evidence/evidence-promissory-note-001.json"
+          }
+        ],
+        "artifact_refs": [
+          {
+            "index_name": "artifact_index",
+            "object_type": "Scenario",
+            "object_id": "scenario-evidence-downgrade-001",
+            "storage_ref": "cases/case-civil-loan-001/artifacts/scenarios/scenario-evidence-downgrade-001.json"
+          }
+        ]
+      },
+      "output_refs": [
+        {
+          "index_name": "artifact_index",
+          "object_type": "AgentOutput",
+          "object_id": "output-scenario-argument-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/agent_outputs/output-scenario-argument-001.json"
+        }
+      ],
+      "started_at": "2026-03-20T08:10:00Z",
+      "finished_at": "2026-03-20T08:13:22Z",
+      "status": "completed"
+    }
+  ],
+  "CaseWorkspace": {
+    "workspace_id": "workspace-civil-loan-001",
+    "case_id": "case-civil-loan-001",
+    "case_type": "civil",
+    "current_workflow_stage": "simulation_run",
+    "material_index": {
+      "Party": [
+        {
+          "object_type": "Party",
+          "object_id": "party-plaintiff-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/parties/party-plaintiff-001.json"
+        },
+        {
+          "object_type": "Party",
+          "object_id": "party-defendant-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/parties/party-defendant-001.json"
+        }
+      ],
+      "Claim": [
+        {
+          "object_type": "Claim",
+          "object_id": "claim-repayment-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/claims/claim-repayment-001.json"
+        }
+      ],
+      "Defense": [],
+      "Issue": [
+        {
+          "object_type": "Issue",
+          "object_id": "issue-default-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/issues/issue-default-001.json"
+        },
+        {
+          "object_type": "Issue",
+          "object_id": "issue-document-authenticity-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/issues/issue-document-authenticity-001.json"
+        }
+      ],
+      "Evidence": [
+        {
+          "object_type": "Evidence",
+          "object_id": "evidence-promissory-note-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/evidence/evidence-promissory-note-001.json"
+        }
+      ],
+      "Burden": [
+        {
+          "object_type": "Burden",
+          "object_id": "burden-repayment-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/burdens/burden-repayment-001.json"
+        }
+      ],
+      "ProcedureState": [
+        {
+          "object_type": "ProcedureState",
+          "object_id": "state-simulation-001",
+          "storage_ref": "cases/case-civil-loan-001/materials/procedure_states/state-simulation-001.json"
+        }
+      ]
+    },
+    "artifact_index": {
+      "AgentOutput": [
+        {
+          "object_type": "AgentOutput",
+          "object_id": "output-baseline-argument-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/agent_outputs/output-baseline-argument-001.json"
+        },
+        {
+          "object_type": "AgentOutput",
+          "object_id": "output-scenario-argument-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/agent_outputs/output-scenario-argument-001.json"
+        }
+      ],
+      "ReportArtifact": [],
+      "InteractionTurn": [],
+      "Scenario": [
+        {
+          "object_type": "Scenario",
+          "object_id": "scenario-baseline-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/scenarios/scenario-baseline-001.json"
+        },
+        {
+          "object_type": "Scenario",
+          "object_id": "scenario-evidence-downgrade-001",
+          "storage_ref": "cases/case-civil-loan-001/artifacts/scenarios/scenario-evidence-downgrade-001.json"
+        }
+      ]
+    },
+    "run_ids": [
+      "run-baseline-001",
+      "run-scenario-evidence-downgrade-001"
+    ],
+    "active_scenario_id": "scenario-evidence-downgrade-001",
+    "status": "active"
+  }
+}
