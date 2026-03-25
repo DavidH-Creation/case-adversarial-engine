@@ -1,0 +1,181 @@
+{
+  "ProcedureState": [
+    {
+      "state_id": "pstate-case-civil-loan-001-case_intake-001",
+      "case_id": "case-civil-loan-001",
+      "phase": "case_intake",
+      "round_index": 0,
+      "allowed_role_codes": ["plaintiff_agent", "judge_agent", "evidence_manager"],
+      "readable_access_domains": ["shared_common"],
+      "writable_object_types": ["Party", "Claim", "Evidence"],
+      "admissible_evidence_statuses": ["private"],
+      "open_issue_ids": [],
+      "entry_conditions": ["案件登记完成", "原告起诉状已接收"],
+      "exit_conditions": ["被告已收到应诉通知", "双方当事人身份核实完毕"],
+      "next_state_ids": ["pstate-case-civil-loan-001-element_mapping-001"]
+    },
+    {
+      "state_id": "pstate-case-civil-loan-001-element_mapping-001",
+      "case_id": "case-civil-loan-001",
+      "phase": "element_mapping",
+      "round_index": 1,
+      "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "judge_agent"],
+      "readable_access_domains": ["shared_common"],
+      "writable_object_types": ["Issue", "Burden", "Claim", "Defense"],
+      "admissible_evidence_statuses": ["private", "submitted"],
+      "open_issue_ids": [],
+      "entry_conditions": ["案件受理完毕"],
+      "exit_conditions": ["争点树梳理完成", "举证责任分配明确"],
+      "next_state_ids": ["pstate-case-civil-loan-001-opening-001"]
+    },
+    {
+      "state_id": "pstate-case-civil-loan-001-opening-001",
+      "case_id": "case-civil-loan-001",
+      "phase": "opening",
+      "round_index": 2,
+      "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "judge_agent"],
+      "readable_access_domains": ["shared_common"],
+      "writable_object_types": ["Claim", "Defense", "AgentOutput"],
+      "admissible_evidence_statuses": ["submitted"],
+      "open_issue_ids": [],
+      "entry_conditions": ["争点梳理完成"],
+      "exit_conditions": ["原告陈述意见完毕", "被告陈述意见完毕"],
+      "next_state_ids": ["pstate-case-civil-loan-001-evidence_submission-001"]
+    },
+    {
+      "state_id": "pstate-case-civil-loan-001-evidence_submission-001",
+      "case_id": "case-civil-loan-001",
+      "phase": "evidence_submission",
+      "round_index": 3,
+      "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "evidence_manager"],
+      "readable_access_domains": ["shared_common"],
+      "writable_object_types": ["Evidence", "AgentOutput"],
+      "admissible_evidence_statuses": ["private", "submitted"],
+      "open_issue_ids": [],
+      "entry_conditions": ["举证期限已开始"],
+      "exit_conditions": ["举证期限届满", "双方证据均已提交"],
+      "next_state_ids": ["pstate-case-civil-loan-001-evidence_challenge-001"]
+    },
+    {
+      "state_id": "pstate-case-civil-loan-001-evidence_challenge-001",
+      "case_id": "case-civil-loan-001",
+      "phase": "evidence_challenge",
+      "round_index": 4,
+      "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "evidence_manager", "judge_agent"],
+      "readable_access_domains": ["shared_common", "admitted_record"],
+      "writable_object_types": ["Evidence", "AgentOutput"],
+      "admissible_evidence_statuses": ["submitted", "challenged"],
+      "open_issue_ids": [],
+      "entry_conditions": ["举证期限届满"],
+      "exit_conditions": ["质证程序完毕", "争议证据状态确定"],
+      "next_state_ids": ["pstate-case-civil-loan-001-judge_questions-001"]
+    },
+    {
+      "state_id": "pstate-case-civil-loan-001-judge_questions-001",
+      "case_id": "case-civil-loan-001",
+      "phase": "judge_questions",
+      "round_index": 5,
+      "allowed_role_codes": ["judge_agent"],
+      "readable_access_domains": ["shared_common", "admitted_record"],
+      "writable_object_types": ["AgentOutput"],
+      "admissible_evidence_statuses": ["admitted_for_discussion"],
+      "open_issue_ids": [],
+      "entry_conditions": ["质证程序完毕"],
+      "exit_conditions": ["法官问询完毕", "当事人问题已回复"],
+      "next_state_ids": ["pstate-case-civil-loan-001-rebuttal-001"]
+    },
+    {
+      "state_id": "pstate-case-civil-loan-001-rebuttal-001",
+      "case_id": "case-civil-loan-001",
+      "phase": "rebuttal",
+      "round_index": 6,
+      "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "judge_agent"],
+      "readable_access_domains": ["shared_common", "admitted_record"],
+      "writable_object_types": ["AgentOutput"],
+      "admissible_evidence_statuses": ["admitted_for_discussion"],
+      "open_issue_ids": [],
+      "entry_conditions": ["法官问询完毕"],
+      "exit_conditions": ["双方辩论意见完毕"],
+      "next_state_ids": ["pstate-case-civil-loan-001-output_branching-001"]
+    },
+    {
+      "state_id": "pstate-case-civil-loan-001-output_branching-001",
+      "case_id": "case-civil-loan-001",
+      "phase": "output_branching",
+      "round_index": 7,
+      "allowed_role_codes": ["judge_agent", "review_agent"],
+      "readable_access_domains": ["shared_common", "admitted_record"],
+      "writable_object_types": ["AgentOutput", "ReportArtifact"],
+      "admissible_evidence_statuses": ["admitted_for_discussion"],
+      "open_issue_ids": [],
+      "entry_conditions": ["辩论终结"],
+      "exit_conditions": ["结论性意见生成完毕", "争点处理结果输出"],
+      "next_state_ids": []
+    }
+  ],
+  "ProcedureConfig": {
+    "case_type": "civil",
+    "total_phases": 8,
+    "evidence_submission_deadline_days": 15,
+    "evidence_challenge_window_days": 10,
+    "max_rounds_per_phase": 3,
+    "applicable_laws": ["中华人民共和国民法典", "中华人民共和国民事诉讼法"]
+  },
+  "TimelineEvent": [
+    {
+      "event_id": "tevt-case-civil-loan-001-case_intake-001",
+      "event_type": "filing_deadline",
+      "phase": "case_intake",
+      "description": "案件登记与受理截止",
+      "relative_day": 0,
+      "is_mandatory": true
+    },
+    {
+      "event_id": "tevt-case-civil-loan-001-evidence_submission-001",
+      "event_type": "evidence_submission_deadline",
+      "phase": "evidence_submission",
+      "description": "举证期限届满，双方完成证据提交",
+      "relative_day": 15,
+      "is_mandatory": true
+    },
+    {
+      "event_id": "tevt-case-civil-loan-001-evidence_challenge-001",
+      "event_type": "evidence_challenge_deadline",
+      "phase": "evidence_challenge",
+      "description": "质证期限届满",
+      "relative_day": 25,
+      "is_mandatory": true
+    }
+  ],
+  "Run": [
+    {
+      "run_id": "run-procedure-setup-civil-loan-001",
+      "case_id": "case-civil-loan-001",
+      "workspace_id": "workspace-civil-loan-001",
+      "scenario_id": null,
+      "trigger_type": "procedure_setup",
+      "input_snapshot": {
+        "material_refs": [
+          {
+            "index_name": "material_index",
+            "object_type": "Issue",
+            "object_id": "issue-civil-loan-001-001",
+            "storage_ref": "material_index/Issue/issue-civil-loan-001-001"
+          }
+        ],
+        "artifact_refs": []
+      },
+      "output_refs": [
+        {
+          "index_name": "artifact_index",
+          "object_type": "AgentOutput",
+          "object_id": "pstate-case-civil-loan-001-case_intake-001",
+          "storage_ref": "artifact_index/AgentOutput/pstate-case-civil-loan-001-case_intake-001"
+        }
+      ],
+      "started_at": "2026-03-25T00:00:00Z",
+      "finished_at": "2026-03-25T00:00:01Z",
+      "status": "completed"
+    }
+  ]
+}
