@@ -537,22 +537,73 @@ async def test_llm_retry_succeeds_after_failures():
 
 
 @pytest.mark.asyncio
-async def test_llm_retry_exhausted_raises_runtime_error():
-    """LLM 所有重试均失败应抛出 RuntimeError。
-    Exhausted retries should raise RuntimeError.
+async def test_llm_retry_exhausted_returns_failed_result():
+    """LLM 所有重试均失败应返回 status='failed' 的 ScenarioResult，不抛出异常。
+    Exhausted retries should return a ScenarioResult with status='failed', not raise.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=10)
     simulator = ScenarioSimulator(
         llm_client=client, case_type="civil_loan", max_retries=3
     )
 
-    with pytest.raises(RuntimeError, match="LLM 调用失败"):
-        await simulator.simulate(
-            scenario_input=_SAMPLE_SCENARIO_INPUT,
-            issue_tree=_SAMPLE_ISSUE_TREE,
-            evidence_index=_SAMPLE_EVIDENCE_INDEX,
-            run_id=_RUN_ID,
-        )
+    result = await simulator.simulate(
+        scenario_input=_SAMPLE_SCENARIO_INPUT,
+        issue_tree=_SAMPLE_ISSUE_TREE,
+        evidence_index=_SAMPLE_EVIDENCE_INDEX,
+        run_id=_RUN_ID,
+    )
+
+    assert isinstance(result, ScenarioResult)
+    assert result.scenario.status == ScenarioStatus.failed
+    assert result.run.status == "failed"
+    assert result.scenario.scenario_id == _SCENARIO_ID
+    assert result.run.run_id == _RUN_ID
+
+
+@pytest.mark.asyncio
+async def test_failed_result_preserves_ids():
+    """失败结果应保留 scenario_id、case_id、run_id 等关键字段。
+    Failed result should preserve scenario_id, case_id, run_id.
+    """
+    client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=10)
+    simulator = ScenarioSimulator(
+        llm_client=client, case_type="civil_loan", max_retries=1
+    )
+
+    result = await simulator.simulate(
+        scenario_input=_SAMPLE_SCENARIO_INPUT,
+        issue_tree=_SAMPLE_ISSUE_TREE,
+        evidence_index=_SAMPLE_EVIDENCE_INDEX,
+        run_id=_RUN_ID,
+    )
+
+    assert result.scenario.case_id == _CASE_ID
+    assert result.scenario.baseline_run_id == _BASELINE_RUN_ID
+    assert result.run.workspace_id == _WORKSPACE_ID
+    assert result.run.trigger_type == "scenario_execution"
+    # diff_summary 为空列表 / diff_summary is empty list for failed result
+    assert result.scenario.diff_summary == []
+
+
+@pytest.mark.asyncio
+async def test_parse_failure_returns_failed_result():
+    """LLM 返回无法解析的响应时应返回 status='failed' 的 ScenarioResult。
+    Unparseable LLM response should return ScenarioResult with status='failed'.
+    """
+    client = MockLLMClient("这不是合法的JSON，无法解析")
+    simulator = ScenarioSimulator(
+        llm_client=client, case_type="civil_loan", max_retries=1
+    )
+
+    result = await simulator.simulate(
+        scenario_input=_SAMPLE_SCENARIO_INPUT,
+        issue_tree=_SAMPLE_ISSUE_TREE,
+        evidence_index=_SAMPLE_EVIDENCE_INDEX,
+        run_id=_RUN_ID,
+    )
+
+    assert result.scenario.status == ScenarioStatus.failed
+    assert result.run.status == "failed"
 
 
 @pytest.mark.asyncio

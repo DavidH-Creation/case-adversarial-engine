@@ -255,3 +255,123 @@ def test_resolve_evidence_type_unknown():
     """未知类型应回退为 other。"""
     from engines.case_structuring.evidence_indexer.schemas import EvidenceType
     assert _resolve_evidence_type("未知类型xyz") == EvidenceType.other
+
+
+# ---------------------------------------------------------------------------
+# 原子批处理测试 / Atomic batch processing tests
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_parse_failure_aborts_entire_batch():
+    """任一 LLM 输出项解析失败应中止整批，抛出 ValueError。
+    Any parse failure in LLM output must abort the entire batch.
+    """
+    # title 字段缺失会导致 LLMEvidenceItem 验证失败
+    # Missing required field 'title' causes LLMEvidenceItem validation failure
+    bad_response = json.dumps([
+        {
+            "title": "正常项",
+            "summary": "正常摘要",
+            "evidence_type": "documentary",
+            "source_id": "doc-promissory-note-001",
+            "target_facts": ["fact-001"],
+        },
+        {
+            # 缺少 title / missing required title
+            "summary": "损坏项",
+            "evidence_type": "documentary",
+            "source_id": "doc-bank-transfer-001",
+        },
+    ], ensure_ascii=False)
+
+    client = MockLLMClient(bad_response)
+    indexer = EvidenceIndexer(llm_client=client, case_type="civil_loan")
+
+    with pytest.raises(ValueError, match="批处理失败"):
+        await indexer.index(
+            materials=SAMPLE_MATERIALS,
+            case_id="case-test",
+            owner_party_id="party-test",
+        )
+
+
+# ---------------------------------------------------------------------------
+# source_coverage 校验测试 / Source coverage validation tests
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_source_coverage_passes_when_all_covered():
+    """所有 source_id 均有对应 Evidence 时不应报错。
+    No error when all source_ids are covered by evidences.
+    """
+    client = MockLLMClient(MOCK_LLM_RESPONSE)
+    indexer = EvidenceIndexer(llm_client=client, case_type="civil_loan")
+
+    # MOCK_LLM_RESPONSE 包含 doc-promissory-note-001 和 doc-bank-transfer-001
+    # 恰好与 SAMPLE_MATERIALS 一致
+    evidences = await indexer.index(
+        materials=SAMPLE_MATERIALS,
+        case_id="case-civil-loan-002",
+        owner_party_id="party-plaintiff-002",
+    )
+    assert len(evidences) == 2
+
+
+@pytest.mark.asyncio
+async def test_source_coverage_fails_when_uncovered():
+    """有 source_id 未被任何 LLM 输出覆盖时应抛出 ValueError。
+    ValueError raised when some source_id has no corresponding Evidence.
+    """
+    # LLM 只返回一条证据，但输入有两条材料
+    # LLM returns only one evidence, but input has two materials
+    partial_response = json.dumps([
+        {
+            "title": "借条原件",
+            "summary": "借条摘要",
+            "evidence_type": "documentary",
+            "source_id": "doc-promissory-note-001",
+            "target_facts": ["fact-001"],
+            "target_issues": [],
+        },
+    ], ensure_ascii=False)
+
+    client = MockLLMClient(partial_response)
+    indexer = EvidenceIndexer(llm_client=client, case_type="civil_loan")
+
+    with pytest.raises(ValueError, match="source_coverage"):
+        await indexer.index(
+            materials=SAMPLE_MATERIALS,
+            case_id="case-test",
+            owner_party_id="party-test",
+        )
+
+
+# ---------------------------------------------------------------------------
+# ValidationReport 测试 / ValidationReport tests
+# ---------------------------------------------------------------------------
+
+def test_validate_evidence_report_returns_report():
+    """validate_evidence_report 应返回 ValidationReport 对象。"""
+    from engines.case_structuring.evidence_indexer.validator import (
+        ValidationReport,
+        validate_evidence_report,
+    )
+
+    valid_evidence = {
+        "evidence_id": "evidence-test-001",
+        "case_id": "case-test",
+        "owner_party_id": "party-test",
+        "title": "测试证据",
+        "source": "doc-001",
+        "summary": "这是一条测试证据摘要",
+        "evidence_type": "documentary",
+        "target_fact_ids": ["fact-001"],
+        "access_domain": "owner_private",
+        "status": "private",
+        "challenged_by_party_ids": [],
+    }
+
+    report = validate_evidence_report([valid_evidence])
+    assert isinstance(report, ValidationReport)
+    # schema 文件可能不存在（CI 环境），但函数不应抛出异常
+    # schema file may be absent in CI; function must not raise

@@ -11,10 +11,10 @@ builds an issue tree, and assigns burden of proof to core issues.
 
 from __future__ import annotations
 
-import json
-import re
 from datetime import datetime, timezone
 from typing import Any, Optional, Protocol, runtime_checkable
+
+from engines.shared.json_utils import _extract_json_object
 
 from .schemas import (
     Burden,
@@ -53,52 +53,8 @@ class LLMClient(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# JSON 解析工具函数 / JSON parsing utilities
+# 解析工具函数 / Parsing utilities
 # ---------------------------------------------------------------------------
-
-
-def _extract_json_object(text: str) -> dict:
-    """从 LLM 响应中提取 JSON 对象。
-    Extract a JSON object from LLM response text.
-
-    依次尝试：markdown 代码块 → 直接解析 → 大括号匹配。
-    Tries in order: markdown code block → direct parse → curly-brace extraction.
-    """
-    # 尝试提取 markdown 代码块中的 JSON / Try markdown code block
-    code_block_pattern = r"```(?:json)?\s*\n?([\s\S]*?)\n?\s*```"
-    match = re.search(code_block_pattern, text)
-    if match:
-        candidate = match.group(1).strip()
-        try:
-            result = json.loads(candidate)
-            if isinstance(result, dict):
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    # 尝试直接解析整个文本 / Try direct parse of full text
-    try:
-        result = json.loads(text.strip())
-        if isinstance(result, dict):
-            return result
-    except json.JSONDecodeError:
-        pass
-
-    # 尝试提取大括号包裹的最外层内容 / Try outermost curly-brace extraction
-    brace_pattern = r"\{[\s\S]*\}"
-    match = re.search(brace_pattern, text)
-    if match:
-        try:
-            result = json.loads(match.group(0))
-            if isinstance(result, dict):
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    raise ValueError(
-        f"无法从 LLM 响应中解析 JSON 对象 / Cannot parse JSON object from LLM response: "
-        f"{text[:200]}..."
-    )
 
 
 def _resolve_issue_type(raw_type: str) -> IssueType:
@@ -332,6 +288,12 @@ class IssueExtractor:
         """
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+        # 预计算已知 evidence_id 集合，用于校验 issue 中的引用
+        # Pre-compute known evidence IDs for reference validation in issues
+        known_ev_ids: set[str] = {
+            e["evidence_id"] for e in evidence if "evidence_id" in e
+        }
+
         # ── 1. 建立 tmp_id → proper_id 映射 ──────────────────────────────────
         # Build tmp_id → proper_id mapping
         tmp_to_proper: dict[str, str] = {}
@@ -365,6 +327,12 @@ class IssueExtractor:
             # 关联的 burden_ids / Associated burden IDs
             burden_ids = tmp_to_burden_ids.get(tmp_key, [])
 
+            # 校验 evidence_ids：仅保留输入中已知的 evidence_id
+            # Validate evidence_ids: keep only IDs present in input evidence
+            validated_evidence_ids = [
+                eid for eid in item.evidence_ids if eid in known_ev_ids
+            ]
+
             # 构建事实命题（分配正式 proposition_id）
             # Build fact propositions with assigned proposition_ids
             fact_props: list[FactProposition] = []
@@ -373,7 +341,10 @@ class IssueExtractor:
                     proposition_id=f"fp-{case_slug}-{issue_idx:03d}-{fp_idx:02d}",
                     text=fp.text,
                     status=_resolve_proposition_status(fp.status),
-                    linked_evidence_ids=fp.linked_evidence_ids,
+                    # 同样只保留已知 evidence_id / Also filter linked_evidence_ids
+                    linked_evidence_ids=[
+                        eid for eid in fp.linked_evidence_ids if eid in known_ev_ids
+                    ],
                 ))
 
             issues.append(Issue(
@@ -384,7 +355,7 @@ class IssueExtractor:
                 parent_issue_id=parent_id,
                 related_claim_ids=item.related_claim_ids,
                 related_defense_ids=item.related_defense_ids,
-                evidence_ids=item.evidence_ids,
+                evidence_ids=validated_evidence_ids,
                 burden_ids=burden_ids,
                 fact_propositions=fact_props,
                 status=IssueStatus.open,
@@ -406,6 +377,33 @@ class IssueExtractor:
                 legal_basis=b.legal_basis,
                 status=BurdenStatus.not_met,
             ))
+
+        # ── 4b. 根争点 burden 兜底 / Root issue burden fallback ───────────────
+        # 若某个根争点（无 parent）没有 burden，自动生成默认 burden 并更新 issue
+        # If a root issue has no burden assigned, generate a default burden
+        updated_issues: list[Issue] = []
+        b_idx_offset = len(burdens)
+        for issue in issues:
+            if issue.parent_issue_id is None and not issue.burden_ids:
+                b_idx_offset += 1
+                fb_bid = f"burden-{case_slug}-{b_idx_offset:03d}"
+                burdens.append(Burden(
+                    burden_id=fb_bid,
+                    case_id=case_id,
+                    issue_id=issue.issue_id,
+                    bearer_party_id="unknown",
+                    description=(
+                        f"举证责任待分配（{issue.title}）"
+                        f"/ Burden of proof pending assignment ({issue.title})"
+                    ),
+                    proof_standard="",
+                    legal_basis="",
+                    status=BurdenStatus.not_met,
+                ))
+                updated_issues.append(issue.model_copy(update={"burden_ids": [fb_bid]}))
+            else:
+                updated_issues.append(issue)
+        issues = updated_issues
 
         # ── 5. 构建 ClaimIssueMapping ─────────────────────────────────────────
         # Build claim-to-issue mappings; enforce complete coverage

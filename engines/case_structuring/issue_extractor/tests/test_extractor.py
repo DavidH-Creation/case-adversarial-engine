@@ -568,3 +568,230 @@ def test_resolve_issue_type_unknown_defaults_to_factual():
     """未知类型应回退为 factual。"""
     assert _resolve_issue_type("未知争点类型xyz") == IssueType.factual
     assert _resolve_issue_type("") == IssueType.factual
+
+
+# ---------------------------------------------------------------------------
+# burden fallback 测试 / Burden fallback tests
+# ---------------------------------------------------------------------------
+
+# LLM 响应中没有为根争点分配 burden
+LLM_RESPONSE_NO_BURDEN = json.dumps(
+    {
+        "issues": [
+            {
+                "tmp_id": "issue-tmp-001",
+                "title": "借贷关系成立",
+                "issue_type": "factual",
+                "parent_tmp_id": None,
+                "related_claim_ids": ["claim-civil-loan-001-01"],
+                "related_defense_ids": [],
+                "evidence_ids": ["evidence-civil-loan-001-01"],
+                "fact_propositions": [],
+            },
+        ],
+        "burdens": [],  # 空 burdens — 根争点缺少 burden
+        "claim_issue_mapping": [
+            {
+                "claim_id": "claim-civil-loan-001-01",
+                "issue_tmp_ids": ["issue-tmp-001"],
+            },
+        ],
+        "defense_issue_mapping": [],
+    },
+    ensure_ascii=False,
+)
+
+
+@pytest.mark.asyncio
+async def test_root_issue_gets_fallback_burden_when_llm_omits():
+    """当 LLM 未为根争点分配 burden 时，应自动生成默认 burden。
+    Root issue should receive a fallback burden when LLM provides none.
+    """
+    client = MockLLMClient(LLM_RESPONSE_NO_BURDEN)
+    extractor = IssueExtractor(llm_client=client, case_type="civil_loan")
+
+    result = await extractor.extract(
+        claims=SAMPLE_CLAIMS,
+        defenses=SAMPLE_DEFENSES,
+        evidence=SAMPLE_EVIDENCE,
+        case_id="case-civil-loan-001",
+        case_slug="civil-loan-001",
+    )
+
+    root = next(i for i in result.issues if i.parent_issue_id is None)
+    assert len(root.burden_ids) >= 1, "Root issue must have at least one burden_id"
+
+    # 对应的 burden 应存在于 burdens 列表中
+    burden_ids_in_tree = {b.burden_id for b in result.burdens}
+    for bid in root.burden_ids:
+        assert bid in burden_ids_in_tree, f"burden_id {bid!r} not found in burdens list"
+
+
+@pytest.mark.asyncio
+async def test_fallback_burden_has_required_fields():
+    """自动生成的 burden 应包含 issue_id 和非空 description。
+    Auto-generated fallback burden must have issue_id and non-empty description.
+    """
+    client = MockLLMClient(LLM_RESPONSE_NO_BURDEN)
+    extractor = IssueExtractor(llm_client=client, case_type="civil_loan")
+
+    result = await extractor.extract(
+        claims=SAMPLE_CLAIMS,
+        defenses=SAMPLE_DEFENSES,
+        evidence=SAMPLE_EVIDENCE,
+        case_id="case-civil-loan-001",
+        case_slug="civil-loan-001",
+    )
+
+    root = next(i for i in result.issues if i.parent_issue_id is None)
+    fallback_burden = next(b for b in result.burdens if b.burden_id in root.burden_ids)
+
+    assert fallback_burden.issue_id == root.issue_id
+    assert fallback_burden.description
+    assert fallback_burden.bearer_party_id  # even if "unknown"
+
+
+@pytest.mark.asyncio
+async def test_existing_burden_not_duplicated():
+    """LLM 已为根争点分配 burden 时，不应再添加兜底 burden。
+    If LLM already assigns a burden to a root issue, no fallback should be added.
+    """
+    client = MockLLMClient(MOCK_LLM_RESPONSE)
+    extractor = IssueExtractor(llm_client=client, case_type="civil_loan")
+
+    result = await extractor.extract(
+        claims=SAMPLE_CLAIMS,
+        defenses=SAMPLE_DEFENSES,
+        evidence=SAMPLE_EVIDENCE,
+        case_id="case-civil-loan-001",
+        case_slug="civil-loan-001",
+    )
+
+    root = next(i for i in result.issues if i.parent_issue_id is None)
+    # MOCK_LLM_RESPONSE 为根争点提供了一个 burden，不应有额外的兜底
+    assert len(root.burden_ids) == 1
+    assert root.burden_ids[0] == "burden-civil-loan-001-001"
+
+
+# ---------------------------------------------------------------------------
+# evidence_id 引用校验测试 / evidence_id reference validation tests
+# ---------------------------------------------------------------------------
+
+# LLM 响应中包含未知 evidence_id 引用
+LLM_RESPONSE_UNKNOWN_EVIDENCE = json.dumps(
+    {
+        "issues": [
+            {
+                "tmp_id": "issue-tmp-001",
+                "title": "借贷关系成立",
+                "issue_type": "factual",
+                "parent_tmp_id": None,
+                "related_claim_ids": ["claim-civil-loan-001-01"],
+                "related_defense_ids": [],
+                "evidence_ids": [
+                    "evidence-civil-loan-001-01",  # 已知
+                    "evidence-UNKNOWN-999",          # 未知
+                ],
+                "fact_propositions": [
+                    {
+                        "text": "命题A",
+                        "status": "supported",
+                        "linked_evidence_ids": [
+                            "evidence-civil-loan-001-01",  # 已知
+                            "evidence-GHOST-000",           # 未知
+                        ],
+                    }
+                ],
+            },
+        ],
+        "burdens": [
+            {
+                "issue_tmp_id": "issue-tmp-001",
+                "bearer_party_id": "party-test",
+                "description": "测试举证责任",
+                "proof_standard": "高度盖然性",
+                "legal_basis": "《民事诉讼法》第67条",
+            }
+        ],
+        "claim_issue_mapping": [
+            {
+                "claim_id": "claim-civil-loan-001-01",
+                "issue_tmp_ids": ["issue-tmp-001"],
+            },
+        ],
+        "defense_issue_mapping": [],
+    },
+    ensure_ascii=False,
+)
+
+
+@pytest.mark.asyncio
+async def test_unknown_evidence_ids_filtered_from_issue():
+    """issue.evidence_ids 中未知 evidence_id 应被过滤。
+    Unknown evidence_ids in issue.evidence_ids should be filtered out.
+    """
+    client = MockLLMClient(LLM_RESPONSE_UNKNOWN_EVIDENCE)
+    extractor = IssueExtractor(llm_client=client, case_type="civil_loan")
+
+    result = await extractor.extract(
+        claims=SAMPLE_CLAIMS,
+        defenses=SAMPLE_DEFENSES,
+        evidence=SAMPLE_EVIDENCE,
+        case_id="case-civil-loan-001",
+        case_slug="civil-loan-001",
+    )
+
+    issue = result.issues[0]
+    assert "evidence-UNKNOWN-999" not in issue.evidence_ids, (
+        "Unknown evidence_id should be filtered from issue.evidence_ids"
+    )
+    assert "evidence-civil-loan-001-01" in issue.evidence_ids
+
+
+@pytest.mark.asyncio
+async def test_unknown_evidence_ids_filtered_from_fact_propositions():
+    """FactProposition.linked_evidence_ids 中未知 evidence_id 应被过滤。
+    Unknown evidence_ids in linked_evidence_ids should be filtered out.
+    """
+    client = MockLLMClient(LLM_RESPONSE_UNKNOWN_EVIDENCE)
+    extractor = IssueExtractor(llm_client=client, case_type="civil_loan")
+
+    result = await extractor.extract(
+        claims=SAMPLE_CLAIMS,
+        defenses=SAMPLE_DEFENSES,
+        evidence=SAMPLE_EVIDENCE,
+        case_id="case-civil-loan-001",
+        case_slug="civil-loan-001",
+    )
+
+    issue = result.issues[0]
+    for fp in issue.fact_propositions:
+        assert "evidence-GHOST-000" not in fp.linked_evidence_ids, (
+            "Unknown evidence_id should be filtered from fact_proposition.linked_evidence_ids"
+        )
+
+
+# ---------------------------------------------------------------------------
+# ValidationReport 测试 / ValidationReport tests
+# ---------------------------------------------------------------------------
+
+def test_validate_issue_tree_report_returns_report():
+    """validate_issue_tree_report 应返回 ValidationReport 对象，不抛出异常。"""
+    from engines.case_structuring.issue_extractor.validator import (
+        ValidationReport,
+        validate_issue_tree_report,
+    )
+
+    # 使用一个简单的争点树字典（schema 文件可能不存在，但函数不应抛出）
+    simple_tree = {
+        "case_id": "case-test",
+        "issues": [],
+        "burdens": [],
+        "claim_issue_mapping": [],
+        "defense_issue_mapping": [],
+    }
+
+    report = validate_issue_tree_report(simple_tree)
+    assert isinstance(report, ValidationReport)
+    # schema 文件可能不存在（CI 环境），但函数不应抛出异常
+    # schema file may be absent in CI; function must not raise

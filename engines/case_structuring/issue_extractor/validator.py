@@ -4,19 +4,66 @@ JSON Schema validator — validates IssueTree against schema and contract constr
 
 加载 schemas/case/issue.schema.json 并对每条 Issue 进行 schema 校验，
 同时执行合约级约束检查（完整映射、举证责任分配、引用完整性）。
+提供两种 API：
+- 原有 validate_issue_tree：返回错误字典列表
+- 新增 validate_issue_tree_report：返回统一 ValidationReport dataclass
 
 Loads schemas/case/issue.schema.json and validates each Issue,
 plus enforces contract-level constraints (complete mapping, burden assignment,
 reference integrity).
+Two APIs available:
+- validate_issue_tree: returns list of error dicts (original)
+- validate_issue_tree_report: returns unified ValidationReport dataclass (new)
 """
 
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
+
+
+# ---------------------------------------------------------------------------
+# 统一校验结果数据类 / Unified validation result dataclasses
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ValidationResult:
+    """单条校验错误 / A single validation error entry."""
+    code: str
+    message: str
+    location: str = ""
+
+
+@dataclass
+class ValidationReport:
+    """争点树校验结果汇总 / Aggregated IssueTree validation result."""
+    errors: list[ValidationResult] = field(default_factory=list)
+    warnings: list[ValidationResult] = field(default_factory=list)
+
+    @property
+    def is_valid(self) -> bool:
+        """无 error 则校验通过 / Validation passes if no errors."""
+        return len(self.errors) == 0
+
+    def summary(self) -> str:
+        """返回人类可读的校验摘要 / Return human-readable validation summary."""
+        if self.is_valid:
+            return f"校验通过 / Validation PASSED (warnings: {len(self.warnings)})"
+        lines = [
+            f"校验失败 / Validation FAILED ({len(self.errors)} errors, {len(self.warnings)} warnings):"
+        ]
+        for err in self.errors:
+            location = f" [{err.location}]" if err.location else ""
+            lines.append(f"  ERROR [{err.code}]{location}: {err.message}")
+        for warn in self.warnings:
+            location = f" [{warn.location}]" if warn.location else ""
+            lines.append(f"  WARN  [{warn.code}]{location}: {warn.message}")
+        return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -197,3 +244,45 @@ def validate_issue_tree(
         raise IssueTreeValidationError(all_errors)
 
     return all_errors
+
+
+# ---------------------------------------------------------------------------
+# ValidationReport API（统一格式）/ Unified ValidationReport API
+# ---------------------------------------------------------------------------
+
+
+def validate_issue_tree_report(
+    issue_tree_data: dict[str, Any],
+    schema_dir: Path | str | None = None,
+) -> ValidationReport:
+    """校验 IssueTree，返回统一 ValidationReport。
+    Validate IssueTree, returning a unified ValidationReport.
+
+    与 validate_issue_tree 不同，此函数不抛出异常，返回结构化报告。
+    Unlike validate_issue_tree, this function never raises; returns a structured report.
+
+    Args:
+        issue_tree_data: IssueTree 的字典表示 / IssueTree as a dict.
+        schema_dir: schema 文件目录 / Schema directory.
+
+    Returns:
+        ValidationReport 包含所有 errors 和 warnings。
+    """
+    report = ValidationReport()
+    try:
+        validate_issue_tree(issue_tree_data, schema_dir)
+    except IssueTreeValidationError as exc:
+        for err in exc.errors:
+            issue_id = err.get("issue_id") or ""
+            report.errors.append(ValidationResult(
+                code=f"ISSUE_TREE_{err.get('type', 'error').upper()}",
+                message=err.get("message", ""),
+                location=str(issue_id),
+            ))
+    except Exception as exc:
+        # schema 文件缺失、编码错误等 / Schema not found, encoding errors, etc.
+        report.errors.append(ValidationResult(
+            code="SCHEMA_LOAD_ERROR",
+            message=str(exc),
+        ))
+    return report

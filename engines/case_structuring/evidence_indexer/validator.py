@@ -2,16 +2,60 @@
 JSON Schema 校验器 — 对 Evidence 对象进行 schema 合规性验证。
 
 加载 schemas/case/evidence.schema.json 并逐条校验。
+提供两种 API：
+- 原有 validate_evidence / validate_evidence_batch：返回错误字典列表
+- 新增 validate_evidence_report：返回统一 ValidationReport dataclass
 """
 
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import jsonschema
 from jsonschema import Draft202012Validator, ValidationError
+
+
+# ---------------------------------------------------------------------------
+# 统一校验结果数据类 / Unified validation result dataclasses
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ValidationResult:
+    """单条校验错误 / A single validation error entry."""
+    code: str
+    message: str
+    location: str = ""
+
+
+@dataclass
+class ValidationReport:
+    """证据校验结果汇总 / Aggregated evidence validation result."""
+    errors: list[ValidationResult] = field(default_factory=list)
+    warnings: list[ValidationResult] = field(default_factory=list)
+
+    @property
+    def is_valid(self) -> bool:
+        """无 error 则校验通过 / Validation passes if no errors."""
+        return len(self.errors) == 0
+
+    def summary(self) -> str:
+        """返回人类可读的校验摘要 / Return human-readable validation summary."""
+        if self.is_valid:
+            return f"校验通过 / Validation PASSED (warnings: {len(self.warnings)})"
+        lines = [
+            f"校验失败 / Validation FAILED ({len(self.errors)} errors, {len(self.warnings)} warnings):"
+        ]
+        for err in self.errors:
+            location = f" [{err.location}]" if err.location else ""
+            lines.append(f"  ERROR [{err.code}]{location}: {err.message}")
+        for warn in self.warnings:
+            location = f" [{warn.location}]" if warn.location else ""
+            lines.append(f"  WARN  [{warn.code}]{location}: {warn.message}")
+        return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -114,3 +158,50 @@ def validate_evidence_batch(
         raise EvidenceValidationError(all_errors)
 
     return all_errors
+
+
+# ---------------------------------------------------------------------------
+# ValidationReport API（统一格式）/ Unified ValidationReport API
+# ---------------------------------------------------------------------------
+
+
+def validate_evidence_report(
+    evidences: list[dict[str, Any]],
+    schema: dict[str, Any] | None = None,
+) -> ValidationReport:
+    """批量校验 Evidence 列表，返回统一 ValidationReport。
+    Batch-validate Evidence list, returning a unified ValidationReport.
+
+    与 validate_evidence_batch 不同，此函数不抛出异常，返回结构化报告。
+    Unlike validate_evidence_batch, this function never raises; returns a structured report.
+
+    Args:
+        evidences: Evidence 字典列表 / List of Evidence dicts.
+        schema: 预加载的 schema 字典，None 时自动加载 / Preloaded schema, auto-loaded if None.
+
+    Returns:
+        ValidationReport 包含所有 errors 和 warnings。
+    """
+    if schema is None:
+        try:
+            schema = load_evidence_schema()
+        except FileNotFoundError as exc:
+            report = ValidationReport()
+            report.errors.append(ValidationResult(
+                code="SCHEMA_NOT_FOUND",
+                message=str(exc),
+            ))
+            return report
+
+    report = ValidationReport()
+    for i, evidence_data in enumerate(evidences):
+        eid = evidence_data.get("evidence_id", f"<index-{i}>")
+        errors = validate_evidence(evidence_data, schema)
+        for msg in errors:
+            report.errors.append(ValidationResult(
+                code="SCHEMA_VIOLATION",
+                message=msg,
+                location=eid,
+            ))
+
+    return report

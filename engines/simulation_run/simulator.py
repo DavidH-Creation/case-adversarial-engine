@@ -17,10 +17,10 @@ Generates a structured diff summary from IssueTree + EvidenceIndex + ChangeSet v
 
 from __future__ import annotations
 
-import json
-import re
 from datetime import datetime, timezone
 from typing import Any, Protocol, runtime_checkable
+
+from engines.shared.json_utils import _extract_json_object
 
 from .schemas import (
     ArtifactRef,
@@ -37,6 +37,9 @@ from .schemas import (
     ScenarioResult,
     ScenarioStatus,
 )
+
+# Re-export for test compatibility
+# _extract_json_object is imported above from engines.shared.json_utils
 
 
 @runtime_checkable
@@ -60,51 +63,8 @@ class LLMClient(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# JSON 解析工具 / JSON parsing utilities
+# direction 解析工具 / direction resolution utility
 # ---------------------------------------------------------------------------
-
-
-def _extract_json_object(text: str) -> dict:
-    """从 LLM 响应中提取 JSON 对象。
-    Extract a JSON object from LLM response text.
-
-    依次尝试：markdown 代码块 → 直接解析 → 大括号匹配。
-    Tries in order: markdown code block → direct parse → brace extraction.
-    """
-    # markdown 代码块 / Markdown code block
-    code_block_pattern = r"```(?:json)?\s*\n?([\s\S]*?)\n?\s*```"
-    match = re.search(code_block_pattern, text)
-    if match:
-        candidate = match.group(1).strip()
-        try:
-            result = json.loads(candidate)
-            if isinstance(result, dict):
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    # 直接解析 / Direct parse
-    try:
-        result = json.loads(text.strip())
-        if isinstance(result, dict):
-            return result
-    except json.JSONDecodeError:
-        pass
-
-    # 大括号提取 / Brace extraction
-    brace_pattern = r"\{[\s\S]*\}"
-    match = re.search(brace_pattern, text)
-    if match:
-        try:
-            result = json.loads(match.group(0))
-            if isinstance(result, dict):
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    raise ValueError(
-        f"无法从 LLM 响应中解析 JSON 对象 / Cannot parse JSON object: {text[:200]}"
-    )
 
 
 def _resolve_direction(raw: str) -> DiffDirection:
@@ -227,54 +187,85 @@ class ScenarioSimulator:
             run_id: 新建 Run 的 ID / Run ID for the newly created Run
 
         Returns:
-            ScenarioResult 包含更新后的 Scenario 和新建 Run /
-            ScenarioResult with updated Scenario and newly created Run
+            ScenarioResult 包含更新后的 Scenario 和新建 Run。
+            LLM 调用或解析失败时返回 status="failed" 的 ScenarioResult，不抛出异常。
+            ScenarioResult with updated Scenario and newly created Run.
+            On LLM failure or parse error, returns a ScenarioResult with status="failed".
 
         Raises:
-            ValueError: 输入无效或 LLM 响应无法解析 / Invalid input or unparseable response
-            RuntimeError: LLM 调用失败且超过最大重试次数 / LLM call failed after max retries
+            ValueError: 输入验证失败（change_set 为空、case_id 不匹配、issues 为空）
+                        Input validation failed (empty change_set, case_id mismatch, empty issues)
         """
+        # 输入验证失败仍向上抛出 / Input validation errors still propagate
         self._validate_input(scenario_input, issue_tree, evidence_index)
 
         case_id = issue_tree.case_id
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        # 构建 prompt / Build prompt
-        system_prompt = self._prompt_module.SYSTEM_PROMPT
-        issue_tree_block = self._prompt_module.format_issue_tree_block(
-            issue_tree.model_dump()
-        )
-        evidence_block = self._prompt_module.format_evidence_block(
-            [e.model_dump() for e in evidence_index.evidence]
-        )
-        change_set_block = self._prompt_module.format_change_set_block(
-            [c.model_dump() for c in scenario_input.change_set]
-        )
-        user_prompt = self._prompt_module.SIMULATION_PROMPT.format(
-            case_id=case_id,
-            scenario_id=scenario_input.scenario_id,
-            issue_tree_block=issue_tree_block,
-            evidence_block=evidence_block,
-            change_set_block=change_set_block,
-        )
+        try:
+            # 构建 prompt / Build prompt
+            system_prompt = self._prompt_module.SYSTEM_PROMPT
+            issue_tree_block = self._prompt_module.format_issue_tree_block(
+                issue_tree.model_dump()
+            )
+            evidence_block = self._prompt_module.format_evidence_block(
+                [e.model_dump() for e in evidence_index.evidence]
+            )
+            change_set_block = self._prompt_module.format_change_set_block(
+                [c.model_dump() for c in scenario_input.change_set]
+            )
+            user_prompt = self._prompt_module.SIMULATION_PROMPT.format(
+                case_id=case_id,
+                scenario_id=scenario_input.scenario_id,
+                issue_tree_block=issue_tree_block,
+                evidence_block=evidence_block,
+                change_set_block=change_set_block,
+            )
 
-        # 调用 LLM（带重试）/ Call LLM with retry
-        raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
+            # 调用 LLM（带重试）/ Call LLM with retry
+            raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
 
-        # 解析 LLM 输出 / Parse LLM output
-        raw_dict = _extract_json_object(raw_response)
-        llm_output = LLMDiffOutput.model_validate(raw_dict)
+            # 解析 LLM 输出 / Parse LLM output
+            raw_dict = _extract_json_object(raw_response)
+            llm_output = LLMDiffOutput.model_validate(raw_dict)
 
-        # 构建 ScenarioResult / Build ScenarioResult
-        return self._build_result(
-            llm_output=llm_output,
-            scenario_input=scenario_input,
-            issue_tree=issue_tree,
-            evidence_index=evidence_index,
-            case_id=case_id,
-            run_id=run_id,
-            now=now,
-        )
+            # 构建 ScenarioResult / Build ScenarioResult
+            return self._build_result(
+                llm_output=llm_output,
+                scenario_input=scenario_input,
+                issue_tree=issue_tree,
+                evidence_index=evidence_index,
+                case_id=case_id,
+                run_id=run_id,
+                now=now,
+            )
+
+        except Exception:
+            # LLM 调用或解析失败：构造 failed ScenarioResult 返回，不向上抛出
+            # LLM call or parse failure: return a failed ScenarioResult instead of raising
+            failed_scenario = Scenario(
+                scenario_id=scenario_input.scenario_id,
+                case_id=case_id,
+                baseline_run_id=scenario_input.baseline_run_id,
+                change_set=scenario_input.change_set,
+                diff_summary=[],
+                affected_issue_ids=[],
+                affected_evidence_ids=[],
+                status=ScenarioStatus.failed,
+            )
+            failed_run = Run(
+                run_id=run_id,
+                case_id=case_id,
+                workspace_id=scenario_input.workspace_id,
+                scenario_id=scenario_input.scenario_id,
+                trigger_type="scenario_execution",
+                input_snapshot=InputSnapshot(),
+                output_refs=[],
+                started_at=now,
+                finished_at=now,
+                status="failed",
+            )
+            return ScenarioResult(scenario=failed_scenario, run=failed_run)
 
     async def _call_llm_with_retry(self, system: str, user: str) -> str:
         """调用 LLM 并在失败时重试。

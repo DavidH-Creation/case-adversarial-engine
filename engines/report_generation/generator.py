@@ -14,10 +14,10 @@ Generates a structured diagnostic report from IssueTree + EvidenceIndex via LLM.
 
 from __future__ import annotations
 
-import json
-import re
 from datetime import datetime, timezone
 from typing import Any, Protocol, runtime_checkable
+
+from engines.shared.json_utils import _extract_json_object
 
 from .schemas import (
     EvidenceIndex,
@@ -53,51 +53,8 @@ class LLMClient(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# JSON 解析工具 / JSON parsing utilities
+# statement_class 解析工具 / statement_class resolution utility
 # ---------------------------------------------------------------------------
-
-
-def _extract_json_object(text: str) -> dict:
-    """从 LLM 响应中提取 JSON 对象。
-    Extract a JSON object from LLM response text.
-
-    依次尝试：markdown 代码块 → 直接解析 → 大括号匹配。
-    Tries in order: markdown code block → direct parse → brace extraction.
-    """
-    # markdown 代码块 / Markdown code block
-    code_block_pattern = r"```(?:json)?\s*\n?([\s\S]*?)\n?\s*```"
-    match = re.search(code_block_pattern, text)
-    if match:
-        candidate = match.group(1).strip()
-        try:
-            result = json.loads(candidate)
-            if isinstance(result, dict):
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    # 直接解析 / Direct parse
-    try:
-        result = json.loads(text.strip())
-        if isinstance(result, dict):
-            return result
-    except json.JSONDecodeError:
-        pass
-
-    # 大括号提取 / Brace extraction
-    brace_pattern = r"\{[\s\S]*\}"
-    match = re.search(brace_pattern, text)
-    if match:
-        try:
-            result = json.loads(match.group(0))
-            if isinstance(result, dict):
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    raise ValueError(
-        f"无法从 LLM 响应中解析 JSON 对象 / Cannot parse JSON object: {text[:200]}"
-    )
 
 
 def _resolve_statement_class(raw: str) -> StatementClass:
@@ -358,7 +315,10 @@ class ReportGenerator:
                 if iid in root_issue_ids:
                     covered_root_ids.add(iid)
 
-            # linked_output_ids：目前无推演输出，用占位符 / Placeholder for agent output IDs
+            # TODO(v0.5): linked_output_ids 当前为占位符，v0.5 需连接真实推演输出 ID。
+            # 已知局限：不关联任何实际 ScenarioResult.run_id 或 DiffSummary 产物。
+            # TODO(v0.5): linked_output_ids are placeholders; v0.5 must wire real simulation
+            # output IDs (ScenarioResult.run_id / DiffSummary artifacts). Known v0.5 limitation.
             linked_output_ids = [f"output-{report_slug}-{sec_idx:02d}"]
 
             sections.append(ReportSection(
@@ -410,6 +370,7 @@ class ReportGenerator:
                     f"该争点包含 {len(root_issue.fact_propositions)} 条事实命题，需结合证据综合认定。"
                 ),
                 linked_issue_ids=[root_id],
+                # TODO(v0.5): placeholder — see note above
                 linked_output_ids=[f"output-{report_slug}-{sec_idx:02d}"],
                 linked_evidence_ids=issue_evidence,
                 key_conclusions=[default_conclusion],

@@ -10,9 +10,9 @@ Supports multi-case-type prompt templates.
 
 from __future__ import annotations
 
-import json
-import re
 from typing import Any, Protocol, runtime_checkable
+
+from engines.shared.json_utils import _extract_json_array
 
 from .schemas import (
     AccessDomain,
@@ -88,47 +88,6 @@ def _resolve_evidence_type(raw_type: str) -> EvidenceType:
             return value
     # 未知类型返回 other / Unknown type defaults to other
     return EvidenceType.other
-
-
-def _extract_json_array(text: str) -> list[dict]:
-    """从 LLM 响应中提取 JSON 数组
-    Extract JSON array from LLM response.
-
-    支持：纯 JSON、markdown 代码块包裹、前后有额外文字。
-    Supports: plain JSON, markdown code block, text with surrounding content.
-    """
-    # 尝试提取 markdown 代码块中的 JSON / Try extracting from markdown code block
-    code_block_pattern = r"```(?:json)?\s*\n?([\s\S]*?)\n?\s*```"
-    match = re.search(code_block_pattern, text)
-    if match:
-        candidate = match.group(1).strip()
-        try:
-            result = json.loads(candidate)
-            if isinstance(result, list):
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    # 尝试直接解析整个文本 / Try parsing entire text directly
-    try:
-        result = json.loads(text.strip())
-        if isinstance(result, list):
-            return result
-    except json.JSONDecodeError:
-        pass
-
-    # 尝试提取方括号包裹的内容 / Try extracting bracket-wrapped content
-    bracket_pattern = r"\[[\s\S]*\]"
-    match = re.search(bracket_pattern, text)
-    if match:
-        try:
-            result = json.loads(match.group(0))
-            if isinstance(result, list):
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    raise ValueError(f"无法从 LLM 响应中解析 JSON 数组: {text[:200]}")
 
 
 class EvidenceIndexer:
@@ -242,7 +201,19 @@ class EvidenceIndexer:
         raw_items = _extract_json_array(raw_response)
 
         # 构建 Evidence 对象 / Build Evidence objects
-        return self._build_evidences(raw_items, case_id, owner_party_id, case_slug)
+        evidences = self._build_evidences(raw_items, case_id, owner_party_id, case_slug)
+
+        # source_coverage 校验：每个输入 source_id 至少映射到一条 Evidence
+        # Source coverage: every input source_id must map to at least one Evidence
+        covered_sources = {e.source for e in evidences}
+        uncovered = {m.source_id for m in materials} - covered_sources
+        if uncovered:
+            raise ValueError(
+                f"source_coverage 校验失败：以下 source_id 未映射到任何 Evidence: {uncovered}"
+                f" / source_coverage validation failed: no Evidence produced for: {uncovered}"
+            )
+
+        return evidences
 
     async def _call_llm_with_retry(
         self, system: str, user: str
@@ -302,10 +273,16 @@ class EvidenceIndexer:
 
         for idx, raw in enumerate(raw_items, start=1):
             # 解析 LLM 输出为中间模型 / Parse LLM output to intermediate model
+            # 原子批处理：任一项解析失败则整批失败
+            # Atomic batch: any parse failure aborts the entire batch
             try:
                 llm_item = LLMEvidenceItem.model_validate(raw)
-            except Exception:
-                continue  # 跳过无法解析的项 / skip unparseable items
+            except Exception as exc:
+                raise ValueError(
+                    f"批处理失败：第 {idx} 项（索引 {idx - 1}）解析错误，整批中止。"
+                    f" / Batch processing failed: item {idx} (index {idx - 1}) parse error, "
+                    f"entire batch aborted. Detail: {exc}"
+                ) from exc
 
             # 生成唯一 ID / Generate unique ID
             evidence_id = f"evidence-{case_slug}-{idx:03d}"
