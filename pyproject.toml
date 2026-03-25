@@ -24,6 +24,7 @@ testpaths = [
     "engines/report_generation/tests",
     "engines/simulation_run/tests",
     "engines/procedure_setup/tests",
+    "tests/integration",
 ]
 
 [build-system]
