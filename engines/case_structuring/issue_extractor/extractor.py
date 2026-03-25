@@ -371,7 +371,7 @@ class IssueExtractor:
                 burden_id=f"burden-{case_slug}-{b_idx:03d}",
                 case_id=case_id,
                 issue_id=issue_id,
-                bearer_party_id=b.bearer_party_id or "unknown",
+                burden_party_id=b.burden_party_id or "unknown",
                 description=b.description,
                 proof_standard=b.proof_standard,
                 legal_basis=b.legal_basis,
@@ -391,7 +391,7 @@ class IssueExtractor:
                     burden_id=fb_bid,
                     case_id=case_id,
                     issue_id=issue.issue_id,
-                    bearer_party_id="unknown",
+                    burden_party_id="unknown",
                     description=(
                         f"举证责任待分配（{issue.title}）"
                         f"/ Burden of proof pending assignment ({issue.title})"
@@ -452,5 +452,5 @@ class IssueExtractor:
                 total_defenses_processed=len(defenses),
                 total_evidence_referenced=len(evidence),
                 extraction_timestamp=now,
-            ),
+            ).model_dump(),
         )

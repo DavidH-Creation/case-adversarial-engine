@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "burden.schema.json",
+  "title": "Burden",
+  "description": "举证责任对象 — 表示争点或事实命题上的举证责任配置。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "burden_id",
+    "case_id",
+    "issue_id",
+    "burden_party_id",
+    "status"
+  ],
+  "properties": {
+    "burden_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "举证责任唯一标识"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "所属案件 ID"
+    },
+    "issue_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "关联争点 ID"
+    },
+    "burden_party_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "承担举证责任的当事方 party_id（canonical 字段名）"
+    },
+    "burden_type": {
+      "type": "string",
+      "description": "举证责任类型（初始举证责任、转移后举证责任、说明责任等）"
+    },
+    "proof_standard": {
+      "type": "string",
+      "description": "证明标准（按案型定义所需证明强度）"
+    },
+    "fact_proposition": {
+      "type": "string",
+      "description": "举证责任对应的事实命题（docs/03 Tier 2）"
+    },
+    "legal_basis": {
+      "type": "string",
+      "description": "法律依据"
+    },
+    "shift_condition": {
+      "type": "string",
+      "description": "举证责任转移条件"
+    },
+    "description": {
+      "type": "string",
+      "description": "举证责任描述（引擎向后兼容字段）"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["met", "partially_met", "not_met", "disputed", "active"],
+      "description": "举证责任完成状态"
+    }
+  }
+}

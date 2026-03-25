@@ -309,8 +309,12 @@
     },
     "output_refs": {
       "type": "array",
+      "description": "该次执行产出的输出引用，可指向 material_index（Evidence/Claim/Issue 等）或 artifact_index（ReportArtifact 等）中已登记的产物。",
       "items": {
-        "$ref": "#/$defs/artifact_ref"
+        "oneOf": [
+          { "$ref": "#/$defs/material_ref" },
+          { "$ref": "#/$defs/artifact_ref" }
+        ]
       }
     }
   }

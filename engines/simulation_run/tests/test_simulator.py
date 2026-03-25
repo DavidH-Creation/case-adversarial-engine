@@ -129,7 +129,7 @@ _SAMPLE_ISSUE_TREE = IssueTree(
             burden_id="burden-civil-loan-test-001-001",
             case_id=_CASE_ID,
             issue_id="issue-civil-loan-test-001-001",
-            bearer_party_id="party-plaintiff-001",
+            burden_party_id="party-plaintiff-001",
             description="原告举证借贷关系成立",
         )
     ],
@@ -148,18 +148,22 @@ _SAMPLE_EVIDENCE_INDEX = EvidenceIndex(
         EvidenceItem(
             evidence_id="evidence-civil-loan-test-001-01",
             case_id=_CASE_ID,
+            owner_party_id="party-plaintiff-001",
             title="借条原件",
             source="原告提交",
             summary="载明借款50万元的借条原件",
             evidence_type="documentary",
+            target_fact_ids=["fact-loan-existence-001"],
         ),
         EvidenceItem(
             evidence_id="evidence-civil-loan-test-001-02",
             case_id=_CASE_ID,
+            owner_party_id="party-plaintiff-001",
             title="银行转账记录",
             source="银行出具",
             summary="50万元转账流水",
             evidence_type="electronic_data",
+            target_fact_ids=["fact-loan-disbursement-001"],
         ),
     ],
 )

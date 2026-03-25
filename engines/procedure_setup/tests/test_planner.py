@@ -215,7 +215,7 @@ _SAMPLE_ISSUE_TREE = IssueTree(
             burden_id="burden-civil-loan-test-001-001",
             case_id=_CASE_ID,
             issue_id="issue-civil-loan-test-001-001",
-            bearer_party_id="party-plaintiff-001",
+            burden_party_id="party-plaintiff-001",
             description="原告举证借贷关系成立",
         )
     ],

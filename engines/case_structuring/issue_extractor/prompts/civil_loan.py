@@ -49,7 +49,7 @@ EXTRACTION_PROMPT = """\
   "burdens": [
     {{
       "issue_tmp_id": "issue-tmp-001",
-      "bearer_party_id": "party-xxx",
+      "burden_party_id": "party-xxx",
       "description": "该方需证明的具体命题",
       "proof_standard": "高度盖然性",
       "legal_basis": "《民事诉讼法》第XX条"

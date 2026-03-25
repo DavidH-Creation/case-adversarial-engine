@@ -104,7 +104,7 @@ MOCK_LLM_RESPONSE = json.dumps(
         "burdens": [
             {
                 "issue_tmp_id": "issue-tmp-001",
-                "bearer_party_id": "party-civil-loan-001-01",
+                "burden_party_id": "party-civil-loan-001-01",
                 "description": "原告应证明借贷关系成立，包括借贷合意和款项交付",
                 "proof_standard": "高度盖然性",
                 "legal_basis": "《最高院民间借贷司法解释》第二条",
@@ -379,9 +379,9 @@ async def test_extraction_metadata_counts():
     )
 
     assert result.extraction_metadata is not None
-    assert result.extraction_metadata.total_claims_processed == len(SAMPLE_CLAIMS)
-    assert result.extraction_metadata.total_defenses_processed == len(SAMPLE_DEFENSES)
-    assert result.extraction_metadata.total_evidence_referenced == len(SAMPLE_EVIDENCE)
+    assert result.extraction_metadata["total_claims_processed"] == len(SAMPLE_CLAIMS)
+    assert result.extraction_metadata["total_defenses_processed"] == len(SAMPLE_DEFENSES)
+    assert result.extraction_metadata["total_evidence_referenced"] == len(SAMPLE_EVIDENCE)
 
 
 # ---------------------------------------------------------------------------
@@ -648,7 +648,7 @@ async def test_fallback_burden_has_required_fields():
 
     assert fallback_burden.issue_id == root.issue_id
     assert fallback_burden.description
-    assert fallback_burden.bearer_party_id  # even if "unknown"
+    assert fallback_burden.burden_party_id  # even if "unknown"
 
 
 @pytest.mark.asyncio
@@ -707,7 +707,7 @@ LLM_RESPONSE_UNKNOWN_EVIDENCE = json.dumps(
         "burdens": [
             {
                 "issue_tmp_id": "issue-tmp-001",
-                "bearer_party_id": "party-test",
+                "burden_party_id": "party-test",
                 "description": "测试举证责任",
                 "proof_standard": "高度盖然性",
                 "legal_basis": "《民事诉讼法》第67条",

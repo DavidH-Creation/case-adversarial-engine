@@ -21,6 +21,9 @@ testpaths = [
     "engines/case_structuring/evidence_indexer/tests",
     "engines/case_structuring/issue_extractor/tests",
     "engines/interactive_followup/tests",
+    "engines/report_generation/tests",
+    "engines/simulation_run/tests",
+    "engines/procedure_setup/tests",
 ]
 
 [build-system]
