@@ -18,6 +18,7 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = [
+    "engines/shared/tests",
     "engines/case_structuring/evidence_indexer/tests",
     "engines/case_structuring/issue_extractor/tests",
     "engines/interactive_followup/tests",
