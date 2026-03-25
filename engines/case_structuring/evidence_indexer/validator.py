@@ -98,7 +98,7 @@ def validate_evidence_batch(
         包含错误详情的列表。空列表表示全部通过。
 
     Raises:
-        EvidenceValidationError: 任一 Evidence 校验失촥时抛出。
+        EvidenceValidationError: 任一 Evidence 校验失败时抛出。
     """
     if schema is None:
         schema = load_evidence_schema()

@@ -49,7 +49,7 @@ class EvidenceStatus(str, Enum):
 # ---------------------------------------------------------------------------
 
 class RawMaterial(BaseModel):
-    """原始案件材料段落，眱调用方提供。"""
+    """原始案件材料段落，由调用方提供。"""
     source_id: str = Field(..., min_length=1, description="材料唯一标识符")
     text: str = Field(..., min_length=1, description="纯文本内容")
     metadata: dict[str, Any] = Field(

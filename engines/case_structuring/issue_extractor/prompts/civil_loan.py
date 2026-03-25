@@ -107,7 +107,7 @@ def format_input_block(
     # 格式化诉请 / Format claims
     parts.append("### 诉请 (Claims)\n")
     for c in claims:
-        cid = c.get("claim_id", "")
+        cid = _escape_xml(c.get("claim_id", ""))
         title = _escape_xml(c.get("title", ""))
         desc = _escape_xml(c.get("description", ""))
         evids = ", ".join(c.get("related_evidence_ids", []))
@@ -122,8 +122,8 @@ def format_input_block(
     # 格式化抗辩 / Format defenses
     parts.append("\n### 抗辩 (Defenses)\n")
     for d in defenses:
-        did = d.get("defense_id", "")
-        against = d.get("against_claim_id", "")
+        did = _escape_xml(d.get("defense_id", ""))
+        against = _escape_xml(d.get("against_claim_id", ""))
         title = _escape_xml(d.get("title", ""))
         desc = _escape_xml(d.get("description", ""))
         evids = ", ".join(d.get("related_evidence_ids", []))
@@ -138,8 +138,8 @@ def format_input_block(
     # 格式化证据摘要 / Format evidence summary
     parts.append("\n### 证据 (Evidence)\n")
     for e in evidence:
-        eid = e.get("evidence_id", "")
-        etype = e.get("evidence_type", "")
+        eid = _escape_xml(e.get("evidence_id", ""))
+        etype = _escape_xml(e.get("evidence_type", ""))
         title = _escape_xml(e.get("title", ""))
         desc = _escape_xml(e.get("description", e.get("summary", "")))
         parts.append(

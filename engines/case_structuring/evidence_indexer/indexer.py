@@ -194,8 +194,12 @@ class EvidenceIndexer:
         if not materials:
             raise ValueError("输入材料列表不能为空")
 
-        source_ids = [m.source_id for m in materials]
-        duplicates = {sid for sid in source_ids if source_ids.count(sid) > 1}
+        seen_sids: set[str] = set()
+        duplicates: set[str] = set()
+        for m in materials:
+            if m.source_id in seen_sids:
+                duplicates.add(m.source_id)
+            seen_sids.add(m.source_id)
         if duplicates:
             raise ValueError(f"存在重复的 source_id: {duplicates}")
 

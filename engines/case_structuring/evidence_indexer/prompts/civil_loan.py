@@ -69,7 +69,14 @@ def format_materials_block(materials) -> str:
     """格式化材料列表为 prompt 输入块（带 XML 分隔防注入）"""
     blocks = []
     for m in materials:
-        # 转义 XML 特殊字符防止注入
+        # 转义 XML 特殊字符防止注入（含 source_id 属性值和正文）
+        safe_source_id = (
+            m.source_id
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+        )
         safe_text = (
             m.text
             .replace("&", "&amp;")
@@ -77,7 +84,7 @@ def format_materials_block(materials) -> str:
             .replace(">", "&gt;")
         )
         blocks.append(
-            f"<material source_id=\"{m.source_id}\">\n"
+            f"<material source_id=\"{safe_source_id}\">\n"
             f"{safe_text}\n"
             f"</material>"
         )

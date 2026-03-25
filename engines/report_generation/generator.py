@@ -421,7 +421,8 @@ class ReportGenerator:
             summary = summary[:497] + "..."
 
         # ── 生成报告 ID / Generate report ID ─────────────────────────────────
-        report_id = f"report-{report_slug}-{now[:10].replace('-', '')}"
+        compact_ts = now[:19].replace("-", "").replace(":", "").replace("T", "")
+        report_id = f"report-{report_slug}-{compact_ts}"
 
         return ReportArtifact(
             report_id=report_id,

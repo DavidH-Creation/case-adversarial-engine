@@ -124,17 +124,16 @@ def format_evidence_block(evidence_list: list[dict]) -> str:
     使用 XML 标签隔离每条证据防止注入。
     Uses XML tags to isolate each evidence item against prompt injection.
     """
+    def _escape(val: str) -> str:
+        return val.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
     blocks = []
     for e in evidence_list:
-        # 转义 XML 特殊字符 / Escape XML special chars
-        safe_summary = (
-            e.get("summary", "")
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-        )
+        safe_id = _escape(e.get("evidence_id", ""))
+        safe_type = _escape(e.get("evidence_type", ""))
+        safe_summary = _escape(e.get("summary", ""))
         blocks.append(
-            f"<evidence id=\"{e['evidence_id']}\" type=\"{e.get('evidence_type', '')}\">\n"
+            f'<evidence id="{safe_id}" type="{safe_type}">\n'
             f"  标题: {e.get('title', '')}\n"
             f"  摘要: {safe_summary}\n"
             f"  状态: {e.get('status', 'private')}\n"

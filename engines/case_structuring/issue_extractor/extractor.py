@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional, Protocol, runtime_checkable
 
 from .schemas import (
@@ -207,17 +207,27 @@ class IssueExtractor:
             raise ValueError("claims 列表不能为空 / claims list cannot be empty")
 
         # 检查 claim_id 唯一性 / Check claim_id uniqueness
-        claim_ids = [c.get("claim_id", "") for c in claims]
-        dups = {cid for cid in claim_ids if claim_ids.count(cid) > 1}
-        if dups:
-            raise ValueError(f"存在重复的 claim_id / Duplicate claim_id: {dups}")
+        seen_cids: set[str] = set()
+        dup_cids: set[str] = set()
+        for c in claims:
+            cid = c.get("claim_id", "")
+            if cid in seen_cids:
+                dup_cids.add(cid)
+            seen_cids.add(cid)
+        if dup_cids:
+            raise ValueError(f"存在重复的 claim_id / Duplicate claim_id: {dup_cids}")
 
         # 检查 defense_id 唯一性 / Check defense_id uniqueness
         if defenses:
-            defense_ids = [d.get("defense_id", "") for d in defenses]
-            dups = {did for did in defense_ids if defense_ids.count(did) > 1}
-            if dups:
-                raise ValueError(f"存在重复的 defense_id / Duplicate defense_id: {dups}")
+            seen_dids: set[str] = set()
+            dup_dids: set[str] = set()
+            for d in defenses:
+                did = d.get("defense_id", "")
+                if did in seen_dids:
+                    dup_dids.add(did)
+                seen_dids.add(did)
+            if dup_dids:
+                raise ValueError(f"存在重复的 defense_id / Duplicate defense_id: {dup_dids}")
 
     async def extract(
         self,
@@ -320,7 +330,7 @@ class IssueExtractor:
         - 核心 Issue（无 parent）至少分配一个 Burden / Root issues get at least one Burden
         - 所有内部 ID 引用一致 / All internal ID references are consistent
         """
-        now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # ── 1. 建立 tmp_id → proper_id 映射 ──────────────────────────────────
         # Build tmp_id → proper_id mapping
