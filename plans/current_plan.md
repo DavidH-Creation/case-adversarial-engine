@@ -72,16 +72,16 @@ tests/
 
 ## 任务顺序
 
-1. `repo layout bootstrap`
-2. `case workspace design`
-3. `job manager design`
-4. `schema refinement`
-5. `benchmark contract`
-6. `evidence indexer`
-7. `issue extractor`
-8. `report engine`
-9. `interactive followup contract`
-10. `scenario engine design`
+1. ✅ `repo layout bootstrap`
+2. ✅ `case workspace design`
+3. ✅ `job manager design`
+4. ✅ `schema refinement`
+5. ✅ `benchmark contract`
+6. ✅ `evidence indexer`
+7. ✅ `issue extractor`
+8. ✅ `report engine`
+9. ✅ `interactive followup contract`
+10. ✅ `scenario engine design`
 
 约束：
 
@@ -93,18 +93,11 @@ tests/
 
 ## 验收脚本
 
-本阶段使用人工检查 + 命令检查，不额外创建脚本文件。
-
-建议检查项：
-
-```powershell
-git diff --name-only --cached
-rg "^## v" docs/01_product_roadmap.md
-rg "Party|Claim|Defense|Issue|Evidence|Burden|ProcedureState|AgentOutput" docs/03_case_object_model.md
-rg "private|submitted|challenged|admitted_for_discussion" docs/02_architecture.md docs/03_case_object_model.md
-rg "private 证据泄漏|Hard Fail|evidence_id" docs/04_eval_and_acceptance.md
-Get-ChildItem schemas,engines,benchmarks,tests
+```bash
+python scripts/verify_v05.py
 ```
+
+自动化脚本：`scripts/verify_v05.py`（39 项全部通过）。
 
 通过条件：
 
@@ -161,3 +154,18 @@ Get-ChildItem schemas,engines,benchmarks,tests
 - 后续留给 `v0.5` 之外：
   为 `Job`、`ReportArtifact`、`InteractionTurn`、`Scenario` 补独立 schema
   增加基于 schema 的自动 contract validation
+
+- `v0-5-收尾（2026-03-26）`
+- 交付物：
+  `scripts/verify_v05.py` — 39 项自动化验收脚本，全部通过
+  `tests/integration/test_pipeline_with_persistence.py` — Pipeline + WorkspaceManager 集成测试
+  `schemas/case/issue.schema.json` — UTF-8 乱码修复
+  `schemas/case/issue_tree.schema.json` — UTF-8 乱码修复
+  `plans/current_plan.md` — 任务全部标记完成
+- 工作内容：
+  六引擎端到端 happy path 测试通过
+  `WorkspaceManager` 原子持久化实现完成
+  共享对象模型（`engines/shared/models.py`）与 JSON Schema 对齐
+  `review` 修复：`EvidenceIndexer`/`IssueExtractor`/`ReportGenerator` 等六引擎 contract 测试全通过
+- 结果：
+  v0.5 验收标准 39/39 通过，280 个测试零回归

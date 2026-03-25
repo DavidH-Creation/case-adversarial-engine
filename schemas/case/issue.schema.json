@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "issue.schema.json",
   "title": "Issue",
-  "description": "浜夌偣瀵硅薄 - 妗堜欢涓殑浜夎鐒︾偣",
+  "description": "争点对象 - 案件中的争议焦点",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -16,7 +16,7 @@
     "issue_id": {
       "type": "string",
       "minLength": 1,
-      "description": "浜夌偣鍞竴鏍囪瘑"
+      "description": "争点唯一标识"
     },
     "case_id": {
       "type": "string",
@@ -25,36 +25,52 @@
     "title": {
       "type": "string",
       "minLength": 1,
-      "description": "浜夌偣鏍囬"
+      "description": "争点标题"
     },
     "issue_type": {
       "type": "string",
-      "enum": ["factual", "legal", "procedural", "mixed"],
-      "description": "浜夌偣绫诲瀷"
+      "enum": [
+        "factual",
+        "legal",
+        "procedural",
+        "mixed"
+      ],
+      "description": "争点类型"
     },
     "parent_issue_id": {
-      "type": ["string", "null"],
-      "description": "鐖朵簤鐐笽D锛岀敤浜庡眰绾х粨鏋勶紙骞抽摵鍒楄〃锛岄潪宓屽JSON锛?
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "父争点ID，用于层级结构（平铺列表，非嵌套JSON）"
     },
     "related_claim_ids": {
       "type": "array",
-      "items": { "type": "string" },
-      "description": "鍏宠仈鐨勮瘔璁艰姹侷D"
+      "items": {
+        "type": "string"
+      },
+      "description": "关联的诉讼请求ID"
     },
     "related_defense_ids": {
       "type": "array",
-      "items": { "type": "string" },
-      "description": "鍏宠仈鐨勬姉杈㊣D"
+      "items": {
+        "type": "string"
+      },
+      "description": "关联的抗辩ID"
     },
     "evidence_ids": {
       "type": "array",
-      "items": { "type": "string" },
-      "description": "鍏宠仈鐨勮瘉鎹甀D"
+      "items": {
+        "type": "string"
+      },
+      "description": "关联的证据ID"
     },
     "burden_ids": {
       "type": "array",
-      "items": { "type": "string" },
-      "description": "鍏宠仈鐨勪妇璇佽矗浠籌D"
+      "items": {
+        "type": "string"
+      },
+      "description": "关联的举证责任ID"
     },
     "fact_propositions": {
       "type": "array",
@@ -62,26 +78,46 @@
       "items": {
         "type": "object",
         "properties": {
-          "proposition_id": { "type": "string", "description": "Unique identifier for this fact proposition" },
-          "text": { "type": "string", "description": "The fact proposition statement" },
+          "proposition_id": {
+            "type": "string",
+            "description": "Unique identifier for this fact proposition"
+          },
+          "text": {
+            "type": "string",
+            "description": "The fact proposition statement"
+          },
           "status": {
             "type": "string",
-            "enum": ["unverified", "supported", "contradicted", "disputed"],
+            "enum": [
+              "unverified",
+              "supported",
+              "contradicted",
+              "disputed"
+            ],
             "description": "Current verification status"
           },
           "linked_evidence_ids": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "Evidence IDs supporting or contradicting this proposition"
           }
         },
-        "required": ["proposition_id", "text"]
+        "required": [
+          "proposition_id",
+          "text"
+        ]
       }
     },
     "status": {
       "type": "string",
-      "enum": ["open", "resolved", "deferred"],
-      "description": "浜夌偣褰撳墠鐘舵€?
+      "enum": [
+        "open",
+        "resolved",
+        "deferred"
+      ],
+      "description": "争点当前状态"
     },
     "created_at": {
       "type": "string",
