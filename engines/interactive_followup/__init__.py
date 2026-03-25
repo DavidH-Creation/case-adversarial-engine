@@ -9,18 +9,14 @@ lawyer Q&A on report conclusions with full citation and issue binding.
 
 from .responder import FollowupResponder, LLMClient
 from .schemas import (
-    Citation,
     EvidenceIndex,
     EvidenceItem,
-    FollowupAnswer,
-    FollowupQuestion,
     InteractionTurn,
     IssueTree,
     LLMCitationItem,
     LLMFollowupOutput,
     ReportArtifact,
     ReportSection,
-    SessionState,
     StatementClass,
 )
 from .validator import (
@@ -38,10 +34,6 @@ __all__ = [
     "LLMClient",
     # Core schemas
     "InteractionTurn",
-    "SessionState",
-    "FollowupQuestion",
-    "FollowupAnswer",
-    "Citation",
     "IssueTree",
     "EvidenceIndex",
     "EvidenceItem",
