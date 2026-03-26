@@ -17,7 +17,12 @@ from engines.shared.models import (
     IssueType,
 )
 from engines.adversarial.round_engine import RoundEngine
-from engines.adversarial.schemas import AdversarialResult, RoundConfig, RoundPhase
+from engines.adversarial.schemas import (
+    AdversarialResult,
+    AdversarialSummary,
+    RoundConfig,
+    RoundPhase,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -49,11 +54,53 @@ def _make_response(title: str, party_id: str, issue_id: str = "issue-001") -> st
     }, ensure_ascii=False)
 
 
-call_index = 0
+# 第 6 条响应：AdversarialSummarizer 返回的有效 JSON
+_SUMMARY_RESPONSE = json.dumps({
+    "plaintiff_strongest_arguments": [
+        {
+            "issue_id": "issue-001",
+            "position": "原告有转账记录，证明借款已实际交付",
+            "evidence_ids": ["ev-001"],
+            "reasoning": "直接证明借贷要件，被告无有效反证",
+        }
+    ],
+    "defendant_strongest_defenses": [
+        {
+            "issue_id": "issue-001",
+            "position": "被告否认收款，质疑转账用途",
+            "evidence_ids": ["ev-001"],
+            "reasoning": "动摇借贷关系成立基础",
+        }
+    ],
+    "unresolved_issues": [
+        {
+            "issue_id": "issue-001",
+            "issue_title": "借贷关系是否成立",
+            "why_unresolved": "双方证据存在正面冲突，未有定论",
+        }
+    ],
+    "missing_evidence_report": [
+        {
+            "issue_id": "issue-001",
+            "missing_for_party_id": DEFENDANT_ID,
+            "gap_description": "被告缺乏收款否认的书面证据",
+        }
+    ],
+    "overall_assessment": "原告证据链较完整，被告抗辩薄弱，但争点尚未闭合。",
+}, ensure_ascii=False)
 
 
 class SequentialMockLLM:
-    """按顺序返回不同响应的 mock LLM（模拟真实对话轮次）。"""
+    """按顺序返回不同响应的 mock LLM（模拟真实对话轮次）。
+
+    6 次调用：
+      1. 原告首轮主张
+      2. 被告首轮抗辩
+      3. EvidenceManager 证据整理
+      4. 原告反驳
+      5. 被告反驳
+      6. AdversarialSummarizer 语义总结
+    """
 
     def __init__(self):
         self.calls: list[str] = []
@@ -80,6 +127,8 @@ class SequentialMockLLM:
             # Round 3
             _make_response("原告反驳：被告抗辩不成立", PLAINTIFF_ID),
             _make_response("被告反驳：原告主张无效", DEFENDANT_ID),
+            # Round 4 (summarizer)
+            _SUMMARY_RESPONSE,
         ]
         self._idx = 0
 
@@ -318,10 +367,10 @@ class TestRoundEngine:
         assert "issue-001" in result.unresolved_issues
 
     @pytest.mark.asyncio
-    async def test_llm_called_five_times(
+    async def test_llm_called_six_times(
         self, mock_llm, config, issue_tree, evidence_index
     ):
-        """5次 LLM 调用：R1原告 + R1被告 + R2证据管理 + R3原告 + R3被告。"""
+        """6次 LLM 调用：R1原告 + R1被告 + R2证据管理 + R3原告 + R3被告 + Summarizer。"""
         engine = RoundEngine(mock_llm, config)
         await engine.run(
             issue_tree=issue_tree,
@@ -330,7 +379,38 @@ class TestRoundEngine:
             defendant_party_id=DEFENDANT_ID,
         )
 
-        assert len(mock_llm.calls) == 5
+        assert len(mock_llm.calls) == 6
+
+    @pytest.mark.asyncio
+    async def test_result_includes_summary(
+        self, mock_llm, config, issue_tree, evidence_index
+    ):
+        """RoundEngine.run() 后 result.summary 类型为 AdversarialSummary（非 None）。"""
+        engine = RoundEngine(mock_llm, config)
+        result = await engine.run(
+            issue_tree=issue_tree,
+            evidence_index=evidence_index,
+            plaintiff_party_id=PLAINTIFF_ID,
+            defendant_party_id=DEFENDANT_ID,
+        )
+
+        assert result.summary is not None
+        assert isinstance(result.summary, AdversarialSummary)
+
+    @pytest.mark.asyncio
+    async def test_summary_overall_assessment_non_empty(
+        self, mock_llm, config, issue_tree, evidence_index
+    ):
+        """result.summary.overall_assessment 非空。"""
+        engine = RoundEngine(mock_llm, config)
+        result = await engine.run(
+            issue_tree=issue_tree,
+            evidence_index=evidence_index,
+            plaintiff_party_id=PLAINTIFF_ID,
+            defendant_party_id=DEFENDANT_ID,
+        )
+
+        assert len(result.summary.overall_assessment) >= 1
 
     @pytest.mark.asyncio
     async def test_default_config_used_when_none(

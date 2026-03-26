@@ -18,13 +18,18 @@ import uuid
 from datetime import datetime, timezone
 
 from engines.shared.access_control import AccessController
+from engines.shared.job_manager import JobManager
 from engines.shared.models import (
+    AccessDomain,
     AgentOutput,
     AgentRole,
+    ArtifactRef,
     EvidenceIndex,
     IssueTree,
+    JobError,
     LLMClient,
 )
+from engines.shared.workspace_manager import WorkspaceManager
 
 from .agents.defendant import DefendantAgent
 from .agents.evidence_mgr import EvidenceManagerAgent
@@ -38,6 +43,7 @@ from .schemas import (
     RoundPhase,
     RoundState,
 )
+from .summarizer import AdversarialSummarizer
 
 
 class RoundEngine:
@@ -52,10 +58,14 @@ class RoundEngine:
         self,
         llm_client: LLMClient,
         config: RoundConfig | None = None,
+        workspace_manager: WorkspaceManager | None = None,
+        job_manager: JobManager | None = None,
     ) -> None:
         self._llm = llm_client
         self._config = config or RoundConfig()
         self._access_ctrl = AccessController()
+        self._workspace = workspace_manager
+        self._job_manager = job_manager
 
     async def run(
         self,
@@ -80,134 +90,180 @@ class RoundEngine:
         case_id = issue_tree.case_id
         all_evidence = evidence_index.evidence
 
-        # 初始化代理
-        plaintiff = PlaintiffAgent(self._llm, plaintiff_party_id, self._config)
-        defendant = DefendantAgent(self._llm, defendant_party_id, self._config)
-        ev_manager = EvidenceManagerAgent(self._llm, self._config)
+        # ── Job 生命周期启动（可选）/ Job lifecycle start (optional) ──────
+        job_id = ""
+        if self._job_manager:
+            job = self._job_manager.create_job(case_id, run_id, "adversarial_round")
+            job_id = job.job_id
+            self._job_manager.start_job(job_id)
 
-        # 按角色过滤可见证据
-        plaintiff_evidence = self._access_ctrl.filter_evidence_for_agent(
-            role_code=AgentRole.plaintiff_agent.value,
-            owner_party_id=plaintiff_party_id,
-            all_evidence=all_evidence,
-        )
-        defendant_evidence = self._access_ctrl.filter_evidence_for_agent(
-            role_code=AgentRole.defendant_agent.value,
-            owner_party_id=defendant_party_id,
-            all_evidence=all_evidence,
-        )
+        try:
+            # 初始化代理
+            plaintiff = PlaintiffAgent(self._llm, plaintiff_party_id, self._config)
+            defendant = DefendantAgent(self._llm, defendant_party_id, self._config)
+            ev_manager = EvidenceManagerAgent(self._llm, self._config)
 
-        rounds: list[RoundState] = []
-        all_outputs: list[AgentOutput] = []
-        evidence_conflicts: list[ConflictEntry] = []
+            # 按角色过滤可见证据
+            plaintiff_evidence = self._access_ctrl.filter_evidence_for_agent(
+                role_code=AgentRole.plaintiff_agent.value,
+                owner_party_id=plaintiff_party_id,
+                all_evidence=all_evidence,
+            )
+            defendant_evidence = self._access_ctrl.filter_evidence_for_agent(
+                role_code=AgentRole.defendant_agent.value,
+                owner_party_id=defendant_party_id,
+                all_evidence=all_evidence,
+            )
 
-        # ── Round 1: 首轮主张 / claim ──────────────────────────────────────
-        state_id_r1 = f"state-r1-{uuid.uuid4().hex[:8]}"
+            rounds: list[RoundState] = []
+            all_outputs: list[AgentOutput] = []
+            evidence_conflicts: list[ConflictEntry] = []
 
-        p_claim = await plaintiff.generate_claim(
-            issue_tree=issue_tree,
-            visible_evidence=plaintiff_evidence,
-            context_outputs=[],
-            run_id=run_id,
-            state_id=state_id_r1,
-            round_index=1,
-        )
-        # 注入正确 case_id（LLM 可能填错）
-        p_claim = p_claim.model_copy(update={"case_id": case_id})
+            # ── Round 1: 首轮主张 / claim ──────────────────────────────────
+            state_id_r1 = f"state-r1-{uuid.uuid4().hex[:8]}"
 
-        d_claim = await defendant.generate_claim(
-            issue_tree=issue_tree,
-            visible_evidence=defendant_evidence,
-            context_outputs=[p_claim],
-            run_id=run_id,
-            state_id=state_id_r1,
-            round_index=1,
-        )
-        d_claim = d_claim.model_copy(update={"case_id": case_id})
+            p_claim = await plaintiff.generate_claim(
+                issue_tree=issue_tree,
+                visible_evidence=plaintiff_evidence,
+                context_outputs=[],
+                run_id=run_id,
+                state_id=state_id_r1,
+                round_index=1,
+            )
+            p_claim = p_claim.model_copy(update={"case_id": case_id})
+            if self._workspace:
+                self._workspace.save_agent_output(p_claim, AccessDomain.owner_private)
 
-        round1 = RoundState(
-            round_number=1,
-            phase=RoundPhase.claim,
-            outputs=[p_claim, d_claim],
-        )
-        rounds.append(round1)
-        all_outputs.extend([p_claim, d_claim])
+            d_claim = await defendant.generate_claim(
+                issue_tree=issue_tree,
+                visible_evidence=defendant_evidence,
+                context_outputs=[p_claim],
+                run_id=run_id,
+                state_id=state_id_r1,
+                round_index=1,
+            )
+            d_claim = d_claim.model_copy(update={"case_id": case_id})
+            if self._workspace:
+                self._workspace.save_agent_output(d_claim, AccessDomain.owner_private)
 
-        # ── Round 2: 证据整理 / evidence ──────────────────────────────────
-        state_id_r2 = f"state-r2-{uuid.uuid4().hex[:8]}"
+            round1 = RoundState(
+                round_number=1,
+                phase=RoundPhase.claim,
+                outputs=[p_claim, d_claim],
+            )
+            rounds.append(round1)
+            all_outputs.extend([p_claim, d_claim])
+            if self._job_manager:
+                self._job_manager.update_progress(job_id, 0.33, "完成 Round 1 claim")
 
-        ev_output, conflicts = await ev_manager.analyze(
-            issue_tree=issue_tree,
-            evidence_index=evidence_index,
-            plaintiff_outputs=[p_claim],
-            defendant_outputs=[d_claim],
-            run_id=run_id,
-            state_id=state_id_r2,
-            round_index=2,
-        )
-        ev_output = ev_output.model_copy(update={"case_id": case_id})
-        evidence_conflicts.extend(conflicts)
+            # ── Round 2: 证据整理 / evidence ────────────────────────────────
+            state_id_r2 = f"state-r2-{uuid.uuid4().hex[:8]}"
 
-        round2 = RoundState(
-            round_number=2,
-            phase=RoundPhase.evidence,
-            outputs=[ev_output],
-        )
-        rounds.append(round2)
-        all_outputs.append(ev_output)
+            ev_output, conflicts = await ev_manager.analyze(
+                issue_tree=issue_tree,
+                evidence_index=evidence_index,
+                plaintiff_outputs=[p_claim],
+                defendant_outputs=[d_claim],
+                run_id=run_id,
+                state_id=state_id_r2,
+                round_index=2,
+            )
+            ev_output = ev_output.model_copy(update={"case_id": case_id})
+            if self._workspace:
+                self._workspace.save_agent_output(ev_output, AccessDomain.shared_common)
+            evidence_conflicts.extend(conflicts)
 
-        # ── Round 3: 针对性反驳 / rebuttal ────────────────────────────────
-        state_id_r3 = f"state-r3-{uuid.uuid4().hex[:8]}"
+            round2 = RoundState(
+                round_number=2,
+                phase=RoundPhase.evidence,
+                outputs=[ev_output],
+            )
+            rounds.append(round2)
+            all_outputs.append(ev_output)
+            if self._job_manager:
+                self._job_manager.update_progress(job_id, 0.66, "完成 Round 2 evidence")
 
-        p_rebuttal = await plaintiff.generate_rebuttal(
-            issue_tree=issue_tree,
-            visible_evidence=plaintiff_evidence,
-            context_outputs=all_outputs,
-            opponent_outputs=[d_claim],
-            run_id=run_id,
-            state_id=state_id_r3,
-            round_index=3,
-        )
-        p_rebuttal = p_rebuttal.model_copy(update={"case_id": case_id})
+            # ── Round 3: 针对性反驳 / rebuttal ──────────────────────────────
+            state_id_r3 = f"state-r3-{uuid.uuid4().hex[:8]}"
 
-        d_rebuttal = await defendant.generate_rebuttal(
-            issue_tree=issue_tree,
-            visible_evidence=defendant_evidence,
-            context_outputs=all_outputs,
-            opponent_outputs=[p_claim],
-            run_id=run_id,
-            state_id=state_id_r3,
-            round_index=3,
-        )
-        d_rebuttal = d_rebuttal.model_copy(update={"case_id": case_id})
+            p_rebuttal = await plaintiff.generate_rebuttal(
+                issue_tree=issue_tree,
+                visible_evidence=plaintiff_evidence,
+                context_outputs=all_outputs,
+                opponent_outputs=[d_claim],
+                run_id=run_id,
+                state_id=state_id_r3,
+                round_index=3,
+            )
+            p_rebuttal = p_rebuttal.model_copy(update={"case_id": case_id})
+            if self._workspace:
+                self._workspace.save_agent_output(p_rebuttal, AccessDomain.owner_private)
 
-        round3 = RoundState(
-            round_number=3,
-            phase=RoundPhase.rebuttal,
-            outputs=[p_rebuttal, d_rebuttal],
-        )
-        rounds.append(round3)
-        all_outputs.extend([p_rebuttal, d_rebuttal])
+            d_rebuttal = await defendant.generate_rebuttal(
+                issue_tree=issue_tree,
+                visible_evidence=defendant_evidence,
+                context_outputs=all_outputs,
+                opponent_outputs=[p_claim],
+                run_id=run_id,
+                state_id=state_id_r3,
+                round_index=3,
+            )
+            d_rebuttal = d_rebuttal.model_copy(update={"case_id": case_id})
+            if self._workspace:
+                self._workspace.save_agent_output(d_rebuttal, AccessDomain.owner_private)
 
-        # ── 后处理：提取最佳论点和未决争点 ───────────────────────────────
-        plaintiff_best = self._extract_best_arguments(p_claim, p_rebuttal)
-        defendant_best = self._extract_best_arguments(d_claim, d_rebuttal)
-        unresolved_issues = self._compute_unresolved_issues(issue_tree, evidence_conflicts)
-        missing_ev_report = self._build_missing_evidence_report(
-            issue_tree, plaintiff_evidence, defendant_evidence,
-            plaintiff_party_id, defendant_party_id,
-        )
+            round3 = RoundState(
+                round_number=3,
+                phase=RoundPhase.rebuttal,
+                outputs=[p_rebuttal, d_rebuttal],
+            )
+            rounds.append(round3)
+            all_outputs.extend([p_rebuttal, d_rebuttal])
 
-        return AdversarialResult(
-            case_id=case_id,
-            run_id=run_id,
-            rounds=rounds,
-            plaintiff_best_arguments=plaintiff_best,
-            defendant_best_defenses=defendant_best,
-            unresolved_issues=unresolved_issues,
-            evidence_conflicts=evidence_conflicts,
-            missing_evidence_report=missing_ev_report,
-        )
+            # ── 后处理：提取最佳论点和未决争点 ─────────────────────────────
+            plaintiff_best = self._extract_best_arguments(p_claim, p_rebuttal)
+            defendant_best = self._extract_best_arguments(d_claim, d_rebuttal)
+            unresolved_issues = self._compute_unresolved_issues(issue_tree, evidence_conflicts)
+            missing_ev_report = self._build_missing_evidence_report(
+                issue_tree, plaintiff_evidence, defendant_evidence,
+                plaintiff_party_id, defendant_party_id,
+            )
+
+            result = AdversarialResult(
+                case_id=case_id,
+                run_id=run_id,
+                job_id=job_id,
+                rounds=rounds,
+                plaintiff_best_arguments=plaintiff_best,
+                defendant_best_defenses=defendant_best,
+                unresolved_issues=unresolved_issues,
+                evidence_conflicts=evidence_conflicts,
+                missing_evidence_report=missing_ev_report,
+            )
+
+            # ── LLM 语义分析总结 / LLM semantic summary ─────────────────────
+            summarizer = AdversarialSummarizer(self._llm, self._config)
+            summary = await summarizer.summarize(result, issue_tree)
+            final_result = result.model_copy(update={"summary": summary})
+
+            # ── Job 完成 / Job completion ────────────────────────────────────
+            if self._job_manager:
+                result_ref = ArtifactRef(
+                    object_type="AdversarialResult",
+                    object_id=run_id,
+                    storage_ref=f"run/{run_id}",
+                )
+                self._job_manager.complete_job(job_id, result_ref)
+
+            return final_result
+
+        except Exception as exc:
+            if self._job_manager and job_id:
+                self._job_manager.fail_job(
+                    job_id,
+                    JobError(code="round_engine_error", message=str(exc)),
+                )
+            raise
 
     # ------------------------------------------------------------------
     # 后处理辅助 / Post-processing helpers
