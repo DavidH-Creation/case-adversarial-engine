@@ -20,6 +20,8 @@ from pathlib import Path
 from typing import Optional
 
 from engines.shared.models import (
+    AccessDomain,
+    AgentOutput,
     Claim,
     Defense,
     EvidenceIndex,
@@ -395,6 +397,83 @@ class WorkspaceManager:
                 f"expected {self.case_id!r}, got {data.get('case_id')!r}"
             )
         return ReportArtifact.model_validate(data)
+
+    # ------------------------------------------------------------------
+    # AgentOutput 持久化 / AgentOutput persistence
+    # ------------------------------------------------------------------
+
+    def save_agent_output(
+        self,
+        output: AgentOutput,
+        access_domain: AccessDomain,
+    ) -> str:
+        """持久化 AgentOutput，按访问域路由到对应目录，更新 artifact_index.AgentOutput。
+        Persist AgentOutput, route to directory by access_domain,
+        and register in artifact_index.AgentOutput.
+
+        路由规则 / Routing:
+          owner_private   → artifacts/private/{owner_party_id}/agent_outputs/{output_id}.json
+          shared_common   → artifacts/shared/agent_outputs/{output_id}.json
+          admitted_record → artifacts/admitted/agent_outputs/{output_id}.json
+
+        Returns:
+            storage_ref 字符串 / storage_ref string
+        """
+        output_id = output.output_id
+        owner = output.owner_party_id
+
+        if access_domain == AccessDomain.owner_private:
+            storage_ref = f"artifacts/private/{owner}/agent_outputs/{output_id}.json"
+            path = (
+                self._artifacts_dir()
+                / "private" / owner / "agent_outputs"
+                / f"{output_id}.json"
+            )
+        elif access_domain == AccessDomain.shared_common:
+            storage_ref = f"artifacts/shared/agent_outputs/{output_id}.json"
+            path = (
+                self._artifacts_dir()
+                / "shared" / "agent_outputs"
+                / f"{output_id}.json"
+            )
+        elif access_domain == AccessDomain.admitted_record:
+            storage_ref = f"artifacts/admitted/agent_outputs/{output_id}.json"
+            path = (
+                self._artifacts_dir()
+                / "admitted" / "agent_outputs"
+                / f"{output_id}.json"
+            )
+        else:
+            raise ValueError(f"Unsupported access_domain: {access_domain!r}")
+
+        self._atomic_write(path, output.model_dump())
+
+        ws = self._load_or_raise()
+        ws["artifact_index"]["AgentOutput"].append(
+            {
+                "object_type": "AgentOutput",
+                "object_id": output_id,
+                "storage_ref": storage_ref,
+            }
+        )
+        self._atomic_write(self._workspace_path(), ws)
+        return storage_ref
+
+    def load_agent_output(self, output_id: str, storage_ref: str) -> Optional[AgentOutput]:
+        """按 storage_ref 加载 AgentOutput。
+        Load AgentOutput by storage_ref. Returns None if not found.
+        Raises ValueError on case_id mismatch.
+        """
+        path = self.workspace_dir / storage_ref
+        if not path.exists():
+            return None
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data.get("case_id") != self.case_id:
+            raise ValueError(
+                f"case_id mismatch in {storage_ref}: "
+                f"expected {self.case_id!r}, got {data.get('case_id')!r}"
+            )
+        return AgentOutput.model_validate(data)
 
     # ------------------------------------------------------------------
     # 阶段推进 / Stage advancement

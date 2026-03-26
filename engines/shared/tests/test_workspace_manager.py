@@ -21,6 +21,7 @@ import pytest
 
 from engines.shared.models import (
     AccessDomain,
+    AgentOutput,
     ArtifactRef,
     BurdenStatus,
     Claim,
@@ -40,6 +41,7 @@ from engines.shared.models import (
     IssueType,
     KeyConclusion,
     MaterialRef,
+    ProcedurePhase,
     PropositionStatus,
     ReportArtifact,
     ReportSection,
@@ -713,3 +715,170 @@ def test_save_run_without_init_raises(tmp_path: Path) -> None:
     run = _make_run()
     with pytest.raises(ValueError, match="not initialized"):
         mgr.save_run(run)
+
+
+# ---------------------------------------------------------------------------
+# AgentOutput 持久化测试 / AgentOutput persistence tests
+# ---------------------------------------------------------------------------
+
+
+def _make_agent_output(
+    output_id: str = "ao-001",
+    owner_party_id: str = "party-plaintiff-001",
+    run_id: str = "run-001",
+) -> AgentOutput:
+    return AgentOutput(
+        output_id=output_id,
+        case_id=CASE_ID,
+        run_id=run_id,
+        state_id="state-001",
+        phase=ProcedurePhase.opening,
+        round_index=0,
+        agent_role_code="plaintiff_agent",
+        owner_party_id=owner_party_id,
+        issue_ids=["issue-001"],
+        title="原告开庭陈述",
+        body="原告主张：被告应归还借款本金及利息。",
+        evidence_citations=["evidence-001"],
+        statement_class=StatementClass.fact,
+        risk_flags=[],
+        created_at=_now(),
+    )
+
+
+def test_save_agent_output_owner_private_routing(tmp_path: Path) -> None:
+    """owner_private 产物路由到 artifacts/private/{party_id}/agent_outputs/。
+    owner_private output routes to artifacts/private/{party_id}/agent_outputs/.
+    """
+    mgr = _mgr(tmp_path)
+    mgr.init_workspace("civil")
+    output = _make_agent_output(output_id="ao-001", owner_party_id="party-plaintiff-001")
+
+    storage_ref = mgr.save_agent_output(output, AccessDomain.owner_private)
+
+    expected_ref = "artifacts/private/party-plaintiff-001/agent_outputs/ao-001.json"
+    assert storage_ref == expected_ref
+    expected_path = tmp_path / CASE_ID / expected_ref
+    assert expected_path.exists()
+
+
+def test_save_agent_output_shared_routing(tmp_path: Path) -> None:
+    """shared_common 产物路由到 artifacts/shared/agent_outputs/。
+    shared_common output routes to artifacts/shared/agent_outputs/.
+    """
+    mgr = _mgr(tmp_path)
+    mgr.init_workspace("civil")
+    output = _make_agent_output(output_id="ao-002")
+
+    storage_ref = mgr.save_agent_output(output, AccessDomain.shared_common)
+
+    expected_ref = "artifacts/shared/agent_outputs/ao-002.json"
+    assert storage_ref == expected_ref
+    assert (tmp_path / CASE_ID / expected_ref).exists()
+
+
+def test_save_agent_output_admitted_routing(tmp_path: Path) -> None:
+    """admitted_record 产物路由到 artifacts/admitted/agent_outputs/。
+    admitted_record output routes to artifacts/admitted/agent_outputs/.
+    """
+    mgr = _mgr(tmp_path)
+    mgr.init_workspace("civil")
+    output = _make_agent_output(output_id="ao-003")
+
+    storage_ref = mgr.save_agent_output(output, AccessDomain.admitted_record)
+
+    expected_ref = "artifacts/admitted/agent_outputs/ao-003.json"
+    assert storage_ref == expected_ref
+    assert (tmp_path / CASE_ID / expected_ref).exists()
+
+
+def test_save_agent_output_updates_artifact_index(tmp_path: Path) -> None:
+    """save_agent_output 必须更新 artifact_index.AgentOutput。
+    save_agent_output must register entry in artifact_index.AgentOutput.
+    """
+    mgr = _mgr(tmp_path)
+    mgr.init_workspace("civil")
+    output = _make_agent_output(output_id="ao-idx")
+
+    mgr.save_agent_output(output, AccessDomain.owner_private)
+
+    ws = mgr.load_workspace()
+    assert ws is not None
+    ao_refs = ws["artifact_index"]["AgentOutput"]
+    assert len(ao_refs) == 1
+    assert ao_refs[0]["object_id"] == "ao-idx"
+    assert ao_refs[0]["object_type"] == "AgentOutput"
+    assert "ao-idx" in ao_refs[0]["storage_ref"]
+
+
+def test_save_agent_output_multiple_appends(tmp_path: Path) -> None:
+    """多次调用 save_agent_output 应逐条追加到 artifact_index，不覆盖。
+    Multiple save_agent_output calls must append, not overwrite.
+    """
+    mgr = _mgr(tmp_path)
+    mgr.init_workspace("civil")
+
+    for i in range(3):
+        output = _make_agent_output(output_id=f"ao-{i:03d}")
+        mgr.save_agent_output(output, AccessDomain.owner_private)
+
+    ws = mgr.load_workspace()
+    assert ws is not None
+    assert len(ws["artifact_index"]["AgentOutput"]) == 3
+
+
+def test_load_agent_output_roundtrip(tmp_path: Path) -> None:
+    """save → load 往返测试，字段完整。
+    save then load roundtrip preserves all fields.
+    """
+    mgr = _mgr(tmp_path)
+    mgr.init_workspace("civil")
+    original = _make_agent_output(output_id="ao-rt")
+
+    storage_ref = mgr.save_agent_output(original, AccessDomain.owner_private)
+    loaded = mgr.load_agent_output(original.output_id, storage_ref)
+
+    assert loaded is not None
+    assert loaded.output_id == original.output_id
+    assert loaded.case_id == original.case_id
+    assert loaded.issue_ids == original.issue_ids
+    assert loaded.evidence_citations == original.evidence_citations
+
+
+def test_load_agent_output_returns_none_when_missing(tmp_path: Path) -> None:
+    """storage_ref 指向不存在的文件时返回 None。
+    Returns None when storage_ref points to a non-existent file.
+    """
+    mgr = _mgr(tmp_path)
+    mgr.init_workspace("civil")
+
+    result = mgr.load_agent_output(
+        "ao-missing",
+        "artifacts/private/party-x/agent_outputs/ao-missing.json",
+    )
+    assert result is None
+
+
+def test_save_agent_output_different_parties_isolated(tmp_path: Path) -> None:
+    """不同当事方的 owner_private 产物写入不同目录，互不干扰。
+    Different parties' owner_private outputs land in separate directories.
+    """
+    mgr = _mgr(tmp_path)
+    mgr.init_workspace("civil")
+
+    out_p = _make_agent_output(output_id="ao-p", owner_party_id="party-plaintiff-001")
+    out_d = _make_agent_output(output_id="ao-d", owner_party_id="party-defendant-001")
+
+    ref_p = mgr.save_agent_output(out_p, AccessDomain.owner_private)
+    ref_d = mgr.save_agent_output(out_d, AccessDomain.owner_private)
+
+    assert "party-plaintiff-001" in ref_p
+    assert "party-defendant-001" in ref_d
+    assert ref_p != ref_d
+
+    # 各自文件存在
+    assert (tmp_path / CASE_ID / ref_p).exists()
+    assert (tmp_path / CASE_ID / ref_d).exists()
+    # 原告文件不在被告目录下
+    assert "party-defendant-001" not in ref_p
+    assert "party-plaintiff-001" not in ref_d
