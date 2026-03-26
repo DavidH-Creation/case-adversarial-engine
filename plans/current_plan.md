@@ -2,17 +2,11 @@
 
 ## 当前目标
 
-当前目标：`v0.5`
+当前目标：`v1` ✅ 已完成（2026-03-26）
 
-本阶段只做单案种、离线可跑通的案件分析器，默认案型固定为民事 `民间借贷`。本阶段仍然不落 `ui`，但所有输出格式必须兼容未来五阶段工作流：
+v1 在 v0.5 静态分析基础上升级为双边对抗引擎。原告代理、被告代理、中立证据管理员在 `AccessController` 隔离下完成三轮对抗（首轮主张 → 证据整理 → 针对性反驳），`AdversarialSummarizer` 提取最强论证与未闭合争点，全程通过 `JobManager` 追踪任务状态。
 
-1. `case_structuring`
-2. `procedure_setup`
-3. `simulation_run`
-4. `report_generation`
-5. `interactive_followup`
-
-当前职责不是堆更多 agent，而是先把案件工作区、任务状态、对象模型和评测口径固定住。
+**下一目标**：`v1.5` — 程序化庭前会议 / 质证版（`evidence_state_machine`、法官发问机制）。
 
 ## 当前基线
 
@@ -130,6 +124,22 @@ python scripts/verify_v05.py
 - 可供 `Bulwark` 执行的 task contracts
 
 ## 最近完成
+
+- `v1-收尾（2026-03-26）`
+- 交付物：
+  `engines/adversarial/` — RoundEngine、PlaintiffAgent、DefendantAgent、EvidenceManagerAgent、AdversarialSummarizer
+  `engines/shared/case_manager.py` — 多案件目录入口
+  `engines/shared/job_manager.py` — 长任务状态机（6 状态 10 条迁移）
+  `engines/shared/access_control.py` — AccessController（allowlist 模式）
+  `tests/integration/test_adversarial_pipeline.py` — 端到端对抗流程集成测试
+  `plans/v1_completion_report.md` — v1 完成报告
+- 工作内容：
+  三轮对抗编排（claim → evidence → rebuttal）完整实现
+  AccessController 隔离验证（原被告无法读取对方 owner_private）
+  AdversarialSummary 包含 5 个必要字段（LLM 语义分析层）
+  pyproject.toml 补充 `engines/adversarial/tests` 到 testpaths
+- 结果：
+  v1 验收标准全部通过，461 个测试零回归
 
 - `v0-5-job-manager-contract`
 - 交付物：

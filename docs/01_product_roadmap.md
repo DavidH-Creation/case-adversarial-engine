@@ -1,6 +1,6 @@
 # Product Roadmap
 
-## v0.5
+## v0.5 ✅ COMPLETED
 
 ### Goal
 
@@ -46,7 +46,7 @@
 - `schema` 漂移
 - 同一材料在不同运行中映射到不同争点
 
-## v1
+## v1 ✅ COMPLETED (2026-03-26)
 
 ### Goal
 
@@ -61,14 +61,14 @@
 
 ### Must Have
 
-- `CaseManager`
-- `JobManager`
-- 案件上下文持久化
-- 长任务状态机
-- `private/shared` 目录隔离
-- 固定回合：首轮主张、证据提交、针对性反驳
-- 输出：原告最强论证、被告最强抗辩、关键争点未闭合列表、缺证报告
-- 所有论点强制引用具体 `evidence_id`
+- ✅ `CaseManager` — `engines/shared/case_manager.py`
+- ✅ `JobManager` — `engines/shared/job_manager.py`（含长任务状态机）
+- ✅ 案件上下文持久化 — `WorkspaceManager` 扩展（AgentOutput 产物路径）
+- ✅ 长任务状态机 — `JobManager` 内 6 状态 10 条迁移路径
+- ✅ `private/shared` 目录隔离 — `AccessController` + workspace 私有子目录
+- ✅ 固定回合：首轮主张、证据提交、针对性反驳 — `RoundEngine`（三轮编排）
+- ✅ 输出：原告最强论证、被告最强抗辩、关键争点未闭合列表、缺证报告 — `AdversarialSummary`
+- ✅ 所有论点强制引用具体 `evidence_id` — `AgentOutput.evidence_citations` 验证器
 
 ### Not In Scope
 
