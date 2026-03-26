@@ -1,1 +1,3 @@
 .bulwark/
+**/__pycache__/
+*.pyc

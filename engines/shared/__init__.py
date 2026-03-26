@@ -5,6 +5,7 @@
 from engines.shared.job_manager import JobManager
 from engines.shared.models import (
     AgentOutput,
+    AgentRole,
     ArtifactRef,
     Job,
     JobError,
@@ -18,6 +19,7 @@ __all__ = [
     "JobError",
     "Job",
     "AgentOutput",
+    "AgentRole",
     "ArtifactRef",
     "JobManager",
     # 工作区

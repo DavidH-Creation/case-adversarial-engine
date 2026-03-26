@@ -160,6 +160,14 @@ class JobStatus(str, Enum):
     cancelled = "cancelled"
 
 
+class AgentRole(str, Enum):
+    """代理角色编码。对应 docs/03_case_object_model.md Party.role_code 和 AgentOutput.agent_role_code。"""
+    plaintiff_agent = "plaintiff_agent"
+    defendant_agent = "defendant_agent"
+    judge_agent = "judge_agent"
+    evidence_manager = "evidence_manager"
+
+
 # ---------------------------------------------------------------------------
 # 基础输入模型 / Basic input models
 # ---------------------------------------------------------------------------
