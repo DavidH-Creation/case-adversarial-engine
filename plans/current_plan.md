@@ -179,3 +179,23 @@ python scripts/verify_v05.py
   `review` 修复：`EvidenceIndexer`/`IssueExtractor`/`ReportGenerator` 等六引擎 contract 测试全通过
 - 结果：
   v0.5 验收标准 39/39 通过，280 个测试零回归
+
+- `v1-收尾（2026-03-26）`
+- 交付物：
+  `engines/adversarial/` — PlaintiffAgent、DefendantAgent、EvidenceManagerAgent、RoundEngine、AdversarialSummarizer
+  `engines/shared/access_control.py` — AccessController（private/shared 隔离）
+  `engines/shared/job_manager.py` — JobManager（6 状态任务生命周期）
+  `engines/shared/models.py` — AgentOutput、Job 模型
+  `engines/adversarial/tests/` — 37 个对抗层单元测试
+  `tests/integration/test_adversarial_pipeline.py` — 全链路对抗集成测试（含 AccessController 隔离验证）
+  `plans/v1_completion_report.md` — v1 完成报告
+  `pyproject.toml` — version 升至 1.0.0，testpaths 加入 engines/adversarial/tests
+- 工作内容：
+  三轮对抗编排（claim → evidence → rebuttal）实现完成
+  AccessController allowlist 模式：原告/被告无法读取对方 owner_private 证据
+  AdversarialSummarizer LLM 语义分析层（最强论点、未闭合争点、缺证报告）
+  全链路集成测试：EvidenceIndexer → IssueExtractor → RoundEngine
+- 结果：
+  v1 Must Have 8/8 全部完成，adversarial 37 + shared 163 + v0.5 引擎 282 = 482 测试零回归
+- 已知限制：无真实 LLM 测试、回合数固定 3 轮、只支持民间借贷、无程序法官
+- v1.5 建议：引入程序法官、质证状态机（submitted→challenged→admitted）、证据状态迁移
