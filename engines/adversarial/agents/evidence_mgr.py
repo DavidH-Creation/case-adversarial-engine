@@ -21,6 +21,7 @@ from engines.shared.models import (
 )
 
 from ..schemas import ConflictEntry, RoundConfig
+from .base_agent import AgentOutputValidationError
 
 
 class EvidenceManagerAgent:
@@ -51,18 +52,52 @@ class EvidenceManagerAgent:
     ) -> tuple[AgentOutput, list[ConflictEntry]]:
         """执行证据分析，返回 (AgentOutput, 冲突列表)。
         Execute evidence analysis, return (AgentOutput, conflict list).
+
+        重试条件 / Retry on:
+        - LLM 网络/API 错误
+        - AgentOutputValidationError（空 issue_ids / evidence_citations）
         """
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_analysis_prompt(
             issue_tree, evidence_index, plaintiff_outputs, defendant_outputs
         )
+        last_error: str | None = None
 
-        raw = await self._call_llm_with_retry(system_prompt, user_prompt)
-        data = _extract_json_object(raw)
+        for attempt in range(1, self._config.max_retries + 1):
+            current_prompt = user_prompt
+            if last_error:
+                current_prompt = (
+                    f"{user_prompt}\n\n"
+                    f"[上次输出验证失败，请修正：{last_error}]"
+                )
 
-        conflicts = self._parse_conflicts(data)
-        output = self._build_agent_output(data, run_id, state_id, round_index, evidence_index.case_id)
-        return output, conflicts
+            try:
+                raw = await self._llm.create_message(
+                    system=system_prompt,
+                    user=current_prompt,
+                    model=self._config.model,
+                    temperature=self._config.temperature,
+                    max_tokens=self._config.max_tokens_per_output,
+                )
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+            try:
+                data = _extract_json_object(raw)
+                output = self._build_agent_output(
+                    data, run_id, state_id, round_index, evidence_index.case_id
+                )
+                conflicts = self._parse_conflicts(data)
+                return output, conflicts
+            except AgentOutputValidationError as e:
+                last_error = str(e)
+                continue
+
+        raise RuntimeError(
+            f"EvidenceManager LLM 调用失败，已重试 {self._config.max_retries} 次。"
+            f"最后错误: {last_error}"
+        )
 
     # ------------------------------------------------------------------
     # 内部方法 / Internal methods
@@ -169,8 +204,18 @@ class EvidenceManagerAgent:
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         output_id = f"output-evidence_manager-r{round_index}-{uuid.uuid4().hex[:8]}"
 
-        issue_ids = data.get("issue_ids", []) or ["unknown-issue"]
-        evidence_citations = data.get("evidence_citations", []) or ["unknown-evidence"]
+        issue_ids = data.get("issue_ids", [])
+        evidence_citations = data.get("evidence_citations", [])
+
+        if not issue_ids:
+            raise AgentOutputValidationError(
+                "EvidenceManager 输出缺少 issue_ids，请在 issue_ids 字段中提供至少一个争点 ID。"
+            )
+        if not evidence_citations:
+            raise AgentOutputValidationError(
+                "EvidenceManager 输出缺少 evidence_citations，请在 evidence_citations 字段中"
+                "提供至少一个证据 ID。"
+            )
 
         return AgentOutput(
             output_id=output_id,
@@ -190,23 +235,3 @@ class EvidenceManagerAgent:
             created_at=now,
         )
 
-    async def _call_llm_with_retry(self, system: str, user: str) -> str:
-        last_error: Exception | None = None
-        for attempt in range(1, self._config.max_retries + 1):
-            try:
-                return await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._config.model,
-                    temperature=self._config.temperature,
-                    max_tokens=self._config.max_tokens_per_output,
-                )
-            except Exception as e:
-                last_error = e
-                if attempt < self._config.max_retries:
-                    continue
-                break
-        raise RuntimeError(
-            f"EvidenceManager LLM 调用失败，已重试 {self._config.max_retries} 次。"
-            f"最后错误: {last_error}"
-        )

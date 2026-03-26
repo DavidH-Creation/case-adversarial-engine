@@ -438,6 +438,7 @@ class TestSchemas:
         assert cfg.num_rounds == 3
         assert cfg.max_tokens_per_output == 2000
         assert cfg.max_retries == 3
+        assert cfg.temperature == 0.0
 
     def test_argument_requires_evidence(self):
         from pydantic import ValidationError
@@ -456,3 +457,68 @@ class TestSchemas:
         assert result.rounds == []
         assert result.evidence_conflicts == []
         assert result.unresolved_issues == []
+
+
+# ---------------------------------------------------------------------------
+# RoundEngine 基础设施集成测试（WorkspaceManager + JobManager）
+# ---------------------------------------------------------------------------
+
+
+class TestRoundEngineWithInfrastructure:
+    @pytest.mark.asyncio
+    async def test_outputs_saved_to_workspace(
+        self, mock_llm, config, issue_tree, evidence_index, tmp_path
+    ):
+        """5个 AgentOutput 应通过 WorkspaceManager 持久化到 artifact_index。"""
+        from engines.shared.workspace_manager import WorkspaceManager
+
+        ws = WorkspaceManager(tmp_path, CASE_ID)
+        ws.init_workspace("civil_loan")
+
+        engine = RoundEngine(mock_llm, config, workspace_manager=ws)
+        await engine.run(
+            issue_tree=issue_tree,
+            evidence_index=evidence_index,
+            plaintiff_party_id=PLAINTIFF_ID,
+            defendant_party_id=DEFENDANT_ID,
+        )
+
+        workspace_data = ws.load_workspace()
+        agent_outputs = workspace_data["artifact_index"]["AgentOutput"]
+        assert len(agent_outputs) == 5  # 2 claims + 1 ev_manager + 2 rebuttals
+
+    @pytest.mark.asyncio
+    async def test_job_lifecycle_completed(
+        self, mock_llm, config, issue_tree, evidence_index, tmp_path
+    ):
+        """job_manager 提供时，job 应完成 created→running→completed 生命周期。"""
+        from engines.shared.job_manager import JobManager
+
+        jm = JobManager(tmp_path)
+        engine = RoundEngine(mock_llm, config, job_manager=jm)
+        result = await engine.run(
+            issue_tree=issue_tree,
+            evidence_index=evidence_index,
+            plaintiff_party_id=PLAINTIFF_ID,
+            defendant_party_id=DEFENDANT_ID,
+        )
+
+        assert result.job_id != ""
+        job = jm.load_job(result.job_id)
+        assert job is not None
+        assert job.job_status.value == "completed"
+
+    @pytest.mark.asyncio
+    async def test_no_infrastructure_still_works(
+        self, mock_llm, config, issue_tree, evidence_index
+    ):
+        """不传 workspace_manager 和 job_manager 时仍正常运行（向后兼容）。"""
+        engine = RoundEngine(mock_llm, config)  # no infrastructure
+        result = await engine.run(
+            issue_tree=issue_tree,
+            evidence_index=evidence_index,
+            plaintiff_party_id=PLAINTIFF_ID,
+            defendant_party_id=DEFENDANT_ID,
+        )
+        assert isinstance(result, AdversarialResult)
+        assert result.job_id == ""

@@ -21,6 +21,12 @@ from engines.shared.models import (
 from ..schemas import Argument, RoundConfig
 
 
+class AgentOutputValidationError(Exception):
+    """citation 或争点验证失败，触发 _call_and_parse 重试。
+    Raised when LLM output fails citation or issue validation, triggers retry.
+    """
+
+
 class BasePartyAgent:
     """所有当事方代理的基类，封装 LLM 调用和重试逻辑。
     Base class for all party agents, encapsulating LLM call and retry logic.
@@ -85,6 +91,7 @@ class BasePartyAgent:
         user_prompt = self._build_claim_prompt(issue_tree, visible_evidence, context_outputs)
         return await self._call_and_parse(
             user_prompt=user_prompt,
+            visible_evidence=visible_evidence,
             run_id=run_id,
             state_id=state_id,
             round_index=round_index,
@@ -107,6 +114,7 @@ class BasePartyAgent:
         )
         return await self._call_and_parse(
             user_prompt=user_prompt,
+            visible_evidence=visible_evidence,
             run_id=run_id,
             state_id=state_id,
             round_index=round_index,
@@ -120,37 +128,52 @@ class BasePartyAgent:
     async def _call_and_parse(
         self,
         user_prompt: str,
+        visible_evidence: list[Evidence],
         run_id: str,
         state_id: str,
         round_index: int,
         phase: ProcedurePhase,
     ) -> AgentOutput:
-        """调用 LLM（带重试）并解析输出为 AgentOutput。
-        Call LLM with retry and parse output to AgentOutput.
-        """
-        raw = await self._call_llm_with_retry(self._build_system_prompt(), user_prompt)
-        data = _extract_json_object(raw)
-        return self._parse_agent_output(data, run_id, state_id, round_index, phase)
+        """调用 LLM（带重试）并验证输出为合法 AgentOutput。
+        Call LLM with unified retry loop and validate output.
 
-    async def _call_llm_with_retry(self, system: str, user: str) -> str:
-        """调用 LLM，失败时重试最多 max_retries 次。
-        Call LLM, retry up to max_retries times on failure.
+        重试条件 / Retry on:
+        - LLM 网络/API 错误
+        - JSON 解析失败
+        - AgentOutputValidationError（空 issue_ids / evidence_citations / citation 幻觉）
         """
-        last_error: Exception | None = None
+        system_prompt = self._build_system_prompt()
+        last_error: str | None = None
+
         for attempt in range(1, self._config.max_retries + 1):
+            current_prompt = user_prompt
+            if last_error:
+                current_prompt = (
+                    f"{user_prompt}\n\n"
+                    f"[上次输出验证失败，请修正：{last_error}]"
+                )
+
             try:
-                return await self._llm.create_message(
-                    system=system,
-                    user=user,
+                raw = await self._llm.create_message(
+                    system=system_prompt,
+                    user=current_prompt,
                     model=self._config.model,
                     temperature=self._config.temperature,
                     max_tokens=self._config.max_tokens_per_output,
                 )
             except Exception as e:
-                last_error = e
-                if attempt < self._config.max_retries:
-                    continue
-                break
+                last_error = str(e)
+                continue
+
+            try:
+                data = _extract_json_object(raw)
+                output = self._parse_agent_output(data, run_id, state_id, round_index, phase)
+                self._validate_citations(output, visible_evidence)
+                return output
+            except AgentOutputValidationError as e:
+                last_error = str(e)
+                continue
+
         raise RuntimeError(
             f"LLM 调用失败，已重试 {self._config.max_retries} 次。"
             f"最后错误: {last_error}"
@@ -209,11 +232,17 @@ class BasePartyAgent:
                         evidence_citations.append(eid)
                         seen_ev.add(eid)
 
-        # 最终保底：避免空列表导致 AgentOutput 校验失败
+        # 验证非空——禁止使用 fallback 掩盖 LLM 空输出，触发重试
         if not issue_ids:
-            issue_ids = ["unknown-issue"]
+            raise AgentOutputValidationError(
+                "LLM 输出缺少 issue_ids，请在 issue_ids 字段或 arguments[].issue_id 中"
+                "提供至少一个争点 ID。"
+            )
         if not evidence_citations:
-            evidence_citations = ["unknown-evidence"]
+            raise AgentOutputValidationError(
+                "LLM 输出缺少 evidence_citations，请在 evidence_citations 字段或"
+                " arguments[].supporting_evidence_ids 中提供至少一个证据 ID。"
+            )
 
         import uuid
         output_id = f"output-{self._role.value}-r{round_index}-{uuid.uuid4().hex[:8]}"
@@ -235,6 +264,23 @@ class BasePartyAgent:
             risk_flags=data.get("risk_flags", []),
             created_at=now,
         )
+
+    def _validate_citations(
+        self,
+        output: AgentOutput,
+        visible_evidence: list[Evidence],
+    ) -> None:
+        """验证所有引用的证据 ID 必须存在于可见证据中（防幻觉）。
+        Validate all cited evidence IDs exist in visible_evidence (anti-hallucination).
+        Raises AgentOutputValidationError on any unknown ID.
+        """
+        visible_ids = {e.evidence_id for e in visible_evidence}
+        hallucinated = [eid for eid in output.evidence_citations if eid not in visible_ids]
+        if hallucinated:
+            raise AgentOutputValidationError(
+                f"引用了不在可见证据中的 ID: {hallucinated}。"
+                f"可见证据 ID: {sorted(visible_ids)}"
+            )
 
     # ------------------------------------------------------------------
     # 共用格式化工具 / Shared formatting utilities

@@ -256,6 +256,80 @@ class TestPlaintiffAgent:
                 round_index=1,
             )
 
+    @pytest.mark.asyncio
+    async def test_rejects_hallucinated_evidence_id(
+        self, config, issue_tree, plaintiff_evidence
+    ):
+        """引用不在可见证据中的 ID 应触发重试，重试耗尽后抛 RuntimeError。"""
+        response = _make_llm_response(evidence_citations=["ev-999"])  # ev-999 不存在
+        mock_llm = MockLLMClient(response=response)
+        agent = PlaintiffAgent(mock_llm, PLAINTIFF_ID, config)
+
+        with pytest.raises(RuntimeError, match="LLM 调用失败"):
+            await agent.generate_claim(
+                issue_tree=issue_tree,
+                visible_evidence=plaintiff_evidence,
+                context_outputs=[],
+                run_id="run-001",
+                state_id="state-001",
+                round_index=1,
+            )
+        assert mock_llm.call_count == config.max_retries
+
+    @pytest.mark.asyncio
+    async def test_retry_on_bad_citations_succeeds(
+        self, config, issue_tree, plaintiff_evidence
+    ):
+        """首次返回幻觉证据 ID，第二次返回合法 ID → 成功，共调用 2 次 LLM。"""
+        call_count = 0
+
+        class SequentialMockLLM:
+            async def create_message(self, **kwargs) -> str:
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    return _make_llm_response(evidence_citations=["ev-999"])
+                return _make_llm_response()
+
+        agent = PlaintiffAgent(SequentialMockLLM(), PLAINTIFF_ID, config)
+        output = await agent.generate_claim(
+            issue_tree=issue_tree,
+            visible_evidence=plaintiff_evidence,
+            context_outputs=[],
+            run_id="run-001",
+            state_id="state-001",
+            round_index=1,
+        )
+        assert output is not None
+        assert call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_rejects_empty_issue_ids_after_aggregation(
+        self, config, issue_tree, plaintiff_evidence
+    ):
+        """顶层 issue_ids 和 arguments 均为空时应 RuntimeError（禁止 unknown-issue fallback）。"""
+        response = json.dumps({
+            "title": "no issues",
+            "body": "body",
+            "case_id": CASE_ID,
+            "issue_ids": [],
+            "evidence_citations": ["ev-001"],
+            "risk_flags": [],
+            "arguments": [],
+        }, ensure_ascii=False)
+        mock_llm = MockLLMClient(response=response)
+        agent = PlaintiffAgent(mock_llm, PLAINTIFF_ID, config)
+
+        with pytest.raises(RuntimeError, match="LLM 调用失败"):
+            await agent.generate_claim(
+                issue_tree=issue_tree,
+                visible_evidence=plaintiff_evidence,
+                context_outputs=[],
+                run_id="run-001",
+                state_id="state-001",
+                round_index=1,
+            )
+
 
 # ---------------------------------------------------------------------------
 # DefendantAgent 测试
@@ -267,7 +341,8 @@ class TestDefendantAgent:
     async def test_generate_claim_returns_defendant_role(
         self, config, issue_tree, defendant_evidence
     ):
-        mock_llm = MockLLMClient()
+        # 使用被告可见证据 ev-003（而非默认的 ev-001）
+        mock_llm = MockLLMClient(response=_make_llm_response(evidence_citations=["ev-003"]))
         agent = DefendantAgent(mock_llm, DEFENDANT_ID, config)
 
         output = await agent.generate_claim(
@@ -400,3 +475,34 @@ class TestEvidenceManagerAgent:
             round_index=2,
         )
         assert conflicts == []
+
+    @pytest.mark.asyncio
+    async def test_evidence_manager_rejects_empty_citations(
+        self, config, issue_tree, plaintiff_evidence, defendant_evidence
+    ):
+        """EvidenceManager 返回空 evidence_citations 应触发重试后抛 RuntimeError。"""
+        response = json.dumps({
+            "title": "无引用",
+            "body": "body",
+            "issue_ids": ["issue-001"],
+            "evidence_citations": [],
+            "risk_flags": [],
+            "conflicts": [],
+        }, ensure_ascii=False)
+        evidence_index = EvidenceIndex(
+            case_id=CASE_ID,
+            evidence=plaintiff_evidence + defendant_evidence,
+        )
+        mock_llm = MockLLMClient(response=response)
+        agent = EvidenceManagerAgent(mock_llm, config)
+
+        with pytest.raises(RuntimeError):
+            await agent.analyze(
+                issue_tree=issue_tree,
+                evidence_index=evidence_index,
+                plaintiff_outputs=[],
+                defendant_outputs=[],
+                run_id="run-001",
+                state_id="state-002",
+                round_index=2,
+            )
