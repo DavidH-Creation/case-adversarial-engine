@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional, Protocol, Union, runtime_checkable
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -148,6 +148,16 @@ class ScenarioStatus(str, Enum):
     running = "running"
     completed = "completed"
     failed = "failed"
+
+
+class JobStatus(str, Enum):
+    """长任务生命周期状态。对应 schemas/indexing.schema.json#/$defs/job_status。"""
+    created = "created"
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
 
 
 # ---------------------------------------------------------------------------
@@ -480,3 +490,125 @@ class Run(BaseModel):
     started_at: str
     finished_at: Optional[str] = None
     status: str
+
+
+# ---------------------------------------------------------------------------
+# 长任务层 / Long-running job layer
+# ---------------------------------------------------------------------------
+
+
+class JobError(BaseModel):
+    """长任务结构化错误。对应 schemas/indexing.schema.json#/$defs/job_error。"""
+    code: str = Field(..., min_length=1)
+    message: str = Field(..., min_length=1)
+    details: Optional[dict[str, Any]] = None
+
+
+class Job(BaseModel):
+    """长任务状态与进度追踪。对应 schemas/procedure/job.schema.json。
+
+    model_validator 强制以下 invariants：
+    - created:   progress=0.0, result_ref=null, error=null
+    - pending:   0 <= progress < 1, result_ref=null, error=null
+    - running:   0 <= progress < 1, result_ref=null, error=null
+    - completed: progress=1.0, result_ref≠null, error=null
+    - failed:    progress < 1, result_ref=null, error≠null
+    - cancelled: progress < 1, result_ref=null, error=null
+    """
+    job_id: str = Field(..., min_length=1)
+    case_id: str = Field(..., min_length=1)
+    workspace_id: str = Field(..., min_length=1)
+    job_type: str = Field(..., min_length=1)
+    job_status: JobStatus
+    progress: float = Field(..., ge=0.0, le=1.0)
+    message: Optional[str] = None
+    result_ref: Optional[ArtifactRef] = None
+    error: Optional[JobError] = None
+    created_at: str
+    updated_at: str
+
+    @model_validator(mode="after")
+    def _validate_status_invariants(self) -> "Job":
+        s = self.job_status
+        p = self.progress
+        r = self.result_ref
+        e = self.error
+
+        if s == JobStatus.created:
+            if p != 0.0:
+                raise ValueError("created job must have progress=0.0")
+            if r is not None:
+                raise ValueError("created job must have result_ref=null")
+            if e is not None:
+                raise ValueError("created job must have error=null")
+
+        elif s in (JobStatus.pending, JobStatus.running):
+            if p >= 1.0:
+                raise ValueError(f"{s.value} job progress must be < 1.0")
+            if r is not None:
+                raise ValueError(f"{s.value} job must have result_ref=null")
+            if e is not None:
+                raise ValueError(f"{s.value} job must have error=null")
+
+        elif s == JobStatus.completed:
+            if p != 1.0:
+                raise ValueError("completed job must have progress=1.0")
+            if r is None:
+                raise ValueError("completed job must have a valid result_ref")
+            if e is not None:
+                raise ValueError("completed job must have error=null")
+
+        elif s == JobStatus.failed:
+            if p >= 1.0:
+                raise ValueError("failed job progress must be < 1.0")
+            if r is not None:
+                raise ValueError("failed job must have result_ref=null")
+            if e is None:
+                raise ValueError("failed job must have a structured error")
+
+        elif s == JobStatus.cancelled:
+            if p >= 1.0:
+                raise ValueError("cancelled job progress must be < 1.0")
+            if r is not None:
+                raise ValueError("cancelled job must have result_ref=null")
+            if e is not None:
+                raise ValueError("cancelled job must have error=null")
+
+        return self
+
+
+# ---------------------------------------------------------------------------
+# 对抗层 / Adversarial layer
+# ---------------------------------------------------------------------------
+
+
+class AgentOutput(BaseModel):
+    """角色在某一程序回合的规范化输出。对应 docs/03_case_object_model.md AgentOutput。
+
+    constraints（由 Field 约束强制）：
+    - issue_ids:          非空（至少绑定一个争点）
+    - evidence_citations: 非空（所有关键结论必须引用具体证据 ID）
+    - round_index:        >= 0
+    """
+    output_id: str = Field(..., min_length=1)
+    case_id: str = Field(..., min_length=1)
+    run_id: str = Field(..., min_length=1)
+    state_id: str = Field(..., min_length=1)
+    phase: ProcedurePhase
+    round_index: int = Field(..., ge=0)
+    agent_role_code: str = Field(..., min_length=1)
+    owner_party_id: str = Field(..., min_length=1)
+    issue_ids: list[str] = Field(
+        ..., min_length=1, description="必须非空；每条输出都必须绑定至少一个争点"
+    )
+    title: str = Field(..., min_length=1)
+    body: str = Field(..., min_length=1)
+    evidence_citations: list[str] = Field(
+        ..., min_length=1, description="必须非空；所有关键结论必须引用具体证据 ID"
+    )
+    statement_class: StatementClass
+    risk_flags: list[str] = Field(
+        default_factory=list,
+        description="风险标记列表（自由字符串，如'越权风险'/'引用不足'/'程序冲突'）",
+    )
+    created_at: str
