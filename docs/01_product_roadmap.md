@@ -94,6 +94,50 @@
 - `private` 材料泄漏
 - 没有上下文持久化导致阶段数据分裂
 
+## v1.2
+
+### Goal
+
+分析质量与决策能力升级。
+
+### Scope
+
+- 在 `v1` 基础设施上提升分析深度，不引入新角色，不扩展案型，不改变程序回合结构
+- 对象模型字段扩展（向后兼容）
+- 新增分析引擎模块：争点影响排序、金额一致性硬校验、裁判路径树、最强攻击链
+- 升级对抗输出格式：从平铺结论升级为有优先权重的决策支持结构
+
+### Must Have
+
+- `IssueImpactRanker` — `Issue` 扩展字段 + 按 `outcome_impact` 排序
+- `AmountCalculationReport` — 确定性计算器，四张表，一致性校验，`verdict_block_active`
+- `DecisionPathTree` — 替代段落式综合评估，结构化裁判路径 + 置信度区间
+- `OptimalAttackChain` — 最优攻击排序，原被告各一份，固定 Top3
+
+### Not In Scope
+
+- 程序法官与质证状态机（属于 `v1.5`）
+- 法官追问生成
+- 多案型扩展
+- `ui`
+- 外部法条检索平台
+- 胜诉概率定量承诺（仅允许置信度区间，受 `verdict_block_active` 约束）
+
+### Acceptance
+
+- `outcome_impact = high` 的争点全部出现在输出列表前 50%
+- `amount_calculator` 零 LLM 调用
+- `verdict_block_active = true` 时 `DecisionPathTree` 无置信度区间输出
+- 原被告各有一份 `OptimalAttackChain`，Top3 节点全部绑定 `issue_id` 和 `evidence_ids`
+- 不引入访问隔离漏洞，不引入证据状态错乱，不破坏 `v1` benchmark 兼容
+
+### Risks
+
+- `amount_calculator` 边界条件复杂（同一款项多次出入、循环转账）
+- `DecisionPathTree` 置信度区间可能被误读为胜诉概率承诺
+- 新增字段数量多，需处理 `v1` 存量产物的字段缺失兼容
+- `OptimalAttackChain` Top3 排序受 LLM 随机性影响，需专项测试 `run_to_run_consistency`
+
 ## v1.5
 
 ### Goal

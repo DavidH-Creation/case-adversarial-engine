@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import shutil
+import sys
 from typing import Any
 
 
@@ -86,34 +87,38 @@ class ClaudeCLIClient:
             CLICallError:     进程以非零状态退出
             asyncio.TimeoutError: 超过 timeout 秒
         """
-        if not shutil.which(self._cli_bin):
+        resolved_bin = shutil.which(self._cli_bin)
+        if not resolved_bin:
             raise CLINotFoundError(
                 f"找不到 `{self._cli_bin}` 命令。请确认 Claude Code CLI 已安装并在 PATH 中。"
                 f" / `{self._cli_bin}` not found. Ensure Claude Code CLI is installed and in PATH."
             )
 
         cmd = [
-            self._cli_bin,
+            resolved_bin,
             "--print",
-            "--bare",
             "--model", model,
         ]
         if system:
             cmd += ["--system-prompt", system]
 
-        # 把 user 作为最后一个位置参数（避免 stdin 编码问题）
-        # Pass user as trailing positional arg to avoid stdin encoding edge cases
-        cmd.append(user)
+        # Windows 上 .cmd/.bat 文件需要通过 cmd /c 执行
+        # Windows .cmd/.bat files require cmd /c to execute
+        if sys.platform == "win32" and resolved_bin.lower().endswith((".cmd", ".bat")):
+            cmd = ["cmd", "/c"] + cmd
 
+        # 通过 stdin 传 user prompt 以避免 Windows cmd.exe 8191 字符行长限制
+        # Pass user via stdin to avoid Windows cmd.exe 8191-char command-line limit
         proc = await asyncio.create_subprocess_exec(
             *cmd,
+            stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
 
         try:
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=self._timeout
+                proc.communicate(input=user.encode("utf-8")), timeout=self._timeout
             )
         except asyncio.TimeoutError:
             proc.kill()
@@ -182,7 +187,8 @@ class CodexCLIClient:
             CLICallError:     进程以非零状态退出
             asyncio.TimeoutError: 超过 timeout 秒
         """
-        if not shutil.which(self._cli_bin):
+        resolved_codex = shutil.which(self._cli_bin)
+        if not resolved_codex:
             raise CLINotFoundError(
                 f"找不到 `{self._cli_bin}` 命令。请确认 Codex CLI 已安装并在 PATH 中。"
                 f" / `{self._cli_bin}` not found. Ensure Codex CLI is installed and in PATH."
@@ -196,10 +202,14 @@ class CodexCLIClient:
         else:
             full_prompt = user
 
-        cmd = [self._cli_bin, "exec"]
+        cmd = [resolved_codex, "exec"]
         if effective_model:
             cmd += ["-m", effective_model]
         cmd.append(full_prompt)
+
+        # Windows 上 .cmd/.bat 文件需要通过 cmd /c 执行
+        if sys.platform == "win32" and resolved_codex.lower().endswith((".cmd", ".bat")):
+            cmd = ["cmd", "/c"] + cmd
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,

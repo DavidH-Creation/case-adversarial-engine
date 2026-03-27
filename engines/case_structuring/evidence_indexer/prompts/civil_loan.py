@@ -61,7 +61,8 @@ EXTRACTION_PROMPT = """\
 2. `target_facts` 不能为空，每条证据至少绑定一条事实命题
 3. 事实命题 ID 使用 `fact-` 前缀加简短英文描述，如 `fact-loan-contract-existence-001`
 4. 争议焦点 ID 使用 `issue-` 前缀，如 `issue-loan-contract-validity-001`
-5. 请只输出 JSON 数组，不要输出其他内容\
+5. 请只输出 JSON 数组，不要输出其他内容
+6. **JSON字符串值内禁止使用未转义的双引号**。如需引用原文中的词语，请使用中文引号「」或书名号《》，例如：备注为「还款」，而不是 备注为"还款"\
 """
 
 
