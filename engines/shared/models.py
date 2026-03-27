@@ -338,6 +338,8 @@ class Evidence(BaseModel):
     probative_value: Optional[ProbativeValue] = None
     vulnerability: Optional[Vulnerability] = None
     evidence_weight_scored: bool = False
+    # P2.9: 可信度折损扩展字段（向后兼容，Optional/默认值）
+    is_copy_only: bool = Field(default=False, description="关键证据仅有复印件无原件（CRED-02）")
 
 
 class FactProposition(BaseModel):
@@ -1145,3 +1147,50 @@ class ActionRecommendation(BaseModel):
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
+
+
+# ---------------------------------------------------------------------------
+# 可信度折损模型 / Credibility Scorecard  (P2.9)
+# ---------------------------------------------------------------------------
+
+
+class CredibilityDeduction(BaseModel):
+    """单条可信度扣分项。由规则层生成，不允许 LLM 修改。"""
+    deduction_id: str = Field(..., min_length=1, description="扣分项唯一 ID")
+    rule_id: str = Field(..., min_length=1, description="触发规则编号，如 CRED-01")
+    rule_description: str = Field(..., min_length=1, description="规则描述")
+    deduction_points: int = Field(..., lt=0, description="扣分分值（负整数）")
+    trigger_evidence_ids: list[str] = Field(
+        default_factory=list, description="触发该规则的证据 ID 列表"
+    )
+    trigger_issue_ids: list[str] = Field(
+        default_factory=list, description="触发该规则的争点 ID 列表"
+    )
+
+
+class CredibilityScorecard(BaseModel):
+    """案件整体可信度折损评分卡。P2.9 产物，纳入 CaseWorkspace.artifact_index。
+
+    base_score 固定为 100，final_score = base_score + sum(d.deduction_points)。
+    final_score < 60 时，report_engine 须在报告显著位置标注可信度警告。
+    """
+    scorecard_id: str = Field(..., min_length=1)
+    case_id: str = Field(..., min_length=1)
+    run_id: str = Field(..., min_length=1)
+    base_score: int = Field(default=100, description="基础分（满分 100）")
+    deductions: list[CredibilityDeduction] = Field(
+        default_factory=list, description="触发的扣分项列表"
+    )
+    final_score: int = Field(..., description="最终得分 = base_score + sum(deduction_points)")
+    summary: str = Field(..., min_length=1, description="可信度摘要说明")
+
+    @model_validator(mode="after")
+    def _validate_final_score(self) -> "CredibilityScorecard":
+        """硬规则：final_score 必须等于 base_score + sum(deduction_points)。"""
+        expected = self.base_score + sum(d.deduction_points for d in self.deductions)
+        if self.final_score != expected:
+            raise ValueError(
+                f"final_score ({self.final_score}) 必须等于 "
+                f"base_score + sum(deductions) ({expected})"
+            )
+        return self
