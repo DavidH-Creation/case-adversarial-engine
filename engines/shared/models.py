@@ -1005,3 +1005,85 @@ class EvidenceGapItem(BaseModel):
         default_factory=list, description="替代证据路径说明"
     )
     roi_rank: int = Field(..., ge=1, description="ROI 排序序号（规则层自动计算，1=最高优先）")
+
+
+# ---------------------------------------------------------------------------
+# P1.8：行动建议引擎 / Action recommendation  (P1.8)
+# ---------------------------------------------------------------------------
+
+
+class ClaimAmendmentSuggestion(BaseModel):
+    """建议修改诉请条目（P1.8）。P2.11 实装后，同一 original_claim_id 的详细替代方案由
+    AlternativeClaimSuggestion 提供并替代本条目。
+
+    Args:
+        suggestion_id:                  建议条目唯一标识
+        original_claim_id:              关联原始 Claim.claim_id
+        amendment_description:          建议修改方向（简要，不含完整替代文本）
+        amendment_reason_issue_id:      修改依据绑定争点 ID（零容忍空值）
+        amendment_reason_evidence_ids:  修改依据关联证据 ID 列表（可为空列表）
+    """
+    suggestion_id: str = Field(..., min_length=1)
+    original_claim_id: str = Field(..., min_length=1)
+    amendment_description: str = Field(..., min_length=1, description="简要修改方向")
+    amendment_reason_issue_id: str = Field(..., min_length=1, description="修改依据争点 ID（零容忍空值）")
+    amendment_reason_evidence_ids: list[str] = Field(
+        default_factory=list, description="修改依据关联证据 ID 列表"
+    )
+
+
+class ClaimAbandonSuggestion(BaseModel):
+    """建议放弃诉请条目（P1.8）。每条必须绑定 issue_id 和放弃理由——零容忍。
+
+    Args:
+        suggestion_id:           建议条目唯一标识
+        claim_id:                建议放弃的 Claim.claim_id
+        abandon_reason:          放弃理由（非空）
+        abandon_reason_issue_id: 放弃依据争点 ID（零容忍空值）
+    """
+    suggestion_id: str = Field(..., min_length=1)
+    claim_id: str = Field(..., min_length=1)
+    abandon_reason: str = Field(..., min_length=1, description="放弃理由（零容忍空值）")
+    abandon_reason_issue_id: str = Field(..., min_length=1, description="放弃依据争点 ID（零容忍空值）")
+
+
+class TrialExplanationPriority(BaseModel):
+    """庭审中优先解释事项（P1.8）。每条必须绑定 issue_id——零容忍。
+
+    Args:
+        priority_id:      条目唯一标识
+        issue_id:         绑定争点 ID（零容忍空值）
+        explanation_text: 需解释的事项描述（非空）
+    """
+    priority_id: str = Field(..., min_length=1)
+    issue_id: str = Field(..., min_length=1, description="绑定争点 ID（零容忍空值）")
+    explanation_text: str = Field(..., min_length=1, description="庭审解释事项说明")
+
+
+class ActionRecommendation(BaseModel):
+    """行动建议产物（P1.8）。纳入 CaseWorkspace.artifact_index。
+
+    在 report_generation 阶段由 ActionRecommender 生成，依赖 P0.1 争点分析和 P1.7 ROI 排序结果。
+
+    Args:
+        recommendation_id:              产物唯一标识
+        case_id:                        案件 ID
+        run_id:                         运行快照 ID
+        recommended_claim_amendments:   建议修改诉请条目列表（ClaimAmendmentSuggestion[]）
+        evidence_supplement_priorities: 建议补强证据的 gap_id 列表（按 ROI 排序）
+        trial_explanation_priorities:   庭审优先解释事项列表（每条绑定 issue_id）
+        claims_to_abandon:              建议放弃诉请条目列表（ClaimAbandonSuggestion[]）
+        created_at:                     ISO-8601 时间戳（自动生成）
+    """
+    recommendation_id: str = Field(..., min_length=1)
+    case_id: str = Field(..., min_length=1)
+    run_id: str = Field(..., min_length=1)
+    recommended_claim_amendments: list[ClaimAmendmentSuggestion] = Field(default_factory=list)
+    evidence_supplement_priorities: list[str] = Field(
+        default_factory=list, description="gap_id 列表，按 ROI 降序排列（roi_rank=1 在前）"
+    )
+    trial_explanation_priorities: list[TrialExplanationPriority] = Field(default_factory=list)
+    claims_to_abandon: list[ClaimAbandonSuggestion] = Field(default_factory=list)
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
