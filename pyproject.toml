@@ -30,6 +30,7 @@ testpaths = [
     "engines/simulation_run/issue_impact_ranker/tests",
     "engines/simulation_run/decision_path_tree/tests",
     "engines/simulation_run/attack_chain_optimizer/tests",
+    "engines/simulation_run/issue_category_classifier/tests",
     "tests/integration",
 ]
 
