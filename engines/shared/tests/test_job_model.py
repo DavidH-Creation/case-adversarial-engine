@@ -381,8 +381,11 @@ class TestAgentOutputValidConstruction:
             statement_class=StatementClass.assumption,
             risk_flags=["引用不足", "越权风险"],
         ))
-        assert "引用不足" in out.risk_flags
+        # str elements are auto-migrated to RiskFlag (backward compat, P2.10)
         assert len(out.risk_flags) == 2
+        descriptions = [rf.description for rf in out.risk_flags]
+        assert "引用不足" in descriptions
+        assert "越权风险" in descriptions
 
     def test_risk_flags_can_be_empty(self):
         out = AgentOutput(**_base_agent_output(risk_flags=[]))
@@ -470,4 +473,7 @@ class TestAgentOutputRoundtrip:
     def test_roundtrip_with_risk_flags(self):
         out = AgentOutput(**_base_agent_output(risk_flags=["越权风险", "程序冲突"]))
         restored = AgentOutput.model_validate(out.model_dump())
-        assert restored.risk_flags == ["越权风险", "程序冲突"]
+        assert len(restored.risk_flags) == 2
+        descriptions = [rf.description for rf in restored.risk_flags]
+        assert "越权风险" in descriptions
+        assert "程序冲突" in descriptions

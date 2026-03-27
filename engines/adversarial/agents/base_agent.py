@@ -196,7 +196,7 @@ class BasePartyAgent:
           "body": "...",
           "issue_ids": ["issue-001"],
           "evidence_citations": ["ev-001"],
-          "risk_flags": [],
+          "risk_flags": [{"flag_id": "rf-001", "description": "风险描述", "impact_objects": ["win_rate"], "impact_objects_scored": true}],
           "arguments": [
             {
               "issue_id": "...",
@@ -337,7 +337,7 @@ class BasePartyAgent:
   "body": "（完整论证文本，必须引用具体证据ID，不超过600字）",
   "issue_ids": ["争点ID列表，不能为空"],
   "evidence_citations": ["证据ID列表，不能为空，必须来自可见证据"],
-  "risk_flags": ["可能的法律风险标记，可为空数组"],
+  "risk_flags": [{"flag_id": "唯一标识如rf-001", "description": "风险描述如越权风险/引用不足/程序冲突", "impact_objects": ["win_rate|supported_amount|trial_credibility|procedural_stability|evidence_supplement_cost中选一或多"], "impact_objects_scored": true}],
   "arguments": [
     {
       "issue_id": "对应争点ID",
