@@ -176,3 +176,64 @@ class TestTraceabilityValidator:
                 top3_immediate_actions=[],
                 action_recommendation_id=None,
             )
+
+
+# ---------------------------------------------------------------------------
+# 列表长度上限约束
+# ---------------------------------------------------------------------------
+
+
+class TestMaxLengthConstraints:
+    def test_top5_decisive_issues_max_5(self):
+        """top5_decisive_issues 超过 5 条时应报错。"""
+        with pytest.raises(ValidationError):
+            _make_artifact(
+                top5_decisive_issues=["I1", "I2", "I3", "I4", "I5", "I6"]
+            )
+
+    def test_top5_decisive_issues_exactly_5_ok(self):
+        artifact = _make_artifact(
+            top5_decisive_issues=["I1", "I2", "I3", "I4", "I5"]
+        )
+        assert len(artifact.top5_decisive_issues) == 5
+
+    def test_top3_adversary_attacks_max_3(self):
+        """top3_adversary_optimal_attacks 超过 3 条时应报错。"""
+        with pytest.raises(ValidationError):
+            _make_artifact(
+                top3_adversary_optimal_attacks=["A1", "A2", "A3", "A4"]
+            )
+
+    def test_top3_adversary_attacks_exactly_3_ok(self):
+        artifact = _make_artifact(
+            top3_adversary_optimal_attacks=["A1", "A2", "A3"]
+        )
+        assert len(artifact.top3_adversary_optimal_attacks) == 3
+
+    def test_top3_immediate_actions_list_max_3(self):
+        """top3_immediate_actions 为 list 时超过 3 条应报错。"""
+        with pytest.raises(ValidationError):
+            _make_artifact(
+                top3_immediate_actions=["S1", "S2", "S3", "S4"],
+                action_recommendation_id="REC-001",
+            )
+
+    def test_top3_immediate_actions_list_exactly_3_ok(self):
+        artifact = _make_artifact(
+            top3_immediate_actions=["S1", "S2", "S3"],
+            action_recommendation_id="REC-001",
+        )
+        assert len(artifact.top3_immediate_actions) == 3
+
+    def test_critical_evidence_gaps_list_max_3(self):
+        """critical_evidence_gaps 为 list 时超过 3 条应报错。"""
+        with pytest.raises(ValidationError):
+            _make_artifact(
+                critical_evidence_gaps=["G1", "G2", "G3", "G4"]
+            )
+
+    def test_critical_evidence_gaps_list_exactly_3_ok(self):
+        artifact = _make_artifact(
+            critical_evidence_gaps=["G1", "G2", "G3"]
+        )
+        assert len(artifact.critical_evidence_gaps) == 3

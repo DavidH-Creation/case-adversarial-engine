@@ -1286,7 +1286,7 @@ class ExecutiveSummaryArtifact(BaseModel):
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     top5_decisive_issues: list[str] = Field(
-        ..., description="Top5 决定性争点 issue_id 列表（按 outcome_impact 排序，最多 5 条）"
+        ..., max_length=5, description="Top5 决定性争点 issue_id 列表（按 outcome_impact 排序，最多 5 条）"
     )
     top3_immediate_actions: Union[list[str], str] = Field(
         ...,
@@ -1297,7 +1297,7 @@ class ExecutiveSummaryArtifact(BaseModel):
         description="绑定的 ActionRecommendation.recommendation_id；top3_immediate_actions 为 list 时必须非 None",
     )
     top3_adversary_optimal_attacks: list[str] = Field(
-        ..., description="Top3 对方最优攻击 attack_node_id 列表（最多 3 条）"
+        ..., max_length=3, description="Top3 对方最优攻击 attack_node_id 列表（最多 3 条）"
     )
     adversary_attack_chain_id: str = Field(
         ..., min_length=1, description="绑定的 OptimalAttackChain.chain_id（可回连）"
@@ -1318,9 +1318,24 @@ class ExecutiveSummaryArtifact(BaseModel):
 
     @model_validator(mode="after")
     def _check_traceability(self) -> "ExecutiveSummaryArtifact":
-        """硬规则：top3_immediate_actions 为列表时，action_recommendation_id 必须非 None。"""
-        if isinstance(self.top3_immediate_actions, list) and self.action_recommendation_id is None:
+        """硬规则：list 字段长度约束 + traceability。
+
+        1. top3_immediate_actions 为列表时：长度 ≤ 3，action_recommendation_id 必须非 None
+        2. critical_evidence_gaps 为列表时：长度 ≤ 3
+        """
+        if isinstance(self.top3_immediate_actions, list):
+            if len(self.top3_immediate_actions) > 3:
+                raise ValueError(
+                    f"top3_immediate_actions list must have at most 3 items, "
+                    f"got {len(self.top3_immediate_actions)}"
+                )
+            if self.action_recommendation_id is None:
+                raise ValueError(
+                    "action_recommendation_id must be set when top3_immediate_actions is a list"
+                )
+        if isinstance(self.critical_evidence_gaps, list) and len(self.critical_evidence_gaps) > 3:
             raise ValueError(
-                "action_recommendation_id must be set when top3_immediate_actions is a list"
+                f"critical_evidence_gaps list must have at most 3 items, "
+                f"got {len(self.critical_evidence_gaps)}"
             )
         return self
