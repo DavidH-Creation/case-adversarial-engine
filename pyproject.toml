@@ -21,11 +21,13 @@ testpaths = [
     "engines/shared/tests",
     "engines/case_structuring/evidence_indexer/tests",
     "engines/case_structuring/issue_extractor/tests",
+    "engines/case_structuring/amount_calculator/tests",
     "engines/interactive_followup/tests",
     "engines/report_generation/tests",
     "engines/simulation_run/tests",
     "engines/procedure_setup/tests",
     "engines/adversarial/tests",
+    "engines/simulation_run/issue_impact_ranker/tests",
     "tests/integration",
 ]
 
