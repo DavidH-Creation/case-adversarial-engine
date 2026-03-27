@@ -230,6 +230,27 @@ class RecommendedAction(str, Enum):
     explain_in_trial = "explain_in_trial"
 
 
+class SupplementCost(str, Enum):
+    """补证成本（P1.7）。"""
+    high = "high"
+    medium = "medium"
+    low = "low"
+
+
+class OutcomeImpactSize(str, Enum):
+    """补证后对结果的影响大小（P1.7）。"""
+    significant = "significant"
+    moderate = "moderate"
+    marginal = "marginal"
+
+
+class PracticallyObtainable(str, Enum):
+    """证据现实可取得性（P1.7）。"""
+    yes = "yes"
+    no = "no"
+    uncertain = "uncertain"
+
+
 # ---------------------------------------------------------------------------
 # 基础输入模型 / Basic input models
 # ---------------------------------------------------------------------------
@@ -916,3 +937,27 @@ class OptimalAttackChain(BaseModel):
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
+
+
+# ---------------------------------------------------------------------------
+# P1.7：缺证 ROI 排序 / Evidence gap ROI ranking
+# ---------------------------------------------------------------------------
+
+
+class EvidenceGapItem(BaseModel):
+    """缺证项及其补证价值评估。P1.7 产物，纳入 CaseWorkspace.artifact_index。
+
+    roi_rank 由规则层（EvidenceGapROIRanker）自动计算，调用方不得手动赋值。
+    """
+    gap_id: str = Field(..., min_length=1, description="缺证项唯一标识")
+    case_id: str = Field(..., min_length=1, description="案件 ID")
+    run_id: str = Field(..., min_length=1, description="运行快照 ID")
+    related_issue_id: str = Field(..., min_length=1, description="关联争点 ID，必须绑定")
+    gap_description: str = Field(..., min_length=1, description="缺证说明")
+    supplement_cost: SupplementCost = Field(..., description="预计补证成本")
+    outcome_impact_size: OutcomeImpactSize = Field(..., description="补证后预计对结果的影响大小")
+    practically_obtainable: PracticallyObtainable = Field(..., description="现实中是否可取得")
+    alternative_evidence_paths: list[str] = Field(
+        default_factory=list, description="替代证据路径说明"
+    )
+    roi_rank: int = Field(..., ge=1, description="ROI 排序序号（规则层自动计算，1=最高优先）")
