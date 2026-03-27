@@ -1248,3 +1248,76 @@ class AlternativeClaimSuggestion(BaseModel):
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
+
+
+# ---------------------------------------------------------------------------
+# P2.12: dual-layer output  (P2.12)
+# ---------------------------------------------------------------------------
+
+
+class ExecutiveSummaryArtifact(BaseModel):
+    """One-page executive summary artifact (P2.12).
+    Additive layer on top of the long report; does not replace ReportArtifact.
+
+    Every field must trace back to a backend detail object.
+    Degraded fields (top3_immediate_actions / critical_evidence_gaps) may be
+    the string "未启用" when the corresponding P1 module is not enabled.
+    """
+    summary_id: str = Field(..., min_length=1)
+    case_id: str = Field(..., min_length=1)
+    run_id: str = Field(..., min_length=1)
+    top5_decisive_issues: list[str] = Field(
+        default_factory=list,
+        description="Issue.issue_id[], sorted by outcome_impact desc, max 5",
+    )
+    top3_immediate_actions: Union[list[str], str] = Field(
+        ...,
+        description=(
+            "ActionRecommendation high-priority item IDs (max 3); "
+            'string "未启用" when P1.8 not enabled'
+        ),
+    )
+    source_recommendation_id: Optional[str] = Field(
+        default=None,
+        description="Traceback: ActionRecommendation.recommendation_id; None when degraded",
+    )
+    top3_adversary_optimal_attacks: list[str] = Field(
+        default_factory=list,
+        description="AttackNode.attack_node_id[] from OptimalAttackChain, max 3",
+    )
+    source_attack_chain_ids: list[str] = Field(
+        default_factory=list,
+        description="Traceback: OptimalAttackChain.chain_id[]",
+    )
+    current_most_stable_claim: str = Field(
+        ..., min_length=1,
+        description="Most stable claim text, bound to AmountCalculationReport.claim_calculation_table",
+    )
+    source_amount_report_id: str = Field(
+        ..., min_length=1,
+        description="Traceback: AmountCalculationReport.report_id",
+    )
+    critical_evidence_gaps: Union[list[str], str] = Field(
+        ...,
+        description=(
+            "EvidenceGapItem.gap_id[] Top3 ROI (max 3); "
+            'string "未启用" when P1.7 not enabled'
+        ),
+    )
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
+
+    @model_validator(mode="after")
+    def _validate_degradable_fields(self) -> "ExecutiveSummaryArtifact":
+        """Constrain top3_immediate_actions and critical_evidence_gaps to list[str] or 未启用."""
+        disabled = "未启用"
+        for field_name, value in [
+            ("top3_immediate_actions", self.top3_immediate_actions),
+            ("critical_evidence_gaps", self.critical_evidence_gaps),
+        ]:
+            if not isinstance(value, list) and value != disabled:
+                raise ValueError(
+                    f"{field_name} must be list[str] or string 未启用, got {value!r}"
+                )
+        return self
