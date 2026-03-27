@@ -248,9 +248,12 @@ class TestAdversarialSummarizer:
     async def test_overall_assessment_non_empty(
         self, minimal_result, issue_tree, config
     ):
-        """overall_assessment 非空字符串。"""
+        """AdversarialSummarizer 路径始终提供非空 overall_assessment（fallback 保证）。
+        AdversarialSummarizer always produces a non-None overall_assessment via its fallback.
+        """
         summarizer = AdversarialSummarizer(MockLLM(), config)
         summary = await summarizer.summarize(minimal_result, issue_tree)
+        assert summary.overall_assessment is not None
         assert len(summary.overall_assessment) >= 1
 
     @pytest.mark.asyncio
