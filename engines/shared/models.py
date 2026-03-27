@@ -1087,3 +1087,59 @@ class ActionRecommendation(BaseModel):
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
+
+
+# ---------------------------------------------------------------------------
+# P2.11：替代主张自动生成 / Alternative claim generation  (P2.11)
+# ---------------------------------------------------------------------------
+
+
+class AlternativeClaimSuggestion(BaseModel):
+    """替代主张建议（P2.11）。当原主张不稳定时自动生成更稳固的替代版本。
+
+    触发条件（规则层，不调用 LLM）：
+    1. Issue.recommended_action = amend_claim
+    2. Issue.proponent_evidence_strength = weak 且 opponent_attack_strength = strong
+    3. ClaimCalculationEntry.delta 绝对值超过 claimed_amount × 10%
+
+    合约保证：
+    - instability_issue_ids 非空（零容忍空列表）——min_length=1 强制
+    - instability_evidence_ids 允许为空（Issue 本身可能无证据 ID，设计决策：绑定关系
+      通过字段存在性体现，而非强制非空）
+    - alternative_claim_text 必须具体可执行（非泛化建议）
+    - supporting_evidence_ids 来自触发该建议的争点 evidence_ids
+
+    Args:
+        suggestion_id:            建议唯一标识
+        case_id:                  案件 ID
+        run_id:                   运行快照 ID
+        original_claim_id:        关联原始 Claim.claim_id
+        instability_reason:       不稳定原因文本（绑定 instability_issue_ids 和 instability_evidence_ids）
+        instability_issue_ids:    原因绑定争点 ID 列表（非空，零容忍）
+        instability_evidence_ids: 原因绑定证据 ID 列表（可为空列表，见合约保证说明）
+        alternative_claim_text:   替代主张文本（具体可执行，非泛化）
+        stability_rationale:      替代主张更稳固的理由
+        supporting_evidence_ids:  支持替代主张的证据 ID 列表
+        created_at:               ISO-8601 时间戳（自动生成）
+    """
+    suggestion_id: str = Field(..., min_length=1)
+    case_id: str = Field(..., min_length=1)
+    run_id: str = Field(..., min_length=1)
+    original_claim_id: str = Field(..., min_length=1, description="关联原始 Claim.claim_id")
+    instability_reason: str = Field(..., min_length=1, description="原主张不稳定原因文本")
+    instability_issue_ids: list[str] = Field(
+        ..., min_length=1, description="绑定争点 ID 列表（零容忍空列表）"
+    )
+    instability_evidence_ids: list[str] = Field(
+        default_factory=list, description="绑定证据 ID 列表（可为空，争点无证据时为空列表）"
+    )
+    alternative_claim_text: str = Field(
+        ..., min_length=1, description="替代主张文本（具体可执行，不允许泛化建议）"
+    )
+    stability_rationale: str = Field(..., min_length=1, description="替代主张更稳固的理由")
+    supporting_evidence_ids: list[str] = Field(
+        default_factory=list, description="支持替代主张的证据 ID 列表"
+    )
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
