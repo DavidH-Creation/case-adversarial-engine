@@ -258,6 +258,14 @@ class Vulnerability(str, Enum):
     low = "low"
 
 
+class IssueCategory(str, Enum):
+    """争点分析类型（P1.6）。与 issue_type 并列，不替代。"""
+    fact_issue = "fact_issue"
+    legal_issue = "legal_issue"
+    calculation_issue = "calculation_issue"
+    procedure_credibility_issue = "procedure_credibility_issue"
+
+
 # ---------------------------------------------------------------------------
 # 基础输入模型 / Basic input models
 # ---------------------------------------------------------------------------
@@ -334,6 +342,8 @@ class Issue(BaseModel):
     opponent_attack_strength: Optional[AttackStrength] = None
     recommended_action: Optional[RecommendedAction] = None
     recommended_action_basis: Optional[str] = None  # recommended_action 的依据说明
+    # P1.6: 争点类型分类扩展字段（向后兼容，Optional）
+    issue_category: Optional[IssueCategory] = None
 
 
 class Burden(BaseModel):
