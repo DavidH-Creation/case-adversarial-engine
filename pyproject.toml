@@ -34,6 +34,7 @@ testpaths = [
     "engines/simulation_run/issue_category_classifier/tests",
     "engines/simulation_run/evidence_gap_roi_ranker/tests",
     "engines/simulation_run/action_recommender/tests",
+    "engines/simulation_run/credibility_scorer/tests",
     "tests/integration",
 ]
 
