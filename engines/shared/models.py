@@ -230,6 +230,34 @@ class RecommendedAction(str, Enum):
     explain_in_trial = "explain_in_trial"
 
 
+class AuthenticityRisk(str, Enum):
+    """证据真实性风险（P1.5）。"""
+    high = "high"
+    medium = "medium"
+    low = "low"
+
+
+class RelevanceScore(str, Enum):
+    """证据关联性（P1.5）。"""
+    strong = "strong"
+    medium = "medium"
+    weak = "weak"
+
+
+class ProbativeValue(str, Enum):
+    """证据证明力（P1.5）。"""
+    strong = "strong"
+    medium = "medium"
+    weak = "weak"
+
+
+class Vulnerability(str, Enum):
+    """证据易受对方攻击的风险（P1.5）。"""
+    high = "high"
+    medium = "medium"
+    low = "low"
+
+
 # ---------------------------------------------------------------------------
 # 基础输入模型 / Basic input models
 # ---------------------------------------------------------------------------
@@ -266,6 +294,12 @@ class Evidence(BaseModel):
     submitted_by_party_id: Optional[str] = None
     challenged_by_party_ids: list[str] = Field(default_factory=list)
     admissibility_notes: Optional[str] = None
+    # P1.5: 证据权重评分扩展字段（向后兼容，全部 Optional）
+    authenticity_risk: Optional[AuthenticityRisk] = None
+    relevance_score: Optional[RelevanceScore] = None
+    probative_value: Optional[ProbativeValue] = None
+    vulnerability: Optional[Vulnerability] = None
+    evidence_weight_scored: bool = False
 
 
 class FactProposition(BaseModel):
