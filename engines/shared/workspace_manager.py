@@ -25,6 +25,7 @@ from engines.shared.models import (
     Claim,
     Defense,
     EvidenceIndex,
+    ExecutiveSummaryArtifact,
     InteractionTurn,
     IssueTree,
     ReportArtifact,
@@ -108,6 +109,7 @@ class WorkspaceManager:
                 "ReportArtifact": [],
                 "InteractionTurn": [],
                 "Scenario": [],
+                "ExecutiveSummaryArtifact": [],
             },
             "run_ids": [],
             "active_scenario_id": None,
@@ -325,6 +327,39 @@ class WorkspaceManager:
             }
         )
         self._atomic_write(self._workspace_path(), ws)
+
+    def save_executive_summary(self, summary: ExecutiveSummaryArtifact) -> None:
+        """持久化一页式执行摘要，更新 artifact_index.ExecutiveSummaryArtifact。
+        Persist ExecutiveSummaryArtifact and update artifact_index ref.
+        """
+        storage_ref = "artifacts/executive_summary.json"
+        path = self._artifacts_dir() / "executive_summary.json"
+        self._atomic_write(path, summary.model_dump())
+        ws = self._load_or_raise()
+        ws["artifact_index"]["ExecutiveSummaryArtifact"] = [
+            {
+                "object_type": "ExecutiveSummaryArtifact",
+                "object_id": summary.summary_id,
+                "storage_ref": storage_ref,
+            }
+        ]
+        self._atomic_write(self._workspace_path(), ws)
+
+    def load_executive_summary(self) -> Optional[ExecutiveSummaryArtifact]:
+        """加载一页式执行摘要。
+        Load ExecutiveSummaryArtifact. Returns None if not found.
+        Raises ValueError on case_id mismatch.
+        """
+        path = self._artifacts_dir() / "executive_summary.json"
+        if not path.exists():
+            return None
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data.get("case_id") != self.case_id:
+            raise ValueError(
+                f"case_id mismatch in executive_summary.json: "
+                f"expected {self.case_id!r}, got {data.get('case_id')!r}"
+            )
+        return ExecutiveSummaryArtifact.model_validate(data)
 
     # ------------------------------------------------------------------
     # 产物加载 / Artifact loading（checkpoint resume）

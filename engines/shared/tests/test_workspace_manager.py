@@ -882,3 +882,68 @@ def test_save_agent_output_different_parties_isolated(tmp_path: Path) -> None:
     # 原告文件不在被告目录下
     assert "party-defendant-001" not in ref_p
     assert "party-plaintiff-001" not in ref_d
+
+
+# ---------------------------------------------------------------------------
+# ExecutiveSummaryArtifact 持久化测试 (P2.12)
+# ---------------------------------------------------------------------------
+
+
+class TestSaveLoadExecutiveSummary:
+    """ExecutiveSummaryArtifact 持久化测试。"""
+
+    def _make_summary(self, case_id: str = CASE_ID) -> "ExecutiveSummaryArtifact":
+        from engines.shared.models import ExecutiveSummaryArtifact
+        return ExecutiveSummaryArtifact(
+            summary_id="SUM-001",
+            case_id=case_id,
+            run_id="RUN-001",
+            top5_decisive_issues=["ISS-001"],
+            top3_immediate_actions="未启用",
+            action_recommendation_id=None,
+            top3_adversary_optimal_attacks=["ATK-001"],
+            adversary_attack_chain_id="CHAIN-001",
+            current_most_stable_claim="最稳诉请文本（绑定 RPT-001）",
+            amount_report_id="RPT-001",
+            critical_evidence_gaps="未启用",
+        )
+
+    def test_save_and_load_roundtrip(self, tmp_path):
+        mgr = _mgr(tmp_path)
+        mgr.init_workspace("civil")
+        summary = self._make_summary()
+        mgr.save_executive_summary(summary)
+        loaded = mgr.load_executive_summary()
+        assert loaded is not None
+        assert loaded.summary_id == "SUM-001"
+        assert loaded.case_id == CASE_ID
+
+    def test_load_returns_none_when_not_saved(self, tmp_path):
+        mgr = _mgr(tmp_path)
+        mgr.init_workspace("civil")
+        assert mgr.load_executive_summary() is None
+
+    def test_artifact_index_updated_after_save(self, tmp_path):
+        mgr = _mgr(tmp_path)
+        mgr.init_workspace("civil")
+        mgr.save_executive_summary(self._make_summary())
+        ws = mgr.load_workspace()
+        assert ws["artifact_index"]["ExecutiveSummaryArtifact"][0]["object_id"] == "SUM-001"
+
+    def test_init_workspace_has_executive_summary_key(self, tmp_path):
+        mgr = _mgr(tmp_path)
+        ws = mgr.init_workspace("civil")
+        assert "ExecutiveSummaryArtifact" in ws["artifact_index"]
+        assert ws["artifact_index"]["ExecutiveSummaryArtifact"] == []
+
+    def test_load_raises_on_case_id_mismatch(self, tmp_path):
+        mgr = _mgr(tmp_path)
+        mgr.init_workspace("civil")
+        summary = self._make_summary(case_id="OTHER-CASE")
+        # Write directly with wrong case_id to simulate mismatch
+        path = tmp_path / CASE_ID / "artifacts" / "executive_summary.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        import json as _json
+        path.write_text(_json.dumps(summary.model_dump()), encoding="utf-8")
+        with pytest.raises(ValueError, match="case_id mismatch"):
+            mgr.load_executive_summary()
