@@ -291,17 +291,27 @@ class TestAdversarialSummarizer:
 
 class TestAdversarialSummarySchema:
 
-    def test_adversarial_summary_requires_overall_assessment(self):
-        """overall_assessment 为必填字段。"""
-        from pydantic import ValidationError
-        with pytest.raises(ValidationError):
-            AdversarialSummary(
-                plaintiff_strongest_arguments=[],
-                defendant_strongest_defenses=[],
-                unresolved_issues=[],
-                missing_evidence_report=[],
-                # overall_assessment 缺失
-            )
+    def test_overall_assessment_can_be_none(self):
+        """overall_assessment 在 v1.2 改为 Optional，可以为 None（DecisionPathTree 存在时）。"""
+        summary = AdversarialSummary(
+            plaintiff_strongest_arguments=[],
+            defendant_strongest_defenses=[],
+            unresolved_issues=[],
+            missing_evidence_report=[],
+            overall_assessment=None,
+        )
+        assert summary.overall_assessment is None
+
+    def test_overall_assessment_string_still_accepted(self):
+        """overall_assessment 传入字符串仍然有效（向后兼容）。"""
+        summary = AdversarialSummary(
+            plaintiff_strongest_arguments=[],
+            defendant_strongest_defenses=[],
+            unresolved_issues=[],
+            missing_evidence_report=[],
+            overall_assessment="态势评估文本",
+        )
+        assert summary.overall_assessment == "态势评估文本"
 
     def test_strongest_argument_requires_evidence_ids(self):
         """evidence_ids 为必填非空列表。"""

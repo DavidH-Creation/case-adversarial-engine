@@ -145,8 +145,13 @@ class AdversarialSummary(BaseModel):
     missing_evidence_report: list[MissingEvidenceSummary] = Field(
         default_factory=list, description="缺证分析列表（LLM 增强）"
     )
-    overall_assessment: str = Field(
-        ..., min_length=1, description="整体态势评估，不超过 300 字"
+    overall_assessment: Optional[str] = Field(
+        default=None,
+        description=(
+            "整体态势评估（不超过 300 字）。v1.2 改为 Optional："
+            " DecisionPathTree 存在时由调用方从各路径 possible_outcome 摘要填充；"
+            " 直接调用 AdversarialSummarizer 时仍可直接填写。"
+        ),
     )
 
 
