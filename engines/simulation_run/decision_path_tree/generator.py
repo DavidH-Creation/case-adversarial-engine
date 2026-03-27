@@ -67,7 +67,7 @@ class DecisionPathTreeGenerator:
         case_type:   案件类型（当前只支持 "civil_loan"）
         model:       LLM 模型标识
         temperature: 生成温度
-        max_retries: LLM 调用失败时的最大重试次数
+        max_retries: LLM 调用失败时的最大重试次数（重试次数，不含初次调用；总调用次数 = max_retries + 1）
     """
 
     def __init__(
@@ -269,7 +269,7 @@ class DecisionPathTreeGenerator:
                     conflict.source_a_evidence_id,
                     conflict.source_b_evidence_id,
                 )
-                if ev_id in known_evidence_ids
+                if ev_id and ev_id in known_evidence_ids
             ]
 
             result.append(BlockingCondition(
