@@ -845,7 +845,7 @@ class DecisionPath(BaseModel):
     trigger_issue_ids: list[str] = Field(default_factory=list, description="触发条件关联的争点 ID 列表")
     key_evidence_ids: list[str] = Field(default_factory=list, description="本路径依赖的关键证据 ID 列表")
     possible_outcome: str = Field(..., min_length=1, description="可能的裁判结果描述")
-    confidence_interval: Optional["ConfidenceInterval"] = Field(
+    confidence_interval: Optional[ConfidenceInterval] = Field(
         default=None, description="置信度区间；verdict_block_active=True 时必须为 None"
     )
     path_notes: str = Field(default="", description="路径备注")
@@ -854,7 +854,7 @@ class DecisionPath(BaseModel):
 class BlockingCondition(BaseModel):
     """阻断稳定判断的条件。"""
     condition_id: str = Field(..., min_length=1)
-    condition_type: "BlockingConditionType"
+    condition_type: BlockingConditionType
     description: str = Field(..., min_length=1)
     linked_issue_ids: list[str] = Field(default_factory=list)
     linked_evidence_ids: list[str] = Field(default_factory=list)
@@ -868,8 +868,8 @@ class DecisionPathTree(BaseModel):
     tree_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
-    paths: list["DecisionPath"] = Field(default_factory=list, description="裁判路径列表（建议 3-6 条）")
-    blocking_conditions: list["BlockingCondition"] = Field(
+    paths: list[DecisionPath] = Field(default_factory=list, description="裁判路径列表（建议 3-6 条）")
+    blocking_conditions: list[BlockingCondition] = Field(
         default_factory=list, description="当前阻断稳定判断的条件列表"
     )
     created_at: str = Field(
