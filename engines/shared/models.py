@@ -18,7 +18,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Optional, Protocol, Union, runtime_checkable
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +159,15 @@ class JobStatus(str, Enum):
     completed = "completed"
     failed = "failed"
     cancelled = "cancelled"
+
+
+class RiskImpactObject(str, Enum):
+    """风险影响对象维度枚举。对应 docs/03_case_object_model.md risk_impact_object。"""
+    win_rate = "win_rate"
+    supported_amount = "supported_amount"
+    trial_credibility = "trial_credibility"
+    procedural_stability = "procedural_stability"
+    evidence_supplement_cost = "evidence_supplement_cost"
 
 
 class AgentRole(str, Enum):
@@ -724,6 +733,30 @@ class Job(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class RiskFlag(BaseModel):
+    """风险标记结构体。对应 docs/03_case_object_model.md RiskFlag。
+
+    constraints:
+    - flag_id:               非空
+    - description:           非空（对应原 str 内容，保持语义兼容）
+    - impact_objects:        impact_objects_scored=True 时必须非空
+    - impact_objects_scored: False 表示过渡期自动升级的旧数据
+    """
+    flag_id: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    impact_objects: list[RiskImpactObject] = Field(default_factory=list)
+    impact_objects_scored: bool = Field(default=True)
+
+    @model_validator(mode="after")
+    def _check_impact_objects_when_scored(self) -> "RiskFlag":
+        if self.impact_objects_scored and len(self.impact_objects) == 0:
+            raise ValueError(
+                "impact_objects must not be empty when impact_objects_scored=True; "
+                "set impact_objects_scored=False for legacy-migrated data"
+            )
+        return self
+
+
 class AgentOutput(BaseModel):
     """角色在某一程序回合的规范化输出。对应 docs/03_case_object_model.md AgentOutput。
 
@@ -749,11 +782,36 @@ class AgentOutput(BaseModel):
         ..., min_length=1, description="必须非空；所有关键结论必须引用具体证据 ID"
     )
     statement_class: StatementClass
-    risk_flags: list[str] = Field(
+    risk_flags: list[RiskFlag] = Field(
         default_factory=list,
-        description="风险标记列表（自由字符串，如'越权风险'/'引用不足'/'程序冲突'）",
+        description="风险标记列表。过渡期兼容：str 元素自动升级为 RiskFlag(impact_objects_scored=False)。",
     )
     created_at: str
+
+    @field_validator("risk_flags", mode="before")
+    @classmethod
+    def _migrate_risk_flags(cls, v: object) -> list:
+        """过渡期兼容：list[str] 中的 str 元素自动升级为 RiskFlag。
+        v1.5 起不再接受 str 形式的 risk_flags 元素。
+        """
+        import uuid as _uuid
+
+        if not isinstance(v, list):
+            return v
+        result = []
+        for item in v:
+            if isinstance(item, str):
+                result.append(
+                    RiskFlag(
+                        flag_id=f"migrated-{_uuid.uuid4().hex[:8]}",
+                        description=item,
+                        impact_objects=[],
+                        impact_objects_scored=False,
+                    )
+                )
+            else:
+                result.append(item)
+        return result
 
 
 # ---------------------------------------------------------------------------

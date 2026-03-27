@@ -169,7 +169,7 @@ class EvidenceManagerAgent:
   "body": "（整体分析文字，不超过400字）",
   "issue_ids": ["受影响的争点ID列表"],
   "evidence_citations": ["分析中引用的证据ID列表，必须非空"],
-  "risk_flags": ["风险标记"],
+  "risk_flags": [{{"flag_id": "rf-001", "description": "风险描述", "impact_objects": ["win_rate|supported_amount|trial_credibility|procedural_stability|evidence_supplement_cost中选一或多"], "impact_objects_scored": true}}],
   "conflicts": [
     {{
       "issue_id": "争点ID",

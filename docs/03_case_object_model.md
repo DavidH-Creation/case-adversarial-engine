@@ -44,6 +44,14 @@
 - `inference`
 - `assumption`
 
+### `risk_impact_object`
+
+- `win_rate`
+- `supported_amount`
+- `trial_credibility`
+- `procedural_stability`
+- `evidence_supplement_cost`
+
 ### `workflow_stage`
 
 - `case_structuring`
@@ -292,6 +300,33 @@
 - `output_branching` 只能基于允许的 `admissible_evidence_statuses`
 - 没有 `next_state_ids` 的状态必须显式标记为终止状态
 
+## `RiskFlag`
+
+### 作用
+
+表示 `AgentOutput` 中的单条风险标记，明确标注风险影响维度。
+
+### Required Fields
+
+- `flag_id`
+- `description`
+- `impact_objects`
+- `impact_objects_scored`
+
+### 字段说明
+
+- `flag_id`：风险标记唯一 ID
+- `description`：风险描述（对应原 `str` 内容，保持语义兼容）
+- `impact_objects`：风险影响的目标维度（列表，元素来自 `risk_impact_object` 枚举）
+- `impact_objects_scored`：`true` 表示 `impact_objects` 已由 LLM 层明确填写；`false` 表示从旧 `str` 格式自动升级（过渡期专用）
+
+### Constraints
+
+- `impact_objects` 当 `impact_objects_scored=true` 时不允许为空列表
+- `impact_objects` 枚举值来自 `risk_impact_object`，不允许自由文本
+- 过渡期（v1.5 以前）：读取旧 `AgentOutput` 时若 `risk_flags` 元素为 `str`，自动升级为 `RiskFlag(description=str, impact_objects=[], impact_objects_scored=false)`
+- v1.5 起不再接受 `str` 形式的 `risk_flags` 元素
+
 ## `AgentOutput`
 
 ### 作用
@@ -324,7 +359,7 @@
 - `body`：规范化输出正文
 - `evidence_citations`：引用的 `evidence_id` 列表
 - `statement_class`：`fact`、`inference`、`assumption`
-- `risk_flags`：如越权风险、引用不足、程序冲突、状态冲突
+- `risk_flags`：`list[RiskFlag]`，每条风险标记包含 `description`（风险描述）和 `impact_objects`（影响维度枚举列表，来自 `risk_impact_object`）；旧 `str` 格式在过渡期自动升级
 
 ### Constraints
 
