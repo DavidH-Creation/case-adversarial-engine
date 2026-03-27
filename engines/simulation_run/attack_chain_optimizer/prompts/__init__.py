@@ -1,0 +1,8 @@
+"""Prompt registry for attack_chain_optimizer."""
+from .civil_loan import SYSTEM_PROMPT, build_user_prompt
+
+PROMPT_REGISTRY = {
+    "civil_loan": {"system": SYSTEM_PROMPT, "build_user": build_user_prompt},
+}
+
+__all__ = ["PROMPT_REGISTRY"]

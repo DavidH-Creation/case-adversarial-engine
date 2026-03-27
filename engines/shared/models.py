@@ -875,3 +875,44 @@ class DecisionPathTree(BaseModel):
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
+
+
+# ---------------------------------------------------------------------------
+# P0.4：最强攻击链
+# ---------------------------------------------------------------------------
+
+
+class AttackNode(BaseModel):
+    """单个攻击节点。OptimalAttackChain.top_attacks 列表元素（规则层保证恰好 3 个）。"""
+    attack_node_id: str = Field(..., min_length=1, description="攻击节点唯一标识")
+    target_issue_id: str = Field(..., min_length=1, description="攻击目标争点 ID")
+    attack_description: str = Field(..., min_length=1, description="攻击论点描述")
+    success_conditions: str = Field(default="", description="攻击成功条件")
+    supporting_evidence_ids: list[str] = Field(
+        ..., min_length=1, description="支撑此攻击点的证据 ID 列表（不得为空）"
+    )
+    counter_measure: str = Field(default="", description="我方对此攻击点的反制动作")
+    adversary_pivot_strategy: str = Field(
+        default="", description="对方补证后我方策略切换说明"
+    )
+
+
+class OptimalAttackChain(BaseModel):
+    """某一方的最优攻击顺序与反制准备。P0.4 产物，纳入 CaseWorkspace.artifact_index。
+    为原告和被告各生成一份。
+    """
+    chain_id: str = Field(..., min_length=1)
+    case_id: str = Field(..., min_length=1)
+    run_id: str = Field(..., min_length=1)
+    owner_party_id: str = Field(..., min_length=1, description="生成方当事人 ID")
+    top_attacks: list[AttackNode] = Field(
+        default_factory=list,
+        description="最优攻击点，规则层保证恰好 3 个；LLM 失败时为空列表",
+    )
+    recommended_order: list[str] = Field(
+        default_factory=list,
+        description="推荐攻击顺序（有序 attack_node_id 列表），与 top_attacks 完全对应",
+    )
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
