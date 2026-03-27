@@ -28,6 +28,7 @@ testpaths = [
     "engines/procedure_setup/tests",
     "engines/adversarial/tests",
     "engines/simulation_run/issue_impact_ranker/tests",
+    "engines/simulation_run/decision_path_tree/tests",
     "tests/integration",
 ]
 
