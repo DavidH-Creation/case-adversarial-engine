@@ -48,6 +48,13 @@ class MinutesGenerator:
         sections: list[ReportSection] = []
         section_idx = 0
 
+        # 回链 output_ids：质证结果 run_id + 法官追问 run_id
+        xexam_output_id = result.cross_examination_result.run_id
+        judge_output_id = result.judge_questions.run_id
+        all_output_ids = sorted(
+            {oid for oid in (xexam_output_id, judge_output_id) if oid}
+        ) or [result.run_id]
+
         # ------------------------------------------------------------------
         # 1. 案件概况
         # ------------------------------------------------------------------
@@ -64,6 +71,7 @@ class MinutesGenerator:
                 f"证据数量：{len(result.final_evidence_index.evidence)}"
             ),
             linked_issue_ids=issue_ids,
+            linked_output_ids=all_output_ids,
             linked_evidence_ids=[],
         ))
 
@@ -89,6 +97,7 @@ class MinutesGenerator:
             title="证据提交",
             body="\n".join(body_lines) or "无证据提交。",
             linked_issue_ids=[],
+            linked_output_ids=all_output_ids,
             linked_evidence_ids=submitted_ev_ids,
         ))
 
@@ -118,6 +127,7 @@ class MinutesGenerator:
             title="质证情况",
             body="\n".join(xexam_lines) or "无质证记录。",
             linked_issue_ids=sorted(xexam_issue_ids),
+            linked_output_ids=[xexam_output_id],
             linked_evidence_ids=xexam_ev_ids,
         ))
 
@@ -138,6 +148,7 @@ class MinutesGenerator:
             title="争点整理",
             body="\n".join(issue_lines) or "无争点。",
             linked_issue_ids=issue_ids,
+            linked_output_ids=all_output_ids,
             linked_evidence_ids=[],
         ))
 
@@ -165,6 +176,7 @@ class MinutesGenerator:
             title="法官追问",
             body="\n".join(jq_lines) or "无法官追问。",
             linked_issue_ids=sorted(set(jq_issue_ids)),
+            linked_output_ids=[judge_output_id],
             linked_evidence_ids=sorted(set(jq_ev_ids)),
         ))
 
@@ -189,6 +201,7 @@ class MinutesGenerator:
             title="质证焦点清单",
             body="\n".join(focus_lines) or "无质证焦点。",
             linked_issue_ids=sorted(set(focus_issue_ids)),
+            linked_output_ids=[xexam_output_id],
             linked_evidence_ids=sorted(set(focus_ev_ids)),
         ))
 

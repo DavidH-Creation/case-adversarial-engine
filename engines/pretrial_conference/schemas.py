@@ -20,6 +20,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from engines.shared.models import EvidenceIndex
+
 
 # ---------------------------------------------------------------------------
 # 枚举 / Enums
@@ -168,6 +170,6 @@ class PretrialConferenceResult(BaseModel):
     run_id: str = Field(..., min_length=1)
     cross_examination_result: CrossExaminationResult
     judge_questions: JudgeQuestionSet
-    final_evidence_index: object = Field(
+    final_evidence_index: EvidenceIndex = Field(
         ..., description="质证后的 EvidenceIndex（证据状态已更新）"
     )

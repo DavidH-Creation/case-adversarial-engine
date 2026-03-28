@@ -15,6 +15,7 @@ from engines.pretrial_conference.schemas import (
     JudgeQuestionType,
     PretrialConferenceResult,
 )
+from engines.shared.models import EvidenceIndex
 
 
 # ---------------------------------------------------------------------------
@@ -244,9 +245,26 @@ class TestPretrialConferenceResult:
             judge_questions=JudgeQuestionSet(
                 case_id="case-001", run_id="run-001"
             ),
-            final_evidence_index={},
+            final_evidence_index=EvidenceIndex(
+                case_id="case-001", evidence=[]
+            ),
         )
         assert result.case_id == "case-001"
+
+    def test_dict_final_evidence_index_rejected(self):
+        """object / dict 不再被接受为 final_evidence_index。"""
+        with pytest.raises(ValidationError):
+            PretrialConferenceResult(
+                case_id="case-001",
+                run_id="run-001",
+                cross_examination_result=CrossExaminationResult(
+                    case_id="case-001", run_id="run-001"
+                ),
+                judge_questions=JudgeQuestionSet(
+                    case_id="case-001", run_id="run-001"
+                ),
+                final_evidence_index={},
+            )
 
 
 # ---------------------------------------------------------------------------

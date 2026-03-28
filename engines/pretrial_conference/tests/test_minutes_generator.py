@@ -239,3 +239,26 @@ class TestMinutesGenerator:
             s for s in report.sections if s.title == "法官追问"
         )
         assert "请说明借款用途" in judge_section.body
+
+    def test_all_sections_have_linked_output_ids(self):
+        """每个 section 的 linked_output_ids 不为空（满足 ReportArtifact 契约）。"""
+        gen = MinutesGenerator()
+        report = gen.generate(
+            result=_make_full_result(),
+            issue_tree=_make_issue_tree(),
+        )
+        for sec in report.sections:
+            assert sec.linked_output_ids, (
+                f"section {sec.section_id!r} ({sec.title}) "
+                f"has empty linked_output_ids"
+            )
+
+    def test_passes_report_validator(self):
+        """生成的纪要应通过现有 ReportArtifact validator 的 output 回链检查。"""
+        gen = MinutesGenerator()
+        report = gen.generate(
+            result=_make_full_result(),
+            issue_tree=_make_issue_tree(),
+        )
+        for sec in report.sections:
+            assert len(sec.linked_output_ids) >= 1
