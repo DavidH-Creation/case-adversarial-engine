@@ -8,7 +8,7 @@ Pure rule layer (deterministic), no LLM calls.
 职责 / Responsibilities:
 1. 接收调用方提供的四类结构化输入（放款流水、还款流水、争议归因、诉请描述符）
 2. 计算 principal 类诉请的 calculated_amount（其他类型返回 None）
-3. 执行五条硬校验规则
+3. 执行七条硬校验规则
 4. 生成 AmountConflict 列表
 5. 激活 verdict_block_active（当 unresolved_conflicts 非空时）
 6. 返回 AmountCalculationReport
@@ -363,10 +363,11 @@ class AmountCalculator:
         loan_transactions: list[LoanTransaction],
     ) -> Iterator[AmountConflict]:
         """
-        生成 AmountConflict 列表。两类来源：
+        生成 AmountConflict 列表。三类来源：
 
         1. 诉请计算 delta ≠ 0（claimed vs calculated 不一致）
         2. 未解决的争议归因（resolution_status = unresolved）
+        3. 起诉金额/可核实交付比值异常（rule #6，在 calculate() 中追加）
         """
         conflict_index = 0
 
