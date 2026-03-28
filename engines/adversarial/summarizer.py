@@ -224,33 +224,37 @@ class AdversarialSummarizer:
         """将 LLM JSON 输出解析为 AdversarialSummary。
         Parse LLM JSON output dict to AdversarialSummary.
         """
+        def _to_dict(item: object) -> dict:
+            """Normalize LLM output element: if it's a string, wrap it."""
+            return item if isinstance(item, dict) else {"issue_id": str(item)}
+
         plaintiff_args = [
             StrongestArgument(
                 issue_id=a.get("issue_id", "unknown"),
-                position=a.get("position", ""),
+                position=a.get("position") or "（未提供）",
                 evidence_ids=a.get("evidence_ids") or ["unknown-evidence"],
-                reasoning=a.get("reasoning", ""),
+                reasoning=a.get("reasoning") or "（未提供）",
             )
-            for a in data.get("plaintiff_strongest_arguments", [])
+            for a in [_to_dict(x) for x in data.get("plaintiff_strongest_arguments", [])]
         ]
 
         defendant_defenses = [
             StrongestArgument(
                 issue_id=d.get("issue_id", "unknown"),
-                position=d.get("position", ""),
+                position=d.get("position") or "（未提供）",
                 evidence_ids=d.get("evidence_ids") or ["unknown-evidence"],
-                reasoning=d.get("reasoning", ""),
+                reasoning=d.get("reasoning") or "（未提供）",
             )
-            for d in data.get("defendant_strongest_defenses", [])
+            for d in [_to_dict(x) for x in data.get("defendant_strongest_defenses", [])]
         ]
 
         unresolved = [
             UnresolvedIssueDetail(
                 issue_id=u.get("issue_id", "unknown"),
-                issue_title=u.get("issue_title", "unknown"),
-                why_unresolved=u.get("why_unresolved", ""),
+                issue_title=u.get("issue_title") or u.get("issue_id", "unknown"),
+                why_unresolved=u.get("why_unresolved") or "（原因未说明）",
             )
-            for u in data.get("unresolved_issues", [])
+            for u in [_to_dict(x) for x in data.get("unresolved_issues", [])]
         ]
 
         missing_ev = [
@@ -259,10 +263,16 @@ class AdversarialSummarizer:
                 missing_for_party_id=m.get("missing_for_party_id", "unknown"),
                 gap_description=m.get("gap_description", ""),
             )
-            for m in data.get("missing_evidence_report", [])
+            for m in [_to_dict(x) for x in data.get("missing_evidence_report", [])]
         ]
 
         overall = data.get("overall_assessment", "")
+        if isinstance(overall, dict):
+            # LLM returned a structured object instead of plain string — flatten it
+            parts = []
+            for k, v in overall.items():
+                parts.append(f"{k}: {v}")
+            overall = "；".join(parts)
 
         return AdversarialSummary(
             plaintiff_strongest_arguments=plaintiff_args,
