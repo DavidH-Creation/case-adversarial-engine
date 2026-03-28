@@ -80,7 +80,17 @@ def _make_issue(issue_id: str, evidence_ids: list[str] | None = None) -> Issue:
     )
 
 
-def _make_evidence(evidence_id: str, status: EvidenceStatus = EvidenceStatus.submitted) -> Evidence:
+def _make_evidence(
+    evidence_id: str,
+    status: EvidenceStatus = EvidenceStatus.admitted_for_discussion,
+) -> Evidence:
+    domain = (
+        AccessDomain.admitted_record
+        if status == EvidenceStatus.admitted_for_discussion
+        else AccessDomain.shared_common
+        if status in (EvidenceStatus.submitted, EvidenceStatus.challenged)
+        else AccessDomain.owner_private
+    )
     return Evidence(
         evidence_id=evidence_id,
         case_id="case-001",
@@ -90,7 +100,7 @@ def _make_evidence(evidence_id: str, status: EvidenceStatus = EvidenceStatus.sub
         summary="测试证据摘要",
         evidence_type=EvidenceType.documentary,
         target_fact_ids=["fact-001"],
-        access_domain=AccessDomain.shared_common,
+        access_domain=domain,
         status=status,
     )
 
@@ -102,7 +112,7 @@ def _make_issue_tree(issue_ids: list[str], evidence_ids: list[str] | None = None
 
 def _make_evidence_index(
     evidence_ids: list[str],
-    status: EvidenceStatus = EvidenceStatus.submitted,
+    status: EvidenceStatus = EvidenceStatus.admitted_for_discussion,
 ) -> EvidenceIndex:
     return EvidenceIndex(
         case_id="case-001",
@@ -167,7 +177,7 @@ def _make_input(
     *,
     verdict_block_active: bool = False,
     conflicts: list[AmountConflict] | None = None,
-    evidence_status: EvidenceStatus = EvidenceStatus.submitted,
+    evidence_status: EvidenceStatus = EvidenceStatus.admitted_for_discussion,
 ) -> DecisionPathTreeInput:
     iids = issue_ids or ["issue-001", "issue-002", "issue-003"]
     eids = evidence_ids or ["ev-001", "ev-002", "ev-003"]
@@ -401,12 +411,12 @@ class TestIDValidation:
         assert result.blocking_conditions[0].condition_id == "bc-valid"
 
 
-class TestV12TransitionRule:
-    """v1.2 过渡规则：只有 submitted/challenged/admitted_for_discussion 的证据进入 admitted_record。"""
+class TestV15StrictAdmittedOnly:
+    """v1.5: 只有 admitted_for_discussion 的证据进入裁判路径树。"""
 
     @pytest.mark.asyncio
-    async def test_private_evidence_not_in_admitted_record(self):
-        """status=private 的证据不出现在传给 LLM 的证据集合中。"""
+    async def test_only_admitted_evidence_in_llm_prompt(self):
+        """只有 admitted_for_discussion 的证据出现在传给 LLM 的证据集合中。"""
         mock = MockLLMClient(_llm_response(3))
         generator = DecisionPathTreeGenerator(
             llm_client=mock,
@@ -415,12 +425,12 @@ class TestV12TransitionRule:
             temperature=0.0,
             max_retries=1,
         )
-        # 混合 status 的证据索引
         mixed_index = EvidenceIndex(
             case_id="case-001",
             evidence=[
-                _make_evidence("ev-submitted", status=EvidenceStatus.submitted),
+                _make_evidence("ev-admitted", status=EvidenceStatus.admitted_for_discussion),
                 _make_evidence("ev-private", status=EvidenceStatus.private),
+                _make_evidence("ev-submitted", status=EvidenceStatus.submitted),
                 _make_evidence("ev-challenged", status=EvidenceStatus.challenged),
             ],
         )
@@ -434,20 +444,20 @@ class TestV12TransitionRule:
 
         await generator.generate(inp)
 
-        # 传给 LLM 的 user prompt 不应包含 private 证据 ID
+        assert "ev-admitted" in mock.last_user
         assert "ev-private" not in mock.last_user
-        assert "ev-submitted" in mock.last_user
-        assert "ev-challenged" in mock.last_user
+        assert "ev-submitted" not in mock.last_user
+        assert "ev-challenged" not in mock.last_user
 
     @pytest.mark.asyncio
-    async def test_private_evidence_id_filtered_from_known_ids(self):
-        """private 证据的 ID 在规则层过滤中也被排除（LLM 若引用则被清空）。"""
+    async def test_non_admitted_evidence_id_filtered_from_known_ids(self):
+        """非 admitted 证据的 ID 在规则层过滤中也被排除。"""
         response = json.dumps({
             "paths": [{
                 "path_id": "path-A",
                 "trigger_condition": "触发条件",
                 "trigger_issue_ids": [],
-                "key_evidence_ids": ["ev-submitted", "ev-private"],  # 引用了 private 证据
+                "key_evidence_ids": ["ev-admitted", "ev-submitted"],
                 "possible_outcome": "结果描述",
                 "confidence_interval": None,
                 "path_notes": "",
@@ -457,8 +467,8 @@ class TestV12TransitionRule:
         mixed_index = EvidenceIndex(
             case_id="case-001",
             evidence=[
+                _make_evidence("ev-admitted", status=EvidenceStatus.admitted_for_discussion),
                 _make_evidence("ev-submitted", status=EvidenceStatus.submitted),
-                _make_evidence("ev-private", status=EvidenceStatus.private),
             ],
         )
         inp = DecisionPathTreeInput(
@@ -471,8 +481,8 @@ class TestV12TransitionRule:
         result = await _make_generator(response).generate(inp)
 
         assert len(result.paths) == 1
-        assert "ev-private" not in result.paths[0].key_evidence_ids
-        assert "ev-submitted" in result.paths[0].key_evidence_ids
+        assert "ev-submitted" not in result.paths[0].key_evidence_ids
+        assert "ev-admitted" in result.paths[0].key_evidence_ids
 
 
 class TestAutoInjectBlockingConditions:

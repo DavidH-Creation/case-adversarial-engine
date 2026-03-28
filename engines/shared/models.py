@@ -274,6 +274,13 @@ class Vulnerability(str, Enum):
     low = "low"
 
 
+class LegalityRisk(str, Enum):
+    """证据合法性风险（v1.5 质证四维度之一）。"""
+    high = "high"
+    medium = "medium"
+    low = "low"
+
+
 class IssueCategory(str, Enum):
     """争点分析类型（P1.6）。与 issue_type 并列，不替代。"""
     fact_issue = "fact_issue"
@@ -336,6 +343,7 @@ class Evidence(BaseModel):
     authenticity_risk: Optional[AuthenticityRisk] = None
     relevance_score: Optional[RelevanceScore] = None
     probative_value: Optional[ProbativeValue] = None
+    legality_risk: Optional[LegalityRisk] = None
     vulnerability: Optional[Vulnerability] = None
     evidence_weight_scored: bool = False
     # P2.9: 可信度折损扩展字段（向后兼容，Optional/默认值）
@@ -786,34 +794,9 @@ class AgentOutput(BaseModel):
     statement_class: StatementClass
     risk_flags: list[RiskFlag] = Field(
         default_factory=list,
-        description="风险标记列表。过渡期兼容：str 元素自动升级为 RiskFlag(impact_objects_scored=False)。",
+        description="风险标记列表。v1.5 起只接受 RiskFlag 对象，不再接受 str。",
     )
     created_at: str
-
-    @field_validator("risk_flags", mode="before")
-    @classmethod
-    def _migrate_risk_flags(cls, v: object) -> list:
-        """过渡期兼容：list[str] 中的 str 元素自动升级为 RiskFlag。
-        v1.5 起不再接受 str 形式的 risk_flags 元素。
-        """
-        import uuid as _uuid
-
-        if not isinstance(v, list):
-            return v
-        result = []
-        for item in v:
-            if isinstance(item, str):
-                result.append(
-                    RiskFlag(
-                        flag_id=f"migrated-{_uuid.uuid4().hex[:8]}",
-                        description=item,
-                        impact_objects=[],
-                        impact_objects_scored=False,
-                    )
-                )
-            else:
-                result.append(item)
-        return result
 
 
 # ---------------------------------------------------------------------------

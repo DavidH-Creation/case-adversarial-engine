@@ -407,7 +407,7 @@ class TestEvidenceManagerAgent:
             "case_id": CASE_ID,
             "issue_ids": ["issue-001"],
             "evidence_citations": ["ev-001", "ev-003"],
-            "risk_flags": ["证据冲突"],
+            "risk_flags": [{"flag_id": "rf-001", "description": "证据冲突", "impact_objects": ["win_rate"]}],
             "conflicts": [
                 {
                     "issue_id": "issue-001",

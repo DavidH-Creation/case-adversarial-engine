@@ -116,6 +116,12 @@
         "null"
       ],
       "description": "Notes on authenticity, relevance, legality, and probative value. Null at indexing time."
+    },
+    "legality_risk": {
+      "type": ["string", "null"],
+      "enum": ["high", "medium", "low", null],
+      "default": null,
+      "description": "证据合法性风险（v1.5 质证四维度之一）。Null until scored."
     }
   },
   "allOf": [

@@ -4,8 +4,7 @@ Decision Path Tree Generator — main class for P0.3.
 
 职责 / Responsibilities:
 1. 接收 DecisionPathTreeInput（ranked_issue_tree + evidence_index + amount_report）
-2. v1.2 过渡规则：只将 status 为 submitted/challenged/admitted_for_discussion 的证据纳入
-   admitted_record，其余（private）不传入 LLM 也不加入 known_evidence_ids
+2. 只将 status 为 admitted_for_discussion 的证据纳入，其余不传入 LLM 也不加入 known_evidence_ids
 3. 一次性调用 LLM 生成 3-6 条裁判路径和阻断条件
 4. 规则层：
    a. verdict_block_active=True → 强制清空所有 confidence_interval
@@ -51,10 +50,8 @@ from .schemas import (
 
 _MAX_PATHS = 6
 
-# v1.2 过渡规则：这些 status 的证据视为已进入 admitted_record
+# v1.5: 只有 admitted_for_discussion 状态的证据进入裁判路径树
 _ADMITTED_STATUSES: frozenset[EvidenceStatus] = frozenset({
-    EvidenceStatus.submitted,
-    EvidenceStatus.challenged,
     EvidenceStatus.admitted_for_discussion,
 })
 
@@ -98,7 +95,7 @@ class DecisionPathTreeGenerator:
         """
         check = inp.amount_calculation_report.consistency_check_result
 
-        # v1.2 过渡规则：只取 admitted_record 中的证据
+        # 只取 admitted_for_discussion 状态的证据
         admitted_evidences = [
             ev for ev in inp.evidence_index.evidence
             if ev.status in _ADMITTED_STATUSES

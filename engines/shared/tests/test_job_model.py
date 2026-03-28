@@ -379,9 +379,11 @@ class TestAgentOutputValidConstruction:
     def test_assumption_class_with_risk_flags(self):
         out = AgentOutput(**_base_agent_output(
             statement_class=StatementClass.assumption,
-            risk_flags=["引用不足", "越权风险"],
+            risk_flags=[
+                {"flag_id": "rf-001", "description": "引用不足", "impact_objects": ["win_rate"]},
+                {"flag_id": "rf-002", "description": "越权风险", "impact_objects": ["trial_credibility"]},
+            ],
         ))
-        # str elements are auto-migrated to RiskFlag (backward compat, P2.10)
         assert len(out.risk_flags) == 2
         descriptions = [rf.description for rf in out.risk_flags]
         assert "引用不足" in descriptions
@@ -471,7 +473,10 @@ class TestAgentOutputRoundtrip:
         assert data["statement_class"] == "fact"
 
     def test_roundtrip_with_risk_flags(self):
-        out = AgentOutput(**_base_agent_output(risk_flags=["越权风险", "程序冲突"]))
+        out = AgentOutput(**_base_agent_output(risk_flags=[
+            {"flag_id": "rf-001", "description": "越权风险", "impact_objects": ["win_rate"]},
+            {"flag_id": "rf-002", "description": "程序冲突", "impact_objects": ["procedural_stability"]},
+        ]))
         restored = AgentOutput.model_validate(out.model_dump())
         assert len(restored.risk_flags) == 2
         descriptions = [rf.description for rf in restored.risk_flags]

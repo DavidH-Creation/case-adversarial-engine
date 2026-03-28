@@ -138,7 +138,7 @@ def _base_output(**overrides) -> dict:
     return defaults
 
 
-class TestAgentOutputRiskFlagsMigration:
+class TestAgentOutputRiskFlags:
     def test_empty_list_valid(self):
         out = AgentOutput(**_base_output(risk_flags=[]))
         assert out.risk_flags == []
@@ -153,45 +153,22 @@ class TestAgentOutputRiskFlagsMigration:
         assert len(out.risk_flags) == 1
         assert isinstance(out.risk_flags[0], RiskFlag)
 
-    def test_string_auto_migrates_to_risk_flag(self):
-        """Backward compat: list[str] is auto-upgraded to list[RiskFlag]."""
-        out = AgentOutput(**_base_output(risk_flags=["越权风险", "引用不足"]))
-        assert len(out.risk_flags) == 2
-        assert all(isinstance(rf, RiskFlag) for rf in out.risk_flags)
+    def test_string_risk_flag_rejected(self):
+        """v1.5: str risk_flags no longer accepted, must raise ValidationError."""
+        import pytest
+        with pytest.raises(Exception):
+            AgentOutput(**_base_output(risk_flags=["越权风险", "引用不足"]))
 
-    def test_migrated_flag_has_description_from_str(self):
-        out = AgentOutput(**_base_output(risk_flags=["程序冲突"]))
-        assert out.risk_flags[0].description == "程序冲突"
-
-    def test_migrated_flag_impact_objects_scored_false(self):
-        """Auto-migrated flags have impact_objects_scored=False."""
-        out = AgentOutput(**_base_output(risk_flags=["程序冲突"]))
-        assert out.risk_flags[0].impact_objects_scored is False
-
-    def test_migrated_flag_impact_objects_empty(self):
-        out = AgentOutput(**_base_output(risk_flags=["程序冲突"]))
-        assert out.risk_flags[0].impact_objects == []
-
-    def test_migrated_flag_has_auto_generated_flag_id(self):
-        """Auto-migrated flags get a non-empty flag_id."""
-        out = AgentOutput(**_base_output(risk_flags=["程序冲突"]))
-        assert out.risk_flags[0].flag_id != ""
-
-    def test_mixed_list_str_and_risk_flag_auto_migrates(self):
-        """Mixed list: str elements are migrated, RiskFlag elements pass through."""
+    def test_mixed_str_and_risk_flag_rejected(self):
+        """v1.5: mixed list with str elements must also be rejected."""
+        import pytest
         rf_native = RiskFlag(
             flag_id="rf-native",
             description="越权风险",
             impact_objects=[RiskImpactObject.win_rate],
         )
-        out = AgentOutput(**_base_output(risk_flags=["程序冲突", rf_native]))
-        assert len(out.risk_flags) == 2
-        migrated = out.risk_flags[0]
-        assert migrated.description == "程序冲突"
-        assert migrated.impact_objects_scored is False
-        native = out.risk_flags[1]
-        assert native.flag_id == "rf-native"
-        assert native.impact_objects_scored is True
+        with pytest.raises(Exception):
+            AgentOutput(**_base_output(risk_flags=["程序冲突", rf_native]))
 
     def test_native_flag_roundtrip(self):
         rf = RiskFlag(
@@ -206,7 +183,7 @@ class TestAgentOutputRiskFlagsMigration:
         assert RiskImpactObject.win_rate in restored.risk_flags[0].impact_objects
 
     def test_dict_form_risk_flag_accepted(self):
-        """Pydantic should coerce dict → RiskFlag."""
+        """Pydantic should coerce dict -> RiskFlag."""
         rf_dict = {
             "flag_id": "rf-dict",
             "description": "引用不足",
