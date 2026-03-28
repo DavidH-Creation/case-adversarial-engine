@@ -81,6 +81,17 @@
 - `access_isolation_violations = 0`
 - `job_recoverability` 基础可用
 
+## v1.2
+
+- `outcome_impact = high` 的争点全部出现在输出列表前 50%
+- `amount_calculator` 零 LLM 调用
+- `verdict_block_active = true` 时 `DecisionPathTree` 无置信度区间输出
+- 原被告各有一份 `OptimalAttackChain`，Top3 节点全部绑定 `issue_id` 和 `evidence_ids`
+- 不引入访问隔离漏洞，不引入证据状态错乱，不破坏 `v1` benchmark 兼容
+- `CredibilityScorecard.final_score` 由规则扣分计算，零 LLM 调用
+- `AlternativeClaimSuggestion` 全部绑定 `original_issue_id`
+- `ExecutiveSummaryArtifact` 包含 `one_liner`、`key_risks`、`recommended_actions`，可追溯
+
 ## v1.5
 
 - 法官追问中，70% 以上被律师评价为“确实会问”

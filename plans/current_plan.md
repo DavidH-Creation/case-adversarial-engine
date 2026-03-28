@@ -2,9 +2,9 @@
 
 ## 当前目标
 
-当前目标：`v1` ✅ 已完成（2026-03-26）
+当前目标：`v1.2` ✅ 已完成（2026-03-28）
 
-v1 在 v0.5 静态分析基础上升级为双边对抗引擎。原告代理、被告代理、中立证据管理员在 `AccessController` 隔离下完成三轮对抗（首轮主张 → 证据整理 → 针对性反驳），`AdversarialSummarizer` 提取最强论证与未闭合争点，全程通过 `JobManager` 追踪任务状态。
+v1.2 在 v1 双边对抗引擎基础上完成分析质量与决策能力升级。新增 12 个分析模块（P0.1–P0.4、P1.5–P1.8、P2.9–P2.12），覆盖争点影响排序、金额一致性校验、裁判路径树、最强攻击链、证据权重评分、争点分类、证据缺口 ROI、行动建议、可信度评分、替代主张生成和执行摘要。930 个测试全部通过。
 
 **下一目标**：`v1.5` — 程序化庭前会议 / 质证版（`evidence_state_machine`、法官发问机制）。
 
@@ -124,6 +124,24 @@ python scripts/verify_v05.py
 - 可供 `Bulwark` 执行的 task contracts
 
 ## 最近完成
+
+- `v1.2-收尾（2026-03-28）`
+- 交付物：
+  `engines/simulation_run/issue_impact_ranker/` — P0.1 争点影响排序
+  `engines/case_structuring/amount_calculator/` — P0.2 金额一致性硬校验
+  `engines/simulation_run/decision_path_tree/` — P0.3 裁判路径树
+  `engines/simulation_run/attack_chain_optimizer/` — P0.4 最强攻击链
+  `engines/case_structuring/evidence_weight_scorer/` — P1.5 证据权重评分
+  `engines/simulation_run/issue_category_classifier/` — P1.6 争点分类
+  `engines/simulation_run/evidence_gap_roi_ranker/` — P1.7 证据缺口 ROI
+  `engines/simulation_run/action_recommender/` — P1.8 行动建议
+  `engines/simulation_run/credibility_scorer/` — P2.9 可信度评分
+  `engines/shared/models.py` — P2.10 RiskFlag.impact_objects 迁移
+  `engines/simulation_run/alternative_claim_generator/` — P2.11 替代主张生成
+  `engines/report_generation/executive_summarizer/` — P2.12 执行摘要
+  `pyproject.toml` — version 升至 1.2.0，testpaths 加入全部 v1.2 子引擎
+- 结果：
+  v1.2 P0–P2 共 12 项全部完成，930 个测试零回归
 
 - `v1-收尾（2026-03-26）`
 - 交付物：

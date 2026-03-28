@@ -25,21 +25,23 @@
 
 ## Current Status
 
-当前目标：`v0.5`
+当前版本：`v1.2`（2026-03-28）
 
-当前阶段聚焦单案种、离线可跑通的案件分析器，默认案型固定为民事 `民间借贷`。首版优先稳定以下产物：
+单案种（民事 `民间借贷`）、离线可跑通的双边对抗案件分析引擎，930 个测试全部通过。
 
-- `case_manifest`
-- `evidence_index`
-- `issue_tree`
-- `burden_map`
-- `timeline`
-- 结构化案件诊断报告
+**已完成里程碑**：
+
+| 版本 | 内容 | 测试数 |
+|------|------|--------|
+| v0.5 | 静态分析：案件结构化、争点提取、证据索引、报告生成 | 280 |
+| v1 | 双边对抗：原告/被告代理、证据管理员、三轮对抗、访问隔离 | 482 |
+| v1.2 | 分析质量升级：12 个分析模块（争点排序、金额校验、裁判路径树、攻击链、证据权重、行动建议等） | 930 |
+
+**下一目标**：`v1.5` — 程序化庭前会议 / 质证版（`evidence_state_machine`、法官发问机制）。
 
 当前明确不做：
 
-- `judge agent`
-- 多轮对抗
+- `judge agent`（v1.5 计划）
 - 刑事/行政
 - `ui`
 - 在线协作
@@ -77,10 +79,12 @@ schemas/
   reporting/
 engines/
   README.md
-  case_structuring/
+  shared/                  # 共享模型、JobManager、AccessController、CLI adapter
+  case_structuring/        # 证据索引、争点提取、金额计算、证据权重评分
   procedure_setup/
-  simulation_run/
-  report_generation/
+  simulation_run/          # 模拟推演 + 9 个 v1.2 分析子引擎
+  report_generation/       # 报告生成 + 执行摘要
+  adversarial/             # 双边对抗引擎（原告/被告/证据管理员）
   interactive_followup/
 benchmarks/
   README.md
@@ -117,28 +121,22 @@ tests/
 
 ## Repository Bootstrap
 
-`v0.5` 现在已经有最小工程骨架，但仍然保持 pre-framework：
+仓库保持 pre-framework，不绑定具体运行时或部署方案：
 
-- `schemas/`：版本化数据契约和交换边界
-- `engines/`：与五阶段工作流对齐的执行边界
+- `schemas/`：版本化数据契约和交换边界（12 个 JSON Schema）
+- `engines/`：7 个引擎目录，含 20 个子模块，与五阶段工作流对齐
 - `benchmarks/`：回归评测输入与验收参考
-- `tests/`：契约测试与 smoke 测试占位
+- `tests/`：契约测试、smoke 测试、集成测试（930 个测试）
 - `.bulwark/`：面向 Codex / Claude 的任务合同与策略控制平面
-
-这一步只做结构准备，不代表已经选定运行时、框架或部署方案。
 
 ## Near-Term Direction
 
-后续实现优先级不是继续堆更多 agent，而是先补齐基础设施：
+v1.2 已完成全部 12 个分析模块。下一步方向（v1.5）：
 
-1. `case workspace design`
-2. `job manager design`
-3. `schema refinement`
-4. `evidence indexer`
-5. `issue extractor`
-6. `report engine`
-7. `interactive followup contract`
-8. `scenario engine design`
+1. 程序法官角色引入
+2. 质证状态机（`submitted → challenged → admitted`）
+3. 证据状态迁移
+4. 法官发问机制
 
 ## License / Reference Note
 
