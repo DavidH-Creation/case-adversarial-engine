@@ -16,7 +16,7 @@ AccessController — single entry point for evidence visibility filtering.
 
 from __future__ import annotations
 
-from engines.shared.models import AccessDomain, AgentRole, Evidence
+from engines.shared.models import AccessDomain, AgentRole, Evidence, ProcedureState
 
 
 class AccessViolationError(ValueError):
@@ -87,14 +87,18 @@ class AccessController:
         role_code: str,
         owner_party_id: str,
         all_evidence: list[Evidence],
+        procedure_state: ProcedureState | None = None,
     ) -> list[Evidence]:
         """返回该角色可见的证据子集（保持原顺序）。
         Return the visible evidence subset for the given agent (preserving order).
 
         Args:
-            role_code:       代理角色编码（来自 AgentRole 枚举值）
-            owner_party_id:  该代理所属方的 party_id
-            all_evidence:    案件全量证据列表
+            role_code:        代理角色编码（来自 AgentRole 枚举值）
+            owner_party_id:   该代理所属方的 party_id
+            all_evidence:     案件全量证据列表
+            procedure_state:  可选，程序阶段状态（v1.5 新增）。
+                              提供时在角色级规则之上叠加阶段级过滤。
+                              不提供时行为与 v1 完全一致。
 
         Returns:
             过滤后的证据列表，顺序与输入一致
@@ -111,10 +115,22 @@ class AccessController:
         unconditional = _UNCONDITIONAL_DOMAINS[role_code]
         can_see_own = role_code in _CAN_SEE_OWN_PRIVATE
 
-        return [
+        result = [
             e for e in all_evidence
             if _is_visible(e, unconditional, can_see_own, owner_party_id)
         ]
+
+        # v1.5: 当提供 procedure_state 时，叠加阶段级过滤
+        if procedure_state is not None:
+            allowed_domains = set(procedure_state.readable_access_domains)
+            allowed_statuses = set(procedure_state.admissible_evidence_statuses)
+            result = [
+                e for e in result
+                if e.access_domain in allowed_domains
+                and e.status in allowed_statuses
+            ]
+
+        return result
 
 
 # ---------------------------------------------------------------------------

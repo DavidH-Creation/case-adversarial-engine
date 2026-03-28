@@ -123,6 +123,19 @@ class ProcedurePhase(str, Enum):
     output_branching = "output_branching"
 
 
+class ProcedureState(BaseModel):
+    """程序阶段的访问控制状态 — v1.5 新增。
+
+    当传递给 AccessController.filter_evidence_for_agent() 时，
+    在角色级规则之上叠加阶段级过滤：
+    - evidence.access_domain 必须在 readable_access_domains 内
+    - evidence.status 必须在 admissible_evidence_statuses 内
+    """
+    phase: ProcedurePhase
+    readable_access_domains: list[AccessDomain]
+    admissible_evidence_statuses: list[EvidenceStatus]
+
+
 class ChangeItemObjectType(str, Enum):
     """change_item 目标对象类型枚举。"""
     Party = "Party"
