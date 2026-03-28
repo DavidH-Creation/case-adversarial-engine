@@ -8,7 +8,7 @@ Pure rule layer (deterministic), no LLM calls.
 职责 / Responsibilities:
 1. 接收调用方提供的四类结构化输入（放款流水、还款流水、争议归因、诉请描述符）
 2. 计算 principal 类诉请的 calculated_amount（其他类型返回 None）
-3. 执行五条硬校验规则
+3. 执行七条硬校验规则
 4. 生成 AmountConflict 列表
 5. 激活 verdict_block_active（当 unresolved_conflicts 非空时）
 6. 返回 AmountCalculationReport
@@ -26,11 +26,14 @@ from engines.shared.models import (
     AmountConsistencyCheck,
     ClaimCalculationEntry,
     ClaimType,
+    ContractValidity,
     DisputeResolutionStatus,
+    InterestRecalculation,
     LoanTransaction,
     RepaymentAttribution,
     RepaymentTransaction,
 )
+from engines.shared.rule_config import RuleThresholds
 
 from .schemas import AmountCalculatorInput
 
@@ -46,6 +49,9 @@ class AmountCalculator:
         report = calc.calculate(inp)
     """
 
+    def __init__(self, thresholds: RuleThresholds | None = None) -> None:
+        self._thresholds = thresholds or RuleThresholds()
+
     def calculate(self, inp: AmountCalculatorInput) -> AmountCalculationReport:
         """
         执行金额一致性校验，返回完整报告。
@@ -56,6 +62,9 @@ class AmountCalculator:
         Returns:
             AmountCalculationReport — 含四张表和五条硬规则结果
         """
+        # 规则 #7：合同无效/争议时利息重算（需要 conflicts 列表传入以记录缺失警告）
+        principal_base = self._sum_principal_loans(inp.loan_transactions)
+
         # 1. 构建诉请计算表
         claim_table = self._build_claim_calculation_table(
             inp.claim_entries,
@@ -74,12 +83,41 @@ class AmountCalculator:
         duplicate_claim = self._check_duplicate_interest_penalty(inp.claim_entries)
         total_reconstructable = self._check_total_reconstructable(claim_table)
 
+        # 规则 #6：起诉总额 / 可核实交付总额 比值校验
+        claim_delivery_ratio_normal = self._check_claim_delivery_ratio(
+            inp.claim_entries, inp.loan_transactions
+        )
+
         # 3. 生成冲突列表
         conflicts = list(self._generate_conflicts(
             claim_table=claim_table,
             disputed_attributions=inp.disputed_amount_attributions,
             loan_transactions=inp.loan_transactions,
         ))
+
+        # 来源 3：起诉金额/可核实交付比值异常（rule #6）
+        if not claim_delivery_ratio_normal:
+            delivered = self._sum_principal_loans(inp.loan_transactions)
+            total_claimed = sum(c.claimed_amount for c in inp.claim_entries)
+            if delivered == Decimal("0"):
+                ratio_desc = "∞（可核实交付为零）"
+            else:
+                ratio_desc = f"{total_claimed / delivered:.2f}"
+            conflicts.append(AmountConflict(
+                conflict_id=f"conflict-{len(conflicts) + 1:03d}",
+                conflict_description=(
+                    f"【虚假诉讼预警】起诉总额 {total_claimed} / 可核实交付 {delivered}"
+                    f" = {ratio_desc}，超出预警阈值 {self._thresholds.false_litigation_ratio}"
+                ),
+                amount_a=total_claimed,
+                amount_b=delivered,
+                source_a_evidence_id="",
+                source_b_evidence_id="",
+                resolution_note="",
+            ))
+
+        # 规则 #7：合同无效/争议时利息重算（传入 conflicts 以记录缺失警告）
+        interest_recalc = self._recalculate_interest(inp, principal_base, conflicts)
 
         # 4. verdict_block_active 硬规则：unresolved_conflicts 非空时必须为 True
         verdict_block_active = len(conflicts) > 0
@@ -92,6 +130,7 @@ class AmountCalculator:
             claim_total_reconstructable=total_reconstructable,
             unresolved_conflicts=conflicts,
             verdict_block_active=verdict_block_active,
+            claim_delivery_ratio_normal=claim_delivery_ratio_normal,
         )
 
         return AmountCalculationReport(
@@ -103,6 +142,7 @@ class AmountCalculator:
             disputed_amount_attributions=inp.disputed_amount_attributions,
             claim_calculation_table=claim_table,
             consistency_check_result=consistency,
+            interest_recalculation=interest_recalc,
         )
 
     # ------------------------------------------------------------------
@@ -259,6 +299,92 @@ class AmountCalculator:
         return self._check_text_table_consistent(claim_table)
 
     # ------------------------------------------------------------------
+    # 硬规则 6：起诉金额/可核实交付比值 / claim_delivery_ratio
+    # ------------------------------------------------------------------
+
+    def _check_claim_delivery_ratio(
+        self,
+        claim_entries,
+        loan_transactions: list[LoanTransaction],
+    ) -> bool:
+        """规则 #6: 起诉总额 / 可核实交付总额 <= 阈值时返回 True。
+        若无 principal_base_contribution 放款且 claimed=0，跳过；
+        若 delivered=0 但 claimed>0，直接视为异常（比值无穷大）。
+        """
+        delivered = self._sum_principal_loans(loan_transactions)
+        total_claimed = sum(c.claimed_amount for c in claim_entries)
+        if delivered == Decimal("0"):
+            return total_claimed == Decimal("0")
+        ratio = total_claimed / delivered
+        return ratio <= self._thresholds.false_litigation_ratio
+
+    # ------------------------------------------------------------------
+    # 硬规则 7：合同无效/争议利息重算 / interest recalculation
+    # ------------------------------------------------------------------
+
+    def _recalculate_interest(
+        self,
+        inp: AmountCalculatorInput,
+        principal_base: Decimal,
+        conflicts: list[AmountConflict],
+    ) -> InterestRecalculation | None:
+        """规则 #7: 合同无效/争议时，利息按 LPR 重算。
+
+        - invalid: 强制 LPR
+        - disputed: min(contractual_rate, LPR * lpr_multiplier_cap)
+        - valid: 返回 None
+        - 缺少利率输入: 生成 warning conflict 并返回 None
+        """
+        if inp.contract_validity == ContractValidity.valid:
+            return None
+        if inp.contractual_interest_rate is None or inp.lpr_rate is None:
+            missing = []
+            if inp.contractual_interest_rate is None:
+                missing.append("contractual_interest_rate")
+            if inp.lpr_rate is None:
+                missing.append("lpr_rate")
+            conflicts.append(AmountConflict(
+                conflict_id=f"conflict-{len(conflicts) + 1:03d}",
+                conflict_description=(
+                    f"【利息重算缺失】合同效力为 {inp.contract_validity.value}，"
+                    f"但缺少 {', '.join(missing)}，无法执行利息重算"
+                ),
+                amount_a=Decimal("0"),
+                amount_b=Decimal("0"),
+                source_a_evidence_id="",
+                source_b_evidence_id="",
+                resolution_note="",
+            ))
+            return None
+
+        original_rate = inp.contractual_interest_rate
+        lpr = inp.lpr_rate
+
+        if inp.contract_validity == ContractValidity.invalid:
+            effective_rate = lpr
+            basis = "LPR"
+        else:  # disputed
+            cap = lpr * self._thresholds.lpr_multiplier_cap
+            effective_rate = min(original_rate, cap)
+            basis = "LPR*4" if effective_rate == cap else f"合同约定（{original_rate}，未超上限）"
+
+        # 注：以下为"单期概念金额"（principal × rate），用于对比利率切换前后的
+        # 差额比例，不是精算利息（未乘期限因子）。下游如需实际利息金额应结合借贷期限计算。
+        original_interest = principal_base * original_rate
+        recalculated_interest = principal_base * effective_rate
+        delta = original_interest - recalculated_interest
+
+        return InterestRecalculation(
+            original_rate=original_rate,
+            effective_rate=effective_rate,
+            rate_basis=basis,
+            contract_validity=inp.contract_validity,
+            original_interest_amount=original_interest,
+            recalculated_interest_amount=recalculated_interest,
+            delta=delta,
+        )
+
+    # ------------------------------------------------------------------
     # 冲突生成 / Conflict generation
     # ------------------------------------------------------------------
 
@@ -269,10 +395,11 @@ class AmountCalculator:
         loan_transactions: list[LoanTransaction],
     ) -> Iterator[AmountConflict]:
         """
-        生成 AmountConflict 列表。两类来源：
+        生成 AmountConflict 列表。三类来源：
 
         1. 诉请计算 delta ≠ 0（claimed vs calculated 不一致）
         2. 未解决的争议归因（resolution_status = unresolved）
+        3. 起诉金额/可核实交付比值异常（rule #6，在 calculate() 中追加）
         """
         conflict_index = 0
 

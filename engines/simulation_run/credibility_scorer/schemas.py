@@ -15,6 +15,7 @@ from engines.shared.models import (  # noqa: F401
     CredibilityScorecard,
     Evidence,
     Issue,
+    Party,
 )
 
 
@@ -34,3 +35,6 @@ class CredibilityScorerInput(BaseModel):
     amount_report: AmountCalculationReport
     evidence_list: list[Evidence] = Field(default_factory=list)
     issue_list: list[Issue] = Field(default_factory=list)
+    party_list: list[Party] = Field(
+        default_factory=list, description="当事人列表（用于 CRED-07 职业放贷人检测）"
+    )

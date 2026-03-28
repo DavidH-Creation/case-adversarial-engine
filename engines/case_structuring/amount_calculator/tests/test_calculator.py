@@ -438,3 +438,184 @@ class TestClaimCalculationEntries:
         # 本金 = 50000 - 10000（principal归因）= 40000，interest归因的3600不影响
         assert entry.calculated_amount == Decimal("40000")
         assert entry.delta == Decimal("0")
+
+
+from engines.shared.rule_config import RuleThresholds
+
+# ---------------------------------------------------------------------------
+# Rule #6: 起诉金额/可核实交付比值 (claim_delivery_ratio_normal)
+# ---------------------------------------------------------------------------
+
+class TestRule6ClaimDeliveryRatio:
+    """rule #6: total_claimed / total_principal_loans > threshold → 预警。"""
+
+    def test_ratio_normal_within_threshold(self):
+        """claimed 50000 / delivered 50000 = 1.0 → normal。"""
+        inp = _base_input()
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is True
+
+    def test_ratio_exceeds_threshold(self):
+        """claimed 150000 / delivered 50000 = 3.0 > 2.0 → abnormal。"""
+        inp = _base_input(
+            claim_entries=[_claim("claim-principal-001", ClaimType.principal, "150000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is False
+
+    def test_ratio_exactly_at_threshold(self):
+        """claimed 100000 / delivered 50000 = 2.0 → still normal (<=)。"""
+        inp = _base_input(
+            claim_entries=[_claim("claim-principal-001", ClaimType.principal, "100000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is True
+
+    def test_custom_threshold(self):
+        """custom threshold 1.5: claimed 80000 / delivered 50000 = 1.6 > 1.5 → abnormal。"""
+        inp = _base_input(
+            claim_entries=[_claim("claim-principal-001", ClaimType.principal, "80000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds(false_litigation_ratio=Decimal("1.5")))
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is False
+
+    def test_generates_risk_flag_conflict(self):
+        """ratio > threshold → generates AmountConflict。"""
+        inp = _base_input(
+            claim_entries=[_claim("claim-principal-001", ClaimType.principal, "150000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        ratio_conflicts = [
+            c for c in report.consistency_check_result.unresolved_conflicts
+            if "虚假诉讼" in c.conflict_description or "ratio" in c.conflict_description.lower()
+        ]
+        assert len(ratio_conflicts) >= 1
+
+    def test_no_principal_loans_claimed_positive_flags_abnormal(self):
+        """No principal_base_contribution=True loans + claimed>0 → ratio=∞, flagged abnormal。"""
+        inp = _base_input(
+            loan_transactions=[_loan("loan-001", "50000", is_principal=False)],
+            claim_entries=[_claim("claim-interest-001", ClaimType.interest, "10000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is False
+        ratio_conflicts = [
+            c for c in report.consistency_check_result.unresolved_conflicts
+            if "∞" in c.conflict_description or "为零" in c.conflict_description
+        ]
+        assert len(ratio_conflicts) >= 1
+
+    def test_no_principal_loans_claimed_zero_skips(self):
+        """No principal_base_contribution=True loans + claimed=0 → skip (both zero)。"""
+        inp = _base_input(
+            loan_transactions=[_loan("loan-001", "50000", is_principal=False)],
+            claim_entries=[_claim("claim-interest-001", ClaimType.interest, "0")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is True
+
+
+from engines.shared.models import ContractValidity, InterestRecalculation
+
+# ---------------------------------------------------------------------------
+# Rule #7: 合同无效后利息重算 (interest recalculation)
+# ---------------------------------------------------------------------------
+
+class TestRule7InterestRecalculation:
+    """rule #7: contract invalid → interest recalculated at LPR。"""
+
+    def test_valid_contract_no_recalculation(self):
+        inp = _base_input()
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is None
+
+    def test_invalid_contract_forces_lpr(self):
+        inp = _base_input(
+            contract_validity=ContractValidity.invalid,
+            contractual_interest_rate=Decimal("0.24"),
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is not None
+        ir = report.interest_recalculation
+        assert ir.effective_rate == Decimal("0.0385")
+        assert ir.rate_basis == "LPR"
+        assert ir.contract_validity == ContractValidity.invalid
+
+    def test_disputed_contract_caps_at_lpr_x4(self):
+        inp = _base_input(
+            contract_validity=ContractValidity.disputed,
+            contractual_interest_rate=Decimal("0.24"),
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is not None
+        ir = report.interest_recalculation
+        expected_cap = Decimal("0.0385") * Decimal("4.0")
+        assert ir.effective_rate == min(Decimal("0.24"), expected_cap)
+        assert ir.rate_basis == "LPR*4"
+
+    def test_disputed_rate_already_below_cap(self):
+        inp = _base_input(
+            contract_validity=ContractValidity.disputed,
+            contractual_interest_rate=Decimal("0.10"),
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        ir = report.interest_recalculation
+        assert ir.effective_rate == Decimal("0.10")  # below cap, no reduction
+
+    def test_interest_delta_calculated(self):
+        inp = _base_input(
+            contract_validity=ContractValidity.invalid,
+            contractual_interest_rate=Decimal("0.24"),
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        ir = report.interest_recalculation
+        assert ir.delta == ir.original_interest_amount - ir.recalculated_interest_amount
+        assert ir.delta > 0  # 24% > 3.85%, so delta must be positive
+
+    def test_no_recalculation_without_interest_rate(self):
+        """contract_validity=invalid but no contractual_interest_rate → skip + conflict warning。"""
+        inp = _base_input(
+            contract_validity=ContractValidity.invalid,
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is None
+        missing_conflicts = [
+            c for c in report.consistency_check_result.unresolved_conflicts
+            if "利息重算缺失" in c.conflict_description
+        ]
+        assert len(missing_conflicts) == 1
+        assert "contractual_interest_rate" in missing_conflicts[0].conflict_description
+
+    def test_no_recalculation_without_lpr_rate(self):
+        """contract_validity=invalid but no lpr_rate → skip + conflict warning。"""
+        inp = _base_input(
+            contract_validity=ContractValidity.invalid,
+            contractual_interest_rate=Decimal("0.24"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is None
+        missing_conflicts = [
+            c for c in report.consistency_check_result.unresolved_conflicts
+            if "利息重算缺失" in c.conflict_description
+        ]
+        assert len(missing_conflicts) == 1
+        assert "lpr_rate" in missing_conflicts[0].conflict_description
