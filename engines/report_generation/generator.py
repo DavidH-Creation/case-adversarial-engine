@@ -293,7 +293,7 @@ class ReportGenerator:
                     valid_supporting = [valid_evidence_ids[0]]
                 elif not valid_supporting:
                     # 兜底：使用第一条已知证据 / Fallback: use first known evidence
-                    first_known = next(iter(known_evidence_ids), None)
+                    first_known = min(known_evidence_ids) if known_evidence_ids else None
                     valid_supporting = [first_known] if first_known else []
 
                 conclusions.append(KeyConclusion(
@@ -315,11 +315,7 @@ class ReportGenerator:
                 if iid in root_issue_ids:
                     covered_root_ids.add(iid)
 
-            # TODO(v0.5): linked_output_ids 当前为占位符，v0.5 需连接真实推演输出 ID。
-            # 已知局限：不关联任何实际 ScenarioResult.run_id 或 DiffSummary 产物。
-            # TODO(v0.5): linked_output_ids are placeholders; v0.5 must wire real simulation
-            # output IDs (ScenarioResult.run_id / DiffSummary artifacts). Known v0.5 limitation.
-            linked_output_ids = [f"output-{report_slug}-{sec_idx:02d}"]
+            linked_output_ids = [f"run:{run_id}"] if run_id else []
 
             sections.append(ReportSection(
                 section_id=section_id,
@@ -349,7 +345,7 @@ class ReportGenerator:
                 eid for eid in root_issue.evidence_ids if eid in known_evidence_ids
             ]
             if not issue_evidence:
-                issue_evidence = [next(iter(known_evidence_ids))] if known_evidence_ids else []
+                issue_evidence = [min(known_evidence_ids)] if known_evidence_ids else []
 
             # 生成默认结论 / Generate default conclusion
             default_conclusion = KeyConclusion(
@@ -370,8 +366,7 @@ class ReportGenerator:
                     f"该争点包含 {len(root_issue.fact_propositions)} 条事实命题，需结合证据综合认定。"
                 ),
                 linked_issue_ids=[root_id],
-                # TODO(v0.5): placeholder — see note above
-                linked_output_ids=[f"output-{report_slug}-{sec_idx:02d}"],
+                linked_output_ids=[f"run:{run_id}"] if run_id else [],
                 linked_evidence_ids=issue_evidence,
                 key_conclusions=[default_conclusion],
             ))

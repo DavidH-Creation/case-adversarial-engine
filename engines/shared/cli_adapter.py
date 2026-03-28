@@ -97,6 +97,7 @@ class ClaudeCLIClient:
         cmd = [
             resolved_bin,
             "--print",
+            "--bare",
             "--model", model,
         ]
         if system:
@@ -148,7 +149,8 @@ class CodexCLIClient:
 
     CLI 调用格式 / CLI invocation::
 
-        codex exec "[SYSTEM]\\n{system}\\n[/SYSTEM]\\n\\n{user}"
+        codex exec -m {model}   # prompt via stdin to avoid Windows 8191-char limit
+        stdin: "[SYSTEM]\\n{system}\\n[/SYSTEM]\\n\\n{user}"
 
     Args:
         timeout:  每次调用的最长等待秒数 / Max seconds per call (default 120)
@@ -205,21 +207,23 @@ class CodexCLIClient:
         cmd = [resolved_codex, "exec"]
         if effective_model:
             cmd += ["-m", effective_model]
-        cmd.append(full_prompt)
 
         # Windows 上 .cmd/.bat 文件需要通过 cmd /c 执行
         if sys.platform == "win32" and resolved_codex.lower().endswith((".cmd", ".bat")):
             cmd = ["cmd", "/c"] + cmd
 
+        # 通过 stdin 传 prompt 以避免 Windows cmd.exe 8191 字符行长限制
+        # Pass prompt via stdin to avoid Windows cmd.exe 8191-char command-line limit
         proc = await asyncio.create_subprocess_exec(
             *cmd,
+            stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
 
         try:
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=self._timeout
+                proc.communicate(input=full_prompt.encode("utf-8")), timeout=self._timeout
             )
         except asyncio.TimeoutError:
             proc.kill()

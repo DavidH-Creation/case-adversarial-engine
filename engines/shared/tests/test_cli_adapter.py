@@ -106,7 +106,9 @@ class TestClaudeCLIClient:
         assert "system text" in cmd
         assert "--model" in cmd
         assert "claude-opus-4-6" in cmd
-        assert "user text" in cmd
+        # user prompt is sent via stdin, not in the command line
+        assert "user text" not in cmd
+        mock_proc.communicate.assert_called_once_with(input=b"user text")
 
     @pytest.mark.asyncio
     async def test_skips_system_prompt_flag_when_empty(self, client: ClaudeCLIClient) -> None:
@@ -213,9 +215,9 @@ class TestCodexCLIClient:
                 model="o3",
             )
 
-        cmd = list(mock_exec.call_args[0])
-        # 最后一个参数是合并后的 prompt
-        full_prompt = cmd[-1]
+        # prompt is sent via stdin, not in the command line
+        stdin_bytes = mock_proc.communicate.call_args.kwargs["input"]
+        full_prompt = stdin_bytes.decode("utf-8")
         assert "[SYSTEM]" in full_prompt
         assert "my system" in full_prompt
         assert "[/SYSTEM]" in full_prompt
@@ -259,8 +261,9 @@ class TestCodexCLIClient:
              patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
             await client.create_message(system="", user="hello world")
 
-        cmd = list(mock_exec.call_args[0])
-        full_prompt = cmd[-1]
+        # prompt is sent via stdin, not in the command line
+        stdin_bytes = mock_proc.communicate.call_args.kwargs["input"]
+        full_prompt = stdin_bytes.decode("utf-8")
         assert "[SYSTEM]" not in full_prompt
         assert full_prompt == "hello world"
 
