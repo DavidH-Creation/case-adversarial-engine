@@ -294,6 +294,13 @@ class LegalityRisk(str, Enum):
     low = "low"
 
 
+class ContractValidity(str, Enum):
+    """合同效力状态 — 影响利息计算标准。"""
+    valid = "valid"
+    disputed = "disputed"
+    invalid = "invalid"
+
+
 class IssueCategory(str, Enum):
     """争点分析类型（P1.6）。与 issue_type 并列，不替代。"""
     fact_issue = "fact_issue"
@@ -445,6 +452,15 @@ class Defense(BaseModel):
     status: str = Field(default="open")
 
 
+class LitigationHistory(BaseModel):
+    """当事人近期放贷诉讼统计 — 职业放贷人检测输入。"""
+    lending_case_count: int = Field(default=0, ge=0, description="近期放贷诉讼数")
+    distinct_borrower_count: int = Field(default=0, ge=0, description="不同借款人数")
+    total_lending_amount: Decimal = Field(default=Decimal("0"), ge=0, description="累计放贷金额")
+    time_span_months: int = Field(default=0, ge=0, description="统计时间跨度（月）")
+    uniform_contract_detected: bool = Field(default=False, description="借条格式是否雷同")
+
+
 class Party(BaseModel):
     """案件参与主体。"""
     party_id: str = Field(..., min_length=1)
@@ -456,6 +472,8 @@ class Party(BaseModel):
     case_type: str = Field(default="civil")
     access_domain_scope: list[str] = Field(default_factory=list)
     active: bool = True
+    # v1.5 bugfix: 职业放贷人检测扩展字段
+    litigation_history: Optional[LitigationHistory] = None
 
 
 # ---------------------------------------------------------------------------
@@ -899,6 +917,10 @@ class AmountConsistencyCheck(BaseModel):
     verdict_block_active: bool = Field(
         ..., description="系统是否因未解释冲突阻断稳定裁判判断；硬规则：unresolved_conflicts 非空时必须为 True"
     )
+    claim_delivery_ratio_normal: bool = Field(
+        default=True,
+        description="起诉金额与可核实交付金额比值是否正常（ratio <= 阈值）",
+    )
 
     @model_validator(mode="after")
     def _enforce_verdict_block_rule(self) -> "AmountConsistencyCheck":
@@ -930,9 +952,23 @@ class AmountCalculationReport(BaseModel):
     consistency_check_result: AmountConsistencyCheck = Field(
         ..., description="一致性校验结果（五条硬规则）"
     )
+    interest_recalculation: Optional["InterestRecalculation"] = Field(
+        default=None, description="合同无效/争议时的利息重算记录"
+    )
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
+
+
+class InterestRecalculation(BaseModel):
+    """利息重算记录 — 合同无效时的利率切换结果。"""
+    original_rate: Decimal = Field(..., description="原合同约定利率")
+    effective_rate: Decimal = Field(..., description="重算后适用利率")
+    rate_basis: str = Field(..., min_length=1, description="利率依据（如 LPR、LPR*4）")
+    contract_validity: ContractValidity
+    original_interest_amount: Decimal = Field(..., description="原利息金额")
+    recalculated_interest_amount: Decimal = Field(..., description="重算后利息金额")
+    delta: Decimal = Field(..., description="利息差额 = original - recalculated")
 
 
 # ---------------------------------------------------------------------------
