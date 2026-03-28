@@ -31,6 +31,7 @@ from engines.shared.models import (
     RepaymentAttribution,
     RepaymentTransaction,
 )
+from engines.shared.rule_config import RuleThresholds
 
 from .schemas import AmountCalculatorInput
 
@@ -45,6 +46,9 @@ class AmountCalculator:
         calc = AmountCalculator()
         report = calc.calculate(inp)
     """
+
+    def __init__(self, thresholds: RuleThresholds | None = None) -> None:
+        self._thresholds = thresholds or RuleThresholds()
 
     def calculate(self, inp: AmountCalculatorInput) -> AmountCalculationReport:
         """
@@ -74,12 +78,34 @@ class AmountCalculator:
         duplicate_claim = self._check_duplicate_interest_penalty(inp.claim_entries)
         total_reconstructable = self._check_total_reconstructable(claim_table)
 
+        # 规则 #6：起诉总额 / 可核实交付总额 比值校验
+        claim_delivery_ratio_normal = self._check_claim_delivery_ratio(
+            inp.claim_entries, inp.loan_transactions
+        )
+
         # 3. 生成冲突列表
         conflicts = list(self._generate_conflicts(
             claim_table=claim_table,
             disputed_attributions=inp.disputed_amount_attributions,
             loan_transactions=inp.loan_transactions,
         ))
+
+        # 来源 3：起诉金额/可核实交付比值异常（rule #6）
+        if not claim_delivery_ratio_normal:
+            delivered = self._sum_principal_loans(inp.loan_transactions)
+            total_claimed = sum(c.claimed_amount for c in inp.claim_entries)
+            conflicts.append(AmountConflict(
+                conflict_id=f"conflict-{len(conflicts) + 1:03d}",
+                conflict_description=(
+                    f"【虚假诉讼预警】起诉总额 {total_claimed} / 可核实交付 {delivered}"
+                    f" = {total_claimed / delivered:.2f}，超出预警阈值 {self._thresholds.false_litigation_ratio}"
+                ),
+                amount_a=total_claimed,
+                amount_b=delivered,
+                source_a_evidence_id="",
+                source_b_evidence_id="",
+                resolution_note="",
+            ))
 
         # 4. verdict_block_active 硬规则：unresolved_conflicts 非空时必须为 True
         verdict_block_active = len(conflicts) > 0
@@ -92,6 +118,7 @@ class AmountCalculator:
             claim_total_reconstructable=total_reconstructable,
             unresolved_conflicts=conflicts,
             verdict_block_active=verdict_block_active,
+            claim_delivery_ratio_normal=claim_delivery_ratio_normal,
         )
 
         return AmountCalculationReport(
@@ -257,6 +284,23 @@ class AmountCalculator:
         分开命名以对应 spec 的两个独立语义字段，便于未来独立演化。
         """
         return self._check_text_table_consistent(claim_table)
+
+    # ------------------------------------------------------------------
+    # 硬规则 6：起诉金额/可核实交付比值 / claim_delivery_ratio
+    # ------------------------------------------------------------------
+
+    def _check_claim_delivery_ratio(
+        self,
+        claim_entries,
+        loan_transactions: list[LoanTransaction],
+    ) -> bool:
+        """规则 #6: 起诉总额 / 可核实交付总额 <= 阈值时返回 True。"""
+        delivered = self._sum_principal_loans(loan_transactions)
+        if delivered == Decimal("0"):
+            return True
+        total_claimed = sum(c.claimed_amount for c in claim_entries)
+        ratio = total_claimed / delivered
+        return ratio <= self._thresholds.false_litigation_ratio
 
     # ------------------------------------------------------------------
     # 冲突生成 / Conflict generation

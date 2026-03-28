@@ -438,3 +438,70 @@ class TestClaimCalculationEntries:
         # 本金 = 50000 - 10000（principal归因）= 40000，interest归因的3600不影响
         assert entry.calculated_amount == Decimal("40000")
         assert entry.delta == Decimal("0")
+
+
+from engines.shared.rule_config import RuleThresholds
+
+# ---------------------------------------------------------------------------
+# Rule #6: 起诉金额/可核实交付比值 (claim_delivery_ratio_normal)
+# ---------------------------------------------------------------------------
+
+class TestRule6ClaimDeliveryRatio:
+    """rule #6: total_claimed / total_principal_loans > threshold → 预警。"""
+
+    def test_ratio_normal_within_threshold(self):
+        """claimed 50000 / delivered 50000 = 1.0 → normal。"""
+        inp = _base_input()
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is True
+
+    def test_ratio_exceeds_threshold(self):
+        """claimed 150000 / delivered 50000 = 3.0 > 2.0 → abnormal。"""
+        inp = _base_input(
+            claim_entries=[_claim("claim-principal-001", ClaimType.principal, "150000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is False
+
+    def test_ratio_exactly_at_threshold(self):
+        """claimed 100000 / delivered 50000 = 2.0 → still normal (<=)。"""
+        inp = _base_input(
+            claim_entries=[_claim("claim-principal-001", ClaimType.principal, "100000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is True
+
+    def test_custom_threshold(self):
+        """custom threshold 1.5: claimed 80000 / delivered 50000 = 1.6 > 1.5 → abnormal。"""
+        inp = _base_input(
+            claim_entries=[_claim("claim-principal-001", ClaimType.principal, "80000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds(false_litigation_ratio=Decimal("1.5")))
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is False
+
+    def test_generates_risk_flag_conflict(self):
+        """ratio > threshold → generates AmountConflict。"""
+        inp = _base_input(
+            claim_entries=[_claim("claim-principal-001", ClaimType.principal, "150000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        ratio_conflicts = [
+            c for c in report.consistency_check_result.unresolved_conflicts
+            if "虚假诉讼" in c.conflict_description or "ratio" in c.conflict_description.lower()
+        ]
+        assert len(ratio_conflicts) >= 1
+
+    def test_no_principal_loans_skips_check(self):
+        """No principal_base_contribution=True loans → defaults to True (skip)。"""
+        inp = _base_input(
+            loan_transactions=[_loan("loan-001", "50000", is_principal=False)],
+            claim_entries=[_claim("claim-interest-001", ClaimType.interest, "10000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is True
