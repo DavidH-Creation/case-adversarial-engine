@@ -37,8 +37,10 @@ from engines.shared.models import (
     EvidenceStrength,
     EvidenceType,
     Issue,
+    Party,
     RecommendedAction,
 )
+from engines.shared.rule_config import RuleThresholds
 
 from .schemas import CredibilityScorerInput
 
@@ -50,6 +52,7 @@ _RULES: dict[str, tuple[str, int]] = {
     "CRED-04": ("证人证言与书证存在明显矛盾", -10),
     "CRED-05": ("关键时间节点缺乏证据支撑", -10),
     "CRED-06": ("存在被质疑真实性但未给出解释的证据", -5),
+    "CRED-07": ("原告构成职业放贷人（放贷频次、对象达标）", -25),
 }
 
 
@@ -62,6 +65,9 @@ class CredibilityScorer:
         scorer = CredibilityScorer()
         result = scorer.score(inp)
     """
+
+    def __init__(self, thresholds: RuleThresholds | None = None):
+        self._thresholds = thresholds or RuleThresholds()
 
     def score(self, inp: CredibilityScorerInput) -> CredibilityScorecard:
         """执行可信度折损评分，返回 CredibilityScorecard。
@@ -100,6 +106,10 @@ class CredibilityScorer:
         cred06 = self._check_cred06(inp.evidence_list)
         if cred06:
             deductions.append(cred06)
+
+        cred07 = self._check_cred07(inp.party_list)
+        if cred07:
+            deductions.append(cred07)
 
         base_score = 100
         final_score = base_score + sum(d.deduction_points for d in deductions)
@@ -260,6 +270,31 @@ class CredibilityScorer:
             deduction_points=pts,
             trigger_evidence_ids=trigger_ids,
         )
+
+    def _check_cred07(self, party_list: list[Party]) -> CredibilityDeduction | None:
+        """CRED-07: 原告构成职业放贷人。
+
+        触发条件：当事人的 litigation_history 中，lending_case_count 达到阈值
+        且 distinct_borrower_count 达到阈值，且时间窗口在上限内。
+        """
+        t = self._thresholds
+        for party in party_list:
+            hist = party.litigation_history
+            if hist is None:
+                continue
+            if (
+                hist.lending_case_count >= t.prof_lender_min_cases
+                and hist.distinct_borrower_count >= t.prof_lender_min_borrowers
+                and hist.time_span_months <= t.prof_lender_max_span_months
+            ):
+                desc, pts = _RULES["CRED-07"]
+                return CredibilityDeduction(
+                    deduction_id=str(uuid.uuid4()),
+                    rule_id="CRED-07",
+                    rule_description=desc,
+                    deduction_points=pts,
+                )
+        return None
 
     # ------------------------------------------------------------------
     # 摘要生成 / Summary builder

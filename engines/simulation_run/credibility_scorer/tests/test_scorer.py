@@ -572,3 +572,131 @@ class TestCredibilityScorerIntegration:
         result = CredibilityScorer().score(inp)
         assert result.final_score == 100
         assert result.deductions == []
+
+
+# ---------------------------------------------------------------------------
+# CRED-07: 职业放贷人检测
+# ---------------------------------------------------------------------------
+
+from engines.shared.models import LitigationHistory, Party
+from engines.shared.rule_config import RuleThresholds
+
+
+class TestCRED07ProfessionalLender:
+    """CRED-07: 原告放贷频次达标 → 扣分 -25。"""
+
+    @staticmethod
+    def _make_party(
+        case_count: int = 0,
+        borrowers: int = 0,
+        months: int = 24,
+        uniform: bool = False,
+    ) -> Party:
+        return Party(
+            party_id="plaintiff-1",
+            case_id="case1",
+            name="郭某",
+            party_type="natural_person",
+            role_code="plaintiff_agent",
+            side="plaintiff",
+            litigation_history=LitigationHistory(
+                lending_case_count=case_count,
+                distinct_borrower_count=borrowers,
+                time_span_months=months,
+                uniform_contract_detected=uniform,
+            ),
+        )
+
+    def test_triggers_when_all_thresholds_met(self):
+        party = self._make_party(case_count=8, borrowers=8, months=24, uniform=True)
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[party],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        assert len(cred07) == 1
+        assert cred07[0].deduction_points == -25
+
+    def test_not_triggered_below_case_threshold(self):
+        party = self._make_party(case_count=2, borrowers=5, months=24)
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[party],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        assert len(cred07) == 0
+
+    def test_not_triggered_below_borrower_threshold(self):
+        party = self._make_party(case_count=5, borrowers=2, months=24)
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[party],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        assert len(cred07) == 0
+
+    def test_not_triggered_without_litigation_history(self):
+        party = Party(
+            party_id="p1", case_id="case1", name="A",
+            party_type="natural_person", role_code="plaintiff_agent", side="plaintiff",
+        )
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[party],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        assert len(cred07) == 0
+
+    def test_custom_thresholds(self):
+        party = self._make_party(case_count=5, borrowers=5, months=24)
+        cfg = RuleThresholds(prof_lender_min_cases=5, prof_lender_min_borrowers=5)
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[party],
+        )
+        scorer = CredibilityScorer(thresholds=cfg)
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        assert len(cred07) == 1
+
+    def test_empty_party_list(self):
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        assert len(cred07) == 0
+
+    def test_score_reduction_correct(self):
+        party = self._make_party(case_count=8, borrowers=8, months=24, uniform=True)
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[party],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        result = scorer.score(inp)
+        assert result.final_score == 100 - 25
