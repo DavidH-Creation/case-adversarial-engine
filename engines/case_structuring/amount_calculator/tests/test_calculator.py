@@ -496,11 +496,26 @@ class TestRule6ClaimDeliveryRatio:
         ]
         assert len(ratio_conflicts) >= 1
 
-    def test_no_principal_loans_skips_check(self):
-        """No principal_base_contribution=True loans → defaults to True (skip)。"""
+    def test_no_principal_loans_claimed_positive_flags_abnormal(self):
+        """No principal_base_contribution=True loans + claimed>0 → ratio=∞, flagged abnormal。"""
         inp = _base_input(
             loan_transactions=[_loan("loan-001", "50000", is_principal=False)],
             claim_entries=[_claim("claim-interest-001", ClaimType.interest, "10000")],
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.consistency_check_result.claim_delivery_ratio_normal is False
+        ratio_conflicts = [
+            c for c in report.consistency_check_result.unresolved_conflicts
+            if "∞" in c.conflict_description or "为零" in c.conflict_description
+        ]
+        assert len(ratio_conflicts) >= 1
+
+    def test_no_principal_loans_claimed_zero_skips(self):
+        """No principal_base_contribution=True loans + claimed=0 → skip (both zero)。"""
+        inp = _base_input(
+            loan_transactions=[_loan("loan-001", "50000", is_principal=False)],
+            claim_entries=[_claim("claim-interest-001", ClaimType.interest, "0")],
         )
         calc = AmountCalculator(thresholds=RuleThresholds())
         report = calc.calculate(inp)
@@ -574,7 +589,7 @@ class TestRule7InterestRecalculation:
         assert ir.delta > 0  # 24% > 3.85%, so delta must be positive
 
     def test_no_recalculation_without_interest_rate(self):
-        """contract_validity=invalid but no contractual_interest_rate → skip。"""
+        """contract_validity=invalid but no contractual_interest_rate → skip + conflict warning。"""
         inp = _base_input(
             contract_validity=ContractValidity.invalid,
             lpr_rate=Decimal("0.0385"),
@@ -582,3 +597,25 @@ class TestRule7InterestRecalculation:
         calc = AmountCalculator(thresholds=RuleThresholds())
         report = calc.calculate(inp)
         assert report.interest_recalculation is None
+        missing_conflicts = [
+            c for c in report.consistency_check_result.unresolved_conflicts
+            if "利息重算缺失" in c.conflict_description
+        ]
+        assert len(missing_conflicts) == 1
+        assert "contractual_interest_rate" in missing_conflicts[0].conflict_description
+
+    def test_no_recalculation_without_lpr_rate(self):
+        """contract_validity=invalid but no lpr_rate → skip + conflict warning。"""
+        inp = _base_input(
+            contract_validity=ContractValidity.invalid,
+            contractual_interest_rate=Decimal("0.24"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is None
+        missing_conflicts = [
+            c for c in report.consistency_check_result.unresolved_conflicts
+            if "利息重算缺失" in c.conflict_description
+        ]
+        assert len(missing_conflicts) == 1
+        assert "lpr_rate" in missing_conflicts[0].conflict_description

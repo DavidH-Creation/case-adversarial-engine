@@ -700,3 +700,30 @@ class TestCRED07ProfessionalLender:
         scorer = CredibilityScorer(thresholds=RuleThresholds())
         result = scorer.score(inp)
         assert result.final_score == 100 - 25
+
+    def test_defendant_matching_thresholds_not_triggered(self):
+        """被告满足职业放贷人条件时不应触发 CRED-07（仅检查原告）。"""
+        defendant = Party(
+            party_id="defendant-1",
+            case_id="case1",
+            name="被告某",
+            party_type="natural_person",
+            role_code="defendant_agent",
+            side="defendant",
+            litigation_history=LitigationHistory(
+                lending_case_count=10,
+                distinct_borrower_count=10,
+                time_span_months=12,
+                uniform_contract_detected=True,
+            ),
+        )
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[defendant],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        assert len(cred07) == 0

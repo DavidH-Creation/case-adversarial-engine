@@ -274,11 +274,14 @@ class CredibilityScorer:
     def _check_cred07(self, party_list: list[Party]) -> CredibilityDeduction | None:
         """CRED-07: 原告构成职业放贷人。
 
-        触发条件：当事人的 litigation_history 中，lending_case_count 达到阈值
-        且 distinct_borrower_count 达到阈值，且时间窗口在上限内。
+        触发条件：原告方（side="plaintiff"）的 litigation_history 中，
+        lending_case_count 达到阈值且 distinct_borrower_count 达到阈值，
+        且时间窗口在上限内。仅检查原告，被告满足条件不触发。
         """
         t = self._thresholds
         for party in party_list:
+            if party.side != "plaintiff":
+                continue
             hist = party.litigation_history
             if hist is None:
                 continue

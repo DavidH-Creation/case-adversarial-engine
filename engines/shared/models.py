@@ -961,14 +961,18 @@ class AmountCalculationReport(BaseModel):
 
 
 class InterestRecalculation(BaseModel):
-    """利息重算记录 — 合同无效时的利率切换结果。"""
+    """利息重算记录 — 合同无效时的利率切换结果。
+
+    注：interest_amount 字段为单期概念金额（principal × rate），用于对比利率切换
+    前后的差额比例。如需精算利息金额，下游应结合实际借贷期限重新计算。
+    """
     original_rate: Decimal = Field(..., description="原合同约定利率")
     effective_rate: Decimal = Field(..., description="重算后适用利率")
     rate_basis: str = Field(..., min_length=1, description="利率依据（如 LPR、LPR*4）")
     contract_validity: ContractValidity
-    original_interest_amount: Decimal = Field(..., description="原利息金额")
-    recalculated_interest_amount: Decimal = Field(..., description="重算后利息金额")
-    delta: Decimal = Field(..., description="利息差额 = original - recalculated")
+    original_interest_amount: Decimal = Field(..., description="单期概念利息 = principal × original_rate")
+    recalculated_interest_amount: Decimal = Field(..., description="单期概念利息 = principal × effective_rate")
+    delta: Decimal = Field(..., description="利息差额 = original - recalculated（同期比较）")
 
 
 # ---------------------------------------------------------------------------
