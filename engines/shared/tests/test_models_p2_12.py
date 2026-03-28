@@ -1,142 +1,239 @@
 """
-ExecutiveSummaryArtifact 模型约束测试（P2.12）。
+engines/shared/tests/test_models_p2_12.py
 
-验证 Pydantic 强制的合约：
-- top3_immediate_actions 只允许 list[str] 或 "未启用"
-- critical_evidence_gaps 只允许 list[str] 或 "未启用"
-- 所有必需字段不允许为空字符串
-- 溯源字段正常存储
+ExecutiveSummaryArtifact 模型合约测试（P2.12）。
 """
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from engines.shared.models import ExecutiveSummaryArtifact
 
 
-def make_summary(**overrides) -> ExecutiveSummaryArtifact:
-    """构造合法的最小 ExecutiveSummaryArtifact。"""
+# ---------------------------------------------------------------------------
+# 辅助构建函数
+# ---------------------------------------------------------------------------
+
+
+def _make_artifact(**overrides) -> ExecutiveSummaryArtifact:
+    """构建有效的 ExecutiveSummaryArtifact，允许字段覆盖。"""
     defaults = dict(
-        summary_id="sum1",
-        case_id="case1",
-        run_id="run1",
-        top5_decisive_issues=["issue1", "issue2"],
-        top3_immediate_actions=["sug1", "sug2"],
-        source_recommendation_id="rec1",
-        top3_adversary_optimal_attacks=["atk1", "atk2", "atk3"],
-        source_attack_chain_ids=["chain1"],
-        current_most_stable_claim="诉请本金 10 万元，与流水完全吻合，无差额，稳定性最高",
-        source_amount_report_id="rpt1",
-        critical_evidence_gaps=["gap1", "gap2"],
+        summary_id="SUM-001",
+        case_id="CASE-001",
+        run_id="RUN-001",
+        top5_decisive_issues=["ISS-001", "ISS-002"],
+        top3_immediate_actions=["SUG-001", "GAP-001"],
+        action_recommendation_id="REC-001",
+        top3_adversary_optimal_attacks=["ATK-001", "ATK-002"],
+        adversary_attack_chain_id="CHAIN-001",
+        current_most_stable_claim="最稳诉请：principal，金额 100000.00（绑定 AmountCalculationReport RPT-001）",
+        amount_report_id="RPT-001",
+        critical_evidence_gaps=["GAP-001", "GAP-002"],
     )
     defaults.update(overrides)
     return ExecutiveSummaryArtifact(**defaults)
 
 
-class TestExecutiveSummaryArtifactModel:
-    def test_valid_minimal_summary_created(self):
-        s = make_summary()
-        assert s.summary_id == "sum1"
-        assert s.case_id == "case1"
-        assert s.run_id == "run1"
+# ---------------------------------------------------------------------------
+# 基础构建测试
+# ---------------------------------------------------------------------------
 
-    # ---- 降级字段约束 ----
 
-    def test_top3_immediate_actions_list_accepted(self):
-        s = make_summary(top3_immediate_actions=["id1", "id2", "id3"])
-        assert s.top3_immediate_actions == ["id1", "id2", "id3"]
-
-    def test_top3_immediate_actions_disabled_string_accepted(self):
-        s = make_summary(
-            top3_immediate_actions="未启用",
-            source_recommendation_id=None,
-        )
-        assert s.top3_immediate_actions == "未启用"
-
-    def test_top3_immediate_actions_invalid_string_raises(self):
-        with pytest.raises(Exception):
-            make_summary(top3_immediate_actions="random_string")
-
-    def test_top3_immediate_actions_empty_list_accepted(self):
-        """空列表是合法的（P1.8 启用但无任何建议时）。"""
-        s = make_summary(top3_immediate_actions=[])
-        assert s.top3_immediate_actions == []
-
-    def test_critical_evidence_gaps_list_accepted(self):
-        s = make_summary(critical_evidence_gaps=["gap1", "gap2", "gap3"])
-        assert s.critical_evidence_gaps == ["gap1", "gap2", "gap3"]
-
-    def test_critical_evidence_gaps_disabled_string_accepted(self):
-        s = make_summary(critical_evidence_gaps="未启用")
-        assert s.critical_evidence_gaps == "未启用"
-
-    def test_critical_evidence_gaps_invalid_string_raises(self):
-        with pytest.raises(Exception):
-            make_summary(critical_evidence_gaps="not_valid")
-
-    def test_critical_evidence_gaps_empty_list_accepted(self):
-        s = make_summary(critical_evidence_gaps=[])
-        assert s.critical_evidence_gaps == []
-
-    # ---- 必需字段非空 ----
-
-    def test_summary_id_required_non_empty(self):
-        with pytest.raises(Exception):
-            make_summary(summary_id="")
-
-    def test_case_id_required_non_empty(self):
-        with pytest.raises(Exception):
-            make_summary(case_id="")
-
-    def test_run_id_required_non_empty(self):
-        with pytest.raises(Exception):
-            make_summary(run_id="")
-
-    def test_current_most_stable_claim_required_non_empty(self):
-        with pytest.raises(Exception):
-            make_summary(current_most_stable_claim="")
-
-    def test_source_amount_report_id_required_non_empty(self):
-        with pytest.raises(Exception):
-            make_summary(source_amount_report_id="")
-
-    # ---- 溯源字段 ----
-
-    def test_source_recommendation_id_none_when_disabled(self):
-        s = make_summary(
-            top3_immediate_actions="未启用",
-            source_recommendation_id=None,
-        )
-        assert s.source_recommendation_id is None
-
-    def test_source_recommendation_id_set_when_enabled(self):
-        s = make_summary(
-            top3_immediate_actions=["sug1"],
-            source_recommendation_id="rec-abc",
-        )
-        assert s.source_recommendation_id == "rec-abc"
-
-    def test_source_attack_chain_ids_defaults_empty(self):
-        s = make_summary(source_attack_chain_ids=[])
-        assert s.source_attack_chain_ids == []
-
-    def test_source_attack_chain_ids_stored(self):
-        s = make_summary(source_attack_chain_ids=["c1", "c2"])
-        assert s.source_attack_chain_ids == ["c1", "c2"]
-
-    # ---- top5/top3 长度无强制上限 ----
-
-    def test_top5_decisive_issues_can_be_empty(self):
-        s = make_summary(top5_decisive_issues=[])
-        assert s.top5_decisive_issues == []
-
-    def test_top3_adversary_optimal_attacks_can_be_empty(self):
-        s = make_summary(top3_adversary_optimal_attacks=[])
-        assert s.top3_adversary_optimal_attacks == []
-
-    # ---- created_at 自动生成 ----
+class TestExecutiveSummaryArtifactConstruction:
+    def test_builds_with_all_fields_present(self):
+        artifact = _make_artifact()
+        assert artifact.summary_id == "SUM-001"
+        assert artifact.case_id == "CASE-001"
+        assert artifact.run_id == "RUN-001"
 
     def test_created_at_auto_generated(self):
-        s = make_summary()
-        assert s.created_at
-        assert "T" in s.created_at
+        artifact = _make_artifact()
+        assert artifact.created_at is not None
+        assert "T" in artifact.created_at
+
+    def test_top5_decisive_issues_stored(self):
+        artifact = _make_artifact(top5_decisive_issues=["ISS-A", "ISS-B", "ISS-C"])
+        assert artifact.top5_decisive_issues == ["ISS-A", "ISS-B", "ISS-C"]
+
+    def test_top5_decisive_issues_allows_empty_list(self):
+        artifact = _make_artifact(top5_decisive_issues=[])
+        assert artifact.top5_decisive_issues == []
+
+    def test_top5_accepts_up_to_five_issues(self):
+        artifact = _make_artifact(
+            top5_decisive_issues=["I1", "I2", "I3", "I4", "I5"]
+        )
+        assert len(artifact.top5_decisive_issues) == 5
+
+    def test_top3_immediate_actions_as_list(self):
+        artifact = _make_artifact(
+            top3_immediate_actions=["SUG-001", "SUG-002"],
+            action_recommendation_id="REC-XYZ",
+        )
+        assert artifact.top3_immediate_actions == ["SUG-001", "SUG-002"]
+        assert artifact.action_recommendation_id == "REC-XYZ"
+
+    def test_top3_immediate_actions_as_disabled_string(self):
+        artifact = _make_artifact(
+            top3_immediate_actions="未启用",
+            action_recommendation_id=None,
+        )
+        assert artifact.top3_immediate_actions == "未启用"
+        assert artifact.action_recommendation_id is None
+
+    def test_top3_adversary_attacks_stored(self):
+        artifact = _make_artifact(
+            top3_adversary_optimal_attacks=["ATK-1", "ATK-2", "ATK-3"]
+        )
+        assert artifact.top3_adversary_optimal_attacks == ["ATK-1", "ATK-2", "ATK-3"]
+
+    def test_adversary_attack_chain_id_stored(self):
+        artifact = _make_artifact(adversary_attack_chain_id="CHAIN-XYZ")
+        assert artifact.adversary_attack_chain_id == "CHAIN-XYZ"
+
+    def test_current_most_stable_claim_stored(self):
+        text = "最稳诉请：principal，金额 50000（绑定 RPT-001）"
+        artifact = _make_artifact(current_most_stable_claim=text)
+        assert artifact.current_most_stable_claim == text
+
+    def test_amount_report_id_stored(self):
+        artifact = _make_artifact(amount_report_id="RPT-999")
+        assert artifact.amount_report_id == "RPT-999"
+
+    def test_critical_evidence_gaps_as_list(self):
+        artifact = _make_artifact(critical_evidence_gaps=["GAP-1", "GAP-2", "GAP-3"])
+        assert artifact.critical_evidence_gaps == ["GAP-1", "GAP-2", "GAP-3"]
+
+    def test_critical_evidence_gaps_as_disabled_string(self):
+        artifact = _make_artifact(critical_evidence_gaps="未启用")
+        assert artifact.critical_evidence_gaps == "未启用"
+
+
+# ---------------------------------------------------------------------------
+# 必填字段校验
+# ---------------------------------------------------------------------------
+
+
+class TestRequiredFields:
+    def test_missing_summary_id_raises(self):
+        with pytest.raises(ValidationError):
+            ExecutiveSummaryArtifact(
+                case_id="C",
+                run_id="R",
+                top5_decisive_issues=[],
+                top3_immediate_actions="未启用",
+                top3_adversary_optimal_attacks=[],
+                adversary_attack_chain_id="CHAIN-1",
+                current_most_stable_claim="text",
+                amount_report_id="RPT-1",
+                critical_evidence_gaps="未启用",
+            )
+
+    def test_empty_summary_id_raises(self):
+        with pytest.raises(ValidationError):
+            _make_artifact(summary_id="")
+
+    def test_empty_adversary_attack_chain_id_raises(self):
+        with pytest.raises(ValidationError):
+            _make_artifact(adversary_attack_chain_id="")
+
+    def test_empty_amount_report_id_raises(self):
+        with pytest.raises(ValidationError):
+            _make_artifact(amount_report_id="")
+
+    def test_empty_current_most_stable_claim_raises(self):
+        with pytest.raises(ValidationError):
+            _make_artifact(current_most_stable_claim="")
+
+
+# ---------------------------------------------------------------------------
+# model_validator 合约：list + None binding
+# ---------------------------------------------------------------------------
+
+
+class TestTraceabilityValidator:
+    def test_list_actions_without_rec_id_raises(self):
+        """top3_immediate_actions 为 list 时，action_recommendation_id 必须非 None。"""
+        with pytest.raises(ValidationError, match="action_recommendation_id"):
+            _make_artifact(
+                top3_immediate_actions=["SUG-001"],
+                action_recommendation_id=None,
+            )
+
+    def test_disabled_actions_with_none_rec_id_ok(self):
+        """top3_immediate_actions 为 "未启用" 时，action_recommendation_id 可以为 None。"""
+        artifact = _make_artifact(
+            top3_immediate_actions="未启用",
+            action_recommendation_id=None,
+        )
+        assert artifact.action_recommendation_id is None
+
+    def test_empty_list_actions_without_rec_id_raises(self):
+        """top3_immediate_actions 为空 list 时，action_recommendation_id 也必须非 None。"""
+        with pytest.raises(ValidationError, match="action_recommendation_id"):
+            _make_artifact(
+                top3_immediate_actions=[],
+                action_recommendation_id=None,
+            )
+
+
+# ---------------------------------------------------------------------------
+# 列表长度上限约束
+# ---------------------------------------------------------------------------
+
+
+class TestMaxLengthConstraints:
+    def test_top5_decisive_issues_max_5(self):
+        """top5_decisive_issues 超过 5 条时应报错。"""
+        with pytest.raises(ValidationError):
+            _make_artifact(
+                top5_decisive_issues=["I1", "I2", "I3", "I4", "I5", "I6"]
+            )
+
+    def test_top5_decisive_issues_exactly_5_ok(self):
+        artifact = _make_artifact(
+            top5_decisive_issues=["I1", "I2", "I3", "I4", "I5"]
+        )
+        assert len(artifact.top5_decisive_issues) == 5
+
+    def test_top3_adversary_attacks_max_3(self):
+        """top3_adversary_optimal_attacks 超过 3 条时应报错。"""
+        with pytest.raises(ValidationError):
+            _make_artifact(
+                top3_adversary_optimal_attacks=["A1", "A2", "A3", "A4"]
+            )
+
+    def test_top3_adversary_attacks_exactly_3_ok(self):
+        artifact = _make_artifact(
+            top3_adversary_optimal_attacks=["A1", "A2", "A3"]
+        )
+        assert len(artifact.top3_adversary_optimal_attacks) == 3
+
+    def test_top3_immediate_actions_list_max_3(self):
+        """top3_immediate_actions 为 list 时超过 3 条应报错。"""
+        with pytest.raises(ValidationError):
+            _make_artifact(
+                top3_immediate_actions=["S1", "S2", "S3", "S4"],
+                action_recommendation_id="REC-001",
+            )
+
+    def test_top3_immediate_actions_list_exactly_3_ok(self):
+        artifact = _make_artifact(
+            top3_immediate_actions=["S1", "S2", "S3"],
+            action_recommendation_id="REC-001",
+        )
+        assert len(artifact.top3_immediate_actions) == 3
+
+    def test_critical_evidence_gaps_list_max_3(self):
+        """critical_evidence_gaps 为 list 时超过 3 条应报错。"""
+        with pytest.raises(ValidationError):
+            _make_artifact(
+                critical_evidence_gaps=["G1", "G2", "G3", "G4"]
+            )
+
+    def test_critical_evidence_gaps_list_exactly_3_ok(self):
+        artifact = _make_artifact(
+            critical_evidence_gaps=["G1", "G2", "G3"]
+        )
+        assert len(artifact.critical_evidence_gaps) == 3

@@ -36,7 +36,7 @@ testpaths = [
     "engines/simulation_run/action_recommender/tests",
     "engines/simulation_run/credibility_scorer/tests",
     "engines/simulation_run/alternative_claim_generator/tests",
-    "engines/report_generation/executive_summary_generator/tests",
+    "engines/report_generation/executive_summarizer/tests",
     "tests/integration",
 ]
 

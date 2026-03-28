@@ -1251,73 +1251,91 @@ class AlternativeClaimSuggestion(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# P2.12: dual-layer output  (P2.12)
+# P2.12：双层输出 / Executive summary artifact  (P2.12)
 # ---------------------------------------------------------------------------
 
 
 class ExecutiveSummaryArtifact(BaseModel):
-    """One-page executive summary artifact (P2.12).
-    Additive layer on top of the long report; does not replace ReportArtifact.
+    """一页式执行摘要（P2.12）。附加产物，不替代长报告 ReportArtifact。
 
-    Every field must trace back to a backend detail object.
-    Degraded fields (top3_immediate_actions / critical_evidence_gaps) may be
-    the string "未启用" when the corresponding P1 module is not enabled.
+    聚合 P0.1-P1.8 全量产物中的关键决策信息。P1.7/P1.8 缺失时对应字段降级为 "未启用"。
+
+    合约保证：
+    - top5_decisive_issues 最多 5 条（Issue 数不足时小于 5 条）
+    - top3_immediate_actions 为 list 时：list 长度 ≤ 3；action_recommendation_id 必须非 None
+    - top3_adversary_optimal_attacks 最多 3 条（AttackChain top_attacks 不足时可更少）
+    - adversary_attack_chain_id 非空（P0.4 必须实现）
+    - amount_report_id 非空（P0.2 必须实现）
+    - critical_evidence_gaps 为 list 时：list 长度 ≤ 3
+
+    Args:
+        summary_id:                      产物唯一标识
+        case_id:                         案件 ID
+        run_id:                          运行快照 ID
+        top5_decisive_issues:            Top5 决定性争点 issue_id 列表（按 outcome_impact 排序）
+        top3_immediate_actions:          Top3 立即行动 suggestion_id/gap_id 列表，或 "未启用"
+        action_recommendation_id:        绑定的 ActionRecommendation.recommendation_id（可回连）
+        top3_adversary_optimal_attacks:  Top3 对方最优攻击 attack_node_id 列表
+        adversary_attack_chain_id:       绑定的 OptimalAttackChain.chain_id（可回连）
+        current_most_stable_claim:       最稳诉请版本说明文本（绑定 amount_report_id）
+        amount_report_id:                绑定的 AmountCalculationReport.report_id（可回连）
+        critical_evidence_gaps:          Top3 关键缺证 gap_id 列表（按 roi_rank 排序），或 "未启用"
+        created_at:                      ISO-8601 时间戳（自动生成）
     """
     summary_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     top5_decisive_issues: list[str] = Field(
-        default_factory=list,
-        description="Issue.issue_id[], sorted by outcome_impact desc, max 5",
+        ..., max_length=5, description="Top5 决定性争点 issue_id 列表（按 outcome_impact 排序，最多 5 条）"
     )
     top3_immediate_actions: Union[list[str], str] = Field(
         ...,
-        description=(
-            "ActionRecommendation high-priority item IDs (max 3); "
-            'string "未启用" when P1.8 not enabled'
-        ),
+        description="Top3 立即行动 suggestion_id/gap_id 列表（最多 3 条），或 '未启用'（P1.8 缺失）",
     )
-    source_recommendation_id: Optional[str] = Field(
+    action_recommendation_id: Optional[str] = Field(
         default=None,
-        description="Traceback: ActionRecommendation.recommendation_id; None when degraded",
+        description="绑定的 ActionRecommendation.recommendation_id；top3_immediate_actions 为 list 时必须非 None",
     )
     top3_adversary_optimal_attacks: list[str] = Field(
-        default_factory=list,
-        description="AttackNode.attack_node_id[] from OptimalAttackChain, max 3",
+        ..., max_length=3, description="Top3 对方最优攻击 attack_node_id 列表（最多 3 条）"
     )
-    source_attack_chain_ids: list[str] = Field(
-        default_factory=list,
-        description="Traceback: OptimalAttackChain.chain_id[]",
+    adversary_attack_chain_id: str = Field(
+        ..., min_length=1, description="绑定的 OptimalAttackChain.chain_id（可回连）"
     )
     current_most_stable_claim: str = Field(
-        ..., min_length=1,
-        description="Most stable claim text, bound to AmountCalculationReport.claim_calculation_table",
+        ..., min_length=1, description="最稳诉请版本说明文本（绑定 amount_report_id）"
     )
-    source_amount_report_id: str = Field(
-        ..., min_length=1,
-        description="Traceback: AmountCalculationReport.report_id",
+    amount_report_id: str = Field(
+        ..., min_length=1, description="绑定的 AmountCalculationReport.report_id（可回连）"
     )
     critical_evidence_gaps: Union[list[str], str] = Field(
         ...,
-        description=(
-            "EvidenceGapItem.gap_id[] Top3 ROI (max 3); "
-            'string "未启用" when P1.7 not enabled'
-        ),
+        description="Top3 关键缺证 gap_id 列表（最多 3 条，按 roi_rank 排序），或 '未启用'（P1.7 缺失）",
     )
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
 
     @model_validator(mode="after")
-    def _validate_degradable_fields(self) -> "ExecutiveSummaryArtifact":
-        """Constrain top3_immediate_actions and critical_evidence_gaps to list[str] or 未启用."""
-        disabled = "未启用"
-        for field_name, value in [
-            ("top3_immediate_actions", self.top3_immediate_actions),
-            ("critical_evidence_gaps", self.critical_evidence_gaps),
-        ]:
-            if not isinstance(value, list) and value != disabled:
+    def _check_traceability(self) -> "ExecutiveSummaryArtifact":
+        """硬规则：list 字段长度约束 + traceability。
+
+        1. top3_immediate_actions 为列表时：长度 ≤ 3，action_recommendation_id 必须非 None
+        2. critical_evidence_gaps 为列表时：长度 ≤ 3
+        """
+        if isinstance(self.top3_immediate_actions, list):
+            if len(self.top3_immediate_actions) > 3:
                 raise ValueError(
-                    f"{field_name} must be list[str] or string 未启用, got {value!r}"
+                    f"top3_immediate_actions list must have at most 3 items, "
+                    f"got {len(self.top3_immediate_actions)}"
                 )
+            if self.action_recommendation_id is None:
+                raise ValueError(
+                    "action_recommendation_id must be set when top3_immediate_actions is a list"
+                )
+        if isinstance(self.critical_evidence_gaps, list) and len(self.critical_evidence_gaps) > 3:
+            raise ValueError(
+                f"critical_evidence_gaps list must have at most 3 items, "
+                f"got {len(self.critical_evidence_gaps)}"
+            )
         return self
