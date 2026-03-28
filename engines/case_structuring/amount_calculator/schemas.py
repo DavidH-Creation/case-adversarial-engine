@@ -20,6 +20,7 @@ from engines.shared.models import (  # noqa: F401
     AmountConflict,
     ClaimCalculationEntry,
     ClaimType,
+    ContractValidity,
     DisputedAmountAttribution,
     DisputeResolutionStatus,
     LoanTransaction,
@@ -82,4 +83,16 @@ class AmountCalculatorInput(BaseModel):
     )
     disputed_amount_attributions: list[DisputedAmountAttribution] = Field(
         default_factory=list, description="争议款项归因表，可为空"
+    )
+    contract_validity: ContractValidity = Field(
+        default=ContractValidity.valid,
+        description="合同效力状态；非 valid 时触发利息重算",
+    )
+    contractual_interest_rate: Decimal | None = Field(
+        default=None, ge=0,
+        description="合同约定年利率；None 时跳过利息重算",
+    )
+    lpr_rate: Decimal | None = Field(
+        default=None, gt=0,
+        description="当期 LPR 利率（由调用方传入）；合同无效时必需",
     )

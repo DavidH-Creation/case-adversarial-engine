@@ -505,3 +505,80 @@ class TestRule6ClaimDeliveryRatio:
         calc = AmountCalculator(thresholds=RuleThresholds())
         report = calc.calculate(inp)
         assert report.consistency_check_result.claim_delivery_ratio_normal is True
+
+
+from engines.shared.models import ContractValidity, InterestRecalculation
+
+# ---------------------------------------------------------------------------
+# Rule #7: 合同无效后利息重算 (interest recalculation)
+# ---------------------------------------------------------------------------
+
+class TestRule7InterestRecalculation:
+    """rule #7: contract invalid → interest recalculated at LPR。"""
+
+    def test_valid_contract_no_recalculation(self):
+        inp = _base_input()
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is None
+
+    def test_invalid_contract_forces_lpr(self):
+        inp = _base_input(
+            contract_validity=ContractValidity.invalid,
+            contractual_interest_rate=Decimal("0.24"),
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is not None
+        ir = report.interest_recalculation
+        assert ir.effective_rate == Decimal("0.0385")
+        assert ir.rate_basis == "LPR"
+        assert ir.contract_validity == ContractValidity.invalid
+
+    def test_disputed_contract_caps_at_lpr_x4(self):
+        inp = _base_input(
+            contract_validity=ContractValidity.disputed,
+            contractual_interest_rate=Decimal("0.24"),
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is not None
+        ir = report.interest_recalculation
+        expected_cap = Decimal("0.0385") * Decimal("4.0")
+        assert ir.effective_rate == min(Decimal("0.24"), expected_cap)
+        assert ir.rate_basis == "LPR*4"
+
+    def test_disputed_rate_already_below_cap(self):
+        inp = _base_input(
+            contract_validity=ContractValidity.disputed,
+            contractual_interest_rate=Decimal("0.10"),
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        ir = report.interest_recalculation
+        assert ir.effective_rate == Decimal("0.10")  # below cap, no reduction
+
+    def test_interest_delta_calculated(self):
+        inp = _base_input(
+            contract_validity=ContractValidity.invalid,
+            contractual_interest_rate=Decimal("0.24"),
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        ir = report.interest_recalculation
+        assert ir.delta == ir.original_interest_amount - ir.recalculated_interest_amount
+        assert ir.delta > 0  # 24% > 3.85%, so delta must be positive
+
+    def test_no_recalculation_without_interest_rate(self):
+        """contract_validity=invalid but no contractual_interest_rate → skip。"""
+        inp = _base_input(
+            contract_validity=ContractValidity.invalid,
+            lpr_rate=Decimal("0.0385"),
+        )
+        calc = AmountCalculator(thresholds=RuleThresholds())
+        report = calc.calculate(inp)
+        assert report.interest_recalculation is None

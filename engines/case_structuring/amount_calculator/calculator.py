@@ -26,7 +26,9 @@ from engines.shared.models import (
     AmountConsistencyCheck,
     ClaimCalculationEntry,
     ClaimType,
+    ContractValidity,
     DisputeResolutionStatus,
+    InterestRecalculation,
     LoanTransaction,
     RepaymentAttribution,
     RepaymentTransaction,
@@ -60,6 +62,10 @@ class AmountCalculator:
         Returns:
             AmountCalculationReport — 含四张表和五条硬规则结果
         """
+        # 规则 #7：合同无效/争议时利息重算
+        principal_base = self._sum_principal_loans(inp.loan_transactions)
+        interest_recalc = self._recalculate_interest(inp, principal_base)
+
         # 1. 构建诉请计算表
         claim_table = self._build_claim_calculation_table(
             inp.claim_entries,
@@ -130,6 +136,7 @@ class AmountCalculator:
             disputed_amount_attributions=inp.disputed_amount_attributions,
             claim_calculation_table=claim_table,
             consistency_check_result=consistency,
+            interest_recalculation=interest_recalc,
         )
 
     # ------------------------------------------------------------------
@@ -301,6 +308,49 @@ class AmountCalculator:
         total_claimed = sum(c.claimed_amount for c in claim_entries)
         ratio = total_claimed / delivered
         return ratio <= self._thresholds.false_litigation_ratio
+
+    # ------------------------------------------------------------------
+    # 硬规则 7：合同无效/争议利息重算 / interest recalculation
+    # ------------------------------------------------------------------
+
+    def _recalculate_interest(
+        self, inp: AmountCalculatorInput, principal_base: Decimal,
+    ) -> InterestRecalculation | None:
+        """规则 #7: 合同无效/争议时，利息按 LPR 重算。
+
+        - invalid: 强制 LPR
+        - disputed: min(contractual_rate, LPR * lpr_multiplier_cap)
+        - valid 或缺少利率输入: 返回 None
+        """
+        if inp.contract_validity == ContractValidity.valid:
+            return None
+        if inp.contractual_interest_rate is None or inp.lpr_rate is None:
+            return None
+
+        original_rate = inp.contractual_interest_rate
+        lpr = inp.lpr_rate
+
+        if inp.contract_validity == ContractValidity.invalid:
+            effective_rate = lpr
+            basis = "LPR"
+        else:  # disputed
+            cap = lpr * self._thresholds.lpr_multiplier_cap
+            effective_rate = min(original_rate, cap)
+            basis = "LPR*4" if effective_rate == cap else f"合同约定（{original_rate}，未超上限）"
+
+        original_interest = principal_base * original_rate
+        recalculated_interest = principal_base * effective_rate
+        delta = original_interest - recalculated_interest
+
+        return InterestRecalculation(
+            original_rate=original_rate,
+            effective_rate=effective_rate,
+            rate_basis=basis,
+            contract_validity=inp.contract_validity,
+            original_interest_amount=original_interest,
+            recalculated_interest_amount=recalculated_interest,
+            delta=delta,
+        )
 
     # ------------------------------------------------------------------
     # 冲突生成 / Conflict generation
