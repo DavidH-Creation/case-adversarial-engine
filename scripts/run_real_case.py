@@ -15,10 +15,21 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Windows 默认用 GBK 编码输出，遇到 ✓ 等 Unicode 字符会崩溃。
+# 强制 UTF-8 以避免 UnicodeEncodeError。
+# Windows defaults to GBK for console output; force UTF-8 to avoid UnicodeEncodeError.
+if sys.platform == "win32":
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(_PROJECT_ROOT))

@@ -65,6 +65,8 @@ class ClaudeCLIClient:
         cli_bin:  CLI 可执行文件名，默认 "claude" / CLI binary name (default "claude")
     """
 
+    _NOT_LOGGED_IN_MARKERS = ("Not logged in", "Please run /login")
+
     def __init__(self, timeout: float = 120.0, cli_bin: str = "claude") -> None:
         self._timeout = timeout
         self._cli_bin = cli_bin
@@ -82,6 +84,15 @@ class ClaudeCLIClient:
         """调用 claude CLI 并返回文本响应。
         Invoke claude CLI and return the text response.
 
+        优先使用 ``--bare`` 模式（跳过 hooks/LSP/auto-memory）。
+        若因认证问题失败（未设置 ANTHROPIC_API_KEY 且 --bare 无法继承 OAuth），
+        自动去掉 ``--bare`` 重试，使用当前登录会话凭证。
+
+        Prefers ``--bare`` mode (skips hooks/LSP/auto-memory).
+        If ``--bare`` fails due to auth (no ANTHROPIC_API_KEY and no inherited
+        OAuth session), automatically retries without ``--bare``, falling back
+        to the current interactive login session.
+
         Raises:
             CLINotFoundError: claude 不在 PATH 中
             CLICallError:     进程以非零状态退出
@@ -94,12 +105,44 @@ class ClaudeCLIClient:
                 f" / `{self._cli_bin}` not found. Ensure Claude Code CLI is installed and in PATH."
             )
 
-        cmd = [
-            resolved_bin,
-            "--print",
-            "--bare",
-            "--model", model,
-        ]
+        # 第一次尝试用 --bare；若认证失败则去掉 --bare 重试
+        # First attempt with --bare; if auth fails, retry without --bare
+        for use_bare in (True, False):
+            stdout, stderr, rc = await self._invoke(
+                resolved_bin, system=system, user=user, model=model, bare=use_bare
+            )
+            if rc == 0:
+                return stdout.decode(errors="replace").strip()
+
+            stderr_text = stderr.decode(errors="replace")
+            is_auth_error = any(m in stderr_text or m in stdout.decode(errors="replace")
+                                for m in self._NOT_LOGGED_IN_MARKERS)
+            if use_bare and is_auth_error:
+                # --bare 模式认证失败，去掉 --bare 重试
+                # --bare auth failed, retry without --bare
+                continue
+
+            raise CLICallError("claude", rc, stderr_text)
+
+        # 不应到达此处 / Should not be reached
+        raise CLICallError("claude", -1, "exhausted retries")  # pragma: no cover
+
+    async def _invoke(
+        self,
+        resolved_bin: str,
+        *,
+        system: str,
+        user: str,
+        model: str,
+        bare: bool,
+    ) -> tuple[bytes, bytes, int]:
+        """执行一次 claude CLI 调用，返回 (stdout, stderr, returncode)。
+        Execute a single claude CLI invocation, returning (stdout, stderr, returncode).
+        """
+        cmd: list[str] = [resolved_bin, "--print"]
+        if bare:
+            cmd.append("--bare")
+        cmd += ["--model", model]
         if system:
             cmd += ["--system-prompt", system]
 
@@ -129,10 +172,7 @@ class ClaudeCLIClient:
                 f" / claude CLI timed out (>{self._timeout}s)"
             )
 
-        if proc.returncode != 0:
-            raise CLICallError("claude", proc.returncode, stderr.decode(errors="replace"))
-
-        return stdout.decode(errors="replace").strip()
+        return stdout, stderr, proc.returncode or 0
 
 
 # ---------------------------------------------------------------------------
