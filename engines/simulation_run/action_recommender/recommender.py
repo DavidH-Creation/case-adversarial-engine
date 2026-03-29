@@ -106,6 +106,11 @@ class ActionRecommender:
         # ---- 案型检测 ----
         dispute_category = self._detect_dispute_category(inp.issue_list)
 
+        # ---- 案型补充注入（仅当规则层产出不足时）----
+        trial_explanations = self._inject_category_specific_actions(
+            dispute_category, inp.issue_list, trial_explanations,
+        )
+
         # ---- LLM 策略层（可选）----
         plaintiff_plan: Optional[PartyActionPlan] = None
         defendant_plan: Optional[PartyActionPlan] = None
@@ -167,6 +172,59 @@ class ActionRecommender:
         if not any(scores.values()):
             return "general"
         return max(scores, key=scores.get)
+
+    # ------------------------------------------------------------------
+    # 案型补充注入 / Category-specific action injection
+    # ------------------------------------------------------------------
+
+    _MIN_TRIAL_EXPLANATIONS = 3  # 规则层产出不足阈值
+    _MAX_INJECTED = 3  # 每次最多注入条数
+
+    _CATEGORY_KEYWORDS: dict[str, list[str]] = {
+        "borrower_identity": ["借款人", "主体", "适格", "合意", "账户控制", "代收", "代付"],
+        "amount_dispute": ["本金", "利息", "金额", "计算", "还款"],
+    }
+
+    @classmethod
+    def _inject_category_specific_actions(
+        cls,
+        dispute_category: str,
+        issues: list[Issue],
+        existing: list[TrialExplanationPriority],
+    ) -> list[TrialExplanationPriority]:
+        """当规则层 trial_explanations 不足时，按案型注入补充建议。
+
+        保守策略：
+        - 仅当 existing 数量 < _MIN_TRIAL_EXPLANATIONS 时才注入
+        - 严格去重（按 issue_id）
+        - 最多注入 _MAX_INJECTED 条
+        - category=general 时不注入
+        """
+        keywords = cls._CATEGORY_KEYWORDS.get(dispute_category)
+        if keywords is None or len(existing) >= cls._MIN_TRIAL_EXPLANATIONS:
+            return existing
+
+        existing_ids = {p.issue_id for p in existing}
+        injected: list[TrialExplanationPriority] = []
+
+        for issue in issues:
+            if issue.issue_id in existing_ids:
+                continue
+            if any(kw in issue.title for kw in keywords):
+                injected.append(TrialExplanationPriority(
+                    priority_id=str(uuid.uuid4()),
+                    issue_id=issue.issue_id,
+                    explanation_text=f"庭审重点质证争点「{issue.title}」",
+                ))
+                existing_ids.add(issue.issue_id)
+                if len(injected) >= cls._MAX_INJECTED:
+                    break
+
+        if injected:
+            logger.info("Category '%s': injected %d trial explanations (rule layer had %d)",
+                        dispute_category, len(injected), len(existing))
+
+        return list(existing) + injected
 
     # ------------------------------------------------------------------
     # LLM 策略层 / Strategic layer
