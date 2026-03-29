@@ -619,7 +619,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     print("=" * 60)
 
     # LLM clients
-    claude = ClaudeCLIClient(timeout=180.0)
+    claude = ClaudeCLIClient(timeout=600.0)
     if claude_only:
         print("\n[Config] All agents use Claude CLI (--claude-only)")
         codex = claude
@@ -630,7 +630,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
             codex = claude
         else:
             print("\n[Config] Plaintiff/Evidence/Summary -> Claude  |  Defendant -> Codex")
-            codex = CodexCLIClient(timeout=180.0)
+            codex = CodexCLIClient(timeout=600.0)
 
     # Step 1: Index evidence
     print("\n[Step 1] Indexing evidence...")

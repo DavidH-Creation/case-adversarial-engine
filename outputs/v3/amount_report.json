@@ -1,0 +1,53 @@
+{
+  "report_id": "amount-report-9b99910c",
+  "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+  "run_id": "run-2ca33fd6b581",
+  "loan_transactions": [
+    {
+      "tx_id": "tx-loan-001",
+      "date": "2025-01-10",
+      "amount": "100000",
+      "evidence_id": "src-p-transfers",
+      "principal_base_contribution": true
+    },
+    {
+      "tx_id": "tx-loan-002",
+      "date": "2025-01-10",
+      "amount": "100000",
+      "evidence_id": "src-p-transfers",
+      "principal_base_contribution": true
+    }
+  ],
+  "repayment_transactions": [],
+  "disputed_amount_attributions": [],
+  "claim_calculation_table": [
+    {
+      "claim_id": "c-001",
+      "claim_type": "principal",
+      "claimed_amount": "200000",
+      "calculated_amount": "200000",
+      "delta": "0",
+      "delta_explanation": "计算值：总放款基数 200000 - 已还本金 0 = 200000"
+    },
+    {
+      "claim_id": "c-002",
+      "claim_type": "interest",
+      "claimed_amount": "0",
+      "calculated_amount": null,
+      "delta": null,
+      "delta_explanation": "interest 类诉请无法从流水确定性计算，需结合合同利率/违约金条款"
+    }
+  ],
+  "consistency_check_result": {
+    "principal_base_unique": true,
+    "all_repayments_attributed": true,
+    "text_table_amount_consistent": true,
+    "duplicate_interest_penalty_claim": false,
+    "claim_total_reconstructable": true,
+    "unresolved_conflicts": [],
+    "verdict_block_active": false,
+    "claim_delivery_ratio_normal": true
+  },
+  "interest_recalculation": null,
+  "created_at": "2026-03-29T04:05:10Z"
+}

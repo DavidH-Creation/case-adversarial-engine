@@ -1,0 +1,20 @@
+{
+  "summary_id": "92e21a1e-dc4f-4d8b-9ee1-b1686633acca",
+  "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+  "run_id": "run-2ca33fd6b581",
+  "top5_decisive_issues": [
+    "issue-wangchenzhuang2025-001",
+    "issue-wangchenzhuang2025-002",
+    "issue-wangchenzhuang2025-003",
+    "issue-wangchenzhuang2025-004",
+    "issue-wangchenzhuang2025-005"
+  ],
+  "top3_immediate_actions": [],
+  "action_recommendation_id": "bcf9e66c-cb8a-4f07-bdff-cf7cd922333c",
+  "top3_adversary_optimal_attacks": [],
+  "adversary_attack_chain_id": "chain-316092d9",
+  "current_most_stable_claim": "最稳诉请：principal，诉请金额 200000，与系统计算完全一致（delta=0）（绑定 AmountCalculationReport amount-report-9b99910c）",
+  "amount_report_id": "amount-report-9b99910c",
+  "critical_evidence_gaps": "未启用",
+  "created_at": "2026-03-29T04:11:14Z"
+}
