@@ -345,9 +345,16 @@ class IssueImpactRanker:
                     # dim_val 可能是 {"score": 85, "rationale": "..."} 或直接值
                     score = None
                     if isinstance(dim_val, dict):
-                        score = dim_val.get("score", dim_val.get("value", dim_val.get("rating")))
+                        raw = dim_val.get("score", dim_val.get("value", dim_val.get("rating")))
+                        if isinstance(raw, (int, float)):
+                            score = raw
+                        elif isinstance(raw, str) and raw.replace(".", "", 1).lstrip("-").isdigit():
+                            score = float(raw)
                     elif isinstance(dim_val, (int, float)):
                         score = dim_val
+                    elif isinstance(dim_val, str) and dim_val.replace(".", "", 1).lstrip("-").isdigit():
+                        # LLM 返回字符串数字如 "85"
+                        score = float(dim_val)
                     elif isinstance(dim_val, str) and expected_type is str:
                         # 字符串枚举值（如 outcome_impact: "high"）直接提升
                         item.setdefault(field_name, dim_val)
