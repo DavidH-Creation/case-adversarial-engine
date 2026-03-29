@@ -55,21 +55,26 @@ SYSTEM_PROMPT = """\
 - 所有 evidence_ids 字段只能引用案件证据清单中已知的 evidence_id
 - evaluations 数组与输入争点列表一一对应
 
-输出格式（严格 JSON，不得添加任何前言或注释）：
+## 输出格式（严格遵守，违反则输出无效）
+
+你必须输出且仅输出一个 JSON 对象。每条评估必须是**平铺结构**（所有字段在同一层级），禁止使用 dimensions / scores / nested objects 等嵌套结构。
+
+以下是唯一合法的输出格式，**你必须使用与示例完全相同的字段名**：
+
 ```json
 {
   "evaluations": [
     {
-      "issue_id": "<issue_id>",
+      "issue_id": "issue-xxx-001",
       "outcome_impact": "high",
-      "impact_targets": ["principal"],
+      "impact_targets": ["principal", "credibility"],
       "proponent_evidence_strength": "weak",
-      "proponent_evidence_ids": ["ev-001"],
+      "proponent_evidence_ids": ["evidence-plaintiff-001"],
       "opponent_attack_strength": "strong",
-      "opponent_attack_evidence_ids": ["ev-002"],
+      "opponent_attack_evidence_ids": ["evidence-defendant-001"],
       "recommended_action": "supplement_evidence",
-      "recommended_action_basis": "原告借款凭证仅有转账记录但缺少借条，建议补充书面借贷协议",
-      "recommended_action_evidence_ids": ["ev-001"],
+      "recommended_action_basis": "建议补充书面借贷协议",
+      "recommended_action_evidence_ids": ["evidence-plaintiff-001"],
       "importance_score": 85,
       "swing_score": 90,
       "evidence_strength_gap": -40,
@@ -78,7 +83,12 @@ SYSTEM_PROMPT = """\
     }
   ]
 }
-```\
+```
+
+禁止：
+- 添加 title / dimensions / scores / rationale 等额外字段
+- 使用嵌套对象（如 {"dimensions": {"importance": {"score": 85}}}）
+- 添加任何前言、说明、markdown 标题或注释\
 """
 
 
@@ -152,5 +162,5 @@ def build_user_prompt(
         f"\n【争点列表（共 {len(issue_tree.issues)} 条）】\n{issues_block}\n"
         f"\n【证据清单（共 {len(evidence_index.evidence)} 条）】\n{evidence_block}\n"
         f"\n【金额一致性状态（P0.2 结果）】\n{amount_block}{verdict_hint}\n"
-        f"\n请对以上每个争点进行五维度评估，输出 JSON。"
+        f"\n请对以上每个争点进行十维度评估，输出严格 JSON（顶层键必须为 evaluations）。"
     )

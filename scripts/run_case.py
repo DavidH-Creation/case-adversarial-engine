@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import os
 import sys
 import uuid
@@ -303,7 +304,7 @@ def _write_md(
             lines.append(f"**Outcome**: {path.possible_outcome}")
             if path.confidence_interval:
                 ci = path.confidence_interval
-                lines.append(f"**Confidence**: {ci.low:.0%} ~ {ci.high:.0%}")
+                lines.append(f"**Confidence**: {ci.lower:.0%} ~ {ci.upper:.0%}")
             if path.path_notes:
                 lines.append(f"**Notes**: {path.path_notes}")
             lines.append("")
@@ -519,10 +520,18 @@ async def _run_post_debate(
         ))
         ranked_tree = ranking_result.ranked_issue_tree
         artifacts["ranked_issues"] = ranked_tree
-        print(f"    \u2713 Ranked issues: {len(ranked_tree.issues)}")
+        meta = ranking_result.evaluation_metadata
+        n_eval = meta.get("evaluated_count", "?")
+        n_total = meta.get("total_count", "?")
+        failed = meta.get("failed", False)
+        uneval = ranking_result.unevaluated_issue_ids
+        print(f"    {'✗ LLM FAILED' if failed else '✓'} Ranked issues: {len(ranked_tree.issues)} (evaluated: {n_eval}/{n_total}, unevaluated: {len(uneval)})")
+        if uneval:
+            print(f"    ⚠ Unevaluated: {uneval[:5]}{'...' if len(uneval) > 5 else ''}")
         for iss in ranked_tree.issues:
-            tag = iss.outcome_impact.value if iss.outcome_impact else "?"
-            print(f"      [{tag}] {iss.issue_id}: {iss.title}")
+            impact = iss.outcome_impact.value if iss.outcome_impact else "-"
+            score = f"{iss.composite_score:.1f}" if iss.composite_score else "0"
+            print(f"      [{impact}|cs={score}] {iss.issue_id}: {iss.title}")
     else:
         ranked_tree = issue_tree
         artifacts["ranked_issues"] = None
@@ -717,6 +726,11 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         if obj:
             (out / f"{name}.json").write_text(obj.model_dump_json(indent=2), encoding="utf-8")
 
+    # Serialize ranked issues for inspection
+    ranked = artifacts.get("ranked_issues")
+    if ranked:
+        (out / "ranked_issues.json").write_text(ranked.model_dump_json(indent=2), encoding="utf-8")
+
     # Step 5: Generate Word document
     print("\n[Step 5] Generating Word report...")
     try:
@@ -768,7 +782,19 @@ if __name__ == "__main__":
     parser.add_argument("case_file", help="Path to YAML case definition file")
     parser.add_argument("--model", default=None, help="Override LLM model (default: from YAML or claude-sonnet-4-6)")
     parser.add_argument("--claude-only", action="store_true", help="Use Claude CLI for all agents (skip Codex)")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging for engines")
     args = parser.parse_args()
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG, format="%(name)s %(levelname)s: %(message)s")
+        # Extra: write debug logs to a file (unbuffered) to avoid Windows pipe buffering
+        _debug_path = _PROJECT_ROOT / "outputs" / "debug.log"
+        _debug_path.parent.mkdir(parents=True, exist_ok=True)
+        _fh = logging.FileHandler(str(_debug_path), mode="w", encoding="utf-8")
+        _fh.setLevel(logging.DEBUG)
+        _fh.setFormatter(logging.Formatter("%(name)s %(levelname)s: %(message)s"))
+        logging.getLogger().addHandler(_fh)
+    else:
+        logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     try:
         asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only))
     except CLINotFoundError as e:

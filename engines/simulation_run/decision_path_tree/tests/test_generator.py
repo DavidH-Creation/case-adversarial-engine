@@ -9,6 +9,7 @@ Unit tests for DecisionPathTreeGenerator.
 """
 from __future__ import annotations
 
+import copy
 import json
 from decimal import Decimal
 
@@ -661,3 +662,103 @@ class TestGeneratorMetadata:
         await generator.generate(_make_input(verdict_block_active=True))
 
         assert "verdict_block_active: True" in mock.last_user
+
+
+class TestOpusStyleNormalization:
+    """测试 Opus 风格 LLM 输出归一化。"""
+
+    # The Opus-style fixture as a class-level constant
+    OPUS_FIXTURE = {
+        "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+        "generation_timestamp": "2026-03-29T14:01:00Z",
+        "meta": {"model": "claude-opus-4-6"},
+        "decision_paths": [
+            {
+                "path_id": "DP-001",
+                "probability_label": "中等",
+                "outcome_type": "全额支持",
+                "narrative": "法院认定小陈系实际借款人，判令返还全部本金200000元及资金占用利息。",
+                "branch_sequence": [
+                    {"step": 1, "issue_id": "issue-001", "evidence": ["ev-001", "ev-002"], "reasoning": "借贷合意成立"},
+                    {"step": 2, "issue_id": "issue-002", "evidence": ["ev-003"], "reasoning": "款项交付确认"},
+                ],
+                "judgment_projection": {"principal": 200000, "interest": True, "costs_borne_by": "defendant"},
+                "trigger_condition": "全额支持——小陈系实际借款人，返还本金20万元并赔偿资金占用损失",
+            },
+            {
+                "path_id": "DP-002",
+                "probability_label": "较高",
+                "outcome_type": "驳回全部诉请",
+                "narrative": "法院认定实际借款人为老庄，小陈仅为代收款人。",
+                "branch_sequence": [
+                    {"step": 1, "issue_id": "issue-002", "evidence": ["ev-002"], "reasoning": "主体不适格"},
+                ],
+                "judgment_projection": {"principal": 0},
+                "trigger_condition": "驳回全部诉请——实际借款人系老庄，小陈仅为代收款人",
+            },
+        ],
+        "path_comparison_matrix": {},
+        "strategic_advisory": "建议原告补强借贷合意直接证据",
+    }
+
+    def test_normalize_llm_json_maps_decision_paths(self):
+        """decision_paths → paths"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = DecisionPathTreeGenerator._normalize_llm_json(data)
+        assert "paths" in result
+        assert len(result["paths"]) == 2
+
+    def test_normalize_maps_narrative_to_possible_outcome(self):
+        """narrative → possible_outcome"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = DecisionPathTreeGenerator._normalize_llm_json(data)
+        assert result["paths"][0].get("possible_outcome")
+        assert "实际借款人" in result["paths"][0]["possible_outcome"]
+
+    def test_normalize_maps_probability_label_to_confidence_interval(self):
+        """probability_label → confidence_interval"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = DecisionPathTreeGenerator._normalize_llm_json(data)
+        ci = result["paths"][0].get("confidence_interval")
+        assert ci is not None
+        assert "lower" in ci and "upper" in ci
+
+    def test_normalize_extracts_issue_ids_from_branch_sequence(self):
+        """branch_sequence[].issue_id → trigger_issue_ids"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = DecisionPathTreeGenerator._normalize_llm_json(data)
+        # Should extract issue IDs from branch_sequence
+        issue_ids = result["paths"][0].get("trigger_issue_ids", [])
+        assert len(issue_ids) >= 1  # at least some extracted
+
+    def test_normalize_extracts_evidence_ids_from_branch_sequence(self):
+        """branch_sequence[].evidence → key_evidence_ids"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = DecisionPathTreeGenerator._normalize_llm_json(data)
+        ev_ids = result["paths"][0].get("key_evidence_ids", [])
+        assert len(ev_ids) >= 1
+
+    @pytest.mark.asyncio
+    async def test_full_generate_with_opus_output(self):
+        """Full generate() flow with Opus-style output produces non-empty paths."""
+        fixture = copy.deepcopy(self.OPUS_FIXTURE)
+        response = json.dumps(fixture, ensure_ascii=False)
+        # Use issue/evidence IDs that match the fixture
+        inp = _make_input(
+            issue_ids=["issue-001", "issue-002", "issue-003"],
+            evidence_ids=["ev-001", "ev-002", "ev-003"],
+        )
+        gen = DecisionPathTreeGenerator(
+            llm_client=MockLLMClient(response),
+            case_type="civil_loan",
+            model="test",
+            temperature=0.0,
+            max_retries=1,
+        )
+        result = await gen.generate(inp)
+        assert isinstance(result, DecisionPathTree)
+        assert len(result.paths) >= 1, f"Expected non-empty paths, got {len(result.paths)}"
+        # Each path should have trigger_condition and possible_outcome
+        for path in result.paths:
+            assert path.trigger_condition, f"Path {path.path_id} missing trigger_condition"
+            assert path.possible_outcome, f"Path {path.path_id} missing possible_outcome"

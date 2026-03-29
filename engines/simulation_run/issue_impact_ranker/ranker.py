@@ -19,8 +19,12 @@ Issue Impact Ranker — main class for P0.1 issue impact ranking.
 """
 from __future__ import annotations
 
+import logging
+import re
 from datetime import datetime, timezone
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 from engines.shared.json_utils import _extract_json_object
 from engines.shared.models import (
@@ -72,7 +76,7 @@ class IssueImpactRanker:
         *,
         model: str = "claude-sonnet-4-20250514",
         temperature: float = 0.0,
-        max_tokens: int = 8192,
+        max_tokens: int = 16000,
         max_retries: int = 3,
     ) -> None:
         self._llm = llm_client
@@ -134,8 +138,25 @@ class IssueImpactRanker:
             raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
 
             # 解析 JSON
+            logger.info("LLM 原始响应长度: %d chars", len(raw_response))
+            logger.debug("LLM 原始响应前500字: %s", raw_response[:500])
             raw_dict = _extract_json_object(raw_response)
+            logger.info("JSON 解析成功, 顶层键: %s", list(raw_dict.keys()))
+            raw_dict = self._normalize_evaluation_keys(raw_dict)
+            # 归一化个别评估项的字段名
+            if "evaluations" in raw_dict and isinstance(raw_dict["evaluations"], list):
+                raw_dict["evaluations"] = [
+                    self._normalize_single_eval(item) if isinstance(item, dict) else item
+                    for item in raw_dict["evaluations"]
+                ]
+                if raw_dict["evaluations"]:
+                    logger.debug("首条评估项键: %s", list(raw_dict["evaluations"][0].keys()))
             llm_output = LLMIssueEvaluationOutput.model_validate(raw_dict)
+            logger.info("评估条目数: %d", len(llm_output.evaluations))
+            if llm_output.evaluations:
+                sample = llm_output.evaluations[0]
+                logger.info("首条 issue_id=%s, outcome_impact=%s, importance=%d",
+                            sample.issue_id, sample.outcome_impact, sample.importance_score)
 
             # 规则层：校验 + 富化
             enriched_issues, unevaluated = self._apply_evaluations(
@@ -163,6 +184,7 @@ class IssueImpactRanker:
             )
 
         except Exception:
+            logger.warning("Ranker LLM 调用或解析失败", exc_info=True)
             # LLM 调用或解析失败：原始 issue_tree 保持原顺序，所有评估字段为 None
             return IssueImpactRankingResult(
                 ranked_issue_tree=inp.issue_tree,
@@ -170,6 +192,183 @@ class IssueImpactRanker:
                 unevaluated_issue_ids=[i.issue_id for i in issues],
                 created_at=now,
             )
+
+    # ------------------------------------------------------------------
+    # LLM 输出归一化 / LLM output normalization
+    # ------------------------------------------------------------------
+
+    _EVALUATIONS_ALIASES = {
+        "issue_assessments", "assessments", "issues", "issue_evaluations",
+        "争点评估", "评估结果",
+    }
+
+    @classmethod
+    def _normalize_evaluation_keys(cls, raw: dict) -> dict:
+        """归一化 LLM 返回的顶层键，确保 evaluations 字段存在。
+
+        LLM 可能用 issue_assessments / assessments / issues 等键名返回评估列表。
+        本方法将其统一为 evaluations。同时处理嵌套结构（评估项可能包含子字典）。
+        """
+        if "evaluations" in raw:
+            return raw
+
+        # 尝试别名
+        for alias in cls._EVALUATIONS_ALIASES:
+            if alias in raw and isinstance(raw[alias], list):
+                logger.info("归一化键名: %s → evaluations", alias)
+                raw["evaluations"] = raw.pop(alias)
+                return raw
+
+        # 尝试找任意值为 list[dict] 的键
+        for key, val in raw.items():
+            if isinstance(val, list) and val and isinstance(val[0], dict) and "issue_id" in val[0]:
+                logger.info("自动检测评估列表键: %s → evaluations", key)
+                raw["evaluations"] = val
+                return raw
+
+        # 尝试找任意值为 list[dict] 的键（即使没有 issue_id）
+        for key, val in raw.items():
+            if isinstance(val, list) and len(val) >= 2 and isinstance(val[0], dict):
+                logger.info("推测评估列表键: %s (len=%d) → evaluations", key, len(val))
+                raw["evaluations"] = val
+                return raw
+
+        logger.warning("无法找到评估列表键，可用键: %s", list(raw.keys()))
+        return raw
+
+    # 单条评估项字段别名映射
+    _EVAL_FIELD_ALIASES: dict[str, str] = {
+        # issue_id 别名
+        "争点id": "issue_id", "争点编号": "issue_id", "id": "issue_id",
+        # outcome_impact 别名
+        "impact": "outcome_impact", "影响程度": "outcome_impact",
+        "outcome_impact_level": "outcome_impact",
+        # evidence strength 别名
+        "proponent_strength": "proponent_evidence_strength",
+        "evidence_strength": "proponent_evidence_strength",
+        "opponent_strength": "opponent_attack_strength",
+        "attack_strength": "opponent_attack_strength",
+        # recommended action 别名
+        "action": "recommended_action", "recommendation": "recommended_action",
+        "action_basis": "recommended_action_basis",
+        "basis": "recommended_action_basis",
+        # scoring 别名
+        "importance": "importance_score", "关键程度": "importance_score",
+        "swing": "swing_score", "摆幅": "swing_score",
+        "gap": "evidence_strength_gap", "证据差距": "evidence_strength_gap",
+        "depth": "dependency_depth", "层级": "dependency_depth",
+        "credibility": "credibility_impact", "可信度冲击": "credibility_impact",
+    }
+
+    # dimensions 子键到平铺字段的映射
+    _DIMENSION_FIELD_MAP: dict[str, tuple[str, type]] = {
+        # 分类维度
+        "outcome_impact": ("outcome_impact", str),
+        "影响程度": ("outcome_impact", str),
+        # 评分维度 — LLM 可能用各种名称
+        "importance": ("importance_score", int),
+        "importance_score": ("importance_score", int),
+        "关键程度": ("importance_score", int),
+        "swing": ("swing_score", int),
+        "swing_score": ("swing_score", int),
+        "结论翻转": ("swing_score", int),
+        "evidence_strength_gap": ("evidence_strength_gap", int),
+        "evidence_gap": ("evidence_strength_gap", int),
+        "证据差距": ("evidence_strength_gap", int),
+        "dependency_depth": ("dependency_depth", int),
+        "depth": ("dependency_depth", int),
+        "层级": ("dependency_depth", int),
+        "credibility_impact": ("credibility_impact", int),
+        "credibility": ("credibility_impact", int),
+        "可信度": ("credibility_impact", int),
+        # LLM 可能用的其他维度名（宽泛映射，总比丢弃好）
+        "evidence_sufficiency": ("importance_score", int),
+        "judicial_attention": ("importance_score", int),
+        "controversy_intensity": ("swing_score", int),
+        "burden_of_proof_clarity": ("credibility_impact", int),
+        # Opus 常用维度名
+        "relevance_to_outcome": ("importance_score", int),
+        "proof_difficulty": ("evidence_strength_gap", int),
+        "legal_clarity": ("credibility_impact", int),
+        "judicial_discretion": ("credibility_impact", int),
+        "dispute_intensity": ("swing_score", int),
+        "chain_dependency": ("dependency_depth", int),
+        "reversal_risk": ("swing_score", int),
+        "settlement_leverage": ("importance_score", int),
+        "plaintiff_prevail_pct": ("swing_score", int),
+        # 其他可能的维度名
+        "case_impact": ("importance_score", int),
+        "evidence_balance": ("evidence_strength_gap", int),
+        "controversy": ("swing_score", int),
+        "dependency": ("dependency_depth", int),
+        "credibility_risk": ("credibility_impact", int),
+        # Opus D0X_ 系列（前缀已在匹配时剥离，这里补全无前缀版本）
+        "verdict_impact_weight": ("importance_score", int),
+        "burden_allocation_rationality": ("credibility_impact", int),
+        "factual_determination_difficulty": ("swing_score", int),
+        "opposing_defense_strength": ("evidence_strength_gap", int),
+        "evidence_chain_completeness": ("importance_score", int),
+        "plaintiff_prevail_probability": ("swing_score", int),
+        "related_issue_dependency": ("dependency_depth", int),
+        "risk_exposure": ("credibility_impact", int),
+    }
+
+    @classmethod
+    def _normalize_single_eval(cls, item: dict) -> dict:
+        """归一化单条评估项的字段名，展平 dimensions 嵌套结构。"""
+        # 1. 展平 dimensions 嵌套
+        dims = item.pop("dimensions", None) or item.pop("scores", None)
+        if isinstance(dims, dict):
+            logger.debug("展平 dimensions: %s", list(dims.keys()))
+            for dim_name, dim_val in dims.items():
+                # 剥离 LLM 喜欢加的编号前缀（如 D01_, D1_, dim01_, 01_）
+                stripped = re.sub(r'^[Dd]?\d+[_\-]', '', dim_name)
+                mapping = cls._DIMENSION_FIELD_MAP.get(dim_name) or cls._DIMENSION_FIELD_MAP.get(stripped)
+                # Layer 2: pattern-based dimension matching if exact map fails
+                if mapping is None:
+                    lower_name = stripped.lower()
+                    if any(p in lower_name for p in ("import", "weight", "关键", "key", "critical")):
+                        mapping = ("importance_score", int)
+                    elif any(p in lower_name for p in ("swing", "revers", "flip", "翻转")):
+                        mapping = ("swing_score", int)
+                    elif any(p in lower_name for p in ("gap", "balance", "差距", "completeness")):
+                        mapping = ("evidence_strength_gap", int)
+                    elif any(p in lower_name for p in ("depth", "depend", "层级", "chain")):
+                        mapping = ("dependency_depth", int)
+                    elif any(p in lower_name for p in ("credib", "可信", "risk", "burden", "exposure")):
+                        mapping = ("credibility_impact", int)
+                    if mapping:
+                        logger.debug("维度模式匹配: %s → %s", dim_name, mapping[0])
+
+                if mapping is not None:
+                    field_name, expected_type = mapping
+                    # dim_val 可能是 {"score": 85, "rationale": "..."} 或直接值
+                    score = None
+                    if isinstance(dim_val, dict):
+                        score = dim_val.get("score", dim_val.get("value", dim_val.get("rating")))
+                    elif isinstance(dim_val, (int, float)):
+                        score = dim_val
+                    elif isinstance(dim_val, str) and expected_type is str:
+                        # 字符串枚举值（如 outcome_impact: "high"）直接提升
+                        item.setdefault(field_name, dim_val)
+                        continue
+                    if score is not None:
+                        # 多个维度映射到同一字段时取最大值
+                        existing = item.get(field_name)
+                        if existing is None or (isinstance(existing, (int, float)) and score > existing):
+                            item[field_name] = score
+                elif isinstance(dim_val, str):
+                    # Opus 可能将枚举字段（如 proponent_evidence_strength）
+                    # 放在 dimensions 内；直接提升到 item 顶层
+                    item.setdefault(dim_name, dim_val)
+
+        # 2. 字段别名归一化
+        result = {}
+        for key, val in item.items():
+            normalized_key = cls._EVAL_FIELD_ALIASES.get(key, key)
+            if normalized_key not in result:
+                result[normalized_key] = val
+        return result
 
     # ------------------------------------------------------------------
     # 排序 / Sorting
@@ -254,6 +453,25 @@ class IssueImpactRanker:
             for ev in evaluations
             if ev.issue_id in known_issue_ids
         }
+        unmatched = [ev.issue_id for ev in evaluations if ev.issue_id not in known_issue_ids]
+        if unmatched:
+            logger.warning("LLM 返回的 issue_id 无法匹配: %s", unmatched[:5])
+
+        # Layer 2: fuzzy matching by suffix number when exact match fails
+        if not eval_map and evaluations:
+            logger.warning("eval_map 完全为空，尝试模糊匹配 issue_id...")
+            for ev in evaluations:
+                match = re.search(r'(\d{2,})$', ev.issue_id)
+                if match:
+                    suffix = match.group(1)
+                    for kid in known_issue_ids:
+                        if kid.endswith(suffix) and kid not in eval_map:
+                            eval_map[kid] = ev
+                            break
+            if eval_map:
+                logger.info("模糊匹配成功: %d/%d 条", len(eval_map), len(evaluations))
+
+        logger.info("eval_map 匹配: %d/%d 条评估命中已知争点", len(eval_map), len(evaluations))
 
         enriched: list[Issue] = []
         unevaluated: list[str] = []

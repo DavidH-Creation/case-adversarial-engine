@@ -100,6 +100,32 @@ def _extract_json_object(text: str) -> dict:
             except json.JSONDecodeError:
                 pass
 
+    # 截断恢复 / Truncation recovery: LLM may hit max_tokens, leaving incomplete JSON
+    # Find the first '{' and try closing unclosed brackets/braces
+    first_brace = text.find("{")
+    if first_brace >= 0:
+        fragment = text[first_brace:]
+        # Remove trailing incomplete string (cut at last complete value)
+        # Then close all unclosed brackets/braces
+        open_braces = fragment.count("{") - fragment.count("}")
+        open_brackets = fragment.count("[") - fragment.count("]")
+        if open_braces > 0 or open_brackets > 0:
+            # Trim trailing incomplete tokens (partial strings, keys)
+            # Find last comma or colon, truncate after it, then close
+            for trim_pat in (r',\s*"[^"]*$', r',\s*$', r':\s*"[^"]*$', r':\s*$'):
+                trimmed = re.sub(trim_pat, "", fragment)
+                if trimmed != fragment:
+                    fragment = trimmed
+                    break
+            closing = "]" * max(0, open_brackets) + "}" * max(0, open_braces)
+            candidate = fragment + closing
+            try:
+                result = json.loads(candidate)
+                if isinstance(result, dict):
+                    return result
+            except json.JSONDecodeError:
+                pass
+
     raise ValueError(
         f"无法从 LLM 响应中解析 JSON 对象 / Cannot parse JSON object: {text[:200]}"
     )

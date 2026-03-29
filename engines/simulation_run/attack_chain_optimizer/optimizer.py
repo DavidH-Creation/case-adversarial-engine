@@ -137,7 +137,7 @@ class AttackChainOptimizer:
             evidence_index=inp.evidence_index,
         )
 
-        for _attempt in range(self._max_retries + 1):
+        for attempt in range(self._max_retries + 1):
             try:
                 raw = await self._llm.create_message(
                     system=system,
@@ -145,9 +145,12 @@ class AttackChainOptimizer:
                     model=self._model,
                     temperature=self._temperature,
                 )
-                return self._parse_llm_output(raw)
+                result = self._parse_llm_output(raw)
+                if result is not None:
+                    return result
+                logger.warning("Attack chain: attempt %d parse returned None", attempt + 1)
             except Exception as e:  # noqa: BLE001
-                logger.debug("AttackChainOptimizer LLM 调用失败（attempt=%d）: %s", _attempt, e)
+                logger.warning("Attack chain: attempt %d LLM call failed: %s", attempt + 1, e)
 
         return None
 
@@ -188,16 +191,44 @@ class AttackChainOptimizer:
                             node["target_issue_id"] = val
                         break
 
-            # attack_description aliases
+            # attack_description: merge attack_label + core_logic, then try aliases
             if not node.get("attack_description"):
+                label = node.pop("attack_label", "")
+                logic = node.pop("core_logic", "")
+                # Try standard aliases first
                 for alias in ("core_argument", "attack_name", "description", "argument"):
                     if alias in node:
                         node["attack_description"] = node.pop(alias)
                         break
+                # If still empty, combine label + logic
+                if not node.get("attack_description"):
+                    if logic and label:
+                        node["attack_description"] = f"{label}——{logic}"
+                    elif logic:
+                        node["attack_description"] = logic
+                    elif label:
+                        node["attack_description"] = label
+                # Layer 2: pattern-based fallback
+                if not node.get("attack_description"):
+                    _DESC_SKIP = {"attack_node_id", "target_issue_id",
+                                  "supporting_evidence_ids", "success_conditions",
+                                  "counter_measure", "adversary_pivot_strategy"}
+                    _DESC_PATS = ("description", "argument", "logic",
+                                  "reasoning", "strategy", "label", "summary")
+                    for key in list(node.keys()):
+                        if key in _DESC_SKIP:
+                            continue
+                        if any(pat in key.lower() for pat in _DESC_PATS):
+                            val = node[key]
+                            if isinstance(val, str) and len(val) > 10:
+                                node["attack_description"] = node.pop(key)
+                                break
 
             # supporting_evidence_ids: may be nested objects [{evidence_id: ..., usage: ...}]
             if not node.get("supporting_evidence_ids"):
-                for alias in ("evidence_support", "evidence_ids", "evidence"):
+                for alias in ("evidence_support", "evidence_ids", "evidence",
+                              "evidence_to_leverage", "evidence_to_attack",
+                              "supporting_evidence", "key_evidence"):
                     if alias in node:
                         val = node.pop(alias)
                         if isinstance(val, list):
@@ -244,11 +275,19 @@ class AttackChainOptimizer:
         """解析 LLM 输出 JSON，失败时返回 None。"""
         from engines.shared.json_utils import _extract_json_object
         try:
+            logger.info("Attack chain LLM 响应长度: %d chars", len(raw))
             data = _extract_json_object(raw)
+            logger.info("JSON 顶层键: %s", list(data.keys()))
             data = self._normalize_llm_json(data)
-            return LLMAttackChainOutput.model_validate(data)
+            # 诊断：记录 top_attacks 第一项的键
+            attacks_raw = data.get("top_attacks", [])
+            if attacks_raw and isinstance(attacks_raw[0], dict):
+                logger.info("Attack[0] 键: %s", list(attacks_raw[0].keys()))
+            result = LLMAttackChainOutput.model_validate(data)
+            logger.info("解析成功: %d attack nodes", len(result.top_attacks))
+            return result
         except Exception as e:  # noqa: BLE001
-            logger.debug("AttackChainOptimizer LLM 输出解析失败: %s", e)
+            logger.warning("AttackChainOptimizer LLM 输出解析失败: %s", e, exc_info=True)
             return None
 
     def _process_attack_nodes(
@@ -276,12 +315,17 @@ class AttackChainOptimizer:
 
             # 必填字段校验 + attack_node_id 去重
             if not item.attack_node_id:
+                logger.warning("Attack node 跳过: empty attack_node_id")
                 continue
             if item.attack_node_id in seen_node_ids:
+                logger.warning("Attack node 跳过: duplicate %s", item.attack_node_id)
                 continue
             if not item.attack_description:
+                logger.warning("Attack node %s 跳过: empty attack_description", item.attack_node_id)
                 continue
             if not item.target_issue_id or item.target_issue_id not in known_issue_ids:
+                logger.warning("Attack node %s 跳过: target_issue_id=%r not in known(%d)",
+                               item.attack_node_id, item.target_issue_id, len(known_issue_ids))
                 continue
 
             # 过滤 supporting_evidence_ids 中的非法 ID
@@ -291,6 +335,8 @@ class AttackChainOptimizer:
             ]
             # 零容忍：过滤后为空则丢弃节点
             if not clean_evidence_ids:
+                logger.warning("Attack node %s 跳过: supporting_evidence_ids 过滤后为空（原始: %s）",
+                               item.attack_node_id, item.supporting_evidence_ids[:3])
                 continue
 
             result.append(AttackNode(
