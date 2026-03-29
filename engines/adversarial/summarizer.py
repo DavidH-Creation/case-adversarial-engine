@@ -43,6 +43,12 @@ identify reasons for unresolved issues, analyze missing evidence, and provide an
 - 所有 evidence_ids 必须非空，引用实际证据 ID
 - All evidence_ids must be non-empty, referencing actual evidence IDs
 
+## 证据质量加权 / Evidence Quality Weighting
+- 多源佐证（>=2条独立证据印证）的论点权重更高
+- 孤证（单方录音、单一记录、仅一方陈述）应降权评估，在分析中注明「孤证」
+- 双方引用同一证据但解读相反时，关注证据的原始性和直接性
+- 当事方自认的薄弱点（own_weaknesses / own-weakness- 前缀的 risk_flags）应在态势评估中重点考量
+
 JSON schema（严格遵守 / strictly follow）:
 {
   "plaintiff_strongest_arguments": [

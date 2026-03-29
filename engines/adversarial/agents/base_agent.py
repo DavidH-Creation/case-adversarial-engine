@@ -244,6 +244,18 @@ class BasePartyAgent:
                 " arguments[].supporting_evidence_ids 中提供至少一个证据 ID。"
             )
 
+        # 合并 own_weaknesses 到 risk_flags（添加 own-weakness- 前缀以便下游识别）
+        # Merge own_weaknesses into risk_flags with own-weakness- prefix for downstream identification
+        own_weaknesses: list[str] = data.get("own_weaknesses", [])
+        risk_flags: list[dict] = data.get("risk_flags", [])
+        for idx, weakness in enumerate(own_weaknesses, start=1):
+            risk_flags.append({
+                "flag_id": f"own-weakness-{idx:03d}",
+                "description": weakness,
+                "impact_objects": ["win_rate", "trial_credibility"],
+                "impact_objects_scored": False,
+            })
+
         import uuid
         output_id = f"output-{self._role.value}-r{round_index}-{uuid.uuid4().hex[:8]}"
 
@@ -261,7 +273,7 @@ class BasePartyAgent:
             body=data.get("body", ""),
             evidence_citations=evidence_citations,
             statement_class=StatementClass.fact,
-            risk_flags=data.get("risk_flags", []),
+            risk_flags=risk_flags,
             created_at=now,
         )
 
@@ -337,6 +349,7 @@ class BasePartyAgent:
   "body": "（完整论证文本，必须引用具体证据ID，不超过600字）",
   "issue_ids": ["争点ID列表，不能为空"],
   "evidence_citations": ["证据ID列表，不能为空，必须来自可见证据"],
+  "own_weaknesses": ["本方立场薄弱点（如孤证风险、间接推定、证据关联性弱等），至少一条"],
   "risk_flags": [{"flag_id": "唯一标识如rf-001", "description": "风险描述如越权风险/引用不足/程序冲突", "impact_objects": ["win_rate|supported_amount|trial_credibility|procedural_stability|evidence_supplement_cost中选一或多"], "impact_objects_scored": true}],
   "arguments": [
     {
