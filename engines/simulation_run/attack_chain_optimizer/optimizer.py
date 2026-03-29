@@ -257,7 +257,10 @@ class AttackChainOptimizer:
 
             # success_conditions aliases
             if not node.get("success_conditions"):
-                for alias in ("expected_outcome", "success_condition"):
+                for alias in ("expected_outcome", "success_condition",
+                              "expected_impact", "success_criterion",
+                              "winning_condition", "expected_effect",
+                              "success_criteria"):
                     if alias in node:
                         node["success_conditions"] = node.pop(alias)
                         break
@@ -267,6 +270,46 @@ class AttackChainOptimizer:
                 for alias in ("risk_assessment", "counter_strategy", "risk"):
                     if alias in node:
                         node["counter_measure"] = node.pop(alias)
+                        break
+
+            # adversary_pivot_strategy aliases
+            if not node.get("adversary_pivot_strategy"):
+                for alias in ("pivot_strategy", "response_strategy",
+                              "fallback_strategy", "next_strategy"):
+                    if alias in node:
+                        node["adversary_pivot_strategy"] = node.pop(alias)
+                        break
+
+            # Synthesis fallback: single-field conservative recovery
+            # success_conditions ← attack_thesis (if still empty)
+            if not node.get("success_conditions"):
+                for src in ("attack_thesis",):
+                    val = node.get(src)
+                    if isinstance(val, str) and len(val) > 10:
+                        node["success_conditions"] = node.pop(src)
+                        logger.info("Synthesized success_conditions from %s for %s",
+                                    src, node.get("attack_node_id", "?"))
+                        break
+
+            # adversary_pivot_strategy ← counter_to_opponent_evidence / counter_to_plaintiff_evidence
+            if not node.get("adversary_pivot_strategy"):
+                for src in ("counter_to_opponent_evidence",
+                            "counter_to_plaintiff_evidence"):
+                    val = node.get(src)
+                    if isinstance(val, dict):
+                        # {evidence_id: reasoning} → flatten to string
+                        parts = [f"{k}: {v}" for k, v in val.items()
+                                 if isinstance(v, str) and v]
+                        if parts:
+                            node["adversary_pivot_strategy"] = "；".join(parts)
+                            node.pop(src, None)
+                            logger.info("Synthesized adversary_pivot_strategy from %s (dict) for %s",
+                                        src, node.get("attack_node_id", "?"))
+                            break
+                    elif isinstance(val, str) and len(val) > 10:
+                        node["adversary_pivot_strategy"] = node.pop(src)
+                        logger.info("Synthesized adversary_pivot_strategy from %s for %s",
+                                    src, node.get("attack_node_id", "?"))
                         break
 
         return data
