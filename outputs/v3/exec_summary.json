@@ -1,7 +1,7 @@
 {
-  "summary_id": "92e21a1e-dc4f-4d8b-9ee1-b1686633acca",
+  "summary_id": "56ed70b0-b78f-438f-a7e5-9b0beab14933",
   "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
-  "run_id": "run-2ca33fd6b581",
+  "run_id": "run-2443c380b456",
   "top5_decisive_issues": [
     "issue-wangchenzhuang2025-001",
     "issue-wangchenzhuang2025-002",
@@ -10,11 +10,15 @@
     "issue-wangchenzhuang2025-005"
   ],
   "top3_immediate_actions": [],
-  "action_recommendation_id": "bcf9e66c-cb8a-4f07-bdff-cf7cd922333c",
-  "top3_adversary_optimal_attacks": [],
-  "adversary_attack_chain_id": "chain-316092d9",
-  "current_most_stable_claim": "最稳诉请：principal，诉请金额 200000，与系统计算完全一致（delta=0）（绑定 AmountCalculationReport amount-report-9b99910c）",
-  "amount_report_id": "amount-report-9b99910c",
+  "action_recommendation_id": "a8d150a2-a1e2-421d-adde-563799d787eb",
+  "top3_adversary_optimal_attacks": [
+    "atk-def-001",
+    "atk-def-002",
+    "atk-def-003"
+  ],
+  "adversary_attack_chain_id": "chain-24919a9a",
+  "current_most_stable_claim": "最稳诉请：principal，诉请金额 200000，与系统计算完全一致（delta=0）（绑定 AmountCalculationReport amount-report-f7acee76）",
+  "amount_report_id": "amount-report-f7acee76",
   "critical_evidence_gaps": "未启用",
-  "created_at": "2026-03-29T04:11:14Z"
+  "created_at": "2026-03-29T06:39:25Z"
 }

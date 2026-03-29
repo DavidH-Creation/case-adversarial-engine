@@ -1,8 +1,63 @@
 {
-  "tree_id": "tree-41a33a25",
+  "tree_id": "tree-bd4a1f87",
   "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
-  "run_id": "run-2ca33fd6b581",
-  "paths": [],
+  "run_id": "run-2443c380b456",
+  "paths": [
+    {
+      "path_id": "PATH-01",
+      "trigger_condition": "全额支持原告——借贷关系成立且小陈为适格借款人",
+      "trigger_issue_ids": [],
+      "key_evidence_ids": [],
+      "possible_outcome": "plaintiff_wins_full",
+      "confidence_interval": null,
+      "path_notes": ""
+    },
+    {
+      "path_id": "PATH-02",
+      "trigger_condition": "部分支持原告——借贷关系成立但利息诉请调减",
+      "trigger_issue_ids": [],
+      "key_evidence_ids": [],
+      "possible_outcome": "plaintiff_wins_partial",
+      "confidence_interval": null,
+      "path_notes": ""
+    },
+    {
+      "path_id": "PATH-03",
+      "trigger_condition": "驳回原告——借贷合意不成立，小陈非适格借款人",
+      "trigger_issue_ids": [],
+      "key_evidence_ids": [],
+      "possible_outcome": "plaintiff_loses",
+      "confidence_interval": null,
+      "path_notes": ""
+    },
+    {
+      "path_id": "PATH-04",
+      "trigger_condition": "驳回原告——款项性质为指示付款而非借贷",
+      "trigger_issue_ids": [],
+      "key_evidence_ids": [],
+      "possible_outcome": "plaintiff_loses",
+      "confidence_interval": null,
+      "path_notes": ""
+    },
+    {
+      "path_id": "PATH-05",
+      "trigger_condition": "部分支持原告——三方关系下认定共同借款或连带责任",
+      "trigger_issue_ids": [],
+      "key_evidence_ids": [],
+      "possible_outcome": "plaintiff_wins_partial_joint",
+      "confidence_interval": null,
+      "path_notes": ""
+    },
+    {
+      "path_id": "PATH-06",
+      "trigger_condition": "程序性不利——原告妨碍诉讼导致证据采信不利",
+      "trigger_issue_ids": [],
+      "key_evidence_ids": [],
+      "possible_outcome": "procedural_adverse_inference",
+      "confidence_interval": null,
+      "path_notes": ""
+    }
+  ],
   "blocking_conditions": [],
-  "created_at": "2026-03-29T04:11:14Z"
+  "created_at": "2026-03-29T06:25:10Z"
 }

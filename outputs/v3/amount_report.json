@@ -1,7 +1,7 @@
 {
-  "report_id": "amount-report-9b99910c",
+  "report_id": "amount-report-f7acee76",
   "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
-  "run_id": "run-2ca33fd6b581",
+  "run_id": "run-2443c380b456",
   "loan_transactions": [
     {
       "tx_id": "tx-loan-001",
@@ -49,5 +49,5 @@
     "claim_delivery_ratio_normal": true
   },
   "interest_recalculation": null,
-  "created_at": "2026-03-29T04:05:10Z"
+  "created_at": "2026-03-29T06:15:16Z"
 }

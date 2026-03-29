@@ -1,9 +1,52 @@
 {
-  "chain_id": "chain-316092d9",
+  "chain_id": "chain-24919a9a",
   "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
-  "run_id": "run-2ca33fd6b581",
+  "run_id": "run-2443c380b456",
   "owner_party_id": "party-defendant-chen",
-  "top_attacks": [],
-  "recommended_order": [],
-  "created_at": "2026-03-29T04:11:08Z"
+  "top_attacks": [
+    {
+      "attack_node_id": "atk-def-001",
+      "target_issue_id": "issue-wangchenzhuang2025-002",
+      "attack_description": "否定借贷合意存在——录音证据直接证明老庄自认为实际借款人，原告次日即向老庄（而非小陈）催款，原告自身行为印证其内心认知的真实借款人为老庄。原告无借条、无借款合同、无任何小陈本人作出借款意思表示的直接证据，借贷合意要件根本不成立。",
+      "success_conditions": "法院采信录音证据（evidence-defendant-007）中老庄自认借款的陈述，并结合原告次日向老庄催款（evidence-defendant-008）、原告短信中'我跟你老板说了'的表述（evidence-plaintiff-007），认定原告自身亦认可真实借款人为老庄，从而否定原告与小陈之间存在借贷合意。",
+      "supporting_evidence_ids": [
+        "evidence-defendant-007",
+        "evidence-defendant-008",
+        "evidence-defendant-005",
+        "evidence-plaintiff-007"
+      ],
+      "counter_measure": "若原告质疑录音合法性，援引《最高人民法院关于民事诉讼证据的若干规定》第68条——未侵害他人合法权益、未违反法律禁止性规定的偷录证据具有证据能力；同时以evidence-defendant-009（录屏光盘）补强录音完整性；并强调即使录音不被采信，原告自身催款行为（evidence-defendant-008、evidence-plaintiff-007中'跟你老板说'表述）已构成独立的不利自认证据链。",
+      "adversary_pivot_strategy": "若原告转向主张'即使老庄是实际借款人，小陈作为收款人也应承担连带责任'，则以evidence-defendant-004（银行明细证明账户由老庄实际控制）和evidence-defendant-005（老庄指示转账截图证明小陈仅为资金通道）反驳，主张小陈既无借款合意亦无实际使用款项，不满足共同借款人或连带保证人的法定要件。"
+    },
+    {
+      "attack_node_id": "atk-def-002",
+      "target_issue_id": "issue-wangchenzhuang2025-003",
+      "attack_description": "以客观证据击破原告庭审虚假陈述——滴滴打车记录证明小陈在2025年1月10日当晚21:11已打车离开，不可能存在原告所称的'三方面对面达成借款合意'的场景。原告在庭审中虚构关键事实，其全部陈述的可信度应受根本性质疑。",
+      "success_conditions": "法院采信滴滴打车记录（evidence-defendant-006）的真实性，认定小陈当晚21:11已离开现场，从而直接否定原告关于'三方面对面借款合意'的庭审陈述，并据此对原告全部事实主张的可信度施加严格审查标准。",
+      "supporting_evidence_ids": [
+        "evidence-defendant-006"
+      ],
+      "counter_measure": "若原告辩称'合意在更早时间已达成，不需要当晚面对面'，则指出原告在庭审中的具体陈述明确描述了'当晚三方面对面'场景，此系原告已提交法庭的正式陈述，前后矛盾构成自相矛盾（venire contra factum proprium），法院应对原告后续修正不予采信。同时以evidence-defendant-007中录音佐证款项系老庄指示付款而非面对面协商的借款。",
+      "adversary_pivot_strategy": "若原告申请调取小陈手机定位数据以质疑滴滴记录时间，则配合提供完整滴滴行程详情（起止时间、路线）进行抗辩，并指出即使法院对时间点存在疑虑，举证责任仍在原告——原告须证明三方面对面场景'确实存在'而非被告证明其'不存在'。"
+    },
+    {
+      "attack_node_id": "atk-def-003",
+      "target_issue_id": "issue-wangchenzhuang2025-010",
+      "attack_description": "揭示原告妨碍诉讼行为以摧毁其证据体系整体可信度——录音证据证明原告劝阻老庄出庭应诉、要求老庄当场删除与原告的微信聊天记录、指使老庄在庭审中谎称微信号非本人使用，且老庄确认小陈的微信朋友圈内容系老庄编辑后让小陈代发。原告蓄意隐匿、毁灭证据并教唆证人作伪证，构成《民事诉讼法》第114条规定的妨碍民事诉讼行为，法院应对原告全部证据和陈述进行不利推定。",
+      "success_conditions": "法院采信录音证据（evidence-defendant-007）和微信聊天记录截图（evidence-defendant-009），认定原告存在妨碍诉讼行为，据此：(1) 对原告提交的微信朋友圈截图（evidence-plaintiff-008）不予采信（已证实系老庄代编代发）；(2) 对原告关于借贷关系的全部陈述适用不利推定；(3) 必要时建议法院对原告妨碍诉讼行为予以司法制裁。",
+      "supporting_evidence_ids": [
+        "evidence-defendant-007",
+        "evidence-defendant-009",
+        "evidence-plaintiff-008"
+      ],
+      "counter_measure": "若原告反驳称录音经剪辑或断章取义，则申请法院对录音光盘进行司法鉴定以确认完整性和真实性；同时指出微信聊天记录截图（evidence-defendant-009）与录音内容相互印证，形成完整证据链，单一证据被攻击不影响证据链整体证明力。",
+      "adversary_pivot_strategy": "若原告承认与老庄存在沟通但否认教唆内容，则着重强调'要求删除微信聊天记录'和'要求不承认款项系老庄所借'这两个客观行为——无论原告主观意图如何，客观上已构成毁灭证据和妨碍对方举证，法院应据此作出不利推定。"
+    }
+  ],
+  "recommended_order": [
+    "atk-def-001",
+    "atk-def-002",
+    "atk-def-003"
+  ],
+  "created_at": "2026-03-29T06:39:25Z"
 }
