@@ -1,0 +1,896 @@
+{
+  "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+  "run_id": "run-real-2a11a25efd94",
+  "job_id": "",
+  "rounds": [
+    {
+      "round_number": 1,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "output-plaintiff_agent-r1-00bd69e3",
+          "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+          "run_id": "run-real-2a11a25efd94",
+          "state_id": "state-r1-98b4ca1a",
+          "phase": "opening",
+          "round_index": 1,
+          "agent_role_code": "plaintiff_agent",
+          "owner_party_id": "party-plaintiff-wang",
+          "issue_ids": [
+            "issue-wangchenzhuang2025-001",
+            "issue-wangchenzhuang2025-002",
+            "issue-wangchenzhuang2025-003",
+            "issue-wangchenzhuang2025-004",
+            "issue-wangchenzhuang2025-005",
+            "issue-wangchenzhuang2025-006",
+            "issue-wangchenzhuang2025-007",
+            "issue-wangchenzhuang2025-008"
+          ],
+          "title": "原告首轮主张：二被告应偿还借款20万元及利息",
+          "body": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用款人应承担连带责任。原告多次催款（evidence-plaintiff-006），被告至今分文未还，已构成违约，原告有权主张本金20万元及按同期LPR计算的资金占用利息。",
+          "evidence_citations": [
+            "evidence-plaintiff-001",
+            "evidence-plaintiff-002",
+            "evidence-plaintiff-003",
+            "evidence-plaintiff-004",
+            "evidence-plaintiff-005",
+            "evidence-plaintiff-006",
+            "evidence-plaintiff-007"
+          ],
+          "statement_class": "fact",
+          "risk_flags": [
+            {
+              "flag_id": "rf-001",
+              "description": "原告未能提供书面借条或借款合同，被告可能以'无借贷合意'抗辩，需依赖转账凭证与催款记录形成证据链闭环",
+              "impact_objects": [
+                "win_rate",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-002",
+              "description": "10万元系通过第三方C支付宝代付，被告可能质疑该笔款项并非原告出借款项，需依赖C的汇款声明补强证明力",
+              "impact_objects": [
+                "win_rate",
+                "evidence_supplement_cost"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-003",
+              "description": "三方面对面达成借款合意的直接证据不足，仅有间接证据推断，被告可能否认面对面协商事实",
+              "impact_objects": [
+                "win_rate",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-004",
+              "description": "被告可能主张小陈名下账户由老庄实际控制使用，从而否认小陈借款人身份，需结合朋友圈证据及账户持有人信息反驳",
+              "impact_objects": [
+                "win_rate",
+                "supported_amount"
+              ],
+              "impact_objects_scored": true
+            }
+          ],
+          "created_at": "2026-03-28T17:55:14Z"
+        },
+        {
+          "output_id": "output-defendant_agent-r1-f5c180e3",
+          "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+          "run_id": "run-real-2a11a25efd94",
+          "state_id": "state-r1-98b4ca1a",
+          "phase": "opening",
+          "round_index": 1,
+          "agent_role_code": "defendant_agent",
+          "owner_party_id": "party-defendant-chen",
+          "issue_ids": [
+            "issue-wangchenzhuang2025-001",
+            "issue-wangchenzhuang2025-002",
+            "issue-wangchenzhuang2025-003",
+            "issue-wangchenzhuang2025-004",
+            "issue-wangchenzhuang2025-005",
+            "issue-wangchenzhuang2025-006",
+            "issue-wangchenzhuang2025-007",
+            "issue-wangchenzhuang2025-008"
+          ],
+          "title": "被告小陈首轮抗辩：借贷关系不成立，实际借款人为老庄",
+          "body": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，原告与小陈之间不存在借贷合意，款项交付对象实为老庄，原告对小陈的全部诉讼请求均应予以驳回。",
+          "evidence_citations": [
+            "evidence-defendant-002",
+            "evidence-defendant-003",
+            "evidence-defendant-004",
+            "evidence-defendant-005"
+          ],
+          "statement_class": "fact",
+          "risk_flags": [
+            {
+              "flag_id": "rf-001",
+              "description": "小陈账户由老庄实际控制的主张依赖公司内部证据（微信工资表、银行明细），若原告质疑其真实性或关联性，需补充银行流水原件及A公司员工证人证言",
+              "impact_objects": [
+                "evidence_supplement_cost",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-002",
+              "description": "录音证据的合法性可能被原告质疑（是否经对方同意录制），需证明录音系在合法场景下取得且未侵犯他人合法权益",
+              "impact_objects": [
+                "trial_credibility",
+                "procedural_stability"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-003",
+              "description": "滴滴打车记录仅能证明小陈打车离开的时间点，原告可能主张借款合意在此之前已达成，需结合其他证据排除该可能性",
+              "impact_objects": [
+                "win_rate",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-004",
+              "description": "主张原告妨碍诉讼行为需充分证据支撑，若法院未采纳可能影响被告方整体可信度，需审慎把握主张力度",
+              "impact_objects": [
+                "trial_credibility",
+                "procedural_stability"
+              ],
+              "impact_objects_scored": true
+            }
+          ],
+          "created_at": "2026-03-28T17:56:29Z"
+        }
+      ]
+    },
+    {
+      "round_number": 2,
+      "phase": "evidence",
+      "outputs": [
+        {
+          "output_id": "output-evidence_manager-r2-b7b83a7a",
+          "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+          "run_id": "run-real-2a11a25efd94",
+          "state_id": "state-r2-65420fb7",
+          "phase": "evidence_submission",
+          "round_index": 2,
+          "agent_role_code": "evidence_manager",
+          "owner_party_id": "system",
+          "issue_ids": [
+            "issue-wangchenzhuang2025-001",
+            "issue-wangchenzhuang2025-002",
+            "issue-wangchenzhuang2025-003",
+            "issue-wangchenzhuang2025-004",
+            "issue-wangchenzhuang2025-005",
+            "issue-wangchenzhuang2025-006",
+            "issue-wangchenzhuang2025-007",
+            "issue-wangchenzhuang2025-008"
+          ],
+          "title": "证据整理摘要",
+          "body": "本案围绕20万元借贷纠纷，原被告双方就借贷合意是否成立、实际借款人身份、资金交付性质等核心争点存在重大分歧。原告以转账凭证和催款记录主张借贷关系成立，但缺少书面借据及对小陈账户控制情况的反驳证据。被告小陈以公司经营记录、老庄指示转账截图、滴滴行程记录及录音等证据抗辩称实际借款人为老庄，小陈仅系账户名义持有人。双方在三方面对面达成合意、小陈身份定性、账户实际控制权等争点上存在直接证据冲突。此外，被告提交的录音证据指控原告存在妨碍诉讼行为，原告对此未提供任何反驳证据，构成重大程序风险。全案缺少书面借款协议，核心事实高度依赖间接证据和当事人陈述的可信度判断。",
+          "evidence_citations": [
+            "evidence-plaintiff-002",
+            "evidence-plaintiff-003",
+            "evidence-plaintiff-004",
+            "evidence-plaintiff-005",
+            "evidence-plaintiff-006",
+            "evidence-plaintiff-007",
+            "evidence-defendant-002",
+            "evidence-defendant-003",
+            "evidence-defendant-004",
+            "evidence-defendant-005"
+          ],
+          "statement_class": "fact",
+          "risk_flags": [
+            {
+              "flag_id": "rf-001",
+              "description": "原告未能提交书面借据、借款合同或任何直接体现借贷合意的书面凭证，全部依赖转账记录推定借贷关系，而转账记录本身不能排除其他法律关系（如货款、投资款等），举证链条存在关键缺环。",
+              "impact_objects": [
+                "win_rate",
+                "evidence_supplement_cost"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-002",
+              "description": "针对争点005（小陈账户实际控制情况），原告未提交任何证据反驳被告关于小陈账户由老庄/A公司实际控制使用的主张。被告提供了营业执照、工资表及银行明细等多项证据支撑其主张，原告在此争点上处于证据空白状态。",
+              "impact_objects": [
+                "win_rate",
+                "evidence_supplement_cost"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-003",
+              "description": "被告滴滴打车记录（evidence-defendant-004）显示小陈于2025年1月10日21:11已打车离开，直接反驳原告关于三方面对面达成借款合意的庭审陈述。若该时间线成立，将严重动摇原告陈述的可信度，对原告整体证据的采信产生连锁负面影响。",
+              "impact_objects": [
+                "trial_credibility",
+                "win_rate"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-004",
+              "description": "被告提交录音及聊天记录（evidence-defendant-005）指控原告劝说老庄不应诉、不承认事实、删除微信记录、庭审中作虚假陈述，涉嫌妨碍民事诉讼。原告对此未提交任何反驳证据，若法院采信，原告可能面临罚款、拘留等司法制裁，且其全部证据的可信度将受到系统性质疑。",
+              "impact_objects": [
+                "procedural_stability",
+                "trial_credibility",
+                "win_rate"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-005",
+              "description": "被告evidence-defendant-005中老庄确认小陈微信朋友圈内容系老庄编辑后让小陈代发，若法院采信，将直接削弱原告evidence-plaintiff-007的证明力——原告据此主张小陈系独立借款主体的论证基础将被动摇。",
+              "impact_objects": [
+                "win_rate",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-006",
+              "description": "争点007（利息主张）的成立完全依附于借贷关系的认定。若借贷合意不成立或实际借款人被认定为老庄，则原告对小陈的利息主张将无法获得支持，属于从属性风险。",
+              "impact_objects": [
+                "supported_amount"
+              ],
+              "impact_objects_scored": true
+            }
+          ],
+          "created_at": "2026-03-28T17:58:03Z"
+        }
+      ]
+    },
+    {
+      "round_number": 3,
+      "phase": "rebuttal",
+      "outputs": [
+        {
+          "output_id": "output-plaintiff_agent-r3-e459d74f",
+          "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+          "run_id": "run-real-2a11a25efd94",
+          "state_id": "state-r3-af811080",
+          "phase": "rebuttal",
+          "round_index": 3,
+          "agent_role_code": "plaintiff_agent",
+          "owner_party_id": "party-plaintiff-wang",
+          "issue_ids": [
+            "issue-wangchenzhuang2025-001",
+            "issue-wangchenzhuang2025-002",
+            "issue-wangchenzhuang2025-003",
+            "issue-wangchenzhuang2025-004",
+            "issue-wangchenzhuang2025-005",
+            "issue-wangchenzhuang2025-006",
+            "issue-wangchenzhuang2025-008"
+          ],
+          "title": "原告针对性反驳：借贷关系成立，小陈系独立借款主体",
+          "body": "针对被告首轮抗辩，原告逐一反驳如下：第一，关于借贷合意。原告已提供银行转账回单（evidence-plaintiff-003）、支付宝凭证（evidence-plaintiff-004）及C汇款声明（evidence-plaintiff-005），依据《民间借贷规定》第二条，出借人提供转账凭证即可初步证明借贷关系成立，举证责任转移至被告。催款短信（evidence-plaintiff-006）进一步佐证原告主张还款事实，被告收款后从未向原告提出异议，借贷合意可依法推定成立。第二，关于借款人身份。evidence-plaintiff-007显示小陈自称\"原A负责人\"，且老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与A公司毫无关联，小陈系独立借款主体，绝非\"名义开户人\"，被告自认身份与其抗辩主张直接矛盾。第三，关于三方会面。滴滴记录仅证明小陈21:11离开某地，无法排除此前三方已会面并达成合意，且该电子证据真实性、关联性均需进一步质证，不足以推翻原告陈述。第四，关于资金流转。即使小陈收款后将资金转出，亦不否定原告已向小陈完成交付的事实。借款人取得借款后如何支配资金，不影响借贷关系认定；被告转账截图仅证明资金后续流向，不能证明原告与老庄之间存在直接债权债务关系。第五，关于妨碍诉讼指控。被告所提录音系单方录制提供，取证合法性及内容完整性均存疑，在未证明合法取得且未经剪辑的情况下，不应据此认定原告妨碍诉讼。",
+          "evidence_citations": [
+            "evidence-plaintiff-003",
+            "evidence-plaintiff-004",
+            "evidence-plaintiff-005",
+            "evidence-plaintiff-006",
+            "evidence-plaintiff-007"
+          ],
+          "statement_class": "fact",
+          "risk_flags": [
+            {
+              "flag_id": "rf-001",
+              "description": "原告缺乏书面借据，借贷合意主要依赖转账凭证及间接证据推定，若被告成功举证反驳资金性质，合意认定存在不足风险",
+              "impact_objects": [
+                "win_rate",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-002",
+              "description": "被告录音指控原告妨碍诉讼，原告尚未提供针对性反驳证据，仅从证据合法性角度攻击，若法院采信录音则程序风险较大",
+              "impact_objects": [
+                "procedural_stability",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-003",
+              "description": "小陈账户实际控制情况原告仅凭朋友圈自认间接证明，缺乏银行流水等直接证据反驳被告'名义开户人'主张，可能需补充证据",
+              "impact_objects": [
+                "win_rate",
+                "evidence_supplement_cost"
+              ],
+              "impact_objects_scored": true
+            }
+          ],
+          "created_at": "2026-03-28T18:00:26Z"
+        },
+        {
+          "output_id": "output-defendant_agent-r3-ed742331",
+          "case_id": "case-civil-loan-wang-v-chen-zhuang-2025",
+          "run_id": "run-real-2a11a25efd94",
+          "state_id": "state-r3-af811080",
+          "phase": "rebuttal",
+          "round_index": 3,
+          "agent_role_code": "defendant_agent",
+          "owner_party_id": "party-defendant-chen",
+          "issue_ids": [
+            "issue-wangchenzhuang2025-001",
+            "issue-wangchenzhuang2025-002",
+            "issue-wangchenzhuang2025-003",
+            "issue-wangchenzhuang2025-004",
+            "issue-wangchenzhuang2025-005",
+            "issue-wangchenzhuang2025-006",
+            "issue-wangchenzhuang2025-007",
+            "issue-wangchenzhuang2025-008"
+          ],
+          "title": "被告小陈第二轮针对性反驳：借贷关系不成立，原告陈述虚假",
+          "body": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年1月11日向老庄催问'大概什么时候能回款'，与老庄庭审陈述'答应原告第二天还款'及原告短信中'我跟你老板说了，明天要带上我'的内容相互印证，足以认定20万元系老庄所借。五、原告存在严重妨碍诉讼行为。录音证据（evidence-defendant-005）显示原告曾劝说老庄不要应诉、不要承认款项系其所借、不要承认店铺及银行卡由其使用，并要求老庄当场删除与原告的微信聊天记录、在庭审中谎称微信号非本人使用，构成《民事诉讼法》规定的妨碍诉讼行为，应依法追究责任，其全案陈述的可信度应予大幅降低。六、利息主张不应支持。原告与小陈之间不存在借贷关系，资金占用利息缺乏请求权基础，依法不应支持。",
+          "evidence_citations": [
+            "evidence-defendant-002",
+            "evidence-defendant-003",
+            "evidence-defendant-004",
+            "evidence-defendant-005"
+          ],
+          "statement_class": "fact",
+          "risk_flags": [
+            {
+              "flag_id": "rf-001",
+              "description": "录音证据（evidence-defendant-005）系私录，对方可能以取证方式不合法为由申请排除；需准备证明录音未侵害他人合法权益、录音内容真实完整的补充说明",
+              "impact_objects": [
+                "evidence_supplement_cost",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-002",
+              "description": "小陈作为账户名义持有人且实际接收了20万元转账，法院可能适用'谁收款谁举证'的裁判思路，要求被告进一步证明款项已转出至老庄指定账户的完整资金链条",
+              "impact_objects": [
+                "win_rate",
+                "trial_credibility"
+              ],
+              "impact_objects_scored": true
+            },
+            {
+              "flag_id": "rf-003",
+              "description": "原告催款短信（evidence-plaintiff-006）发送对象如包含小陈，可能被法院认定为借贷合意的间接证据；需在质证中明确短信内容是否指向小陈本人还是老庄使用的号码",
+              "impact_objects": [
+                "win_rate",
+                "evidence_supplement_cost"
+              ],
+              "impact_objects_scored": true
+            }
+          ],
+          "created_at": "2026-03-28T18:01:51Z"
+        }
+      ]
+    }
+  ],
+  "plaintiff_best_arguments": [
+    {
+      "issue_id": "issue-wangchenzhuang2025-001",
+      "position": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-001",
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-002",
+      "position": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-001",
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-003",
+      "position": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-001",
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-004",
+      "position": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-001",
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-005",
+      "position": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-001",
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-006",
+      "position": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-001",
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-007",
+      "position": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-001",
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-008",
+      "position": "原告老王诉称：2025年1月10日，被告小陈以短期资金周转为由向原告借款20万元。原告当日分两笔完成交付：第一笔通过本人民生银行账户向小陈转账10万元（evidence-plaintiff-003），第二笔委托C通过支付宝向小陈转账10万元（evidence-plaintiff-004），C已出具汇款声明确认系受原告委托代付（evidence-plaintiff-005）。上述转账记录清晰、金额吻合，足以证明借款已实际交付。关于借贷合意，虽未签订书面借款合同，但从资金交付事实、催款短信记录（evidence-plaintiff-006）以及被告接收款项后未提出异议等综合判断，双方借贷合意依法成立。关于小陈的借款人身份，小陈在微信朋友圈自称\"原A负责人\"（evidence-plaintiff-007），表明其具有独立商业主体身份，并非受人指使的工具人。该朋友圈同时显示老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与该公司尚无关联，不能以\"实际借款人为老庄\"为由推卸责任。即便老庄实际使用了部分资金，小陈作为借款合同相对方仍应承担还款责任，老庄作为实际用",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-001",
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-001",
+      "position": "针对被告首轮抗辩，原告逐一反驳如下：第一，关于借贷合意。原告已提供银行转账回单（evidence-plaintiff-003）、支付宝凭证（evidence-plaintiff-004）及C汇款声明（evidence-plaintiff-005），依据《民间借贷规定》第二条，出借人提供转账凭证即可初步证明借贷关系成立，举证责任转移至被告。催款短信（evidence-plaintiff-006）进一步佐证原告主张还款事实，被告收款后从未向原告提出异议，借贷合意可依法推定成立。第二，关于借款人身份。evidence-plaintiff-007显示小陈自称\"原A负责人\"，且老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与A公司毫无关联，小陈系独立借款主体，绝非\"名义开户人\"，被告自认身份与其抗辩主张直接矛盾。第三，关于三方会面。滴滴记录仅证明小陈21:11离开某地，无法排除此前三方已会面并达成合意，且该电子证据真实性、关联性均需进一步质证，不足以推翻原告陈述。第四，关于资金流转。即使小陈收款后将资金转出，亦不否定原告已向小陈完成交付的事实。借款人取得借款",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005",
+        "evidence-plaintiff-006",
+        "evidence-plaintiff-007"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-002",
+      "position": "针对被告首轮抗辩，原告逐一反驳如下：第一，关于借贷合意。原告已提供银行转账回单（evidence-plaintiff-003）、支付宝凭证（evidence-plaintiff-004）及C汇款声明（evidence-plaintiff-005），依据《民间借贷规定》第二条，出借人提供转账凭证即可初步证明借贷关系成立，举证责任转移至被告。催款短信（evidence-plaintiff-006）进一步佐证原告主张还款事实，被告收款后从未向原告提出异议，借贷合意可依法推定成立。第二，关于借款人身份。evidence-plaintiff-007显示小陈自称\"原A负责人\"，且老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与A公司毫无关联，小陈系独立借款主体，绝非\"名义开户人\"，被告自认身份与其抗辩主张直接矛盾。第三，关于三方会面。滴滴记录仅证明小陈21:11离开某地，无法排除此前三方已会面并达成合意，且该电子证据真实性、关联性均需进一步质证，不足以推翻原告陈述。第四，关于资金流转。即使小陈收款后将资金转出，亦不否定原告已向小陈完成交付的事实。借款人取得借款",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005",
+        "evidence-plaintiff-006",
+        "evidence-plaintiff-007"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-003",
+      "position": "针对被告首轮抗辩，原告逐一反驳如下：第一，关于借贷合意。原告已提供银行转账回单（evidence-plaintiff-003）、支付宝凭证（evidence-plaintiff-004）及C汇款声明（evidence-plaintiff-005），依据《民间借贷规定》第二条，出借人提供转账凭证即可初步证明借贷关系成立，举证责任转移至被告。催款短信（evidence-plaintiff-006）进一步佐证原告主张还款事实，被告收款后从未向原告提出异议，借贷合意可依法推定成立。第二，关于借款人身份。evidence-plaintiff-007显示小陈自称\"原A负责人\"，且老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与A公司毫无关联，小陈系独立借款主体，绝非\"名义开户人\"，被告自认身份与其抗辩主张直接矛盾。第三，关于三方会面。滴滴记录仅证明小陈21:11离开某地，无法排除此前三方已会面并达成合意，且该电子证据真实性、关联性均需进一步质证，不足以推翻原告陈述。第四，关于资金流转。即使小陈收款后将资金转出，亦不否定原告已向小陈完成交付的事实。借款人取得借款",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005",
+        "evidence-plaintiff-006",
+        "evidence-plaintiff-007"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-004",
+      "position": "针对被告首轮抗辩，原告逐一反驳如下：第一，关于借贷合意。原告已提供银行转账回单（evidence-plaintiff-003）、支付宝凭证（evidence-plaintiff-004）及C汇款声明（evidence-plaintiff-005），依据《民间借贷规定》第二条，出借人提供转账凭证即可初步证明借贷关系成立，举证责任转移至被告。催款短信（evidence-plaintiff-006）进一步佐证原告主张还款事实，被告收款后从未向原告提出异议，借贷合意可依法推定成立。第二，关于借款人身份。evidence-plaintiff-007显示小陈自称\"原A负责人\"，且老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与A公司毫无关联，小陈系独立借款主体，绝非\"名义开户人\"，被告自认身份与其抗辩主张直接矛盾。第三，关于三方会面。滴滴记录仅证明小陈21:11离开某地，无法排除此前三方已会面并达成合意，且该电子证据真实性、关联性均需进一步质证，不足以推翻原告陈述。第四，关于资金流转。即使小陈收款后将资金转出，亦不否定原告已向小陈完成交付的事实。借款人取得借款",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005",
+        "evidence-plaintiff-006",
+        "evidence-plaintiff-007"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-005",
+      "position": "针对被告首轮抗辩，原告逐一反驳如下：第一，关于借贷合意。原告已提供银行转账回单（evidence-plaintiff-003）、支付宝凭证（evidence-plaintiff-004）及C汇款声明（evidence-plaintiff-005），依据《民间借贷规定》第二条，出借人提供转账凭证即可初步证明借贷关系成立，举证责任转移至被告。催款短信（evidence-plaintiff-006）进一步佐证原告主张还款事实，被告收款后从未向原告提出异议，借贷合意可依法推定成立。第二，关于借款人身份。evidence-plaintiff-007显示小陈自称\"原A负责人\"，且老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与A公司毫无关联，小陈系独立借款主体，绝非\"名义开户人\"，被告自认身份与其抗辩主张直接矛盾。第三，关于三方会面。滴滴记录仅证明小陈21:11离开某地，无法排除此前三方已会面并达成合意，且该电子证据真实性、关联性均需进一步质证，不足以推翻原告陈述。第四，关于资金流转。即使小陈收款后将资金转出，亦不否定原告已向小陈完成交付的事实。借款人取得借款",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005",
+        "evidence-plaintiff-006",
+        "evidence-plaintiff-007"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-006",
+      "position": "针对被告首轮抗辩，原告逐一反驳如下：第一，关于借贷合意。原告已提供银行转账回单（evidence-plaintiff-003）、支付宝凭证（evidence-plaintiff-004）及C汇款声明（evidence-plaintiff-005），依据《民间借贷规定》第二条，出借人提供转账凭证即可初步证明借贷关系成立，举证责任转移至被告。催款短信（evidence-plaintiff-006）进一步佐证原告主张还款事实，被告收款后从未向原告提出异议，借贷合意可依法推定成立。第二，关于借款人身份。evidence-plaintiff-007显示小陈自称\"原A负责人\"，且老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与A公司毫无关联，小陈系独立借款主体，绝非\"名义开户人\"，被告自认身份与其抗辩主张直接矛盾。第三，关于三方会面。滴滴记录仅证明小陈21:11离开某地，无法排除此前三方已会面并达成合意，且该电子证据真实性、关联性均需进一步质证，不足以推翻原告陈述。第四，关于资金流转。即使小陈收款后将资金转出，亦不否定原告已向小陈完成交付的事实。借款人取得借款",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005",
+        "evidence-plaintiff-006",
+        "evidence-plaintiff-007"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-008",
+      "position": "针对被告首轮抗辩，原告逐一反驳如下：第一，关于借贷合意。原告已提供银行转账回单（evidence-plaintiff-003）、支付宝凭证（evidence-plaintiff-004）及C汇款声明（evidence-plaintiff-005），依据《民间借贷规定》第二条，出借人提供转账凭证即可初步证明借贷关系成立，举证责任转移至被告。催款短信（evidence-plaintiff-006）进一步佐证原告主张还款事实，被告收款后从未向原告提出异议，借贷合意可依法推定成立。第二，关于借款人身份。evidence-plaintiff-007显示小陈自称\"原A负责人\"，且老庄入股A公司时间为2025年2月20日至5月2日，而借款发生在1月10日，彼时老庄与A公司毫无关联，小陈系独立借款主体，绝非\"名义开户人\"，被告自认身份与其抗辩主张直接矛盾。第三，关于三方会面。滴滴记录仅证明小陈21:11离开某地，无法排除此前三方已会面并达成合意，且该电子证据真实性、关联性均需进一步质证，不足以推翻原告陈述。第四，关于资金流转。即使小陈收款后将资金转出，亦不否定原告已向小陈完成交付的事实。借款人取得借款",
+      "supporting_evidence_ids": [
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005",
+        "evidence-plaintiff-006",
+        "evidence-plaintiff-007"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    }
+  ],
+  "defendant_best_defenses": [
+    {
+      "issue_id": "issue-wangchenzhuang2025-001",
+      "position": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-002",
+      "position": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-003",
+      "position": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-004",
+      "position": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-005",
+      "position": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-006",
+      "position": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-007",
+      "position": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-008",
+      "position": "被告小陈与原告之间不存在任何借贷合意，案涉20万元系原告应付给老庄的款项，老庄指示原告转入小陈名下账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户（evidence-defendant-003）。小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄经营）用于收付款，小陈仅为名义开户人，并非资金实际控制人（evidence-defendant-002）。原告庭审中陈述2025年1月10日晚间三方面对面达成借款合意，但滴滴打车记录显示小陈当晚21时11分已打车离开（evidence-defendant-004），该情形在时间上不可能发生，原告陈述明显虚假。录音及微信聊天记录进一步证实：案涉款项系原告应支付给老庄的款项；原告于2025年1月11日向老庄催问回款时间，与老庄庭审陈述及原告短信内容相互印证，证明20万元实为老庄所借（evidence-defendant-005）。更为严重的是，原告曾劝说老庄不要应诉、不要承认款项系其所借、要求老庄删除微信聊天记录并在庭审中作虚假陈述（evidence-defendant-005），已构成妨碍民事诉讼的行为。综上，",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-001",
+      "position": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-002",
+      "position": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-003",
+      "position": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-004",
+      "position": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-005",
+      "position": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-006",
+      "position": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-007",
+      "position": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-008",
+      "position": "一、借贷合意不成立。原告主张小陈'以短期资金周转为由'借款，但未提交任何书面借据、借条或借款协议。微信聊天记录（evidence-defendant-003）清楚显示，案涉款项系老庄指示原告转入小陈账户，小陈收款后立即按老庄指示将款项汇至老庄指定账户，小陈从未向原告表达借款意思。二、三方面对面达成合意的场景不存在。原告庭审陈述2025年1月10日晚间三方当面达成借款合意，但滴滴打车记录（evidence-defendant-004）显示小陈当晚21时11分已打车离开，时间上不可能参与原告所述的面谈。原告该项陈述明显虚假，严重损害其全案陈述的可信度。三、小陈系账户名义持有人而非借款人。A公司营业执照、微信工资表及银行明细（evidence-defendant-002）证明，小陈名下账户在2025年5月前实际由老庄经营的A公司用于日常收付款，小陈并非资金实际控制人。原告仅凭转账记录指向小陈账户即主张小陈为借款人，混淆了账户名义持有与实际借款之间的法律关系。四、实际借款人为老庄。录音及微信记录（evidence-defendant-005）证明：案涉款项系原告应付老庄的款项；原告于2025年",
+      "supporting_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003",
+        "evidence-defendant-004",
+        "evidence-defendant-005"
+      ],
+      "legal_basis": null,
+      "rebuttal_target_output_id": null
+    }
+  ],
+  "unresolved_issues": [
+    "issue-wangchenzhuang2025-001",
+    "issue-wangchenzhuang2025-002",
+    "issue-wangchenzhuang2025-003",
+    "issue-wangchenzhuang2025-004",
+    "issue-wangchenzhuang2025-005",
+    "issue-wangchenzhuang2025-006",
+    "issue-wangchenzhuang2025-007",
+    "issue-wangchenzhuang2025-008"
+  ],
+  "evidence_conflicts": [
+    {
+      "issue_id": "issue-wangchenzhuang2025-001",
+      "plaintiff_evidence_ids": [
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-006"
+      ],
+      "defendant_evidence_ids": [
+        "evidence-defendant-003",
+        "evidence-defendant-005"
+      ],
+      "conflict_description": "原告以起诉状陈述、转账凭证及催款短信主张与小陈之间存在借贷合意。被告以老庄指示转账的微信聊天截图及录音证据证明款项系原告应付给老庄的款项，老庄指示转入小陈账户，小陈从未向原告提出借款请求，双方不存在借贷合意。核心矛盾在于：转账行为究竟体现的是原告与小陈之间的借贷关系，还是原告与老庄之间的债权债务关系中的指示付款行为。"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-002",
+      "plaintiff_evidence_ids": [
+        "evidence-plaintiff-002"
+      ],
+      "defendant_evidence_ids": [
+        "evidence-defendant-004"
+      ],
+      "conflict_description": "原告在庭审中陈述2025年1月10日当晚与二被告三方面对面达成借款合意。被告提交滴滴打车记录显示小陈于当晚21:11已打车离开，物理上不可能参与原告所述的面对面会谈。双方关于事实发生场景的陈述存在根本性矛盾——如果小陈已离开，三方会面即不存在。需要注意：原告就三方会面的主张仅有庭审口头陈述，未提交任何独立证据佐证。"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-003",
+      "plaintiff_evidence_ids": [
+        "evidence-plaintiff-007"
+      ],
+      "defendant_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-005"
+      ],
+      "conflict_description": "原告以小陈微信朋友圈截图（小陈自称'原A负责人'）主张小陈系独立借款主体而非普通员工。被告以A公司营业执照、微信工资表及银行明细证明小陈仅为公司员工；同时被告录音证据中老庄确认该朋友圈内容系老庄编辑后让小陈代发，并非小陈真实意思表示。双方对同一证据（朋友圈截图）的性质认定完全相反：原告视为小陈身份自认，被告视为老庄借小陈账号发布的内容。"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-004",
+      "plaintiff_evidence_ids": [
+        "evidence-plaintiff-002",
+        "evidence-plaintiff-007"
+      ],
+      "defendant_evidence_ids": [
+        "evidence-defendant-003",
+        "evidence-defendant-005"
+      ],
+      "conflict_description": "原告主张借款人为小陈（及老庄承担连带责任），并以小陈朋友圈截图证明借款发生时（2025年1月10日）老庄尚未入股A公司（入股时间为2025年2月20日），借款与老庄无关。被告以老庄指示转账聊天记录、录音及原告2025年1月11日向老庄催款的微信记录证明实际借款人为老庄，20万元系老庄向原告所借，与小陈无关。双方对借款人身份的认定完全对立。"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-005",
+      "plaintiff_evidence_ids": [],
+      "defendant_evidence_ids": [
+        "evidence-defendant-002",
+        "evidence-defendant-003"
+      ],
+      "conflict_description": "【证据缺失】被告提交营业执照、工资表、银行明细及老庄指示转账截图，证明小陈名下银行账户（X支行，账号1111111）在2025年5月前实际由A公司（老庄）控制使用，小陈并非资金实际控制人。原告在此争点上未提交任何证据，既未证明小陈对该账户具有独立控制权，也未反驳被告关于账户由老庄使用的主张。该证据空白对原告不利。"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-006",
+      "plaintiff_evidence_ids": [
+        "evidence-plaintiff-003",
+        "evidence-plaintiff-004",
+        "evidence-plaintiff-005"
+      ],
+      "defendant_evidence_ids": [
+        "evidence-defendant-003",
+        "evidence-defendant-005"
+      ],
+      "conflict_description": "双方对20万元资金实际交付的事实本身无争议（均认可款项已转入小陈账户），但对款项性质的定性存在根本冲突。原告以银行回单、支付宝凭证及C的汇款声明主张该20万元系借款交付。被告以老庄指示转账的微信截图及录音证明该款项系原告本应支付给老庄的款项（非借款），老庄指示转入小陈账户后小陈立即按指示转至老庄指定账户。争议焦点不在于款项是否交付，而在于交付的法律性质是借款出借还是其他债务清偿。"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-007",
+      "plaintiff_evidence_ids": [
+        "evidence-plaintiff-006"
+      ],
+      "defendant_evidence_ids": [],
+      "conflict_description": "原告以催款短信记录主张被告逾期未还款，据此要求按LPR计算资金占用利息。被告未针对利息主张本身提交专门的反驳证据，但被告对借贷关系成立的整体否认构成对利息主张的根本性抗辩——若借贷关系不成立，利息请求权即丧失基础。此争点的结果完全取决于借贷合意（争点001）的认定结论。"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-008",
+      "plaintiff_evidence_ids": [],
+      "defendant_evidence_ids": [
+        "evidence-defendant-005"
+      ],
+      "conflict_description": "【证据缺失】被告提交录音及微信聊天记录，指控原告劝说老庄不要应诉、不要承认款项系其所借、不要承认店铺及银行卡由其使用经营，并要求老庄当场删除与原告的微信聊天记录、在庭审中谎称微信号非本人使用。原告对上述妨碍诉讼行为的指控未提交任何反驳证据，也未在已有证据中对此作出说明或否认。该争点上原告处于完全被动的证据空白状态。"
+    }
+  ],
+  "missing_evidence_report": [
+    {
+      "issue_id": "issue-wangchenzhuang2025-002",
+      "missing_for_party_id": "party-plaintiff-wang",
+      "description": "争点「三方面对面达成借款合意的事实是否存在」原告方缺乏直接证据支撑"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-005",
+      "missing_for_party_id": "party-plaintiff-wang",
+      "description": "争点「小陈名下银行账户的实际控制与使用情况」原告方缺乏直接证据支撑"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-006",
+      "missing_for_party_id": "party-defendant-chen",
+      "description": "争点「借款款项20万元是否实际交付」被告方缺乏直接证据支撑"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-007",
+      "missing_for_party_id": "party-defendant-chen",
+      "description": "争点「资金占用利息损失是否应予支持」被告方缺乏直接证据支撑"
+    },
+    {
+      "issue_id": "issue-wangchenzhuang2025-008",
+      "missing_for_party_id": "party-plaintiff-wang",
+      "description": "争点「原告是否存在妨碍诉讼行为」原告方缺乏直接证据支撑"
+    }
+  ],
+  "summary": {
+    "plaintiff_strongest_arguments": [],
+    "defendant_strongest_defenses": [],
+    "unresolved_issues": [],
+    "missing_evidence_report": [],
+    "overall_assessment": "plaintiff_strengths: ['持有客观的银行转账凭证和支付宝转账凭证，证明资金交付事实明确', '《民间借贷规定》第二条关于举证责任转移的法律依据对原告有利', '催款短信记录可佐证原告主观认为存在借贷关系']；plaintiff_weaknesses: ['全案无书面借据、借条或借款协议，举证基础薄弱', '关于三方面对面达成合意的庭审陈述无任何独立证据佐证，且与被告滴滴记录矛盾', '对被告关于账户控制权和妨碍诉讼行为的主张未提供任何反驳证据', \"原告1月11日向老庄催款的行为与其主张'小陈为借款人'存在逻辑矛盾\", '在争点002、005、008上存在严重证据空白']；defendant_strengths: ['多维度证据链（微信记录+录音+滴滴记录+公司资料）相互印证，形成较完整的抗辩体系', '成功揭露原告庭审陈述与客观证据之间的矛盾（三方会面问题）', '妨碍诉讼行为的指控有录音佐证且原告未能反驳，对原告全案可信度构成致命打击', '原告向老庄催款的事实反向印证了被告关于实际借款人的主张']；defendant_weaknesses: ['核心证据（录音、微信截图）为单方采集，完整性和真实性可能受到挑战', '未说明原告对老庄负有20万元债务的具体基础法律关系', '以个人账户充当公司账户的抗辩在法律上存在一定障碍']；critical_unresolved_issues: ['issue-wangchenzhuang2025-001（借贷合意是否成立——全案核心）', 'issue-wangchenzhuang2025-002（三方面谈是否存在——直接影响原告可信度）', 'issue-wangchenzhuang2025-008（妨碍诉讼行为——可能产生全案系统性影响）']；evidence_reliability_concerns: ['被告录音证据（evidence-defendant-005）系单方录制，需技术鉴定确认完整性', '原告委托代付证人C的汇款声明（evidence-plaintiff-005）系利害关系人证言，证明力需审慎评估', '被告微信聊天截图（evidence-defendant-003）的真实性和完整性需质证确认']；preliminary_trend_assessment: 从现有证据格局分析，被告在多数争点上的举证更为充分，原告在关键争点上存在多处证据空白且庭审陈述可信度受到严重质疑。特别是原告在争点002（三方面谈）上的陈述与客观证据矛盾、争点008（妨碍诉讼）上的完全沉默，这两个问题可能产生对原告全案不利的连锁效应。但最终结果仍取决于法院对被告单方录音证据的采信程度以及对举证责任分配规则的具体适用。"
+  }
+}
