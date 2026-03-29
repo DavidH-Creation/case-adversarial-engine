@@ -45,7 +45,7 @@ from engines.case_structuring.issue_extractor.extractor import IssueExtractor
 from engines.shared.access_control import AccessController
 from engines.shared.cli_adapter import CLINotFoundError, ClaudeCLIClient, CodexCLIClient
 from engines.shared.models import (
-    AgentRole, ClaimType, EvidenceIndex, LoanTransaction,
+    AgentRole, ClaimType, EvidenceIndex, EvidenceStatus, LoanTransaction,
     RawMaterial, RepaymentAttribution, RepaymentTransaction, DisputedAmountAttribution,
 )
 
@@ -552,6 +552,18 @@ async def main(claude_only: bool = False) -> None:
     print("\n[Step 3] 开始三轮对抗辩论...")
     config = RoundConfig(model="claude-opus-4-6", max_tokens_per_output=2000, max_retries=2)
     result = await _run_rounds(issue_tree, ev_index, claude, codex, claude, config)
+
+    # Promote cited evidence to admitted_for_discussion
+    cited_ids: set[str] = set()
+    for rd in result.rounds:
+        for o in rd.outputs:
+            cited_ids.update(o.evidence_citations)
+    promoted = 0
+    for ev in ev_index.evidence:
+        if ev.evidence_id in cited_ids and ev.status == EvidenceStatus.private:
+            ev.status = EvidenceStatus.admitted_for_discussion
+            promoted += 1
+    print(f"\n  Promoted {promoted}/{len(ev_index.evidence)} evidence to admitted_for_discussion")
 
     # Step 3.5: 争点排序 + 裁判路径 + 行动建议
     print("\n[Step 3.5] 争点排序 + 裁判路径 + 行动建议...")

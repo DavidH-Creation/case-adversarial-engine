@@ -170,6 +170,108 @@ class DecisionPathTreeGenerator:
 
         return None
 
+    @staticmethod
+    def _normalize_llm_json(data: dict) -> dict:
+        """Normalize alternative field names LLM may use.
+
+        LLM sometimes returns 'decision_paths' instead of 'paths',
+        or uses completely different sub-structures (decision_chain, outcome objects, etc.).
+        This method maps them back to the expected schema.
+        """
+        # Top-level: decision_paths → paths
+        if "paths" not in data and "decision_paths" in data:
+            data["paths"] = data.pop("decision_paths")
+
+        # Normalize individual path items
+        for p in data.get("paths", []):
+            if not isinstance(p, dict):
+                continue
+
+            # --- trigger_condition ---
+            if "trigger_condition" not in p:
+                for alias in ("trigger", "path_label", "condition", "路径条件"):
+                    if alias in p:
+                        p["trigger_condition"] = p.pop(alias)
+                        break
+
+            # --- possible_outcome (may be a string or a dict) ---
+            if "possible_outcome" not in p:
+                for alias in ("outcome", "outcome_detail", "裁判结果"):
+                    if alias in p:
+                        val = p.pop(alias)
+                        if isinstance(val, dict):
+                            # Flatten dict to string: "judgment (principal_awarded=X)"
+                            parts = []
+                            if "judgment" in val:
+                                parts.append(val["judgment"])
+                            if val.get("principal_awarded") is not None:
+                                parts.append(f"本金裁定={val['principal_awarded']}")
+                            if val.get("interest_supported"):
+                                parts.append("利息支持")
+                            if val.get("costs_borne_by"):
+                                parts.append(f"诉讼费={val['costs_borne_by']}")
+                            p["possible_outcome"] = "；".join(parts) if parts else str(val)
+                        else:
+                            p["possible_outcome"] = str(val)
+                        break
+
+            # --- confidence_interval from probability_tier ---
+            if "confidence_interval" not in p and "probability_tier" in p:
+                tier_map = {
+                    "高": (0.65, 0.85), "较高": (0.55, 0.75),
+                    "中": (0.35, 0.55), "中等": (0.35, 0.55),
+                    "中低": (0.2, 0.4), "较低": (0.1, 0.3), "低": (0.05, 0.2),
+                }
+                tier = p.pop("probability_tier", "")
+                if tier in tier_map:
+                    lo, hi = tier_map[tier]
+                    p["confidence_interval"] = {"lower": lo, "upper": hi}
+
+            # --- Extract trigger_issue_ids + key_evidence_ids from decision_chain ---
+            chain = p.get("decision_chain") or p.get("key_reasoning_chain") or []
+            if isinstance(chain, list) and chain:
+                if "trigger_issue_ids" not in p or not p["trigger_issue_ids"]:
+                    issue_ids = []
+                    seen = set()
+                    for node in chain:
+                        if isinstance(node, dict):
+                            for iid in node.get("issue_refs", []):
+                                if iid not in seen:
+                                    issue_ids.append(iid)
+                                    seen.add(iid)
+                    p["trigger_issue_ids"] = issue_ids
+
+                if "key_evidence_ids" not in p or not p["key_evidence_ids"]:
+                    ev_ids = []
+                    seen = set()
+                    for node in chain:
+                        if isinstance(node, dict):
+                            for eid in node.get("key_evidence", []):
+                                if eid not in seen:
+                                    ev_ids.append(eid)
+                                    seen.add(eid)
+                    p["key_evidence_ids"] = ev_ids
+
+            # --- path_notes aliases ---
+            if "path_notes" not in p:
+                for alias in ("risk_notes", "notes", "备注"):
+                    if alias in p:
+                        p["path_notes"] = p.pop(alias)
+                        break
+
+            # Flatten decision_chain to path_notes if still missing
+            if "path_notes" not in p and isinstance(chain, list) and chain:
+                notes_parts = []
+                for node in chain:
+                    if isinstance(node, dict):
+                        q = node.get("question", "")
+                        r = node.get("ruling", "")
+                        if q and r:
+                            notes_parts.append(f"{q} → {r}")
+                p["path_notes"] = "; ".join(notes_parts) if notes_parts else ""
+
+        return data
+
     def _parse_llm_output(self, raw: str) -> LLMDecisionPathTreeOutput | None:
         """解析 LLM 输出 JSON，失败时返回 None。
         注意：_extract_json_object 在失败时抛出 ValueError（不返回 None），由此处的
@@ -178,6 +280,7 @@ class DecisionPathTreeGenerator:
         from engines.shared.json_utils import _extract_json_object
         try:
             data = _extract_json_object(raw)
+            data = self._normalize_llm_json(data)
             return LLMDecisionPathTreeOutput.model_validate(data)
         except Exception:  # noqa: BLE001
             return None

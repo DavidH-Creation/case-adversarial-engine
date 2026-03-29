@@ -151,11 +151,101 @@ class AttackChainOptimizer:
 
         return None
 
+    @staticmethod
+    def _normalize_llm_json(data: dict) -> dict:
+        """Normalize alternative field names LLM may use for attack chain output.
+
+        LLM sometimes returns 'attack_chain' instead of 'top_attacks',
+        or uses 'attack_id' instead of 'attack_node_id', etc.
+        """
+        # Top-level: attack_chain / attacks / optimal_attacks → top_attacks
+        if "top_attacks" not in data:
+            for alias in ("attack_chain", "attacks", "optimal_attacks", "attack_nodes"):
+                if alias in data and isinstance(data[alias], list):
+                    data["top_attacks"] = data.pop(alias)
+                    break
+
+        # Normalize individual attack nodes
+        for node in data.get("top_attacks", []):
+            if not isinstance(node, dict):
+                continue
+
+            # attack_node_id aliases
+            if not node.get("attack_node_id"):
+                for alias in ("attack_id", "node_id", "id"):
+                    if alias in node:
+                        node["attack_node_id"] = node.pop(alias)
+                        break
+
+            # target_issue_id: may be a list (take first) or string
+            if not node.get("target_issue_id"):
+                for alias in ("target_issues", "target_issue_ids", "issue_ids"):
+                    if alias in node:
+                        val = node.pop(alias)
+                        if isinstance(val, list) and val:
+                            node["target_issue_id"] = val[0]
+                        elif isinstance(val, str):
+                            node["target_issue_id"] = val
+                        break
+
+            # attack_description aliases
+            if not node.get("attack_description"):
+                for alias in ("core_argument", "attack_name", "description", "argument"):
+                    if alias in node:
+                        node["attack_description"] = node.pop(alias)
+                        break
+
+            # supporting_evidence_ids: may be nested objects [{evidence_id: ..., usage: ...}]
+            if not node.get("supporting_evidence_ids"):
+                for alias in ("evidence_support", "evidence_ids", "evidence"):
+                    if alias in node:
+                        val = node.pop(alias)
+                        if isinstance(val, list):
+                            ids = []
+                            for item in val:
+                                if isinstance(item, dict):
+                                    eid = item.get("evidence_id", "")
+                                    if eid:
+                                        ids.append(eid)
+                                elif isinstance(item, str):
+                                    ids.append(item)
+                            node["supporting_evidence_ids"] = ids
+                        break
+                # Also check evidence_to_challenge as fallback
+                if not node.get("supporting_evidence_ids") and "evidence_to_challenge" in node:
+                    val = node.pop("evidence_to_challenge")
+                    if isinstance(val, list):
+                        ids = []
+                        for item in val:
+                            if isinstance(item, dict):
+                                eid = item.get("evidence_id", "")
+                                if eid:
+                                    ids.append(eid)
+                        if ids:
+                            node["supporting_evidence_ids"] = ids
+
+            # success_conditions aliases
+            if not node.get("success_conditions"):
+                for alias in ("expected_outcome", "success_condition"):
+                    if alias in node:
+                        node["success_conditions"] = node.pop(alias)
+                        break
+
+            # counter_measure aliases
+            if not node.get("counter_measure"):
+                for alias in ("risk_assessment", "counter_strategy", "risk"):
+                    if alias in node:
+                        node["counter_measure"] = node.pop(alias)
+                        break
+
+        return data
+
     def _parse_llm_output(self, raw: str) -> LLMAttackChainOutput | None:
         """解析 LLM 输出 JSON，失败时返回 None。"""
         from engines.shared.json_utils import _extract_json_object
         try:
             data = _extract_json_object(raw)
+            data = self._normalize_llm_json(data)
             return LLMAttackChainOutput.model_validate(data)
         except Exception as e:  # noqa: BLE001
             logger.debug("AttackChainOptimizer LLM 输出解析失败: %s", e)

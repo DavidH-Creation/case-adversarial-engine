@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 import uuid
@@ -54,9 +55,10 @@ from engines.shared.access_control import AccessController
 from engines.shared.cli_adapter import CLINotFoundError, ClaudeCLIClient, CodexCLIClient
 from engines.shared.models import (
     AgentRole, ClaimType, DisputedAmountAttribution,
-    EvidenceIndex, LoanTransaction, RawMaterial,
+    EvidenceIndex, EvidenceStatus, LoanTransaction, RawMaterial,
     RepaymentAttribution, RepaymentTransaction,
 )
+from engines.report_generation.docx_generator import generate_docx_report
 
 # Post-debate modules
 from engines.case_structuring.amount_calculator import AmountCalculator, AmountCalculatorInput, AmountClaimDescriptor
@@ -552,8 +554,17 @@ async def _run_post_debate(
         )
         artifacts["decision_tree"] = decision_tree
         artifacts["attack_chain"] = attack_chain
-        print(f"    \u2713 Decision paths: {len(decision_tree.paths)}")
-        print(f"    \u2713 Attack nodes: {len(attack_chain.top_attacks)}")
+        dt_fail = "failed" in decision_tree.tree_id
+        ac_fail = "failed" in attack_chain.chain_id
+        print(f"    {'✗ LLM FAILED' if dt_fail else '✓'} Decision paths: {len(decision_tree.paths)} (id={decision_tree.tree_id})")
+        print(f"    {'✗ LLM FAILED' if ac_fail else '✓'} Attack nodes: {len(attack_chain.top_attacks)} (id={attack_chain.chain_id})")
+        if not dt_fail and len(decision_tree.paths) == 0:
+            # LLM succeeded but rules layer filtered everything
+            admitted = sum(1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion)
+            print(f"    ⚠ Decision paths empty despite LLM success — admitted evidence: {admitted}/{len(ev_index.evidence)}")
+        if not ac_fail and len(attack_chain.top_attacks) == 0:
+            admitted = sum(1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion)
+            print(f"    ⚠ Attack chain empty despite LLM success — admitted evidence: {admitted}/{len(ev_index.evidence)}")
     else:
         decision_tree = None
         attack_chain = None
@@ -663,6 +674,18 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         issue_tree, ev_index, claude, codex, claude, config, p_id, d_id,
     )
 
+    # Promote cited evidence to admitted_for_discussion so post-debate modules can use it
+    cited_ids: set[str] = set()
+    for rd in result.rounds:
+        for o in rd.outputs:
+            cited_ids.update(o.evidence_citations)
+    promoted = 0
+    for ev in ev_index.evidence:
+        if ev.evidence_id in cited_ids and ev.status == EvidenceStatus.private:
+            ev.status = EvidenceStatus.admitted_for_discussion
+            promoted += 1
+    print(f"\n  Promoted {promoted}/{len(ev_index.evidence)} evidence to admitted_for_discussion")
+
     # Step 3.5: Post-debate analysis
     print("\n[Step 3.5] Post-debate analysis...")
     artifacts = await _run_post_debate(result, issue_tree, ev_index, claude, case_data, model)
@@ -686,10 +709,38 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         if obj:
             (out / f"{name}.json").write_text(obj.model_dump_json(indent=2), encoding="utf-8")
 
+    # Step 5: Generate Word document
+    print("\n[Step 5] Generating Word report...")
+    try:
+        _artifact_dicts = {}
+        for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary"):
+            obj = artifacts.get(name)
+            if obj:
+                _artifact_dicts[name] = json.loads(obj.model_dump_json())
+            else:
+                _artifact_dicts[name] = None
+
+        docx_path = generate_docx_report(
+            output_dir=out,
+            case_data=case_data,
+            result=json.loads(result.model_dump_json()),
+            issue_tree=artifacts.get("ranked_issues", issue_tree),
+            decision_tree=_artifact_dicts.get("decision_tree"),
+            attack_chain=_artifact_dicts.get("attack_chain"),
+            exec_summary=_artifact_dicts.get("exec_summary"),
+            amount_report=_artifact_dicts.get("amount_report"),
+        )
+        print(f"  Word report: {docx_path}")
+    except Exception as e:
+        print(f"  [Warning] Word report generation failed: {e}")
+        docx_path = None
+
     print(f"\n{'=' * 60}")
     print(f"\u2713 Run complete")
     print(f"  Result JSON: {jp}")
     print(f"  Report:      {mp}")
+    if docx_path:
+        print(f"  Word report: {docx_path}")
     for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary"):
         artifact_path = out / f"{name}.json"
         if artifact_path.exists():
