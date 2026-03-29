@@ -163,7 +163,7 @@ class DecisionPathTreeGenerator:
             amount_report=inp.amount_calculation_report,
         )
 
-        for _attempt in range(self._max_retries + 1):
+        for attempt in range(self._max_retries + 1):
             try:
                 raw = await self._llm.create_message(
                     system=system,
@@ -171,9 +171,12 @@ class DecisionPathTreeGenerator:
                     model=self._model,
                     temperature=self._temperature,
                 )
-                return self._parse_llm_output(raw)
+                result = self._parse_llm_output(raw)
+                if result is not None:
+                    return result
+                logger.warning("Decision tree: attempt %d parse returned None", attempt + 1)
             except Exception:  # noqa: BLE001
-                pass
+                logger.warning("Decision tree: attempt %d LLM call failed", attempt + 1, exc_info=True)
 
         return None
 
@@ -196,67 +199,127 @@ class DecisionPathTreeGenerator:
 
             # --- trigger_condition ---
             if "trigger_condition" not in p:
-                for alias in ("trigger", "path_label", "condition", "路径条件"):
+                for alias in ("trigger", "path_label", "path_name", "condition", "core_logic", "路径条件"):
                     if alias in p:
                         p["trigger_condition"] = p.pop(alias)
                         break
 
             # --- possible_outcome (may be a string or a dict) ---
+            # First: if already present but is a dict, flatten to readable string
+            if isinstance(p.get("possible_outcome"), dict):
+                val = p["possible_outcome"]
+                parts = []
+                for k, v in val.items():
+                    if v:
+                        parts.append(f"{k}：{v}" if isinstance(v, str) else f"{k}={v}")
+                p["possible_outcome"] = "；".join(parts) if parts else str(val)
+
             if "possible_outcome" not in p:
-                for alias in ("outcome", "outcome_detail", "裁判结果"):
+                for alias in ("outcome", "outcome_detail", "outcome_summary",
+                              "final_ruling", "narrative", "judgment_projection",
+                              "outcome_type", "裁判结果"):
                     if alias in p:
                         val = p.pop(alias)
                         if isinstance(val, dict):
-                            # Flatten dict to string: "judgment (principal_awarded=X)"
                             parts = []
-                            if "judgment" in val:
-                                parts.append(val["judgment"])
-                            if val.get("principal_awarded") is not None:
-                                parts.append(f"本金裁定={val['principal_awarded']}")
-                            if val.get("interest_supported"):
-                                parts.append("利息支持")
-                            if val.get("costs_borne_by"):
-                                parts.append(f"诉讼费={val['costs_borne_by']}")
+                            for k, v in val.items():
+                                if v:
+                                    parts.append(f"{k}：{v}" if isinstance(v, str) else f"{k}={v}")
                             p["possible_outcome"] = "；".join(parts) if parts else str(val)
                         else:
                             p["possible_outcome"] = str(val)
                         break
 
-            # --- confidence_interval from probability_tier ---
-            if "confidence_interval" not in p and "probability_tier" in p:
-                tier_map = {
-                    "高": (0.65, 0.85), "较高": (0.55, 0.75),
-                    "中": (0.35, 0.55), "中等": (0.35, 0.55),
-                    "中低": (0.2, 0.4), "较低": (0.1, 0.3), "低": (0.05, 0.2),
-                }
-                tier = p.pop("probability_tier", "")
-                if tier in tier_map:
-                    lo, hi = tier_map[tier]
-                    p["confidence_interval"] = {"lower": lo, "upper": hi}
+            # --- confidence_interval from probability_tier / probability_label ---
+            if "confidence_interval" not in p:
+                tier_key = None
+                for alias in ("probability_tier", "probability_label", "probability"):
+                    if alias in p:
+                        tier_key = alias
+                        break
+                if tier_key:
+                    tier_map = {
+                        "高": (0.65, 0.85), "较高": (0.55, 0.75),
+                        "中": (0.35, 0.55), "中等": (0.35, 0.55),
+                        "中低": (0.2, 0.4), "较低": (0.1, 0.3), "低": (0.05, 0.2),
+                    }
+                    tier = p.pop(tier_key, "")
+                    if tier in tier_map:
+                        lo, hi = tier_map[tier]
+                        p["confidence_interval"] = {"lower": lo, "upper": hi}
 
-            # --- Extract trigger_issue_ids + key_evidence_ids from decision_chain ---
-            chain = p.get("decision_chain") or p.get("key_reasoning_chain") or []
+            # --- Extract trigger_issue_ids from direct list fields or chain structures ---
+            if "trigger_issue_ids" not in p or not p["trigger_issue_ids"]:
+                # Layer 1: direct list aliases (LLM often puts issue IDs as a flat list)
+                for alias in ("pivotal_issues", "key_issues", "relevant_issues",
+                              "core_issues", "related_issue_ids"):
+                    if alias in p and isinstance(p[alias], list):
+                        p["trigger_issue_ids"] = [
+                            x for x in p.pop(alias) if isinstance(x, str)
+                        ]
+                        break
+
+            if "key_evidence_ids" not in p or not p["key_evidence_ids"]:
+                # Layer 1: direct list aliases for evidence
+                for alias in ("key_evidence_relied", "evidence_relied",
+                              "key_evidence", "supporting_evidence",
+                              "relied_evidence"):
+                    if alias in p and isinstance(p[alias], list):
+                        ids = []
+                        for x in p.pop(alias):
+                            if isinstance(x, str):
+                                ids.append(x)
+                            elif isinstance(x, dict):
+                                eid = x.get("evidence_id", "")
+                                if eid:
+                                    ids.append(eid)
+                        p["key_evidence_ids"] = ids
+                        break
+
+            # Layer 1b: extract from chain-like structures (fallback)
+            chain = (
+                p.get("decision_chain")
+                or p.get("key_reasoning_chain")
+                or p.get("branch_sequence")
+                or p.get("decision_nodes")
+                or p.get("reasoning_steps")
+                or []
+            )
             if isinstance(chain, list) and chain:
                 if "trigger_issue_ids" not in p or not p["trigger_issue_ids"]:
                     issue_ids = []
-                    seen = set()
+                    seen: set[str] = set()
                     for node in chain:
                         if isinstance(node, dict):
-                            for iid in node.get("issue_refs", []):
-                                if iid not in seen:
-                                    issue_ids.append(iid)
-                                    seen.add(iid)
+                            for iid_key in ("issue_refs", "issue_id", "issue",
+                                            "target_issue", "issues"):
+                                val = node.get(iid_key)
+                                if isinstance(val, str) and val and val not in seen:
+                                    issue_ids.append(val)
+                                    seen.add(val)
+                                elif isinstance(val, list):
+                                    for iid in val:
+                                        if isinstance(iid, str) and iid not in seen:
+                                            issue_ids.append(iid)
+                                            seen.add(iid)
                     p["trigger_issue_ids"] = issue_ids
 
                 if "key_evidence_ids" not in p or not p["key_evidence_ids"]:
                     ev_ids = []
-                    seen = set()
+                    seen_ev: set[str] = set()
                     for node in chain:
                         if isinstance(node, dict):
-                            for eid in node.get("key_evidence", []):
-                                if eid not in seen:
-                                    ev_ids.append(eid)
-                                    seen.add(eid)
+                            for eid_key in ("key_evidence", "evidence", "evidence_ids",
+                                            "supporting_evidence"):
+                                val = node.get(eid_key)
+                                if isinstance(val, str) and val and val not in seen_ev:
+                                    ev_ids.append(val)
+                                    seen_ev.add(val)
+                                elif isinstance(val, list):
+                                    for eid in val:
+                                        if isinstance(eid, str) and eid not in seen_ev:
+                                            ev_ids.append(eid)
+                                            seen_ev.add(eid)
                     p["key_evidence_ids"] = ev_ids
 
             # --- path_notes aliases ---
@@ -301,6 +364,33 @@ class DecisionPathTreeGenerator:
                         p["fallback_path_id"] = p.pop(alias)
                         break
 
+            # --- Layer 2: pattern-based fallback for possible_outcome ---
+            if "possible_outcome" not in p:
+                _OUTCOME_PATS = ("outcome", "result", "ruling", "judgment",
+                                 "narrative", "projection", "verdict")
+                for key in list(p.keys()):
+                    if any(pat in key.lower() for pat in _OUTCOME_PATS):
+                        val = p[key]
+                        if isinstance(val, str) and len(val) > 5:
+                            p["possible_outcome"] = p.pop(key)
+                            break
+                        elif isinstance(val, dict):
+                            p["possible_outcome"] = "；".join(
+                                f"{k}={v}" for k, v in val.items() if v
+                            )
+                            break
+
+            # --- Layer 2: pattern-based fallback for trigger_condition ---
+            if "trigger_condition" not in p:
+                _TRIGGER_PATS = ("trigger", "condition", "prerequisite",
+                                 "premise", "前提")
+                for key in list(p.keys()):
+                    if any(pat in key.lower() for pat in _TRIGGER_PATS):
+                        val = p[key]
+                        if isinstance(val, str) and len(val) > 5:
+                            p["trigger_condition"] = p.pop(key)
+                            break
+
         return data
 
     def _parse_llm_output(self, raw: str) -> LLMDecisionPathTreeOutput | None:
@@ -310,10 +400,26 @@ class DecisionPathTreeGenerator:
         """
         from engines.shared.json_utils import _extract_json_object
         try:
+            logger.info("Decision tree LLM 响应长度: %d chars", len(raw))
             data = _extract_json_object(raw)
+            logger.info("JSON 顶层键: %s, paths 数: %s",
+                        list(data.keys()),
+                        len(data.get("paths", data.get("decision_paths", []))))
             data = self._normalize_llm_json(data)
-            return LLMDecisionPathTreeOutput.model_validate(data)
+            # 诊断：记录 paths 第一项的键
+            paths_raw = data.get("paths", [])
+            if paths_raw and isinstance(paths_raw[0], dict):
+                logger.info("Path[0] 键: %s", list(paths_raw[0].keys()))
+                logger.debug("Path[0] path_id=%r, trigger_condition=%r, possible_outcome=%r",
+                             paths_raw[0].get("path_id", ""),
+                             str(paths_raw[0].get("trigger_condition", ""))[:50],
+                             str(paths_raw[0].get("possible_outcome", ""))[:50])
+            result = LLMDecisionPathTreeOutput.model_validate(data)
+            logger.info("解析成功: %d paths, %d blocking",
+                        len(result.paths), len(result.blocking_conditions))
+            return result
         except Exception:  # noqa: BLE001
+            logger.warning("Decision tree LLM 解析失败", exc_info=True)
             return None
 
     def _process_paths(
@@ -329,7 +435,18 @@ class DecisionPathTreeGenerator:
 
         result: list[DecisionPath] = []
         for item in candidates:
+            # Layer 3: derive possible_outcome from trigger_condition if empty
+            if not item.possible_outcome and item.trigger_condition:
+                item = item.model_copy(update={"possible_outcome": item.trigger_condition})
+                logger.info("Path %s: derived possible_outcome from trigger_condition", item.path_id)
+
             if not item.path_id or not item.trigger_condition or not item.possible_outcome:
+                logger.warning(
+                    "Path 跳过: path_id=%r, trigger_condition=%r, possible_outcome=%r",
+                    item.path_id[:30] if item.path_id else None,
+                    item.trigger_condition[:30] if item.trigger_condition else None,
+                    item.possible_outcome[:30] if item.possible_outcome else None,
+                )
                 continue
 
             clean_issue_ids = [i for i in item.trigger_issue_ids if i in known_issue_ids]

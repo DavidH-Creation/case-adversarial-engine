@@ -9,6 +9,7 @@ Unit tests for IssueImpactRanker.
 """
 from __future__ import annotations
 
+import copy
 import json
 from decimal import Decimal
 
@@ -494,3 +495,125 @@ class TestRankFullFlow:
 
         assert result.created_at
         assert "T" in result.created_at  # ISO-8601 格式
+
+
+# ---------------------------------------------------------------------------
+# 测试：Opus 风格 LLM 输出归一化
+# ---------------------------------------------------------------------------
+
+
+class TestOpusStyleNormalization:
+    """测试 Opus 风格 LLM 输出归一化（dimensions 嵌套 + D0X_ 前缀）。"""
+
+    OPUS_FIXTURE = {
+        "case_id": "case-001",
+        "analysis_timestamp": "2026-03-29T14:00:00Z",
+        "issue_assessments": [
+            {
+                "issue_id": "issue-001",
+                "dimensions": {
+                    "D01_verdict_impact_weight": {"score": 90, "rationale": "核心争点"},
+                    "D02_factual_determination_difficulty": {"score": 75, "rationale": "证据对立"},
+                    "D03_evidence_chain_completeness": {"score": 60, "rationale": "链条较完整"},
+                    "D04_related_issue_dependency": {"score": 0, "rationale": "根争点"},
+                    "D05_risk_exposure": {"score": 80, "rationale": "可信度高度相关"},
+                    "outcome_impact": "high",
+                    "proponent_evidence_strength": "medium",
+                    "opponent_attack_strength": "strong",
+                },
+                "proponent_evidence_ids": ["ev-001"],
+                "opponent_attack_evidence_ids": ["ev-002"],
+                "recommended_action": "supplement_evidence",
+                "recommended_action_basis": "需补充借贷合意直接证据",
+            },
+            {
+                "issue_id": "issue-002",
+                "dimensions": {
+                    "D01_verdict_impact_weight": {"score": 50, "rationale": "派生争点"},
+                    "D02_factual_determination_difficulty": {"score": 40, "rationale": "事实较明确"},
+                    "D03_evidence_chain_completeness": {"score": 30, "rationale": "证据薄弱"},
+                    "D04_related_issue_dependency": {"score": 1, "rationale": "依赖争点001"},
+                    "D05_risk_exposure": {"score": 20, "rationale": "低可信度影响"},
+                    "outcome_impact": "medium",
+                    "proponent_evidence_strength": "weak",
+                    "opponent_attack_strength": "medium",
+                },
+                "proponent_evidence_ids": ["ev-001"],
+                "opponent_attack_evidence_ids": ["ev-002"],
+                "recommended_action": "explain_in_trial",
+                "recommended_action_basis": "庭审中说明即可",
+            },
+        ],
+    }
+
+    def test_normalize_evaluation_keys_maps_issue_assessments(self):
+        """issue_assessments → evaluations"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = IssueImpactRanker._normalize_evaluation_keys(data)
+        assert "evaluations" in result
+        assert len(result["evaluations"]) == 2
+
+    def test_normalize_single_eval_flattens_dimensions(self):
+        """dimensions dict → flat scoring fields"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        IssueImpactRanker._normalize_evaluation_keys(data)
+        item = data["evaluations"][0]
+        result = IssueImpactRanker._normalize_single_eval(item)
+        # importance_score should be set from D01_verdict_impact_weight
+        assert result.get("importance_score", 0) > 0, (
+            f"importance_score not extracted: {result.get('importance_score')}"
+        )
+
+    def test_normalize_strips_d0x_prefix(self):
+        """D01_xxx → stripped to xxx → mapped to field"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        IssueImpactRanker._normalize_evaluation_keys(data)
+        item = data["evaluations"][0]
+        result = IssueImpactRanker._normalize_single_eval(item)
+        # D01_verdict_impact_weight → importance_score = 90
+        assert result.get("importance_score") == 90
+        # D02_factual_determination_difficulty → swing_score = 75
+        assert result.get("swing_score") == 75
+        # D04_related_issue_dependency → dependency_depth = 0
+        assert result.get("dependency_depth") == 0
+        # D05_risk_exposure → credibility_impact = 80
+        assert result.get("credibility_impact") == 80
+
+    def test_normalize_extracts_enums_from_inside_dimensions(self):
+        """outcome_impact inside dimensions → extracted to top level"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        IssueImpactRanker._normalize_evaluation_keys(data)
+        item = data["evaluations"][0]
+        result = IssueImpactRanker._normalize_single_eval(item)
+        assert result.get("outcome_impact") == "high"
+
+    @pytest.mark.asyncio
+    async def test_full_rank_with_opus_output_produces_scores(self):
+        """Full rank() flow with Opus-style output produces non-zero composite scores."""
+        fixture = copy.deepcopy(self.OPUS_FIXTURE)
+        response = json.dumps(fixture, ensure_ascii=False)
+
+        ranker = IssueImpactRanker(
+            llm_client=MockLLMClient(response),
+            model="test",
+            temperature=0.0,
+            max_retries=1,
+        )
+        issues = [
+            _make_issue("issue-001", evidence_ids=["ev-001"]),
+            _make_issue("issue-002", evidence_ids=["ev-001"]),
+        ]
+        evidence = [_make_evidence("ev-001"), _make_evidence("ev-002")]
+        inp = _make_ranker_input(issues, evidence=evidence)
+        result = await ranker.rank(inp)
+        assert isinstance(result, IssueImpactRankingResult)
+        # At least some issues should have non-zero composite scores
+        issues = result.ranked_issue_tree.issues
+        scored = [i for i in issues if i.composite_score and i.composite_score > 0]
+        assert len(scored) >= 1, (
+            f"Expected some scored issues, got {len(scored)} out of {len(issues)}"
+        )
+        # Issue-001 should score higher than issue-002 (90 vs 50 importance)
+        if len(scored) >= 2:
+            scores = {i.issue_id: i.composite_score for i in issues}
+            assert scores.get("issue-001", 0) > scores.get("issue-002", 0)

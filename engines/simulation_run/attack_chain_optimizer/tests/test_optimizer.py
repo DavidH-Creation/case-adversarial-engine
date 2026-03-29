@@ -9,6 +9,7 @@ Unit tests for AttackChainOptimizer.
 """
 from __future__ import annotations
 
+import copy
 import json
 
 import pytest
@@ -736,3 +737,88 @@ class TestMixedValidInvalidNodes:
         assert "atk-004" not in ids  # empty evidence
         # recommended_order 与 top_attacks 一致
         assert result.recommended_order == ids
+
+
+# ---------------------------------------------------------------------------
+# Opus 风格 LLM 输出归一化测试
+# ---------------------------------------------------------------------------
+
+
+class TestOpusStyleNormalization:
+    """测试 Opus 风格 LLM 输出归一化。"""
+
+    OPUS_FIXTURE = {
+        "owner_party_id": "party-defendant-chen",
+        "generated_at": "2026-03-29T14:01:00Z",
+        "attack_chain": [
+            {
+                "attack_node_id": "atk-chen-001",
+                "priority": 1,
+                "attack_label": "实际借款人身份错位攻击",
+                "attack_type": "factual_challenge",
+                "core_logic": "真正借款人为老庄而非小陈，证据表明款项系老庄经营所需",
+                "counter_to_plaintiff_evidence": {"ev-plaintiff-001": "转账仅证明资金流向，不证明借贷合意"},
+                "legal_basis": "民间借贷司法解释第十七条",
+                "target_issue_id": "issue-001",
+                "supporting_evidence_ids": ["ev-001", "ev-002"],
+                "success_conditions": "法院采信老庄为实际借款人",
+                "counter_measure": "原告可能补充借贷合意直接证据",
+            },
+            {
+                "attack_node_id": "atk-chen-002",
+                "priority": 2,
+                "attack_label": "录音证据攻击——催款对象为老庄",
+                "attack_type": "evidence_challenge",
+                "core_logic": "催款短信和录音显示原告催款对象是老庄而非小陈",
+                "counter_to_plaintiff_evidence": {},
+                "legal_basis": "最高法证据规定",
+                "target_issue_id": "issue-002",
+                "supporting_evidence_ids": ["ev-002", "ev-003"],
+                "success_conditions": "录音证据被法庭采信",
+                "counter_measure": "原告可能质疑录音真实性",
+            },
+        ],
+        "chain_synergy_note": "两个攻击节点形成递进关系",
+    }
+
+    def test_normalize_maps_attack_chain_to_top_attacks(self):
+        """attack_chain → top_attacks"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = AttackChainOptimizer._normalize_llm_json(data)
+        assert "top_attacks" in result
+        assert len(result["top_attacks"]) == 2
+
+    def test_normalize_combines_label_and_logic_to_description(self):
+        """attack_label + core_logic → attack_description"""
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = AttackChainOptimizer._normalize_llm_json(data)
+        desc = result["top_attacks"][0].get("attack_description", "")
+        assert desc, "attack_description should be non-empty"
+        # Should contain the core_logic text (the detailed description)
+        assert "老庄" in desc or "借款人" in desc
+
+    def test_normalize_preserves_target_issue_id(self):
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = AttackChainOptimizer._normalize_llm_json(data)
+        assert result["top_attacks"][0]["target_issue_id"] == "issue-001"
+
+    def test_normalize_preserves_supporting_evidence_ids(self):
+        data = copy.deepcopy(self.OPUS_FIXTURE)
+        result = AttackChainOptimizer._normalize_llm_json(data)
+        assert result["top_attacks"][0]["supporting_evidence_ids"] == ["ev-001", "ev-002"]
+
+    @pytest.mark.asyncio
+    async def test_full_optimize_with_opus_output(self):
+        """Full optimize() flow with Opus-style output produces non-empty attacks."""
+        fixture = copy.deepcopy(self.OPUS_FIXTURE)
+        response = json.dumps(fixture, ensure_ascii=False)
+        inp = _make_input(
+            issue_ids=["issue-001", "issue-002", "issue-003"],
+            evidence_ids=["ev-001", "ev-002", "ev-003"],
+        )
+        opt = _make_optimizer(response)
+        result = await opt.optimize(inp)
+        assert isinstance(result, OptimalAttackChain)
+        assert len(result.top_attacks) >= 1, f"Expected non-empty attacks, got {len(result.top_attacks)}"
+        for node in result.top_attacks:
+            assert node.attack_description, f"Node {node.attack_node_id} missing attack_description"
