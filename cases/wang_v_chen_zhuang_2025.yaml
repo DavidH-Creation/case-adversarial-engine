@@ -1,0 +1,230 @@
+# 民间借贷纠纷：老王诉小陈、老庄（2025年）
+# Civil loan dispute: Wang v Chen & Zhuang (2025)
+
+case_id: "case-civil-loan-wang-v-chen-zhuang-2025"
+case_slug: "wangchenzhuang2025"
+case_type: "civil_loan"
+model: "claude-opus-4-6"
+
+parties:
+  plaintiff:
+    party_id: "party-plaintiff-wang"
+    name: "老王"
+  defendant:
+    party_id: "party-defendant-chen"
+    name: "小陈"
+
+summary:
+  - ["原告", "老王"]
+  - ["被告", "小陈、老庄"]
+  - ["借款日期", "2025年1月10日"]
+  - ["借款金额", "20万元（银行转账10万 + 支付宝代付10万）"]
+  - ["原告主张", "被告以短期资金周转为由借款，应偿还本金+利息"]
+  - ["被告抗辩", "款项系老庄借款，小陈仅为代收代付（账户由老庄使用）"]
+  - ["核心争议", "借贷关系主体：小陈 vs 老庄；是否存在面对面借款合意"]
+
+materials:
+  plaintiff:
+    - source_id: "src-p-id"
+      text: |
+        当事人身份信息：
+        原告：老王，男，汉族。
+        被告：小陈，女，汉族。
+        被告：老庄，男，汉族。
+      metadata:
+        document_type: "identity_documents"
+        submitter: "plaintiff"
+
+    - source_id: "src-p-complaint"
+      text: |
+        民事起诉状
+        诉讼请求：
+        1、二被告立即偿还原告借款本金20万元及资金占用利息损失，以20万元为基数，
+        自起诉之日起至实际偿清款项之日止按全国银行间同业拆借中心公布的一年期
+        贷款市场报价利率计算；
+        2、被告承担本案全部诉讼费用（包括但不限于案件受理费、公告费，财产保全费等）。
+
+        事实与理由：
+        2025年1月10日，被告以短期资金周转为由向原告借款20万元。当日，原告通过
+        本人银行账户向被告支付10万元，通过C支付宝账户代付10万元，上述款项合计20万元。
+        但截止起诉之日，被告仍未偿还原告款项。原告为维护自身合法权益，特向贵院提起诉讼。
+      metadata:
+        document_type: "complaint"
+        submitter: "plaintiff"
+
+    - source_id: "src-p-transfers"
+      text: |
+        支付业务回单、支付宝电子凭证、汇款声明、身份证复印件
+        证明：原告通过本人民生银行账户向被告转账10万元，通过C支付宝共向被告转账10万元，
+        合计20万元的事实。
+        2025-01-10  老王（银行账户）→小陈  100,000元
+        2025-01-10  C支付宝→小陈  100,000元
+        合计：200,000元。
+      metadata:
+        document_type: "bank_transfer_records"
+        direction: "outgoing"
+        submitter: "plaintiff"
+
+    - source_id: "src-p-sms"
+      text: |
+        短信记录
+        证明：原告向被告催款的事实。
+      metadata:
+        document_type: "communication_records"
+        submitter: "plaintiff"
+
+    - source_id: "src-p-wechat-moments"
+      text: |
+        补充证据：微信朋友圈截图、录屏（附光盘）
+        证明：
+        1、原告出借案涉借款的时间是2025年1月10日。而被告小陈自称老庄入股"A公司"的
+        时间为2025年2月20日至2025年5月2日止。故该笔借款发生时，老庄与公司无关。
+        2、被告小陈自称其为"原A负责人"，证明其非员工。
+      metadata:
+        document_type: "social_media_records"
+        submitter: "plaintiff"
+
+  defendant:
+    - source_id: "src-d-id"
+      text: "被告：小陈，女，汉族。"
+      metadata:
+        document_type: "identity_documents"
+        submitter: "defendant"
+
+    - source_id: "src-d-business-license"
+      text: |
+        营业执照影印件、微信截图（工资表）、银行明细
+        1、证明被告小陈系A公司的员工，公司的实际经营者是老庄；
+        2、证明被告的账户（开户行：X支行、账号：1111111）在2025年5月份前是
+        A公司（老庄）在使用收付款的事实。
+      metadata:
+        document_type: "business_records"
+        submitter: "defendant"
+
+    - source_id: "src-d-wechat-transfer-instructions"
+      text: |
+        微信截图
+        1、证明案涉款项是原告要支付给老庄，老庄叫原告转到被告的账上，
+        被告收到款项就立即根据老庄的指示，将款项汇给老庄指定的账户；
+        2、证明被告没有向原告借款，双方之间没有借贷合意。
+      metadata:
+        document_type: "communication_records"
+        submitter: "defendant"
+
+    - source_id: "src-d-didi-record"
+      text: |
+        补充证据：滴滴打车记录截图
+        证明被告小陈在2025年1月10日当晚21时11分就已打车回家，
+        不存在原告庭审所陈述的原告与二被告三方面对面达成借款合意。
+      metadata:
+        document_type: "transportation_records"
+        submitter: "defendant"
+
+    - source_id: "src-d-recordings-wechat"
+      text: |
+        补充证据：录音光盘、微信聊天记录截图、录屏光盘
+        1、证明案涉款项是原告要支付给老庄，老庄叫原告转到被告小陈的账号，
+        被告小陈没有向原告借款，双方之间没有借贷合意；
+        2、证明原告一直劝被告老庄不要应诉，让老庄不要承认款项是他所借的，
+        也不要承认店铺及被告小陈的卡是其使用和经营，且让被告老庄将其手机上
+        与原告的微信聊天记录当场删除，并让被告老庄在庭审上陈述微信号不是
+        其本人在使用，被告老庄在录音中也陈述了被告小陈所发的微信朋友圈
+        系其编辑好后才让被告小陈发的。
+        3、证明原告2025年1月10日转给被告小陈的案涉20万元款项系被告老庄向原告所借，
+        原告老王在2025年1月11日通过微信询问被告老庄"大概什么时候能回款"，
+        与庭审时被告二老庄陈述说答应原告第二天还款一致，也与原告证据中的短信截图内容
+        "我跟你老板说了，明天要带上我，不难就翻脸"相对应。
+        上述录音足以证实原告2025年1月10日转给被告小陈的20万元款项系被告老庄
+        向原告所借，与被告小陈无关，否则原告不会在2025年1月11日向老庄催讨款项，
+        也无需阻止被告老庄出庭，更无需让老庄将微信聊天记录删除。
+      metadata:
+        document_type: "audio_video_records"
+        submitter: "defendant"
+
+claims:
+  - claim_id: "c-001"
+    claim_category: "返还借款"
+    title: "二被告偿还借款本金20万元"
+    claim_text: >
+      2025年1月10日，被告以短期资金周转为由向原告借款20万元。
+      原告通过银行转账10万元、支付宝代付10万元，合计出借20万元。
+      被告至今未偿还任何款项，应立即偿还全部借款本金。
+
+  - claim_id: "c-002"
+    claim_category: "利息"
+    title: "支付资金占用利息损失"
+    claim_text: >
+      以20万元为基数，自起诉之日起至实际偿清款项之日止，
+      按全国银行间同业拆借中心公布的一年期贷款市场报价利率计算资金占用利息损失。
+
+  - claim_id: "c-003"
+    claim_category: "诉讼费用"
+    title: "被告承担全部诉讼费用"
+    claim_text: "被告承担本案全部诉讼费用（包括但不限于案件受理费、公告费、财产保全费等）。"
+
+defenses:
+  - defense_id: "d-001"
+    defense_category: "借贷关系不成立"
+    against_claim_id: "c-001"
+    title: "被告小陈与原告之间不存在借贷合意"
+    defense_text: >
+      案涉20万元款项系原告要支付给老庄的，老庄指示原告转入被告小陈的账户。
+      被告小陈仅为代收代付，收到款项后立即根据老庄指示将款项汇给老庄指定账户。
+      被告小陈系A公司员工，其账户在2025年5月前一直由老庄用于公司收付款。
+      被告小陈与原告之间不存在借贷合意，不应承担还款责任。
+
+  - defense_id: "d-002"
+    defense_category: "实际借款人抗辩"
+    against_claim_id: "c-001"
+    title: "实际借款人为老庄，非被告小陈"
+    defense_text: >
+      录音证据、微信聊天记录证实：(1)原告在2025年1月11日向老庄催讨回款，
+      而非向小陈催讨；(2)原告劝老庄不要应诉、删除微信聊天记录、不要承认
+      款项是老庄所借；(3)老庄在录音中承认答应原告第二天还款。
+      上述事实充分证明实际借款人为老庄，与被告小陈无关。
+
+  - defense_id: "d-003"
+    defense_category: "面对面合意不存在"
+    against_claim_id: "c-001"
+    title: "不存在三方面对面达成借款合意"
+    defense_text: >
+      滴滴打车记录显示被告小陈在2025年1月10日当晚21时11分已打车回家，
+      不存在原告庭审所陈述的三方面对面达成借款合意的场景。
+      原告关于当面借款合意的陈述与客观证据矛盾，不应采信。
+
+  - defense_id: "d-004"
+    defense_category: "原告妨碍诉讼"
+    against_claim_id: "c-001"
+    title: "原告存在妨碍诉讼行为"
+    defense_text: >
+      原告劝被告老庄不要应诉，让老庄删除与原告的微信聊天记录，
+      让老庄不承认款项系其所借，也不承认店铺及小陈的卡是其使用和经营。
+      被告老庄的微信朋友圈内容也是老庄编辑好后让小陈发的。
+      原告的上述行为构成妨碍诉讼、隐匿证据，其诉称的事实不应采信。
+
+financials:
+  loans:
+    - tx_id: "tx-loan-001"
+      date: "2025-01-10"
+      amount: "100000"
+      evidence_id: "src-p-transfers"
+      principal_base_contribution: true
+    - tx_id: "tx-loan-002"
+      date: "2025-01-10"
+      amount: "100000"
+      evidence_id: "src-p-transfers"
+      principal_base_contribution: true
+
+  repayments: []
+
+  disputed: []
+
+  claim_entries:
+    - claim_id: "c-001"
+      claim_type: "principal"
+      claimed_amount: "200000"
+      evidence_ids: ["src-p-transfers"]
+    - claim_id: "c-002"
+      claim_type: "interest"
+      claimed_amount: "0"
+      evidence_ids: []
