@@ -176,16 +176,54 @@ class IssueImpactRanker:
     # ------------------------------------------------------------------
 
     def _sort_issues(self, issues: list[Issue]) -> list[Issue]:
-        """按 outcome_impact DESC → opponent_attack_strength DESC 稳定排序。
+        """按 composite_score DESC 排序，原有分类排序为 fallback。
 
-        None 值排末尾（权重 99）。Python sorted() 保证稳定性。
+        composite_score 为 None 时排末尾。Python sorted() 保证稳定性。
         """
         return sorted(
             issues,
             key=lambda issue: (
+                -(issue.composite_score or 0),
                 _IMPACT_ORDER.get(issue.outcome_impact, 99),
                 _ATTACK_ORDER.get(issue.opponent_attack_strength, 99),
             ),
+        )
+
+    # ------------------------------------------------------------------
+    # 加权综合评分 / Composite scoring
+    # ------------------------------------------------------------------
+
+    # 权重配置：可按案型调整
+    _COMPOSITE_WEIGHTS = {
+        "importance": 0.30,
+        "swing": 0.25,
+        "gap_abs": 0.20,
+        "credibility": 0.15,
+        "depth": 0.10,
+    }
+
+    @classmethod
+    def _compute_composite_score(cls, issue: Issue) -> float:
+        """计算加权综合分。越高 = 争点越关键。
+
+        - importance_score, swing_score, credibility_impact: 直接使用 (0-100)
+        - evidence_strength_gap: 取绝对值（差距越大 = 争点越不稳定 = 越需关注）
+        - dependency_depth: 浅层加分（根争点=100, depth=1→75, 2→50, 3→25, 4+→0）
+        """
+        w = cls._COMPOSITE_WEIGHTS
+        imp = issue.importance_score or 0
+        swi = issue.swing_score or 0
+        gap = abs(issue.evidence_strength_gap or 0)
+        cred = issue.credibility_impact or 0
+        depth = issue.dependency_depth or 0
+        depth_score = max(0, 100 - depth * 25)
+
+        return (
+            w["importance"] * imp
+            + w["swing"] * swi
+            + w["gap_abs"] * gap
+            + w["credibility"] * cred
+            + w["depth"] * depth_score
         )
 
     # ------------------------------------------------------------------
@@ -270,10 +308,23 @@ class IssueImpactRanker:
             elif ra is not None:
                 issue_degraded = True
 
+            # v2: 加权评分维度（clamp 到合法范围，不因超范围降级）
+            updates["importance_score"] = max(0, min(100, ev.importance_score))
+            updates["swing_score"] = max(0, min(100, ev.swing_score))
+            updates["evidence_strength_gap"] = max(-100, min(100, ev.evidence_strength_gap))
+            updates["dependency_depth"] = max(0, ev.dependency_depth)
+            updates["credibility_impact"] = max(0, min(100, ev.credibility_impact))
+
             if issue_degraded:
                 unevaluated.append(issue.issue_id)
 
             enriched.append(issue.model_copy(update=updates))
+
+        # 计算 composite_score（需在富化完成后）
+        enriched = [
+            i.model_copy(update={"composite_score": self._compute_composite_score(i)})
+            for i in enriched
+        ]
 
         return enriched, unevaluated
 

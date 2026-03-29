@@ -9,12 +9,15 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from typing import Optional
+
 from engines.shared.models import (  # noqa: F401
     ActionRecommendation,
     AmountCalculationReport,
     ClaimAbandonSuggestion,
     ClaimAmendmentSuggestion,
     EvidenceGapItem,
+    EvidenceIndex,
     Issue,
     TrialExplanationPriority,
 )
@@ -38,3 +41,7 @@ class ActionRecommenderInput(BaseModel):
         default_factory=list, description="含 roi_rank 的缺证项列表（来自 P1.7）"
     )
     amount_calculation_report: AmountCalculationReport
+    proponent_party_id: str = Field(default="", description="主张方 party_id（用于 party-specific 建议）")
+    evidence_index: Optional[EvidenceIndex] = Field(
+        default=None, description="证据索引（LLM 策略层需要，纯规则层可省略）"
+    )

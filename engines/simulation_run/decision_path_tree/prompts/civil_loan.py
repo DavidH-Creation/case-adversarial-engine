@@ -24,6 +24,16 @@ SYSTEM_PROMPT = """\
 - possible_outcome：本路径下法院可能的裁判结果（具体到诉请支持情况，不超过 200 字）
 - confidence_interval：置信度区间（lower/upper，均为 [0,1] 之间的浮点数；若系统提示标注 verdict_block_active=true，则此字段设为 null）
 - path_notes：路径说明或注意事项（可为空字符串）
+- admissibility_gate：本路径成立的前提——哪些证据必须被法庭采信（evidence_id 列表）
+- result_scope：裁判范围标签列表（可多选：principal / interest / penalty / liability_allocation / credibility / attorney_fee / costs）
+- fallback_path_id：若本路径关键证据未被采信或争点结论不利，降级到哪条路径的 path_id（最后一条路径可为空字符串）
+
+## 严格非空约束（违反则路径无效）
+
+- 每条 path 的 trigger_issue_ids 必须包含至少 1 个 issue_id — 空列表 = 无效路径
+- 每条 path 的 key_evidence_ids 必须包含至少 1 个 evidence_id — 空列表 = 无效路径
+- 若 verdict_block_active=false，每条 path 必须给出 confidence_interval（lower/upper 均为浮点数）
+- 不得返回 trigger_issue_ids: [] 或 key_evidence_ids: [] 的路径
 
 ## 阻断条件（blocking_conditions）要求
 
@@ -44,10 +54,27 @@ SYSTEM_PROMPT = """\
 
 ## 民间借贷案件参考路径结构
 
-路径树至少应覆盖以下分支：
-- 路径 A：争议款项认定计入还款 → 较低未还本金 → 利率支持（LPR 4 倍上限）→ 律师费部分支持
-- 路径 B：争议款项不认定计入还款 → 较高未还本金 → 违约金与利息择一 → 律师费全额支持
+请根据争点树的实际争议焦点判断适用哪种路径模板：
+
+### 当案件争议焦点为金额/还款时：
+- 路径 A：争议款项认定计入还款 → 较低未还本金 → 利率支持（LPR 4 倍上限）
+  trigger_issue_ids 应包含还款认定争点
+- 路径 B：争议款项不认定计入还款 → 较高未还本金 → 违约金与利息择一
+  trigger_issue_ids 应包含本金基数争点
 - 若本金基数存在口径冲突，建议增加路径 C（以某一口径为基准的中间路径）
+
+### 当案件争议焦点为借款人主体认定时：
+- 路径 A：收款人为适格借款人（借贷合意成立）→ 全额/部分支持原告
+  trigger_issue_ids 应包含借贷合意争点、借款人主体争点
+  key_evidence_ids 应包含转账记录、借款合意相关证据
+- 路径 B：收款人非借款人（代收代付/指示付款关系）→ 驳回原告
+  trigger_issue_ids 应包含款项性质争点、账户控制争点
+  key_evidence_ids 应包含代付证据、第三方证言
+- 路径 C：三方关系下共同借款/连带责任 → 部分支持
+  trigger_issue_ids 应包含三方关系争点
+- 路径 D：程序性不利推定 → 因妨碍诉讼行为影响证据采信
+  trigger_issue_ids 应包含程序性争点
+  admissibility_gate 应包含被质疑的证据 ID
 
 ## 输出格式（严格 JSON，不得添加前言或注释）
 
@@ -56,21 +83,24 @@ SYSTEM_PROMPT = """\
   "paths": [
     {
       "path_id": "path-A",
-      "trigger_condition": "争议款项被认定计入已还款项",
-      "trigger_issue_ids": ["issue-repayment-001"],
+      "trigger_condition": "法院认定收款人与原告之间存在借贷合意",
+      "trigger_issue_ids": ["issue-001", "issue-002"],
       "key_evidence_ids": ["ev-001", "ev-003"],
-      "possible_outcome": "法院认定未还本金为 X 元，支持利率 Y%，律师费部分支持",
+      "admissibility_gate": ["ev-001"],
+      "result_scope": ["principal", "interest"],
+      "fallback_path_id": "path-C",
+      "possible_outcome": "全额支持原告——认定借贷关系成立，判令被告偿还借款本金及利息",
       "confidence_interval": {"lower": 0.3, "upper": 0.6},
-      "path_notes": "依赖被告提交的还款凭证"
+      "path_notes": "依赖原告转账凭证与借贷合意的直接证据"
     }
   ],
   "blocking_conditions": [
     {
       "condition_id": "bc-001",
-      "condition_type": "amount_conflict",
-      "description": "本金基数存在两种口径，无法确定稳定计算基数",
-      "linked_issue_ids": ["issue-principal-001"],
-      "linked_evidence_ids": ["ev-001", "ev-005"]
+      "condition_type": "evidence_gap",
+      "description": "录音证据可采性存疑，若被排除将影响多条路径的触发条件",
+      "linked_issue_ids": ["issue-010"],
+      "linked_evidence_ids": ["ev-007"]
     }
   ]
 }
@@ -103,7 +133,7 @@ def build_user_prompt(
 - unresolved_conflicts 数量: {len(check.unresolved_conflicts)} 条
 {verdict_note}"""
 
-    # 争点树摘要（展示已排序的争点，包含 outcome_impact）
+    # 争点树摘要（展示已排序的争点，包含评分信息）
     issues_lines = []
     for issue in issue_tree.issues:
         impact = (
@@ -111,11 +141,17 @@ def build_user_prompt(
             if issue.outcome_impact
             else "outcome_impact=未评估"
         )
+        score = (
+            f"composite_score={issue.composite_score:.1f}"
+            if issue.composite_score is not None
+            else "composite_score=未计算"
+        )
+        parent = f" parent={issue.parent_issue_id}" if issue.parent_issue_id else ""
         evidence_ids = ", ".join(issue.evidence_ids[:5]) if issue.evidence_ids else "无"
         issues_lines.append(
-            f"  - {issue.issue_id}: {issue.title} [{impact}] (证据: {evidence_ids})"
+            f"  - {issue.issue_id}: {issue.title} [{impact}, {score}]{parent} (证据: {evidence_ids})"
         )
-    issues_block = "【争点树（已按 outcome_impact 排序）】\n" + (
+    issues_block = "【争点树（已按 composite_score 排序）】\n" + (
         "\n".join(issues_lines) if issues_lines else "  （无争点）"
     )
 

@@ -12,7 +12,9 @@ from engines.shared.models import AmountConsistencyCheck, EvidenceIndex, IssueTr
 SYSTEM_PROMPT = """\
 你是一名专业的中国民间借贷案件法律分析助手，负责对案件争点进行结构化影响评估。
 
-你的任务是对每个争点从以下五个维度进行评估：
+你的任务是对每个争点从以下十个维度进行评估：
+
+## 分类维度（1-5）
 1. outcome_impact：该争点对最终裁判结果的影响程度
    允许值：high / medium / low
 2. impact_targets：该争点影响的诉请对象（可多选）
@@ -27,8 +29,29 @@ SYSTEM_PROMPT = """\
    允许值：supplement_evidence / amend_claim / abandon / explain_in_trial
    约束：recommended_action_basis 必须非空，且在 recommended_action_evidence_ids 中引用至少一条证据 ID
 
+## 评分维度（6-10）
+6. importance_score (0-100)：该争点对最终裁判结果的关键程度
+   - 100 = 判决完全取决于此争点；0 = 对判决无影响
+   - 主体认定争点（如借款人身份、合意对象）通常 ≥ 80
+   - 衍生性/服务性争点（如关系背景认定）通常 ≤ 50
+7. swing_score (0-100)：该争点结论若翻转，整案结果变化幅度
+   - 100 = 翻转将导致判决完全逆转；0 = 无论结论如何，判决不变
+   - 例：借款人主体被否定 → 原告全案败诉 → swing_score ≥ 90
+8. evidence_strength_gap (-100 to +100)：主张方证据优势度
+   - 正值 = 主张方占优；负值 = 反对方攻击占优；0 = 均势
+   - 基于 proponent_evidence_strength 与 opponent_attack_strength 的相对差距
+9. dependency_depth (整数 ≥ 0)：争点依赖层级
+   - 0 = 根争点（不依赖其他争点结论即可独立判断）
+   - 1 = 依赖一个上游争点的结论
+   - 2+ = 多层派生争点
+   - 参考 parent_issue_id 判断：有 parent_issue_id 的争点 depth ≥ 1
+10. credibility_impact (0-100)：该争点对整案可信度的冲击
+    - 100 = 若此争点对当事人不利，整案可信度崩塌（如被证实虚假陈述、妨碍诉讼）
+    - 0 = 不影响整案可信度
+
 硬性约束（违反则输出无效）：
-- 所有字段必须使用以上枚举值，不得使用自由文本
+- 分类维度（1-5）必须使用以上枚举值，不得使用自由文本
+- 评分维度（6-10）必须为整数且在指定范围内
 - 所有 evidence_ids 字段只能引用案件证据清单中已知的 evidence_id
 - evaluations 数组与输入争点列表一一对应
 
@@ -46,7 +69,12 @@ SYSTEM_PROMPT = """\
       "opponent_attack_evidence_ids": ["ev-002"],
       "recommended_action": "supplement_evidence",
       "recommended_action_basis": "原告借款凭证仅有转账记录但缺少借条，建议补充书面借贷协议",
-      "recommended_action_evidence_ids": ["ev-001"]
+      "recommended_action_evidence_ids": ["ev-001"],
+      "importance_score": 85,
+      "swing_score": 90,
+      "evidence_strength_gap": -40,
+      "dependency_depth": 0,
+      "credibility_impact": 30
     }
   ]
 }
@@ -79,12 +107,18 @@ def build_user_prompt(
         burden_ids_str = (
             ", ".join(issue.burden_ids) if issue.burden_ids else "（无）"
         )
+        parent_str = (
+            f"\n  parent_issue_id: {issue.parent_issue_id}"
+            if issue.parent_issue_id
+            else "\n  parent_issue_id: （无，根争点）"
+        )
         issue_lines.append(
             f"  issue_id: {issue.issue_id}\n"
             f"  title: {issue.title}\n"
             f"  type: {issue.issue_type.value}\n"
             f"  evidence_ids: [{evidence_ids_str}]\n"
             f"  burden_ids: [{burden_ids_str}]"
+            f"{parent_str}"
         )
     issues_block = "\n\n".join(issue_lines) if issue_lines else "（无争点）"
 

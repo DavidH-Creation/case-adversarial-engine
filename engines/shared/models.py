@@ -402,6 +402,26 @@ class Issue(BaseModel):
     opponent_attack_strength: Optional[AttackStrength] = None
     recommended_action: Optional[RecommendedAction] = None
     recommended_action_basis: Optional[str] = None  # recommended_action 的依据说明
+    # P0.1 v2: 加权评分维度（向后兼容，全部 Optional）
+    importance_score: Optional[int] = Field(
+        default=None, ge=0, le=100, description="争点对最终裁判的关键程度 (0-100)"
+    )
+    swing_score: Optional[int] = Field(
+        default=None, ge=0, le=100, description="争点结论翻转对结果的摆幅 (0-100)"
+    )
+    evidence_strength_gap: Optional[int] = Field(
+        default=None, ge=-100, le=100,
+        description="主张方证据强度减去反对方攻击强度 (-100 to +100)",
+    )
+    dependency_depth: Optional[int] = Field(
+        default=None, ge=0, description="0=根争点，1+=依赖上游争点"
+    )
+    credibility_impact: Optional[int] = Field(
+        default=None, ge=0, le=100, description="对整案可信度的冲击 (0-100)"
+    )
+    composite_score: Optional[float] = Field(
+        default=None, description="加权综合分（规则层计算，越高越重要）"
+    )
     # P1.6: 争点类型分类扩展字段（向后兼容，Optional）
     issue_category: Optional[IssueCategory] = None
 
@@ -1010,6 +1030,18 @@ class DecisionPath(BaseModel):
         default=None, description="置信度区间；verdict_block_active=True 时必须为 None"
     )
     path_notes: str = Field(default="", description="路径备注")
+    # v1.5: 路径可执行化扩展字段
+    admissibility_gate: list[str] = Field(
+        default_factory=list,
+        description="本路径成立前提：哪些证据必须被法庭采信（evidence_id 列表）",
+    )
+    result_scope: list[str] = Field(
+        default_factory=list,
+        description="裁判范围标签：principal/interest/liability_allocation 等",
+    )
+    fallback_path_id: Optional[str] = Field(
+        default=None, description="本路径失败时降级到哪条路径的 path_id"
+    )
 
 
 class BlockingCondition(BaseModel):
@@ -1156,6 +1188,28 @@ class TrialExplanationPriority(BaseModel):
     explanation_text: str = Field(..., min_length=1, description="庭审解释事项说明")
 
 
+class StrategicRecommendation(BaseModel):
+    """案型适配的策略性建议（P1.8 v2）。由 LLM 策略层生成。"""
+    recommendation_text: str = Field(..., min_length=1, description="策略建议文本")
+    target_party: str = Field(
+        ..., min_length=1, description="建议针对的当事方类型：plaintiff / defendant"
+    )
+    linked_issue_ids: list[str] = Field(default_factory=list, description="建议关联的争点 ID")
+    priority: int = Field(default=1, ge=1, le=5, description="优先级 1-5, 1=最高")
+    rationale: str = Field(default="", description="策略依据说明")
+
+
+class PartyActionPlan(BaseModel):
+    """单方行动计划（P1.8 v2）。聚合规则层结构行动和 LLM 策略建议。"""
+    party_type: str = Field(..., min_length=1, description="plaintiff / defendant")
+    structural_actions: list[str] = Field(
+        default_factory=list, description="来自规则层的行动 ID 列表"
+    )
+    strategic_recommendations: list[StrategicRecommendation] = Field(
+        default_factory=list, description="来自 LLM 的策略性建议"
+    )
+
+
 class ActionRecommendation(BaseModel):
     """行动建议产物（P1.8）。纳入 CaseWorkspace.artifact_index。
 
@@ -1182,6 +1236,16 @@ class ActionRecommendation(BaseModel):
     claims_to_abandon: list[ClaimAbandonSuggestion] = Field(default_factory=list)
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
+    # P1.8 v2: 案型适配扩展字段（向后兼容，全部 Optional）
+    plaintiff_action_plan: Optional[PartyActionPlan] = None
+    defendant_action_plan: Optional[PartyActionPlan] = None
+    case_dispute_category: Optional[str] = Field(
+        default=None,
+        description="案件争议类别: amount_dispute / borrower_identity / contract_validity / ...",
+    )
+    strategic_headline: Optional[str] = Field(
+        default=None, description="核心策略一句话（替代 amount-centric 最稳诉请）"
     )
 
 

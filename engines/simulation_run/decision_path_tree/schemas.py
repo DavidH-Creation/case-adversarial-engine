@@ -38,6 +38,10 @@ class LLMDecisionPathItem(BaseModel):
     possible_outcome: str = Field(default="")
     confidence_interval: Optional[LLMConfidenceInterval] = None
     path_notes: str = Field(default="")
+    # v1.5: 路径可执行化扩展字段
+    admissibility_gate: list[str] = Field(default_factory=list)
+    result_scope: list[str] = Field(default_factory=list)
+    fallback_path_id: str = Field(default="")
 
 
 class LLMBlockingConditionItem(BaseModel):

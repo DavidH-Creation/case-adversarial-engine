@@ -569,18 +569,26 @@ async def _run_post_debate(
         decision_tree = None
         attack_chain = None
 
-    # P1.8: ActionRecommender (sync, rule-based)
+    # P1.8: ActionRecommender (hybrid: rule-based + LLM strategic layer)
     if amount_report and attack_chain:
         print("  - Action recommendations...")
-        action_rec = ActionRecommender().recommend(ActionRecommenderInput(
+        action_rec = await ActionRecommender(
+            llm_client=llm_client, model=model,
+        ).recommend(ActionRecommenderInput(
             case_id=case_id, run_id=run_id,
             issue_list=ranked_tree.issues,
             evidence_gap_list=[],
             amount_calculation_report=amount_report,
+            proponent_party_id=p_id,
+            evidence_index=ev_index,
         ))
         artifacts["action_rec"] = action_rec
         print(f"    \u2713 Amendments: {len(action_rec.recommended_claim_amendments)}")
         print(f"    \u2713 Abandon: {len(action_rec.claims_to_abandon)}")
+        if action_rec.strategic_headline:
+            print(f"    \u2713 Strategy: {action_rec.strategic_headline}")
+        if action_rec.case_dispute_category:
+            print(f"    \u2713 Category: {action_rec.case_dispute_category}")
     else:
         action_rec = None
 
