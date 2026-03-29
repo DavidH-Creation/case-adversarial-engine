@@ -276,12 +276,15 @@ class TestVerdictBlockSuppression:
         assert all(p.confidence_interval is not None for p in result.paths)
 
     @pytest.mark.asyncio
-    async def test_verdict_block_inactive_null_confidence_stays_null(self):
-        """verdict_block_active=False 时 LLM 返回 null confidence 不被覆盖。"""
+    async def test_verdict_block_inactive_null_confidence_gets_fallback(self):
+        """verdict_block_active=False 时 LLM 返回 null confidence → 合成宽区间 (0.1, 0.9)。"""
         generator = _make_generator(_llm_response(3, with_confidence=False))
         result = await generator.generate(_make_input(verdict_block_active=False))
 
-        assert all(p.confidence_interval is None for p in result.paths)
+        for p in result.paths:
+            assert p.confidence_interval is not None
+            assert p.confidence_interval.lower == pytest.approx(0.1)
+            assert p.confidence_interval.upper == pytest.approx(0.9)
 
 
 class TestPathCountHandling:
@@ -587,8 +590,8 @@ class TestConfidenceIntervalValidation:
     """置信度区间有效性校验。"""
 
     @pytest.mark.asyncio
-    async def test_invalid_confidence_lower_gt_upper_cleared(self):
-        """lower > upper 时 confidence_interval 被清空。"""
+    async def test_invalid_confidence_lower_gt_upper_gets_fallback(self):
+        """lower > upper 时无效 CI 被替换为宽区间 fallback (0.1, 0.9)。"""
         response = json.dumps({
             "paths": [{
                 "path_id": "path-A",
@@ -603,7 +606,10 @@ class TestConfidenceIntervalValidation:
         })
         result = await _make_generator(response).generate(_make_input(verdict_block_active=False))
 
-        assert result.paths[0].confidence_interval is None
+        ci = result.paths[0].confidence_interval
+        assert ci is not None
+        assert ci.lower == pytest.approx(0.1)
+        assert ci.upper == pytest.approx(0.9)
 
     @pytest.mark.asyncio
     async def test_valid_confidence_interval_preserved(self):

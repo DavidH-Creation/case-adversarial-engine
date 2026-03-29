@@ -62,7 +62,9 @@ class ExecutiveSummarizer:
         top5 = self._top5_decisive_issues(inp.issue_list)
         top3_actions, rec_id = self._top3_immediate_actions(inp.action_recommendation)
         top3_attacks = self._top3_adversary_attacks(inp.adversary_attack_chain)
-        claim_text = self._current_most_stable_claim(inp.amount_calculation_report)
+        claim_text = self._current_most_stable_claim(
+            inp.amount_calculation_report, inp.action_recommendation,
+        )
         critical_gaps = self._critical_evidence_gaps(inp.evidence_gap_items)
 
         return ExecutiveSummaryArtifact(
@@ -84,13 +86,16 @@ class ExecutiveSummarizer:
     # ------------------------------------------------------------------
 
     def _top5_decisive_issues(self, issues: list[Issue]) -> list[str]:
-        """按 outcome_impact 优先级排序，返回前 5 个 issue_id。
+        """按 composite_score DESC 排序，fallback 到 outcome_impact 优先级，返回前 5 个 issue_id。
 
-        优先级：high > medium > low。outcome_impact 为 None 的争点排在最后。
+        composite_score 为 None 时按 outcome_impact 排序（向后兼容）。
         """
         sorted_issues = sorted(
             issues,
-            key=lambda i: _IMPACT_PRIORITY.get(i.outcome_impact, 99),
+            key=lambda i: (
+                -(i.composite_score or 0),
+                _IMPACT_PRIORITY.get(i.outcome_impact, 99),
+            ),
         )
         return [i.issue_id for i in sorted_issues[:5]]
 
@@ -124,15 +129,32 @@ class ExecutiveSummarizer:
         """
         return [a.attack_node_id for a in chain.top_attacks[:3]]
 
-    def _current_most_stable_claim(self, report: AmountCalculationReport) -> str:
-        """从 claim_calculation_table 生成最稳诉请说明文本。
+    def _current_most_stable_claim(
+        self,
+        report: AmountCalculationReport,
+        action_rec: Optional[ActionRecommendation] = None,
+    ) -> str:
+        """生成案件核心策略/最稳诉请说明文本。
+
+        v2 逻辑：如果 ActionRecommendation 包含 strategic_headline，
+        优先输出策略性信息 + 金额附注（不再仅输出金额）。
 
         选取规则（优先级降序）：
+        0. strategic_headline 存在时使用策略性输出
         1. delta == 0 的条目（金额完全一致，最稳）
         2. delta 绝对值最小的条目（次稳）
         3. delta 为 None 的条目（不可复算，取第一条）
         4. 表为空时返回占位文本
         """
+        # v2: 策略性输出优先
+        if action_rec and action_rec.strategic_headline:
+            amount_note = self._amount_summary(report)
+            category = action_rec.case_dispute_category or "general"
+            return (
+                f"核心策略（{category}）：{action_rec.strategic_headline}"
+                f"（{amount_note}）"
+            )
+
         table = report.claim_calculation_table
         if not table:
             return f"诉请计算表为空（绑定 AmountCalculationReport {report.report_id}）"
@@ -178,3 +200,19 @@ class ExecutiveSummarizer:
             return "未启用"
         sorted_gaps = sorted(gap_items, key=lambda g: g.roi_rank)
         return [g.gap_id for g in sorted_gaps[:3]]
+
+    @staticmethod
+    def _amount_summary(report: AmountCalculationReport) -> str:
+        """生成简短的金额附注（用于策略性输出中的金额上下文）。"""
+        table = report.claim_calculation_table
+        if not table:
+            return f"绑定 {report.report_id}"
+        consistent = [e for e in table if e.delta is not None and e.delta == 0]
+        if consistent:
+            best = consistent[0]
+            return f"诉请 {best.claim_type.value} {best.claimed_amount} delta=0"
+        calculable = [e for e in table if e.delta is not None]
+        if calculable:
+            best = min(calculable, key=lambda e: abs(e.delta))
+            return f"诉请 {best.claim_type.value} {best.claimed_amount} delta={best.delta}"
+        return f"绑定 {report.report_id}"

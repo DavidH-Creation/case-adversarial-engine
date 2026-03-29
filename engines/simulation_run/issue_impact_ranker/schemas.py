@@ -52,6 +52,12 @@ class LLMSingleIssueEvaluation(BaseModel):
         description="建议行动依据说明（必须非空，否则规则层丢弃 recommended_action）",
     )
     recommended_action_evidence_ids: list[str] = Field(default_factory=list)
+    # v2: 加权评分维度（default=0，容忍 LLM 不返回）
+    importance_score: int = Field(default=0, description="争点关键程度 0-100")
+    swing_score: int = Field(default=0, description="结论翻转摆幅 0-100")
+    evidence_strength_gap: int = Field(default=0, description="主张方证据优势度 -100~+100")
+    dependency_depth: int = Field(default=0, description="争点依赖层级 0=根争点")
+    credibility_impact: int = Field(default=0, description="对整案可信度冲击 0-100")
 
 
 class LLMIssueEvaluationOutput(BaseModel):

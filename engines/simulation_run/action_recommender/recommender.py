@@ -1,24 +1,26 @@
 """
 ActionRecommender — 行动建议引擎主类（P1.8）。
-Action Recommender — rule-based aggregation engine for P1.8.
+Action Recommender — hybrid (rule-based + optional LLM strategic layer) engine for P1.8.
 
 职责 / Responsibilities:
-1. 接收 ActionRecommenderInput（issues, evidence_gap_list, amount_report）
-2. 从 recommended_action=amend_claim 的争点派生 ClaimAmendmentSuggestion
-3. 从 recommended_action=abandon 的争点派生 ClaimAbandonSuggestion
-4. 从 recommended_action=explain_in_trial 的争点派生 TrialExplanationPriority
-5. 从 evidence_gap_list 按 roi_rank 升序派生 evidence_supplement_priorities（gap_id 列表）
-6. 返回 ActionRecommendation
+1. 接收 ActionRecommenderInput（issues, evidence_gap_list, amount_report, proponent_party_id）
+2. 规则层（不变）：从 recommended_action 枚举派生四类结构行动
+3. 案型检测：从争点标题关键词推断 dispute_category
+4. LLM 策略层（可选）：生成 party-specific 策略建议 + strategic_headline
+5. 返回 ActionRecommendation（含扩展字段）
 
 合约保证 / Contract guarantees:
-- 零 LLM 调用（纯规则层，可通过调用链追踪验证）
+- 无 LLM 客户端时行为完全等价于 v1（纯规则层，向后兼容）
 - 每个 ClaimAbandonSuggestion 必须绑定 issue_id 和 abandon_reason——零容忍
 - 每个 TrialExplanationPriority 必须绑定 issue_id——零容忍
 - evidence_supplement_priorities 中的 gap_id 来自输入的 evidence_gap_list
+- LLM 策略层失败不影响规则层输出，仅 strategic 字段为空
 """
 from __future__ import annotations
 
+import logging
 import uuid
+from typing import Any, Optional
 
 from engines.shared.models import (
     ActionRecommendation,
@@ -26,36 +28,116 @@ from engines.shared.models import (
     ClaimAmendmentSuggestion,
     EvidenceGapItem,
     Issue,
+    LLMClient,
+    PartyActionPlan,
     RecommendedAction,
+    StrategicRecommendation,
     TrialExplanationPriority,
 )
 
 from .schemas import ActionRecommenderInput
 
+logger = logging.getLogger(__name__)
+
+# 案型检测关键词映射
+_DISPUTE_PATTERNS: dict[str, list[str]] = {
+    "borrower_identity": ["借款人", "主体", "适格", "代收", "代付", "名义", "实际借款人", "账户控制"],
+    "amount_dispute": ["金额", "本金", "利息", "计算", "还款", "差额", "违约金"],
+    "contract_validity": ["合同效力", "借贷合意", "虚假", "无效", "意思表示"],
+    "interest_rate": ["利率", "高利", "四倍", "LPR"],
+}
+
 
 class ActionRecommender:
     """行动建议引擎（P1.8）。
 
-    纯规则层，不持有外部状态，可安全复用同一实例。
+    支持两种模式：
+    - 纯规则层（llm_client=None）：等价于 v1，零 LLM 调用
+    - 混合模式（llm_client 非 None）：规则层 + LLM 策略层
 
     使用方式 / Usage:
+        # 纯规则层（向后兼容）
         recommender = ActionRecommender()
-        result = recommender.recommend(inp)
+        result = await recommender.recommend(inp)
+
+        # 混合模式
+        recommender = ActionRecommender(llm_client=client, case_type="civil_loan")
+        result = await recommender.recommend(inp)
     """
 
-    def recommend(self, inp: ActionRecommenderInput) -> ActionRecommendation:
+    def __init__(
+        self,
+        llm_client: Optional[LLMClient] = None,
+        *,
+        case_type: str = "civil_loan",
+        model: str = "claude-sonnet-4-20250514",
+        temperature: float = 0.0,
+        max_tokens: int = 4096,
+    ) -> None:
+        self._llm = llm_client
+        self._model = model
+        self._temperature = temperature
+        self._max_tokens = max_tokens
+        self._prompt_module = self._load_prompt_module(case_type) if llm_client else None
+
+    @staticmethod
+    def _load_prompt_module(case_type: str):
+        from .prompts import PROMPT_REGISTRY
+        if case_type not in PROMPT_REGISTRY:
+            available = ", ".join(PROMPT_REGISTRY.keys()) or "(none)"
+            raise ValueError(f"不支持的案由类型: '{case_type}'。可用: {available}")
+        return PROMPT_REGISTRY[case_type]
+
+    async def recommend(self, inp: ActionRecommenderInput) -> ActionRecommendation:
         """执行行动建议聚合，返回 ActionRecommendation。
 
         Args:
             inp: 引擎输入（含 case_id、run_id、issue_list、evidence_gap_list、amount_report）
 
         Returns:
-            ActionRecommendation — 含四类建议列表
+            ActionRecommendation — 含四类结构建议 + 可选的策略层建议
         """
+        # ---- 规则层（不变）----
         amendments = self._build_amendments(inp.issue_list)
         abandon_suggestions = self._build_abandon_suggestions(inp.issue_list)
         trial_explanations = self._build_trial_explanations(inp.issue_list)
         gap_ids = self._build_evidence_priorities(inp.evidence_gap_list)
+
+        # ---- 案型检测 ----
+        dispute_category = self._detect_dispute_category(inp.issue_list)
+
+        # ---- LLM 策略层（可选）----
+        plaintiff_plan: Optional[PartyActionPlan] = None
+        defendant_plan: Optional[PartyActionPlan] = None
+        strategic_headline: Optional[str] = None
+
+        if self._llm and self._prompt_module:
+            strategic = await self._generate_strategic_layer(inp, dispute_category)
+            if strategic:
+                plaintiff_plan = strategic.get("plaintiff_plan")
+                defendant_plan = strategic.get("defendant_plan")
+                strategic_headline = strategic.get("headline")
+
+        # ---- 组装 structural_actions 到 PartyActionPlan ----
+        if plaintiff_plan is None and (amendments or trial_explanations):
+            plaintiff_plan = PartyActionPlan(party_type="plaintiff", structural_actions=[
+                s.suggestion_id for s in amendments
+            ] + [p.priority_id for p in trial_explanations])
+        elif plaintiff_plan is not None:
+            plaintiff_plan = plaintiff_plan.model_copy(update={
+                "structural_actions": [s.suggestion_id for s in amendments]
+                + [p.priority_id for p in trial_explanations]
+            })
+
+        if defendant_plan is None and (abandon_suggestions or gap_ids):
+            defendant_plan = PartyActionPlan(party_type="defendant", structural_actions=[
+                s.suggestion_id for s in abandon_suggestions
+            ] + list(gap_ids[:3]))
+        elif defendant_plan is not None:
+            defendant_plan = defendant_plan.model_copy(update={
+                "structural_actions": [s.suggestion_id for s in abandon_suggestions]
+                + list(gap_ids[:3])
+            })
 
         return ActionRecommendation(
             recommendation_id=str(uuid.uuid4()),
@@ -65,18 +147,115 @@ class ActionRecommender:
             evidence_supplement_priorities=gap_ids,
             trial_explanation_priorities=trial_explanations,
             claims_to_abandon=abandon_suggestions,
+            plaintiff_action_plan=plaintiff_plan,
+            defendant_action_plan=defendant_plan,
+            case_dispute_category=dispute_category,
+            strategic_headline=strategic_headline,
         )
 
     # ------------------------------------------------------------------
-    # 内部构建方法 / Internal builders
+    # 案型检测 / Dispute category detection
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _detect_dispute_category(issues: list[Issue]) -> str:
+        """从争点标题关键词推断案件争议类别。"""
+        title_text = " ".join(i.title for i in issues)
+        scores: dict[str, int] = {}
+        for category, keywords in _DISPUTE_PATTERNS.items():
+            scores[category] = sum(1 for kw in keywords if kw in title_text)
+        if not any(scores.values()):
+            return "general"
+        return max(scores, key=scores.get)
+
+    # ------------------------------------------------------------------
+    # LLM 策略层 / Strategic layer
+    # ------------------------------------------------------------------
+
+    async def _generate_strategic_layer(
+        self,
+        inp: ActionRecommenderInput,
+        dispute_category: str,
+    ) -> Optional[dict[str, Any]]:
+        """调用 LLM 生成 party-specific 策略建议。失败返回 None。"""
+        try:
+            if inp.evidence_index is None:
+                logger.warning("evidence_index 未提供，跳过 LLM 策略层")
+                return None
+
+            system_prompt = self._prompt_module.SYSTEM_PROMPT
+            user_prompt = self._prompt_module.build_user_prompt(
+                issue_list=inp.issue_list,
+                evidence_index=inp.evidence_index,
+                dispute_category=dispute_category,
+                proponent_party_id=inp.proponent_party_id,
+            )
+
+            raw = await self._llm.create_message(
+                system=system_prompt,
+                user=user_prompt,
+                model=self._model,
+                temperature=self._temperature,
+                max_tokens=self._max_tokens,
+            )
+
+            from engines.shared.json_utils import _extract_json_object
+            data = _extract_json_object(raw)
+            return self._parse_strategic_output(data, inp)
+
+        except Exception:  # noqa: BLE001
+            logger.warning("LLM 策略层调用失败，降级为纯规则层输出", exc_info=True)
+            return None
+
+    def _parse_strategic_output(
+        self, data: dict, inp: ActionRecommenderInput,
+    ) -> dict[str, Any]:
+        """解析 LLM 策略层输出，校验后返回结构化结果。"""
+        known_issue_ids = {i.issue_id for i in inp.issue_list}
+
+        result: dict[str, Any] = {}
+        result["headline"] = (data.get("strategic_headline") or "")[:200] or None
+
+        for party_key, plan_key in [
+            ("plaintiff_recommendations", "plaintiff_plan"),
+            ("defendant_recommendations", "defendant_plan"),
+        ]:
+            recs = data.get(party_key, [])
+            if not isinstance(recs, list):
+                continue
+            party_type = "plaintiff" if "plaintiff" in party_key else "defendant"
+            strategic_recs: list[StrategicRecommendation] = []
+            for rec in recs[:5]:
+                if not isinstance(rec, dict):
+                    continue
+                text = rec.get("recommendation_text", "")
+                if not text:
+                    continue
+                linked = [iid for iid in rec.get("linked_issue_ids", []) if iid in known_issue_ids]
+                priority = rec.get("priority", 3)
+                if not isinstance(priority, int) or priority < 1 or priority > 5:
+                    priority = 3
+                strategic_recs.append(StrategicRecommendation(
+                    recommendation_text=text[:200],
+                    target_party=party_type,
+                    linked_issue_ids=linked,
+                    priority=priority,
+                    rationale=str(rec.get("rationale", ""))[:200],
+                ))
+            if strategic_recs:
+                result[plan_key] = PartyActionPlan(
+                    party_type=party_type,
+                    strategic_recommendations=strategic_recs,
+                )
+
+        return result
+
+    # ------------------------------------------------------------------
+    # 规则层构建方法 / Rule-based builders (unchanged from v1)
     # ------------------------------------------------------------------
 
     def _build_amendments(self, issues: list[Issue]) -> list[ClaimAmendmentSuggestion]:
-        """从 recommended_action=amend_claim 的争点派生修改建议。
-
-        每个 related_claim_id 生成一条 ClaimAmendmentSuggestion。
-        争点无 related_claim_ids 时跳过。
-        """
+        """从 recommended_action=amend_claim 的争点派生修改建议。"""
         result: list[ClaimAmendmentSuggestion] = []
         for issue in issues:
             if issue.recommended_action != RecommendedAction.amend_claim:
@@ -94,11 +273,7 @@ class ActionRecommender:
         return result
 
     def _build_abandon_suggestions(self, issues: list[Issue]) -> list[ClaimAbandonSuggestion]:
-        """从 recommended_action=abandon 的争点派生放弃建议。
-
-        每个 related_claim_id 生成一条 ClaimAbandonSuggestion。
-        争点无 related_claim_ids 时跳过。
-        """
+        """从 recommended_action=abandon 的争点派生放弃建议。"""
         result: list[ClaimAbandonSuggestion] = []
         for issue in issues:
             if issue.recommended_action != RecommendedAction.abandon:
@@ -115,10 +290,7 @@ class ActionRecommender:
         return result
 
     def _build_trial_explanations(self, issues: list[Issue]) -> list[TrialExplanationPriority]:
-        """从 recommended_action=explain_in_trial 的争点派生庭审解释优先事项。
-
-        每个争点生成一条 TrialExplanationPriority。
-        """
+        """从 recommended_action=explain_in_trial 的争点派生庭审解释优先事项。"""
         result: list[TrialExplanationPriority] = []
         for issue in issues:
             if issue.recommended_action != RecommendedAction.explain_in_trial:
@@ -133,10 +305,7 @@ class ActionRecommender:
         return result
 
     def _build_evidence_priorities(self, gaps: list[EvidenceGapItem]) -> list[str]:
-        """从 evidence_gap_list 按 roi_rank 升序排序，返回 gap_id 列表。
-
-        roi_rank=1 代表最高优先级，排在列表最前。
-        """
+        """从 evidence_gap_list 按 roi_rank 升序排序，返回 gap_id 列表。"""
         sorted_gaps = sorted(gaps, key=lambda g: g.roi_rank)
         return [g.gap_id for g in sorted_gaps]
 
@@ -146,30 +315,18 @@ class ActionRecommender:
 
     @staticmethod
     def _amendment_description(issue: Issue) -> str:
-        """从争点信息派生修改建议描述。
-
-        优先使用 recommended_action_basis，否则使用 issue.title。
-        """
         if issue.recommended_action_basis:
             return issue.recommended_action_basis
         return f"建议修改与争点「{issue.title}」相关的诉请"
 
     @staticmethod
     def _abandon_reason(issue: Issue) -> str:
-        """从争点信息派生放弃理由。
-
-        优先使用 recommended_action_basis，否则使用 issue.title。
-        """
         if issue.recommended_action_basis:
             return issue.recommended_action_basis
         return f"争点「{issue.title}」证据不足，建议放弃相关诉请以减少败诉风险"
 
     @staticmethod
     def _explanation_text(issue: Issue) -> str:
-        """从争点信息派生庭审解释文本。
-
-        优先使用 recommended_action_basis，否则使用 issue.title。
-        """
         if issue.recommended_action_basis:
             return issue.recommended_action_basis
         return f"庭审中需优先解释争点「{issue.title}」相关事实"

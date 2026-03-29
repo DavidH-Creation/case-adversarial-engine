@@ -25,6 +25,7 @@ Decision Path Tree Generator — main class for P0.3.
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -49,6 +50,12 @@ from .schemas import (
 )
 
 _MAX_PATHS = 6
+_VALID_RESULT_SCOPES = frozenset({
+    "principal", "interest", "penalty", "liability_allocation",
+    "credibility", "attorney_fee", "costs",
+})
+
+logger = logging.getLogger(__name__)
 
 # v1.5: 只有 admitted_for_discussion 状态的证据进入裁判路径树
 _ADMITTED_STATUSES: frozenset[EvidenceStatus] = frozenset({
@@ -270,6 +277,30 @@ class DecisionPathTreeGenerator:
                             notes_parts.append(f"{q} → {r}")
                 p["path_notes"] = "; ".join(notes_parts) if notes_parts else ""
 
+            # --- v1.5: admissibility_gate aliases ---
+            if "admissibility_gate" not in p:
+                for alias in (
+                    "admission_prerequisites", "evidence_prerequisites",
+                    "证据前提", "admissibility_prerequisites",
+                ):
+                    if alias in p:
+                        p["admissibility_gate"] = p.pop(alias)
+                        break
+
+            # --- v1.5: result_scope aliases ---
+            if "result_scope" not in p:
+                for alias in ("judgment_scope", "scope", "裁判范围"):
+                    if alias in p:
+                        p["result_scope"] = p.pop(alias)
+                        break
+
+            # --- v1.5: fallback_path_id aliases ---
+            if "fallback_path_id" not in p:
+                for alias in ("fallback", "degradation_path", "降级路径"):
+                    if alias in p:
+                        p["fallback_path_id"] = p.pop(alias)
+                        break
+
         return data
 
     def _parse_llm_output(self, raw: str) -> LLMDecisionPathTreeOutput | None:
@@ -304,15 +335,42 @@ class DecisionPathTreeGenerator:
             clean_issue_ids = [i for i in item.trigger_issue_ids if i in known_issue_ids]
             clean_evidence_ids = [e for e in item.key_evidence_ids if e in known_evidence_ids]
 
+            # 空字段警告（暂不拒绝，给 prompt 改进留观察窗口）
+            if not clean_issue_ids:
+                logger.warning(
+                    "Path %s: trigger_issue_ids 过滤后为空（原始: %s）",
+                    item.path_id, item.trigger_issue_ids,
+                )
+            if not clean_evidence_ids:
+                logger.warning(
+                    "Path %s: key_evidence_ids 过滤后为空（原始: %s）",
+                    item.path_id, item.key_evidence_ids,
+                )
+
+            # confidence_interval 处理：
+            # - verdict_block_active=True → 强制 None
+            # - verdict_block_active=False 且 LLM 未提供 → 合成宽区间（bug fix）
+            # - verdict_block_active=False 且 LLM 提供 → 校验后使用
             ci: ConfidenceInterval | None = None
-            if not verdict_block_active and item.confidence_interval is not None:
+            if verdict_block_active:
+                ci = None
+            elif item.confidence_interval is not None:
                 try:
                     ci = ConfidenceInterval(
                         lower=item.confidence_interval.lower,
                         upper=item.confidence_interval.upper,
                     )
                 except Exception:  # noqa: BLE001
-                    ci = None  # lower > upper 或越界 → 清空
+                    ci = ConfidenceInterval(lower=0.1, upper=0.9)
+            else:
+                # Bug fix: LLM 未返回 confidence_interval 但 verdict_block 未激活
+                # 合成宽区间作为 "不确定" 信号
+                ci = ConfidenceInterval(lower=0.1, upper=0.9)
+
+            # v1.5: 新字段清洗
+            clean_gate = [e for e in item.admissibility_gate if e in known_evidence_ids]
+            clean_scope = [s for s in item.result_scope if s in _VALID_RESULT_SCOPES]
+            fallback = item.fallback_path_id if item.fallback_path_id else None
 
             result.append(DecisionPath(
                 path_id=item.path_id,
@@ -322,6 +380,9 @@ class DecisionPathTreeGenerator:
                 possible_outcome=item.possible_outcome,
                 confidence_interval=ci,
                 path_notes=item.path_notes,
+                admissibility_gate=clean_gate,
+                result_scope=clean_scope,
+                fallback_path_id=fallback,
             ))
 
         return result

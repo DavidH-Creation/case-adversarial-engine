@@ -5,7 +5,7 @@ ActionRecommender 单元测试（P1.8）。
 - 使用 Pydantic 模型构建测试数据（不用 Mock）
 - 验证每个规则的推导结果
 - 边界条件：空输入、混合 recommended_action、多 claim 绑定
-- 合约保证：零 LLM 调用（纯规则层）
+- 合约保证：无 LLM 客户端时为纯规则层
 """
 from __future__ import annotations
 
@@ -111,25 +111,30 @@ def make_input(
 # ---------------------------------------------------------------------------
 
 class TestBasicBehavior:
-    def test_returns_action_recommendation(self):
-        rec = ActionRecommender().recommend(make_input())
+    @pytest.mark.asyncio
+    async def test_returns_action_recommendation(self):
+        rec = await ActionRecommender().recommend(make_input())
         assert isinstance(rec, ActionRecommendation)
 
-    def test_output_has_correct_case_and_run_id(self):
-        rec = ActionRecommender().recommend(make_input())
+    @pytest.mark.asyncio
+    async def test_output_has_correct_case_and_run_id(self):
+        rec = await ActionRecommender().recommend(make_input())
         assert rec.case_id == "case1"
         assert rec.run_id == "run1"
 
-    def test_recommendation_id_non_empty(self):
-        rec = ActionRecommender().recommend(make_input())
+    @pytest.mark.asyncio
+    async def test_recommendation_id_non_empty(self):
+        rec = await ActionRecommender().recommend(make_input())
         assert rec.recommendation_id
 
-    def test_created_at_non_empty(self):
-        rec = ActionRecommender().recommend(make_input())
+    @pytest.mark.asyncio
+    async def test_created_at_non_empty(self):
+        rec = await ActionRecommender().recommend(make_input())
         assert rec.created_at
 
-    def test_empty_input_returns_empty_lists(self):
-        rec = ActionRecommender().recommend(make_input())
+    @pytest.mark.asyncio
+    async def test_empty_input_returns_empty_lists(self):
+        rec = await ActionRecommender().recommend(make_input())
         assert rec.recommended_claim_amendments == []
         assert rec.evidence_supplement_priorities == []
         assert rec.trial_explanation_priorities == []
@@ -141,27 +146,31 @@ class TestBasicBehavior:
 # ---------------------------------------------------------------------------
 
 class TestEvidenceSupplementPriorities:
-    def test_gap_ids_sorted_by_roi_rank(self):
+    @pytest.mark.asyncio
+    async def test_gap_ids_sorted_by_roi_rank(self):
         gaps = [
             make_gap_item("gap3", "i1", roi_rank=3),
             make_gap_item("gap1", "i1", roi_rank=1),
             make_gap_item("gap2", "i1", roi_rank=2),
         ]
-        rec = ActionRecommender().recommend(make_input(gaps=gaps))
+        rec = await ActionRecommender().recommend(make_input(gaps=gaps))
         assert rec.evidence_supplement_priorities == ["gap1", "gap2", "gap3"]
 
-    def test_single_gap_item(self):
+    @pytest.mark.asyncio
+    async def test_single_gap_item(self):
         gaps = [make_gap_item("gap1", "i1", roi_rank=1)]
-        rec = ActionRecommender().recommend(make_input(gaps=gaps))
+        rec = await ActionRecommender().recommend(make_input(gaps=gaps))
         assert rec.evidence_supplement_priorities == ["gap1"]
 
-    def test_no_gaps_returns_empty_list(self):
-        rec = ActionRecommender().recommend(make_input(gaps=[]))
+    @pytest.mark.asyncio
+    async def test_no_gaps_returns_empty_list(self):
+        rec = await ActionRecommender().recommend(make_input(gaps=[]))
         assert rec.evidence_supplement_priorities == []
 
-    def test_gap_ids_are_strings(self):
+    @pytest.mark.asyncio
+    async def test_gap_ids_are_strings(self):
         gaps = [make_gap_item("gap-abc", "i1", roi_rank=1)]
-        rec = ActionRecommender().recommend(make_input(gaps=gaps))
+        rec = await ActionRecommender().recommend(make_input(gaps=gaps))
         assert all(isinstance(g, str) for g in rec.evidence_supplement_priorities)
 
 
@@ -170,56 +179,65 @@ class TestEvidenceSupplementPriorities:
 # ---------------------------------------------------------------------------
 
 class TestRecommendedClaimAmendments:
-    def test_amend_claim_issue_generates_amendment(self):
+    @pytest.mark.asyncio
+    async def test_amend_claim_issue_generates_amendment(self):
         issues = [make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert len(rec.recommended_claim_amendments) == 1
         assert rec.recommended_claim_amendments[0].original_claim_id == "c1"
 
-    def test_non_amend_issue_does_not_generate_amendment(self):
+    @pytest.mark.asyncio
+    async def test_non_amend_issue_does_not_generate_amendment(self):
         issues = [make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.recommended_claim_amendments == []
 
-    def test_issue_with_multiple_claims_generates_multiple_amendments(self):
+    @pytest.mark.asyncio
+    async def test_issue_with_multiple_claims_generates_multiple_amendments(self):
         issues = [
             make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1", "c2"])
         ]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert len(rec.recommended_claim_amendments) == 2
         claim_ids = {a.original_claim_id for a in rec.recommended_claim_amendments}
         assert claim_ids == {"c1", "c2"}
 
-    def test_amendment_binds_issue_id(self):
+    @pytest.mark.asyncio
+    async def test_amendment_binds_issue_id(self):
         issues = [make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.recommended_claim_amendments[0].amendment_reason_issue_id == "i1"
 
-    def test_amendment_description_non_empty(self):
+    @pytest.mark.asyncio
+    async def test_amendment_description_non_empty(self):
         issues = [make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.recommended_claim_amendments[0].amendment_description
 
-    def test_amendment_suggestion_id_unique_per_entry(self):
+    @pytest.mark.asyncio
+    async def test_amendment_suggestion_id_unique_per_entry(self):
         issues = [
             make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1", "c2"])
         ]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         ids = [a.suggestion_id for a in rec.recommended_claim_amendments]
         assert len(ids) == len(set(ids)), "suggestion_id 必须唯一"
 
-    def test_issue_without_recommended_action_skipped(self):
+    @pytest.mark.asyncio
+    async def test_issue_without_recommended_action_skipped(self):
         issues = [make_issue("i1", recommended_action=None, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.recommended_claim_amendments == []
 
-    def test_amend_claim_issue_without_claims_skipped(self):
+    @pytest.mark.asyncio
+    async def test_amend_claim_issue_without_claims_skipped(self):
         """争点有 amend_claim 但 related_claim_ids 为空时，不生成建议。"""
         issues = [make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=[])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.recommended_claim_amendments == []
 
-    def test_evidence_ids_propagated_to_amendment(self):
+    @pytest.mark.asyncio
+    async def test_evidence_ids_propagated_to_amendment(self):
         issues = [
             make_issue(
                 "i1",
@@ -228,7 +246,7 @@ class TestRecommendedClaimAmendments:
                 evidence_ids=["e1", "e2"],
             )
         ]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert set(rec.recommended_claim_amendments[0].amendment_reason_evidence_ids) == {"e1", "e2"}
 
 
@@ -237,45 +255,52 @@ class TestRecommendedClaimAmendments:
 # ---------------------------------------------------------------------------
 
 class TestClaimsToAbandon:
-    def test_abandon_issue_generates_suggestion(self):
+    @pytest.mark.asyncio
+    async def test_abandon_issue_generates_suggestion(self):
         issues = [make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert len(rec.claims_to_abandon) == 1
         assert rec.claims_to_abandon[0].claim_id == "c1"
 
-    def test_non_abandon_issue_does_not_generate_suggestion(self):
+    @pytest.mark.asyncio
+    async def test_non_abandon_issue_does_not_generate_suggestion(self):
         issues = [make_issue("i1", RecommendedAction.supplement_evidence, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.claims_to_abandon == []
 
-    def test_issue_with_multiple_claims_generates_multiple_suggestions(self):
+    @pytest.mark.asyncio
+    async def test_issue_with_multiple_claims_generates_multiple_suggestions(self):
         issues = [
             make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1", "c2"])
         ]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert len(rec.claims_to_abandon) == 2
 
-    def test_abandon_suggestion_binds_issue_id(self):
+    @pytest.mark.asyncio
+    async def test_abandon_suggestion_binds_issue_id(self):
         issues = [make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.claims_to_abandon[0].abandon_reason_issue_id == "i1"
 
-    def test_abandon_reason_non_empty(self):
+    @pytest.mark.asyncio
+    async def test_abandon_reason_non_empty(self):
         issues = [make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.claims_to_abandon[0].abandon_reason
 
-    def test_abandon_suggestion_id_unique(self):
+    @pytest.mark.asyncio
+    async def test_abandon_suggestion_id_unique(self):
         issues = [
             make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1", "c2"])
         ]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         ids = [a.suggestion_id for a in rec.claims_to_abandon]
         assert len(ids) == len(set(ids))
 
-    def test_abandon_without_claims_skipped(self):
+    @pytest.mark.asyncio
+    async def test_abandon_without_claims_skipped(self):
         issues = [make_issue("i1", RecommendedAction.abandon, related_claim_ids=[])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.claims_to_abandon == []
 
 
@@ -284,42 +309,48 @@ class TestClaimsToAbandon:
 # ---------------------------------------------------------------------------
 
 class TestTrialExplanationPriorities:
-    def test_explain_issue_generates_priority(self):
+    @pytest.mark.asyncio
+    async def test_explain_issue_generates_priority(self):
         issues = [make_issue("i1", RecommendedAction.explain_in_trial)]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert len(rec.trial_explanation_priorities) == 1
 
-    def test_priority_binds_issue_id(self):
+    @pytest.mark.asyncio
+    async def test_priority_binds_issue_id(self):
         issues = [make_issue("i1", RecommendedAction.explain_in_trial)]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.trial_explanation_priorities[0].issue_id == "i1"
 
-    def test_explanation_text_non_empty(self):
+    @pytest.mark.asyncio
+    async def test_explanation_text_non_empty(self):
         issues = [make_issue("i1", RecommendedAction.explain_in_trial)]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.trial_explanation_priorities[0].explanation_text
 
-    def test_multiple_explain_issues(self):
+    @pytest.mark.asyncio
+    async def test_multiple_explain_issues(self):
         issues = [
             make_issue("i1", RecommendedAction.explain_in_trial),
             make_issue("i2", RecommendedAction.explain_in_trial),
         ]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert len(rec.trial_explanation_priorities) == 2
         issue_ids = {p.issue_id for p in rec.trial_explanation_priorities}
         assert issue_ids == {"i1", "i2"}
 
-    def test_non_explain_issue_skipped(self):
+    @pytest.mark.asyncio
+    async def test_non_explain_issue_skipped(self):
         issues = [make_issue("i1", RecommendedAction.supplement_evidence)]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.trial_explanation_priorities == []
 
-    def test_priority_id_unique(self):
+    @pytest.mark.asyncio
+    async def test_priority_id_unique(self):
         issues = [
             make_issue("i1", RecommendedAction.explain_in_trial),
             make_issue("i2", RecommendedAction.explain_in_trial),
         ]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         ids = [p.priority_id for p in rec.trial_explanation_priorities]
         assert len(ids) == len(set(ids))
 
@@ -329,7 +360,8 @@ class TestTrialExplanationPriorities:
 # ---------------------------------------------------------------------------
 
 class TestMixedScenario:
-    def test_all_action_types_simultaneously(self):
+    @pytest.mark.asyncio
+    async def test_all_action_types_simultaneously(self):
         """所有四种 recommended_action 同时存在时，正确分发。"""
         issues = [
             make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1"]),
@@ -341,16 +373,46 @@ class TestMixedScenario:
             make_gap_item("gap1", "i1", roi_rank=1),
             make_gap_item("gap2", "i4", roi_rank=2),
         ]
-        rec = ActionRecommender().recommend(make_input(issues=issues, gaps=gaps))
+        rec = await ActionRecommender().recommend(make_input(issues=issues, gaps=gaps))
 
         assert len(rec.recommended_claim_amendments) == 1
         assert len(rec.claims_to_abandon) == 1
         assert len(rec.trial_explanation_priorities) == 1
         assert rec.evidence_supplement_priorities == ["gap1", "gap2"]
 
-    def test_supplement_evidence_not_in_amendments_or_abandon(self):
+    @pytest.mark.asyncio
+    async def test_supplement_evidence_not_in_amendments_or_abandon(self):
         """supplement_evidence 争点不会出现在 amendments 或 claims_to_abandon 中。"""
         issues = [make_issue("i1", RecommendedAction.supplement_evidence, related_claim_ids=["c1"])]
-        rec = ActionRecommender().recommend(make_input(issues=issues))
+        rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert rec.recommended_claim_amendments == []
         assert rec.claims_to_abandon == []
+
+
+# ---------------------------------------------------------------------------
+# 案型检测 / Dispute category detection
+# ---------------------------------------------------------------------------
+
+class TestDisputeCategoryDetection:
+    def test_borrower_identity_detected(self):
+        issues = [
+            make_issue("i1", title="借贷关系是否成立"),
+            make_issue("i2", title="实际借款人主体认定"),
+            make_issue("i3", title="账户控制权归属"),
+        ]
+        assert ActionRecommender._detect_dispute_category(issues) == "borrower_identity"
+
+    def test_amount_dispute_detected(self):
+        issues = [
+            make_issue("i1", title="本金基数认定"),
+            make_issue("i2", title="利息计算方式"),
+            make_issue("i3", title="还款金额争议"),
+        ]
+        assert ActionRecommender._detect_dispute_category(issues) == "amount_dispute"
+
+    def test_general_fallback(self):
+        issues = [make_issue("i1", title="某种普通争点")]
+        assert ActionRecommender._detect_dispute_category(issues) == "general"
+
+    def test_empty_issues_returns_general(self):
+        assert ActionRecommender._detect_dispute_category([]) == "general"
