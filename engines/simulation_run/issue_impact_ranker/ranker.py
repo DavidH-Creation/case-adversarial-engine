@@ -321,8 +321,11 @@ class IssueImpactRanker:
             enriched.append(issue.model_copy(update=updates))
 
         # 计算 composite_score（需在富化完成后）
+        # 仅为有评分维度数据的争点计算；全维度 None 的争点保留 composite_score=None（排末尾）
         enriched = [
             i.model_copy(update={"composite_score": self._compute_composite_score(i)})
+            if i.importance_score is not None
+            else i
             for i in enriched
         ]
 

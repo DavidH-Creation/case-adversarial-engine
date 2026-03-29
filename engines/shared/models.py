@@ -1378,6 +1378,7 @@ class ExecutiveSummaryArtifact(BaseModel):
         top3_adversary_optimal_attacks:  Top3 对方最优攻击 attack_node_id 列表
         adversary_attack_chain_id:       绑定的 OptimalAttackChain.chain_id（可回连）
         current_most_stable_claim:       最稳诉请版本说明文本（绑定 amount_report_id）
+        strategic_summary:               核心策略摘要（来自 strategic_headline），无策略层时为 None
         amount_report_id:                绑定的 AmountCalculationReport.report_id（可回连）
         critical_evidence_gaps:          Top3 关键缺证 gap_id 列表（按 roi_rank 排序），或 "未启用"
         created_at:                      ISO-8601 时间戳（自动生成）
@@ -1404,6 +1405,10 @@ class ExecutiveSummaryArtifact(BaseModel):
     )
     current_most_stable_claim: str = Field(
         ..., min_length=1, description="最稳诉请版本说明文本（绑定 amount_report_id）"
+    )
+    strategic_summary: Optional[str] = Field(
+        default=None,
+        description="核心策略一句话摘要（来自 ActionRecommendation.strategic_headline + 金额附注），无策略层时为 None",
     )
     amount_report_id: str = Field(
         ..., min_length=1, description="绑定的 AmountCalculationReport.report_id（可回连）"

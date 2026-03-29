@@ -62,8 +62,9 @@ class ExecutiveSummarizer:
         top5 = self._top5_decisive_issues(inp.issue_list)
         top3_actions, rec_id = self._top3_immediate_actions(inp.action_recommendation)
         top3_attacks = self._top3_adversary_attacks(inp.adversary_attack_chain)
-        claim_text = self._current_most_stable_claim(
-            inp.amount_calculation_report, inp.action_recommendation,
+        claim_text = self._current_most_stable_claim(inp.amount_calculation_report)
+        strategic_text = self._build_strategic_summary(
+            inp.action_recommendation, inp.amount_calculation_report,
         )
         critical_gaps = self._critical_evidence_gaps(inp.evidence_gap_items)
 
@@ -77,6 +78,7 @@ class ExecutiveSummarizer:
             top3_adversary_optimal_attacks=top3_attacks,
             adversary_attack_chain_id=inp.adversary_attack_chain.chain_id,
             current_most_stable_claim=claim_text,
+            strategic_summary=strategic_text,
             amount_report_id=inp.amount_calculation_report.report_id,
             critical_evidence_gaps=critical_gaps,
         )
@@ -132,29 +134,15 @@ class ExecutiveSummarizer:
     def _current_most_stable_claim(
         self,
         report: AmountCalculationReport,
-        action_rec: Optional[ActionRecommendation] = None,
     ) -> str:
-        """生成案件核心策略/最稳诉请说明文本。
-
-        v2 逻辑：如果 ActionRecommendation 包含 strategic_headline，
-        优先输出策略性信息 + 金额附注（不再仅输出金额）。
+        """生成最稳诉请说明文本（纯金额语义）。
 
         选取规则（优先级降序）：
-        0. strategic_headline 存在时使用策略性输出
         1. delta == 0 的条目（金额完全一致，最稳）
         2. delta 绝对值最小的条目（次稳）
         3. delta 为 None 的条目（不可复算，取第一条）
         4. 表为空时返回占位文本
         """
-        # v2: 策略性输出优先
-        if action_rec and action_rec.strategic_headline:
-            amount_note = self._amount_summary(report)
-            category = action_rec.case_dispute_category or "general"
-            return (
-                f"核心策略（{category}）：{action_rec.strategic_headline}"
-                f"（{amount_note}）"
-            )
-
         table = report.claim_calculation_table
         if not table:
             return f"诉请计算表为空（绑定 AmountCalculationReport {report.report_id}）"
@@ -187,6 +175,24 @@ class ExecutiveSummarizer:
             f"诉请 {best.claim_type.value}，"
             f"诉请金额 {best.claimed_amount}（规则层无法复算）"
             f"（绑定 AmountCalculationReport {report.report_id}）"
+        )
+
+    def _build_strategic_summary(
+        self,
+        action_rec: Optional[ActionRecommendation],
+        report: AmountCalculationReport,
+    ) -> Optional[str]:
+        """生成核心策略摘要（来自 strategic_headline + 金额附注）。
+
+        无 strategic_headline 时返回 None。
+        """
+        if not action_rec or not action_rec.strategic_headline:
+            return None
+        amount_note = self._amount_summary(report)
+        category = action_rec.case_dispute_category or "general"
+        return (
+            f"核心策略（{category}）：{action_rec.strategic_headline}"
+            f"（{amount_note}）"
         )
 
     def _critical_evidence_gaps(

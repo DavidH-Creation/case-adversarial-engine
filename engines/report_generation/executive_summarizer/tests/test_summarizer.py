@@ -477,6 +477,52 @@ class TestCurrentMostStableClaim:
 
 
 # ---------------------------------------------------------------------------
+# strategic_summary
+# ---------------------------------------------------------------------------
+
+
+class TestStrategicSummary:
+    def setup_method(self):
+        self.summarizer = ExecutiveSummarizer()
+
+    def test_none_when_no_strategic_headline(self):
+        """无 strategic_headline 时 strategic_summary 为 None。"""
+        rec = _make_action_recommendation(abandon_ids=["AB-001"])
+        inp = _make_full_input(action_recommendation=rec)
+        result = self.summarizer.summarize(inp)
+        assert result.strategic_summary is None
+
+    def test_none_when_no_action_recommendation(self):
+        """无 ActionRecommendation 时 strategic_summary 为 None。"""
+        inp = _make_full_input(action_recommendation=None)
+        result = self.summarizer.summarize(inp)
+        assert result.strategic_summary is None
+
+    def test_contains_headline_when_present(self):
+        """有 strategic_headline 时 strategic_summary 包含策略内容。"""
+        rec = _make_action_recommendation(abandon_ids=["AB-001"])
+        rec.strategic_headline = "聚焦借款人主体适格性，弱化金额争议"
+        rec.case_dispute_category = "borrower_identity"
+        inp = _make_full_input(action_recommendation=rec)
+        result = self.summarizer.summarize(inp)
+        assert result.strategic_summary is not None
+        assert "核心策略" in result.strategic_summary
+        assert "borrower_identity" in result.strategic_summary
+        assert "聚焦借款人主体适格性" in result.strategic_summary
+
+    def test_claim_stays_amount_centric_with_strategic_headline(self):
+        """有 strategic_headline 时 current_most_stable_claim 仍输出金额语义。"""
+        rec = _make_action_recommendation(abandon_ids=["AB-001"])
+        rec.strategic_headline = "聚焦借款人主体适格性"
+        rec.case_dispute_category = "borrower_identity"
+        inp = _make_full_input(action_recommendation=rec)
+        result = self.summarizer.summarize(inp)
+        # current_most_stable_claim 应该是金额相关的，不包含"核心策略"
+        assert "核心策略" not in result.current_most_stable_claim
+        assert "principal" in result.current_most_stable_claim or "RPT-001" in result.current_most_stable_claim
+
+
+# ---------------------------------------------------------------------------
 # critical_evidence_gaps
 # ---------------------------------------------------------------------------
 
