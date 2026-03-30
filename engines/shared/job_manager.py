@@ -19,10 +19,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+_JOB_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
 
 from engines.shared.models import (
     ArtifactRef,
@@ -70,6 +73,11 @@ class JobManager:
         return self.workspace_dir / "jobs"
 
     def _job_path(self, job_id: str) -> Path:
+        if not _JOB_ID_RE.match(job_id):
+            raise ValueError(
+                f"Invalid job_id format: {job_id!r}. "
+                "Only alphanumeric characters, hyphens, and underscores are allowed."
+            )
         return self._jobs_dir() / f"job_{job_id}.json"
 
     def _atomic_write(self, path: Path, data: dict) -> None:
