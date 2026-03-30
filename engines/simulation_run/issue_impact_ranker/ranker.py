@@ -491,15 +491,25 @@ class IssueImpactRanker:
     # ------------------------------------------------------------------
 
     def _sort_issues(self, issues: list[Issue]) -> list[Issue]:
-        """按 composite_score DESC 排序，原有分类排序为 fallback。
+        """按 composite_score DESC 排序，多级 fallback 确保不因 ID 顺序产生错误排名。
 
-        composite_score 为 None 时排末尾。Python sorted() 保证稳定性。
+        排序优先级（降序重要性）：
+        1. composite_score DESC（主排序，None → 0 排末尾）
+        2. outcome_impact DESC（high < medium < low < None）
+        3. swing_score DESC（争议烈度高的争点优先）
+        4. evidence_strength_gap 绝对值 DESC（证据差距大的争点更需关注）
+        5. opponent_attack_strength DESC（对手攻击越强越需优先应对）
+
+        注意：有意不将 issue_id 作为 tiebreaker，以避免按编号排序的假象。
+        Python sorted() 保证同权重争点维持原始输入顺序（稳定排序）。
         """
         return sorted(
             issues,
             key=lambda issue: (
                 -(issue.composite_score or 0),
                 _IMPACT_ORDER.get(issue.outcome_impact, 99),
+                -(issue.swing_score or 0),
+                -abs(issue.evidence_strength_gap or 0),
                 _ATTACK_ORDER.get(issue.opponent_attack_strength, 99),
             ),
         )

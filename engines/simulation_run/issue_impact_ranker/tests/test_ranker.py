@@ -27,6 +27,7 @@ from engines.shared.models import (
     EvidenceStatus,
     EvidenceStrength,
     EvidenceType,
+    FactProposition,
     ImpactTarget,
     Issue,
     IssueStatus,
@@ -34,6 +35,7 @@ from engines.shared.models import (
     IssueType,
     LoanTransaction,
     OutcomeImpact,
+    PropositionStatus,
     RecommendedAction,
 )
 from engines.simulation_run.issue_impact_ranker.ranker import IssueImpactRanker
@@ -288,6 +290,44 @@ class TestSortIssues:
     def test_empty_list_returns_empty(self):
         assert self._ranker()._sort_issues([]) == []
 
+    def test_swing_score_tiebreaker_when_composite_equal(self):
+        """When composite_score and outcome_impact are equal, swing_score DESC breaks the tie."""
+        issues = [
+            _make_issue("i-low-swing", composite_score=50.0, swing_score=20),
+            _make_issue("i-high-swing", composite_score=50.0, swing_score=80),
+            _make_issue("i-mid-swing", composite_score=50.0, swing_score=50),
+        ]
+        sorted_issues = self._ranker()._sort_issues(issues)
+        assert [i.issue_id for i in sorted_issues] == [
+            "i-high-swing", "i-mid-swing", "i-low-swing"
+        ]
+
+    def test_evidence_strength_gap_tiebreaker(self):
+        """When composite_score and swing_score are equal, abs(evidence_strength_gap) DESC breaks the tie."""
+        issues = [
+            _make_issue("i-small-gap", composite_score=50.0, swing_score=50, evidence_strength_gap=10),
+            _make_issue("i-large-gap-neg", composite_score=50.0, swing_score=50, evidence_strength_gap=-80),
+            _make_issue("i-mid-gap", composite_score=50.0, swing_score=50, evidence_strength_gap=40),
+        ]
+        sorted_issues = self._ranker()._sort_issues(issues)
+        # |−80| = 80 > |40| = 40 > |10| = 10
+        assert [i.issue_id for i in sorted_issues] == [
+            "i-large-gap-neg", "i-mid-gap", "i-small-gap"
+        ]
+
+    def test_id_order_not_used_as_tiebreaker(self):
+        """Issues with equal composite_score are NOT sorted by issue_id / insertion order when
+        swing_score differs — prevents the regression where 001,002,003,... bubbled to the top."""
+        issues = [
+            _make_issue("issue-001", composite_score=60.0, swing_score=10),  # undisputed-ish
+            _make_issue("issue-002", composite_score=60.0, swing_score=90),  # highly contested
+            _make_issue("issue-003", composite_score=60.0, swing_score=50),
+        ]
+        sorted_issues = self._ranker()._sort_issues(issues)
+        # issue-002 (swing=90) must beat issue-001 (swing=10) despite lower ID
+        assert sorted_issues[0].issue_id == "issue-002"
+        assert sorted_issues[-1].issue_id == "issue-001"
+
 
 # ---------------------------------------------------------------------------
 # 测试：校验规则（通过 rank() + MockLLMClient）
@@ -460,6 +500,74 @@ class TestRankFullFlow:
 
         assert client.last_user is not None
         assert "verdict_block_active: True" in client.last_user
+
+    @pytest.mark.asyncio
+    async def test_fact_dispute_ratio_injected_in_prompt(self):
+        """fact_dispute_ratio 字段被注入 user prompt，为 swing_score 提供争议信号。"""
+        # Issue with 2 disputed + 1 supported propositions
+        issue = _make_issue(
+            "i-001",
+            evidence_ids=["ev-001"],
+            fact_propositions=[
+                FactProposition(
+                    proposition_id="fp-001",
+                    text="命题A",
+                    status=PropositionStatus.disputed,
+                    linked_evidence_ids=[],
+                ),
+                FactProposition(
+                    proposition_id="fp-002",
+                    text="命题B",
+                    status=PropositionStatus.disputed,
+                    linked_evidence_ids=[],
+                ),
+                FactProposition(
+                    proposition_id="fp-003",
+                    text="命题C",
+                    status=PropositionStatus.supported,
+                    linked_evidence_ids=["ev-001"],
+                ),
+            ],
+        )
+        ev = _eval_entry("i-001")
+        client = MockLLMClient(_stub_response([ev]))
+        ranker = IssueImpactRanker(client)
+        await ranker.rank(_make_ranker_input([issue]))
+
+        assert client.last_user is not None
+        # Prompt must contain fact_dispute_ratio with correct counts
+        assert "fact_dispute_ratio" in client.last_user
+        assert "2/3" in client.last_user  # 2 disputed out of 3
+
+    @pytest.mark.asyncio
+    async def test_undisputed_issue_fact_dispute_ratio_shows_zero(self):
+        """Issue where all propositions are 'supported' → 0 disputed shown in prompt."""
+        issue = _make_issue(
+            "i-undisputed",
+            evidence_ids=["ev-001"],
+            fact_propositions=[
+                FactProposition(
+                    proposition_id="fp-001",
+                    text="银行转账10万元",
+                    status=PropositionStatus.supported,
+                    linked_evidence_ids=["ev-001"],
+                ),
+                FactProposition(
+                    proposition_id="fp-002",
+                    text="收款已确认",
+                    status=PropositionStatus.supported,
+                    linked_evidence_ids=["ev-001"],
+                ),
+            ],
+        )
+        ev = _eval_entry("i-undisputed")
+        client = MockLLMClient(_stub_response([ev]))
+        ranker = IssueImpactRanker(client)
+        await ranker.rank(_make_ranker_input([issue]))
+
+        assert client.last_user is not None
+        assert "fact_dispute_ratio" in client.last_user
+        assert "0/2" in client.last_user  # 0 disputed out of 2
 
     @pytest.mark.asyncio
     async def test_llm_called_once(self):
