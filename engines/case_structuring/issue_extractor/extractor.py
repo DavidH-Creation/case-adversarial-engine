@@ -14,8 +14,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from engines.shared.json_utils import _extract_json_object
+from engines.shared.json_utils import _extract_json_object  # noqa: F401 (re-exported for tests)
 from engines.shared.models import LLMClient
+from engines.shared.structured_output import call_structured_llm
 
 from .schemas import (
     Burden,
@@ -31,6 +32,10 @@ from .schemas import (
     LLMExtractionOutput,
     PropositionStatus,
 )
+
+# tool_use 模式的 JSON Schema（源自 LLMExtractionOutput，在模块加载时计算一次）
+# JSON Schema for tool_use mode, derived from LLMExtractionOutput at import time
+_TOOL_SCHEMA: dict = LLMExtractionOutput.model_json_schema()
 
 
 
@@ -203,36 +208,32 @@ class IssueExtractor:
             input_block=input_block,
         )
 
-        # 调用 LLM（带重试）/ Call LLM with retry
-        raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
-
-        # 解析 LLM 输出 / Parse LLM output
-        raw_dict = _extract_json_object(raw_response)
+        # 调用 LLM（结构化输出优先，fallback 到 json_utils）
+        # Call LLM (structured output first, fallback to json_utils)
+        raw_dict = await self._call_llm_structured(system_prompt, user_prompt)
         llm_output = LLMExtractionOutput.model_validate(raw_dict)
 
         # 构建 IssueTree / Build IssueTree
         return self._build_issue_tree(llm_output, case_id, case_slug, claims, defenses, evidence)
 
-    async def _call_llm_with_retry(self, system: str, user: str) -> str:
-        """调用 LLM 并在失败时重试。
-        Call LLM with exponential retry on failure.
-
-        Args:
-            system: 系统提示词 / System prompt
-            user: 用户消息 / User message
-
-        Returns:
-            LLM 文本响应 / LLM text response
+    async def _call_llm_structured(self, system: str, user: str) -> dict:
+        """调用 LLM 并返回结构化 dict（tool_use 优先，fallback 到 json_utils）。
+        Call LLM and return a structured dict (tool_use first, fallback to json_utils).
 
         Raises:
             RuntimeError: 超过最大重试次数 / Max retries exceeded
+            ValueError:   响应无法解析为 JSON / Response cannot be parsed as JSON
         """
-        from engines.shared.llm_utils import call_llm_with_retry
-        return await call_llm_with_retry(
+        return await call_structured_llm(
             self._llm_client,
             system=system,
             user=user,
             model=self._model,
+            tool_name="extract_issues",
+            tool_description="从案件诉请、抗辩和证据中提取结构化争点树、举证责任和映射关系。"
+                             "Extract a structured issue tree, burdens, and mappings "
+                             "from legal claims, defenses, and evidence.",
+            tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
             max_retries=self._max_retries,

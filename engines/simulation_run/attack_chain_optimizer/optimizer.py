@@ -41,12 +41,17 @@ from engines.shared.models import (
     OptimalAttackChain,
 )
 
+from engines.shared.structured_output import call_structured_llm
+
 from .prompts import PROMPT_REGISTRY
 from .schemas import (
     AttackChainOptimizerInput,
     LLMAttackChainOutput,
     LLMAttackNodeItem,
 )
+
+# tool_use JSON Schema（模块加载时计算一次）
+_TOOL_SCHEMA: dict = LLMAttackChainOutput.model_json_schema()
 
 # 规则层：最多保留 3 个有效攻击节点
 _MAX_ATTACKS = 3
@@ -129,7 +134,7 @@ class AttackChainOptimizer:
     async def _call_llm(
         self, inp: AttackChainOptimizerInput
     ) -> LLMAttackChainOutput | None:
-        """调用 LLM，失败时返回 None（不抛异常）。"""
+        """调用 LLM（结构化输出），失败时返回 None（不抛异常）。"""
         system = self._prompts["system"]
         user = self._prompts["build_user"](
             owner_party_id=inp.owner_party_id,
@@ -137,17 +142,20 @@ class AttackChainOptimizer:
             evidence_index=inp.evidence_index,
         )
 
-        from engines.shared.llm_utils import call_llm_with_retry
         try:
-            raw = await call_llm_with_retry(
+            data = await call_structured_llm(
                 self._llm,
                 system=system,
                 user=user,
                 model=self._model,
+                tool_name="optimize_attack_chain",
+                tool_description="生成恰好 3 个最优攻击节点，形成最强攻击链。"
+                                 "Generate exactly 3 optimal attack nodes forming the strongest attack chain.",
+                tool_schema=_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_retries=self._max_retries,
             )
-            return self._parse_llm_output(raw)
+            return self._parse_llm_output(data)
         except Exception as e:  # noqa: BLE001
             logger.warning("Attack chain: LLM call failed: %s", type(e).__name__)
             return None
@@ -325,12 +333,9 @@ class AttackChainOptimizer:
 
         return data
 
-    def _parse_llm_output(self, raw: str) -> LLMAttackChainOutput | None:
-        """解析 LLM 输出 JSON，失败时返回 None。"""
-        from engines.shared.json_utils import _extract_json_object
+    def _parse_llm_output(self, data: dict) -> LLMAttackChainOutput | None:
+        """规范化 LLM 输出 dict，失败时返回 None。"""
         try:
-            logger.info("Attack chain LLM 响应长度: %d chars", len(raw))
-            data = _extract_json_object(raw)
             logger.info("JSON 顶层键: %s", list(data.keys()))
             data = self._normalize_llm_json(data)
             # 诊断：记录 top_attacks 第一项的键

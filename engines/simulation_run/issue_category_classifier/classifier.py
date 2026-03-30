@@ -21,12 +21,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-from engines.shared.json_utils import _extract_json_object
 from engines.shared.models import (
     Issue,
     IssueCategory,
     LLMClient,
 )
+
+from engines.shared.structured_output import call_structured_llm
 
 from .schemas import (
     IssueCategoryClassificationResult,
@@ -34,6 +35,9 @@ from .schemas import (
     LLMIssueCategoryItem,
     LLMIssueCategoryOutput,
 )
+
+# tool_use JSON Schema（模块加载时计算一次）
+_TOOL_SCHEMA: dict = LLMIssueCategoryOutput.model_json_schema()
 
 
 class IssueCategoryClassifier:
@@ -115,11 +119,8 @@ class IssueCategoryClassifier:
                 amount_calculation_report=inp.amount_calculation_report,
             )
 
-            # 调用 LLM（带重试）
-            raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
-
-            # 解析 JSON
-            raw_dict = _extract_json_object(raw_response)
+            # 调用 LLM（结构化输出）
+            raw_dict = await self._call_llm_structured(system_prompt, user_prompt)
             llm_output = LLMIssueCategoryOutput.model_validate(raw_dict)
 
             # 规则层：校验 + 富化
@@ -243,18 +244,18 @@ class IssueCategoryClassifier:
     # LLM 调用（带重试）/ LLM call with retry
     # ------------------------------------------------------------------
 
-    async def _call_llm_with_retry(self, system: str, user: str) -> str:
-        """调用 LLM 并在失败时重试。
-
-        Raises:
-            RuntimeError: 超过最大重试次数
-        """
-        from engines.shared.llm_utils import call_llm_with_retry
-        return await call_llm_with_retry(
+    async def _call_llm_structured(self, system: str, user: str) -> dict:
+        """调用 LLM（结构化输出），失败时抛出异常由 classify() 捕获。"""
+        return await call_structured_llm(
             self._llm,
             system=system,
             user=user,
             model=self._model,
+            tool_name="classify_issue_categories",
+            tool_description="对案件所有争点进行批量分类（事实争点、法律争点、计算争点、程序信用争点）。"
+                             "Batch-classify all case issues into four categories: "
+                             "fact_issue, legal_issue, calculation_issue, procedure_credibility_issue.",
+            tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
             max_retries=self._max_retries,

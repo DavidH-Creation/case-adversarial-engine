@@ -26,7 +26,6 @@ from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
-from engines.shared.json_utils import _extract_json_object
 from engines.shared.models import (
     AttackStrength,
     EvidenceStrength,
@@ -37,12 +36,17 @@ from engines.shared.models import (
     RecommendedAction,
 )
 
+from engines.shared.structured_output import call_structured_llm
+
 from .schemas import (
     IssueImpactRankerInput,
     IssueImpactRankingResult,
     LLMIssueEvaluationOutput,
     LLMSingleIssueEvaluation,
 )
+
+# tool_use JSON Schema（模块加载时计算一次）
+_TOOL_SCHEMA: dict = LLMIssueEvaluationOutput.model_json_schema()
 
 # 排序权重映射（None → 99 排末尾）
 _IMPACT_ORDER: dict[OutcomeImpact, int] = {
@@ -134,13 +138,8 @@ class IssueImpactRanker:
                 amount_check=inp.amount_calculation_report.consistency_check_result,
             )
 
-            # 调用 LLM（带重试）
-            raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
-
-            # 解析 JSON
-            logger.info("LLM 原始响应长度: %d chars", len(raw_response))
-            logger.debug("LLM 原始响应前500字: %s", raw_response[:500])
-            raw_dict = _extract_json_object(raw_response)
+            # 调用 LLM（结构化输出）
+            raw_dict = await self._call_llm_structured(system_prompt, user_prompt)
             logger.info("JSON 解析成功, 顶层键: %s", list(raw_dict.keys()))
             raw_dict = self._normalize_evaluation_keys(raw_dict)
             # 归一化个别评估项的字段名
@@ -682,18 +681,18 @@ class IssueImpactRanker:
     # LLM 调用（带重试）/ LLM call with retry
     # ------------------------------------------------------------------
 
-    async def _call_llm_with_retry(self, system: str, user: str) -> str:
-        """调用 LLM 并在失败时重试。
-
-        Raises:
-            RuntimeError: 超过最大重试次数
-        """
-        from engines.shared.llm_utils import call_llm_with_retry
-        return await call_llm_with_retry(
+    async def _call_llm_structured(self, system: str, user: str) -> dict:
+        """调用 LLM（结构化输出），失败时抛出异常由 rank() 捕获。"""
+        return await call_structured_llm(
             self._llm,
             system=system,
             user=user,
             model=self._model,
+            tool_name="evaluate_issues",
+            tool_description="对案件所有争点进行五维度批量评估（影响程度、证据强度、建议行动等）。"
+                             "Batch-evaluate all case issues across five dimensions: "
+                             "outcome impact, evidence strength, recommended action, etc.",
+            tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
             max_retries=self._max_retries,

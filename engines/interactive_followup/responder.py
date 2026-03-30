@@ -18,8 +18,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from engines.shared.json_utils import _extract_json_object
 from engines.shared.models import LLMClient
+from engines.shared.structured_output import call_structured_llm
 
 from .schemas import (
     InteractionTurn,
@@ -28,6 +28,8 @@ from .schemas import (
     StatementClass,
 )
 
+# tool_use JSON Schema（模块加载时计算一次）
+_TOOL_SCHEMA: dict = LLMFollowupOutput.model_json_schema()
 
 
 # ---------------------------------------------------------------------------
@@ -193,11 +195,8 @@ class FollowupResponder:
             question=question,
         )
 
-        # 调用 LLM（带重试）/ Call LLM with retry
-        raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
-
-        # 解析 LLM 输出 / Parse LLM output
-        raw_dict = _extract_json_object(raw_response)
+        # 调用 LLM（结构化输出）/ Call LLM with structured output
+        raw_dict = await self._call_llm_structured(system_prompt, user_prompt)
         llm_output = LLMFollowupOutput.model_validate(raw_dict)
 
         # 构建 InteractionTurn / Build InteractionTurn
@@ -213,19 +212,22 @@ class FollowupResponder:
             effective_run_id,
         )
 
-    async def _call_llm_with_retry(self, system: str, user: str) -> str:
-        """调用 LLM 并在失败时重试。
-        Call LLM with retry on failure.
+    async def _call_llm_structured(self, system: str, user: str) -> dict:
+        """调用 LLM（结构化输出）。
+        Call LLM with structured output.
 
         Raises:
             RuntimeError: 超过最大重试次数 / Max retries exceeded
         """
-        from engines.shared.llm_utils import call_llm_with_retry
-        return await call_llm_with_retry(
+        return await call_structured_llm(
             self._llm_client,
             system=system,
             user=user,
             model=self._model,
+            tool_name="generate_followup_response",
+            tool_description="根据报告上下文和追问问题，生成带 citation 的结构化追问回答。"
+                             "Generate a structured cited answer to a followup question based on report context.",
+            tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
             max_retries=self._max_retries,
