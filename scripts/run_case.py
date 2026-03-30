@@ -78,6 +78,9 @@ from engines.simulation_run.issue_dependency_graph import IssueDependencyGraphGe
 from engines.simulation_run.issue_dependency_graph.schemas import IssueDependencyGraphInput
 from engines.simulation_run.hearing_order import HearingOrderGenerator, HearingOrderInput
 from engines.simulation_run.defense_chain import DefenseChainOptimizer, DefenseChainInput
+from engines.pretrial_conference.conference_engine import PretrialConferenceEngine
+from engines.pretrial_conference.schemas import PretrialConferenceResult
+from engines.shared.evidence_state_machine import EvidenceStateMachine
 
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -86,12 +89,13 @@ DEFAULT_MODEL = "claude-sonnet-4-6"
 STEP_EVIDENCE = "step_1_evidence"
 STEP_ISSUES = "step_2_issues"
 STEP_DEBATE = "step_3_debate"
+STEP_PRETRIAL = "step_3_1_pretrial"
 STEP_POST_DEBATE = "step_3_5_post_debate"
 STEP_OUTPUTS = "step_4_outputs"
 STEP_DOCX = "step_5_docx"
 
 # Ordered list for resume logic
-STEP_ORDER = [STEP_EVIDENCE, STEP_ISSUES, STEP_DEBATE, STEP_POST_DEBATE, STEP_OUTPUTS, STEP_DOCX]
+STEP_ORDER = [STEP_EVIDENCE, STEP_ISSUES, STEP_DEBATE, STEP_PRETRIAL, STEP_POST_DEBATE, STEP_OUTPUTS, STEP_DOCX]
 
 
 def _should_skip(step: str, last_completed: str | None) -> bool:
@@ -724,7 +728,7 @@ async def _run_post_debate(
 # Main entry point
 # ---------------------------------------------------------------------------
 
-async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False) -> None:
+async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False, skip_pretrial: bool = False) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
         print(f"[Error] Case file not found: {case_file}")
@@ -837,7 +841,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         result = AdversarialResult.model_validate_json(
             (out / "result.json").read_text(encoding="utf-8")
         )
-        # Reload ev_index with promoted statuses from saved artifact
+        # Reload ev_index from saved artifact (NOT yet promoted — pretrial handles that)
         ev_index = EvidenceIndex.model_validate_json(
             (out / "evidence_index.json").read_text(encoding="utf-8")
         )
@@ -848,23 +852,78 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         result = await _run_rounds(
             issue_tree, ev_index, claude, codex, claude, config, p_id, d_id,
         )
+        # Save debate result & checkpoint (evidence_index NOT yet promoted)
+        (out / "result.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
+        (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
+        ckpt.save(STEP_DEBATE, {
+            "result": str(out / "result.json"),
+            "evidence_index": str(out / "evidence_index.json"),
+        })
 
-        # Promote cited evidence to admitted_for_discussion so post-debate modules can use it
-        cited_ids: set[str] = set()
-        for rd in result.rounds:
-            for o in rd.outputs:
-                cited_ids.update(o.evidence_citations)
+    # Extract cited evidence IDs from debate rounds (always needed for pretrial/skip-pretrial)
+    cited_ids: set[str] = set()
+    for rd in result.rounds:
+        for o in rd.outputs:
+            cited_ids.update(o.evidence_citations)
+
+    # Step 3.1: Pretrial conference (or legacy manual promote with --skip-pretrial)
+    if _should_skip(STEP_PRETRIAL, last_completed):
+        print("\n[Step 3.1] Skipped (checkpoint)")
+        ev_index = EvidenceIndex.model_validate_json(
+            (out / "evidence_index.json").read_text(encoding="utf-8")
+        )
+        conference_result_path = out / "pretrial_conference.json"
+        if conference_result_path.exists():
+            conference_result = PretrialConferenceResult.model_validate_json(
+                conference_result_path.read_text(encoding="utf-8")
+            )
+        else:
+            conference_result = None
+        print(f"  \u2713 Loaded pretrial state from checkpoint")
+    elif skip_pretrial:
+        print("\n[Step 3.1] Skipped (--skip-pretrial) — using legacy promote...")
+        # Legacy behavior: directly promote cited evidence (bypass state machine)
         promoted = 0
         for ev in ev_index.evidence:
             if ev.evidence_id in cited_ids and ev.status == EvidenceStatus.private:
                 ev.status = EvidenceStatus.admitted_for_discussion
                 promoted += 1
-        print(f"\n  Promoted {promoted}/{len(ev_index.evidence)} evidence to admitted_for_discussion")
-        # Save result + updated evidence index & checkpoint
-        (out / "result.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
+        print(f"  Promoted {promoted}/{len(ev_index.evidence)} evidence to admitted_for_discussion")
+        conference_result = None
         (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
-        ckpt.save(STEP_DEBATE, {
-            "result": str(out / "result.json"),
+        ckpt.save(STEP_PRETRIAL, {"evidence_index": str(out / "evidence_index.json")})
+    else:
+        print("\n[Step 3.1] Pretrial conference...")
+        pretrial_engine = PretrialConferenceEngine(
+            llm_client=claude, model=model, temperature=0.0, max_retries=2,
+        )
+        # Submit all cited evidence from both parties
+        p_cited = [eid for eid in cited_ids if any(
+            ev.evidence_id == eid and ev.owner_party_id == p_id for ev in ev_index.evidence
+        )]
+        d_cited = [eid for eid in cited_ids if any(
+            ev.evidence_id == eid and ev.owner_party_id == d_id for ev in ev_index.evidence
+        )]
+        conference_result = await pretrial_engine.run(
+            issue_tree=issue_tree,
+            evidence_index=ev_index,
+            plaintiff_party_id=p_id,
+            defendant_party_id=d_id,
+            plaintiff_evidence_ids=p_cited,
+            defendant_evidence_ids=d_cited,
+        )
+        ev_index = conference_result.final_evidence_index
+        admitted = sum(1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion)
+        print(f"  \u2713 Pretrial complete: {admitted}/{len(ev_index.evidence)} evidence admitted")
+        print(f"    Cross-exam records: {len(conference_result.cross_examination_result.records)}")
+        print(f"    Judge questions: {len(conference_result.judge_questions.questions)}")
+        # Save pretrial artifacts & checkpoint
+        (out / "pretrial_conference.json").write_text(
+            conference_result.model_dump_json(indent=2), encoding="utf-8"
+        )
+        (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
+        ckpt.save(STEP_PRETRIAL, {
+            "pretrial_conference": str(out / "pretrial_conference.json"),
             "evidence_index": str(out / "evidence_index.json"),
         })
 
@@ -954,8 +1013,8 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     print(f"  Report:      {mp}")
     if docx_path:
         print(f"  Word report: {docx_path}")
-    for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary",
-                 "admissibility_result", "dep_graph", "hearing_order", "defense_chain"):
+    for name in ("pretrial_conference", "decision_tree", "attack_chain", "amount_report",
+                 "exec_summary", "admissibility_result", "dep_graph", "hearing_order", "defense_chain"):
         artifact_path = out / f"{name}.json"
         if artifact_path.exists():
             print(f"  {name}: {artifact_path}")
@@ -992,6 +1051,7 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", default=None, help="Override output directory (default: outputs/<timestamp>)")
     parser.add_argument("--no-redact", action="store_true", help="Disable PII redaction in reports (for debugging)")
     parser.add_argument("--resume", action="store_true", help="Resume from checkpoint in --output-dir (requires --output-dir)")
+    parser.add_argument("--skip-pretrial", action="store_true", help="Skip pretrial conference (use legacy direct-promote behavior)")
     args = parser.parse_args()
     if args.resume and not args.output_dir:
         parser.error("--resume requires --output-dir to specify the run directory to resume from")
@@ -1007,7 +1067,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     try:
-        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume))
+        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume, skip_pretrial=args.skip_pretrial))
     except CLINotFoundError as e:
         print(f"\n[Error] CLI not available: {e}")
         sys.exit(1)
