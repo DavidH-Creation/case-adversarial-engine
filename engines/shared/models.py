@@ -1360,6 +1360,48 @@ class AlternativeClaimSuggestion(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class ConfidenceMetrics(BaseModel):
+    """执行摘要置信度指标（P2 结构化输出）。
+
+    Args:
+        overall_confidence:     整体置信度（0.0-1.0）
+        evidence_completeness:  证据完整度（0.0-1.0）
+        legal_clarity:          法律适用清晰度（0.0-1.0）
+    """
+    overall_confidence: float = Field(
+        ge=0.0, le=1.0, description="整体置信度（基于证据充分性和法律依据清晰度）"
+    )
+    evidence_completeness: float = Field(
+        ge=0.0, le=1.0, description="证据完整度（已有证据覆盖争点的比例）"
+    )
+    legal_clarity: float = Field(
+        ge=0.0, le=1.0, description="法律适用清晰度（适用法条明确程度）"
+    )
+
+
+class ExecutiveSummaryStructuredOutput(BaseModel):
+    """执行摘要结构化 JSON 输出（P2 双层输出）。
+
+    与现有叙述性输出并存，提供机器可读的结构化摘要。
+
+    Args:
+        case_overview:          案件概述（1-3 句话的文字摘要）
+        key_findings:           关键发现列表（每条为 1 句话的具体发现）
+        risk_assessment:        风险评估摘要（指明主要风险点）
+        recommended_actions:    建议行动列表（具体可执行，按优先级排序）
+        confidence_metrics:     置信度指标
+    """
+    case_overview: str = Field(..., min_length=1, description="案件概述文本")
+    key_findings: list[str] = Field(
+        default_factory=list, description="关键发现列表（每条一句话）"
+    )
+    risk_assessment: str = Field(default="", description="风险评估摘要")
+    recommended_actions: list[str] = Field(
+        default_factory=list, description="建议行动列表（按优先级排序）"
+    )
+    confidence_metrics: ConfidenceMetrics
+
+
 class ExecutiveSummaryArtifact(BaseModel):
     """一页式执行摘要（P2.12）。附加产物，不替代长报告 ReportArtifact。
 
@@ -1416,6 +1458,10 @@ class ExecutiveSummaryArtifact(BaseModel):
     critical_evidence_gaps: Union[list[str], str] = Field(
         ...,
         description="Top3 关键缺证 gap_id 列表（最多 3 条，按 roi_rank 排序），或 '未启用'（P1.7 缺失）",
+    )
+    structured_output: Optional[ExecutiveSummaryStructuredOutput] = Field(
+        default=None,
+        description="P2 结构化 JSON 输出（与叙述性输出并存，机器可读）",
     )
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
