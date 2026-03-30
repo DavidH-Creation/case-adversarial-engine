@@ -368,7 +368,7 @@ tests/
 
 ## 当前实现边界
 
-- 当前已创建 `schemas/`、`engines/`、`benchmarks/`、`tests/` 最小目录骨架，但目录内仍以占位说明为主
-- 本阶段仍不创建 `templates/`、`agents/`、`ui/` 实体目录
-- 当前骨架只冻结模块落点，不代表已经落地业务代码
+- 当前已创建 `schemas/`、`engines/`、`benchmarks/`、`tests/` 最小目录骨架，并已落地全部五阶段引擎业务代码（v1.2，930 个测试通过）
+- `engines/adversarial/`（双边对抗引擎）和 `engines/pretrial_conference/`（庭前会议）已作为实体目录存在；`templates/`、`ui/` 仍不创建
+- 当前骨架已冻结模块落点并完成主体业务代码实现
 - 后续任何代码任务都必须把本文件作为模块边界约束
