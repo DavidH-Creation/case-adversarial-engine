@@ -17,9 +17,14 @@ Generates a structured diff summary from IssueTree + EvidenceIndex + ChangeSet v
 
 from __future__ import annotations
 
+import json
 import logging
+import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +34,7 @@ from engines.shared.structured_output import call_structured_llm
 
 from .schemas import (
     ArtifactRef,
+    ChangeItem,
     DiffDirection,
     DiffEntry,
     EvidenceIndex,
@@ -398,3 +404,190 @@ class ScenarioSimulator:
         )
 
         return ScenarioResult(scenario=scenario, run=run)
+
+
+# ---------------------------------------------------------------------------
+# What-if 分析入口 / What-if analysis entry points
+# ---------------------------------------------------------------------------
+
+
+def load_baseline(baseline_dir: str | Path) -> tuple[IssueTree, EvidenceIndex, str]:
+    """从 baseline run 输出目录加载 IssueTree + EvidenceIndex。
+    Load IssueTree + EvidenceIndex from a baseline run output directory.
+
+    Args:
+        baseline_dir: baseline run 的输出目录路径 / Path to baseline run output directory
+
+    Returns:
+        (issue_tree, evidence_index, run_id) 三元组
+
+    Raises:
+        FileNotFoundError: 目录不存在或缺少必要文件
+    """
+    base = Path(baseline_dir)
+    if not base.is_dir():
+        raise FileNotFoundError(
+            f"Baseline 目录不存在 / Baseline directory not found: {base}"
+        )
+
+    it_path = base / "issue_tree.json"
+    if not it_path.exists():
+        raise FileNotFoundError(
+            f"缺少 issue_tree.json / Missing issue_tree.json in {base}"
+        )
+
+    ei_path = base / "evidence_index.json"
+    if not ei_path.exists():
+        raise FileNotFoundError(
+            f"缺少 evidence_index.json / Missing evidence_index.json in {base}"
+        )
+
+    issue_tree = IssueTree.model_validate_json(it_path.read_text(encoding="utf-8"))
+    evidence_index = EvidenceIndex.model_validate_json(
+        ei_path.read_text(encoding="utf-8")
+    )
+
+    # 从 result.json 获取 run_id（如果存在），否则用目录名
+    # Get run_id from result.json if available, otherwise use directory name
+    result_path = base / "result.json"
+    if result_path.exists():
+        result_data = json.loads(result_path.read_text(encoding="utf-8"))
+        run_id = result_data.get("run_id", base.name)
+    else:
+        run_id = base.name
+
+    return issue_tree, evidence_index, run_id
+
+
+def parse_change_set(change_set_path: str | Path) -> tuple[str, list[ChangeItem]]:
+    """解析 change_set YAML 文件。
+    Parse a change_set YAML file.
+
+    Expected YAML format::
+
+        scenario_id: "scenario-whatif-001"
+        changes:
+          - target_object_type: Evidence
+            target_object_id: "EV-03"
+            field_path: "summary"
+            old_value: "original text"
+            new_value: "modified text"
+
+    Args:
+        change_set_path: YAML 文件路径 / Path to YAML file
+
+    Returns:
+        (scenario_id, change_items) 二元组
+
+    Raises:
+        FileNotFoundError: 文件不存在
+        ValueError: YAML 格式不正确或缺少必要字段
+    """
+    cs_path = Path(change_set_path)
+    if not cs_path.exists():
+        raise FileNotFoundError(
+            f"change_set 文件不存在 / change_set file not found: {cs_path}"
+        )
+
+    data = yaml.safe_load(cs_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(
+            "change_set YAML 必须是字典 / change_set YAML must be a mapping"
+        )
+
+    scenario_id = data.get("scenario_id")
+    if not scenario_id:
+        raise ValueError(
+            "change_set YAML 缺少 scenario_id / Missing scenario_id in change_set YAML"
+        )
+
+    changes_raw = data.get("changes")
+    if not isinstance(changes_raw, list) or len(changes_raw) == 0:
+        raise ValueError(
+            "change_set YAML 的 changes 不能为空 / "
+            "changes must be a non-empty list in change_set YAML"
+        )
+
+    change_items: list[ChangeItem] = []
+    for i, entry in enumerate(changes_raw):
+        try:
+            change_items.append(ChangeItem.model_validate(entry))
+        except Exception as exc:
+            raise ValueError(
+                f"changes[{i}] 格式无效 / Invalid change entry at index {i}: {exc}"
+            ) from exc
+
+    return scenario_id, change_items
+
+
+async def run_whatif(
+    baseline_dir: str | Path,
+    change_set_path: str | Path,
+    llm_client: LLMClient,
+    *,
+    case_type: str = "civil_loan",
+    model: str = "claude-sonnet-4-20250514",
+    workspace_id: str = "workspace-default",
+) -> ScenarioResult:
+    """执行 what-if 分析的高层入口。
+    High-level entry point for what-if analysis.
+
+    从 baseline 输出目录加载 IssueTree + EvidenceIndex，解析 change_set YAML，
+    调用 ScenarioSimulator.simulate()，并将结果保存到输出目录。
+
+    Args:
+        baseline_dir: baseline run 的输出目录
+        change_set_path: change_set YAML 文件路径
+        llm_client: LLM 客户端
+        case_type: 案由类型
+        model: LLM 模型名称
+        workspace_id: 工作空间 ID
+
+    Returns:
+        ScenarioResult 包含推演结果
+
+    Raises:
+        FileNotFoundError: baseline 目录或 change_set 文件不存在
+        ValueError: 输入数据无效
+    """
+    # 1. 加载 baseline / Load baseline
+    issue_tree, evidence_index, baseline_run_id = load_baseline(baseline_dir)
+
+    # 2. 解析 change_set / Parse change_set
+    scenario_id, change_items = parse_change_set(change_set_path)
+
+    # 3. 构建 ScenarioInput / Build ScenarioInput
+    scenario_input = ScenarioInput(
+        scenario_id=scenario_id,
+        baseline_run_id=baseline_run_id,
+        change_set=change_items,
+        workspace_id=workspace_id,
+    )
+
+    # 4. 执行推演 / Execute simulation
+    run_id = f"run-scenario-{uuid.uuid4().hex[:12]}"
+    simulator = ScenarioSimulator(
+        llm_client=llm_client,
+        case_type=case_type,
+        model=model,
+    )
+    result = await simulator.simulate(
+        scenario_input=scenario_input,
+        issue_tree=issue_tree,
+        evidence_index=evidence_index,
+        run_id=run_id,
+    )
+
+    # 5. 保存结果 / Save result
+    base = Path(baseline_dir)
+    out_dir = base / f"scenario_{scenario_id}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    diff_path = out_dir / "diff_summary.json"
+    diff_path.write_text(
+        result.model_dump_json(indent=2), encoding="utf-8"
+    )
+    logger.info(
+        "What-if 结果已保存 / What-if result saved: %s", diff_path
+    )
+
+    return result

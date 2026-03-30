@@ -1,0 +1,15 @@
+# What-if: modify issue priority to test judgment path changes.
+#
+# Usage:
+#   python scripts/run_scenario.py \
+#     --baseline outputs/<run>/ \
+#     --change-set scenarios/example_modify_issue.yaml
+
+scenario_id: "scenario-whatif-issue-priority-001"
+
+changes:
+  - target_object_type: Issue
+    target_object_id: "issue-civil-loan-test-001-001"
+    field_path: "issue_type"
+    old_value: "factual"
+    new_value: "legal"

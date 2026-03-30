@@ -7,7 +7,7 @@ Applies a structured change_set to a baseline run snapshot and produces
 a per-issue DiffSummary explaining the counterfactual impact.
 """
 
-from .simulator import LLMClient, ScenarioSimulator
+from .simulator import LLMClient, ScenarioSimulator, load_baseline, parse_change_set, run_whatif
 from .schemas import (
     ChangeItem,
     ChangeItemObjectType,
@@ -35,6 +35,9 @@ from .validator import (
 __all__ = [
     "ScenarioSimulator",
     "LLMClient",
+    "load_baseline",
+    "parse_change_set",
+    "run_whatif",
     "ChangeItem",
     "ChangeItemObjectType",
     "DiffDirection",
