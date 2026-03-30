@@ -323,6 +323,8 @@ class RoundEngine:
 
         report = []
         for issue in issue_tree.issues:
+            if not issue.evidence_ids:
+                continue
             issue_ev_ids = set(issue.evidence_ids)
             # 判断原告侧该争点是否有证据
             p_has = bool(issue_ev_ids & p_ev_ids)
