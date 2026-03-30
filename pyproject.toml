@@ -14,6 +14,8 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4.0",
 ]
 
 [tool.pytest.ini_options]
@@ -41,6 +43,23 @@ testpaths = [
     "engines/pretrial_conference/tests",
     "tests/integration",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E402",  # module-import-not-at-top: common pattern (sys.path setup in test helpers)
+    "E501",  # line-too-long: long lines are prevalent; enforce formatting separately
+    "F401",  # unused-import: to be cleaned up incrementally
+    "F541",  # f-string-without-placeholders: cosmetic, clean up incrementally
+    "F841",  # unused-variable: cosmetic, clean up incrementally
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["F821"]  # forward-ref string annotations in test helper methods
 
 [build-system]
 requires = ["setuptools>=68.0"]

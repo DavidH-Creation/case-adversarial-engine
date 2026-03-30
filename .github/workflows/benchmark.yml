@@ -1,0 +1,66 @@
+name: Benchmark
+
+on:
+  schedule:
+    # Every Sunday at 02:00 UTC
+    - cron: "0 2 * * 0"
+  workflow_dispatch:
+    inputs:
+      case_slug:
+        description: "Case slug to benchmark (leave empty for all)"
+        required: false
+        default: ""
+
+# ---------------------------------------------------------------------------
+# Placeholder structure — fill in once real LLM access is wired up in CI.
+# To activate: add ANTHROPIC_API_KEY to GitHub Actions secrets and uncomment
+# the benchmark step below.
+# ---------------------------------------------------------------------------
+
+jobs:
+  benchmark:
+    name: LLM Benchmark
+    runs-on: ubuntu-latest
+    # Prevent concurrent benchmark runs from interfering with each other
+    concurrency:
+      group: benchmark
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package with dev dependencies
+        run: pip install -e ".[dev]"
+
+      # ── Placeholder: acceptance tests against gold fixtures ──────────────────
+      # Uncomment and configure once ANTHROPIC_API_KEY is available in secrets.
+      #
+      # - name: Run acceptance benchmarks
+      #   env:
+      #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      #   run: |
+      #     pytest benchmarks/acceptance/ \
+      #       --tb=short \
+      #       -v \
+      #       ${{ github.event.inputs.case_slug && format('-k {0}', github.event.inputs.case_slug) || '' }}
+
+      - name: Run contract tests (no LLM required)
+        run: |
+          pytest \
+            -k "contract" \
+            --tb=short \
+            -v
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          path: |
+            outputs/
+            benchmarks/fixtures/
+          retention-days: 30
