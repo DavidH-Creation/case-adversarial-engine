@@ -114,23 +114,23 @@ class ExecutiveSummarizer:
     def _top3_immediate_actions(
         self, recommendation: Optional[ActionRecommendation]
     ) -> tuple[list[str] | str, Optional[str]]:
-        """从 ActionRecommendation 提取 Top3 立即行动。
+        """从 ActionRecommendation 提取 Top3 立即行动（文本形式）。
 
         P1.8 缺失（recommendation=None）时返回 ("未启用", None)。
         优先级顺序：
-        1. claims_to_abandon（最高：立即止损）
-        2. evidence_supplement_priorities（ROI 已排序的 gap_id）
-        3. recommended_claim_amendments（修改诉请）
-        4. trial_explanation_priorities（庭审解释）
+        1. claims_to_abandon（最高：立即止损）→ 返回 abandon_reason 文本
+        2. evidence_supplement_priorities（ROI 已排序的 gap_id）→ 保留 gap_id（通常可读）
+        3. recommended_claim_amendments（修改诉请）→ 返回 amendment_description 文本
+        4. trial_explanation_priorities（庭审解释）→ 返回 explanation_text 文本
         """
         if recommendation is None:
             return "未启用", None
 
         items: list[str] = []
-        items.extend(s.suggestion_id for s in recommendation.claims_to_abandon)
+        items.extend(s.abandon_reason for s in recommendation.claims_to_abandon)
         items.extend(recommendation.evidence_supplement_priorities)
-        items.extend(s.suggestion_id for s in recommendation.recommended_claim_amendments)
-        items.extend(p.priority_id for p in recommendation.trial_explanation_priorities)
+        items.extend(a.amendment_description for a in recommendation.recommended_claim_amendments)
+        items.extend(p.explanation_text for p in recommendation.trial_explanation_priorities)
 
         return items[:3], recommendation.recommendation_id
 
@@ -159,13 +159,14 @@ class ExecutiveSummarizer:
         4. 表为空时返回占位文本
         """
         # v2: 策略性输出优先
+        # 仅当争议类别为 amount_dispute 时附加金额附注，避免金额模块干扰主体争议类案件
         if action_rec and action_rec.strategic_headline:
-            amount_note = self._amount_summary(report)
             category = action_rec.case_dispute_category or "general"
-            return (
-                f"核心策略（{category}）：{action_rec.strategic_headline}"
-                f"（{amount_note}）"
-            )
+            headline = f"核心策略（{category}）：{action_rec.strategic_headline}"
+            if category == "amount_dispute":
+                amount_note = self._amount_summary(report)
+                return f"{headline}（{amount_note}）"
+            return headline
 
         table = report.claim_calculation_table
         if not table:

@@ -335,7 +335,7 @@ class TestTop3ImmediateActions:
         assert result.action_recommendation_id == "REC-XYZ"
 
     def test_abandon_suggestions_have_highest_priority(self):
-        """claims_to_abandon 的 suggestion_id 优先于其他条目出现在 top3。"""
+        """claims_to_abandon 的 abandon_reason 优先于其他条目出现在 top3。"""
         rec = _make_action_recommendation(
             abandon_ids=["ABD-001"],
             gap_ids=["GAP-001", "GAP-002"],
@@ -345,8 +345,8 @@ class TestTop3ImmediateActions:
         result = self.summarizer.summarize(inp)
         actions = result.top3_immediate_actions
         assert isinstance(actions, list)
-        assert "ABD-001" in actions
-        assert actions.index("ABD-001") == 0
+        # 放弃建议的文本（abandon_reason）应排在第一位
+        assert actions[0] == "证据不足"
 
     def test_empty_action_recommendation_returns_empty_list_with_rec_id(self):
         rec = _make_action_recommendation(rec_id="REC-EMPTY")
@@ -360,6 +360,27 @@ class TestTop3ImmediateActions:
         inp = _make_full_input(action_recommendation=rec)
         result = self.summarizer.summarize(inp)
         assert result.top3_immediate_actions == ["GAP-A", "GAP-B", "GAP-C"]
+
+    def test_trial_explanation_returns_explanation_text(self):
+        """trial_explanation_priorities 返回 explanation_text，不返回 priority_id UUID。"""
+        rec = _make_action_recommendation(trial_ids=["PRI-001", "PRI-002"])
+        inp = _make_full_input(action_recommendation=rec)
+        result = self.summarizer.summarize(inp)
+        actions = result.top3_immediate_actions
+        assert isinstance(actions, list)
+        assert "庭审解释" in actions[0]
+        assert "PRI-001" not in actions
+        assert "PRI-002" not in actions
+
+    def test_amendment_returns_amendment_description_text(self):
+        """recommended_claim_amendments 返回 amendment_description，不返回 suggestion_id UUID。"""
+        rec = _make_action_recommendation(amendment_ids=["AMD-001"])
+        inp = _make_full_input(action_recommendation=rec)
+        result = self.summarizer.summarize(inp)
+        actions = result.top3_immediate_actions
+        assert isinstance(actions, list)
+        assert "修改方向" in actions[0]
+        assert "AMD-001" not in actions
 
 
 # ---------------------------------------------------------------------------
@@ -474,6 +495,37 @@ class TestCurrentMostStableClaim:
         inp = _make_full_input(amount_calculation_report=report)
         result = self.summarizer.summarize(inp)
         assert "RPT-001" in result.current_most_stable_claim
+
+    def test_strategic_headline_non_amount_category_no_amount_note(self):
+        """借款人主体争议案型：strategic_headline 输出不附加金额附注。"""
+        rec = _make_action_recommendation()
+        rec = rec.model_copy(update={
+            "strategic_headline": "本案核心为借款人主体之争",
+            "case_dispute_category": "borrower_identity",
+        })
+        inp = _make_full_input(action_recommendation=rec)
+        result = self.summarizer.summarize(inp)
+        claim = result.current_most_stable_claim
+        assert "本案核心为借款人主体之争" in claim
+        assert "borrower_identity" in claim
+        # 金额附注不应出现在非金额争议案型的策略输出中
+        assert "delta=" not in claim
+        assert "principal" not in claim
+
+    def test_strategic_headline_amount_dispute_includes_amount_note(self):
+        """金额争议案型：strategic_headline 输出应附加金额附注。"""
+        rec = _make_action_recommendation()
+        rec = rec.model_copy(update={
+            "strategic_headline": "本金计算存在实质分歧",
+            "case_dispute_category": "amount_dispute",
+        })
+        inp = _make_full_input(action_recommendation=rec)
+        result = self.summarizer.summarize(inp)
+        claim = result.current_most_stable_claim
+        assert "本金计算存在实质分歧" in claim
+        assert "amount_dispute" in claim
+        # 金额附注应出现（delta=0 表示一致）
+        assert "delta=" in claim
 
 
 # ---------------------------------------------------------------------------
