@@ -36,6 +36,8 @@ class CaseType(str, Enum):
 class PromptProfile(str, Enum):
     """提示模板 key（engine-level）。NOT a CaseType value."""
     civil_loan = "civil_loan"
+    labor_dispute = "labor_dispute"
+    real_estate = "real_estate"
 
 
 class AccessDomain(str, Enum):
