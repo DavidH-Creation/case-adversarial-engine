@@ -48,6 +48,9 @@ testpaths = [
     "engines/simulation_run/alternative_claim_generator/tests",
     "engines/report_generation/executive_summarizer/tests",
     "engines/pretrial_conference/tests",
+    "engines/simulation_run/defense_chain/tests",
+    "engines/simulation_run/hearing_order/tests",
+    "engines/simulation_run/issue_dependency_graph/tests",
     "tests/integration",
 ]
 
