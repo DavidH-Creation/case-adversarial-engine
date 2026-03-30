@@ -19,6 +19,7 @@ from engines.shared.models import (  # noqa: F401
     Issue,
     OptimalAttackChain,
 )
+from engines.simulation_run.defense_chain.schemas import DefenseChainResult  # noqa: F401
 
 
 class ExecutiveSummarizerInput(BaseModel):
@@ -34,6 +35,7 @@ class ExecutiveSummarizerInput(BaseModel):
         action_recommendation:      P1.8 行动建议产物（可选，None 时降级为"未启用"）
         evidence_gap_items:         P1.7 缺证项列表（可选，None 时降级为"未启用"）
         decision_path_tree:         P0.3 裁判路径树（v7 新增，用于诉请拆分和内部决策摘要）
+        defense_chain_result:       防御链优化结果（可选，用于风险评估和防御策略摘要）
     """
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
@@ -45,4 +47,8 @@ class ExecutiveSummarizerInput(BaseModel):
     decision_path_tree: Optional[DecisionPathTree] = Field(
         default=None,
         description="v7: P0.3 裁判路径树，用于诉请拆分（一-2）和内部决策摘要（二-3）",
+    )
+    defense_chain_result: Optional[DefenseChainResult] = Field(
+        default=None,
+        description="防御链优化结果（用于风险评估中补充防御视角）",
     )

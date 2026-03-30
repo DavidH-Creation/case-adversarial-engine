@@ -1677,6 +1677,10 @@ class ExecutiveSummaryArtifact(BaseModel):
     adversary_attack_chain_id: str = Field(
         ..., min_length=1, description="绑定的 OptimalAttackChain.chain_id（可回连）"
     )
+    defense_chain_id: Optional[str] = Field(
+        default=None,
+        description="绑定的 PlaintiffDefenseChain.chain_id（可回连），防御链未启用时为 None",
+    )
     # v7: 拆分后的诉请结构（替代原 current_most_stable_claim 单一 str）
     claim_decomposition: Optional[ClaimDecomposition] = Field(
         default=None,

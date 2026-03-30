@@ -36,6 +36,7 @@ from engines.shared.models import (
     OptimalAttackChain,
     OutcomeImpact,
 )
+from engines.simulation_run.defense_chain.schemas import DefenseChainResult
 
 from .schemas import ExecutiveSummarizerInput
 
@@ -74,6 +75,7 @@ class ExecutiveSummarizer:
             inp.action_recommendation, inp.amount_calculation_report,
         )
         critical_gaps = self._critical_evidence_gaps(inp.evidence_gap_items)
+        defense_chain_result: DefenseChainResult | None = getattr(inp, "defense_chain_result", None)
         structured = self._build_structured_output(
             issues=inp.issue_list,
             top5_issue_ids=top5,
@@ -82,6 +84,7 @@ class ExecutiveSummarizer:
             critical_gaps=critical_gaps,
             amount_report=inp.amount_calculation_report,
             action_recommendation=inp.action_recommendation,
+            defense_chain_result=defense_chain_result,
         )
 
         # v7: 构建诉请拆分（替代原 current_most_stable_claim）
@@ -99,6 +102,8 @@ class ExecutiveSummarizer:
             top3_actions, critical_gaps, inp.action_recommendation,
         )
 
+        defense_chain_id = defense_chain_result.chain.chain_id if defense_chain_result else None
+
         return ExecutiveSummaryArtifact(
             summary_id=str(uuid.uuid4()),
             case_id=inp.case_id,
@@ -108,6 +113,7 @@ class ExecutiveSummarizer:
             action_recommendation_id=rec_id,
             top3_adversary_optimal_attacks=top3_attacks,
             adversary_attack_chain_id=inp.adversary_attack_chain.chain_id,
+            defense_chain_id=defense_chain_id,
             current_most_stable_claim=claim_text,
             claim_decomposition=claim_decomposition,
             strategic_summary=strategic_summary,
@@ -250,6 +256,7 @@ class ExecutiveSummarizer:
         critical_gaps: list[str] | str,
         amount_report: AmountCalculationReport,
         action_recommendation: Optional[ActionRecommendation],
+        defense_chain_result: Optional[DefenseChainResult] = None,
     ) -> ExecutiveSummaryStructuredOutput:
         """构建 P2 结构化 JSON 输出（纯规则层）。
 
@@ -292,6 +299,12 @@ class ExecutiveSummarizer:
             )
         if isinstance(critical_gaps, list) and critical_gaps:
             risk_assessment += f" 存在 {len(critical_gaps)} 条关键缺证，建议优先补充。"
+        if defense_chain_result:
+            dc = defense_chain_result.chain
+            risk_assessment += (
+                f" 原告方已构建 {len(dc.defense_points)} 个防御论点"
+                f"（置信度 {dc.confidence_score:.0%}）。"
+            )
 
         # recommended_actions: 来自 top3_immediate_actions
         if isinstance(top3_actions, list):
