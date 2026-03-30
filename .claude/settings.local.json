@@ -10,7 +10,9 @@
       "Bash(ruff check:*)",
       "Bash(grep -oP '\\\\b[A-Z]\\\\d{3,4}\\\\b')",
       "Bash(grep -r \"pytest.mark\\\\|llm_required\\\\|real_llm\\\\|skip\" engines/shared/tests/ --include=*.py -l)",
-      "Bash(ruff format:*)"
+      "Bash(ruff format:*)",
+      "Bash(python -m pytest tests/ -x -q --tb=short)",
+      "Bash(python -m pytest tests/integration/test_pretrial_pipeline.py -v --tb=short)"
     ]
   }
 }
