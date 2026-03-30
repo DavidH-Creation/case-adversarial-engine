@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**", "feature/**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint — ruff check + ruff format
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install "ruff>=0.4.0"
+
+      - name: ruff check
+        run: ruff check .
+
+      - name: ruff format (advisory)
+        # Non-blocking until the codebase is fully formatted.
+        # Run `ruff format .` locally and commit to make this blocking.
+        run: ruff format --check .
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Unit tests — all mock tests, integration tests excluded
+  # ---------------------------------------------------------------------------
+  unit-tests:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package with dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run unit tests with coverage
+        run: |
+          pytest \
+            --ignore=tests/integration \
+            --cov=engines \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -q
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.11'
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Contract tests — JSON schema / Pydantic model consistency
+  # ---------------------------------------------------------------------------
+  contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package with dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run contract tests
+        run: |
+          pytest \
+            -k "contract" \
+            --tb=short \
+            -v
