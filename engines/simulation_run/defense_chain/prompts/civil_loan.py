@@ -6,9 +6,10 @@ LLM prompt templates for civil loan case type defense chain optimization.
 """
 from __future__ import annotations
 
+from engines.shared.few_shot_examples import load_few_shot_text
 from engines.shared.models import EvidenceIndex, Issue
 
-SYSTEM_PROMPT = """\
+_BASE_SYSTEM_PROMPT = """\
 你是一名专业的中国民间借贷案件法律顾问，负责为原告方生成最优防御策略链。
 
 你的任务是针对每个争点，生成原告方的防御论点，并按优先级排序，形成完整的庭审防御链。
@@ -48,6 +49,8 @@ SYSTEM_PROMPT = """\
 - supporting_argument 应具体引用证据内容，不得空泛
 - 对证据薄弱的争点，说明补充证据的方向
 """
+
+SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text("defense_chain")
 
 
 def build_user_prompt(

@@ -1,0 +1,28 @@
+[
+  {
+    "input_summary": "民间借贷案，争点：借贷关系是否成立。原告持有借条原件(ev-note)和银行转账凭证(ev-transfer)，被告无直接反驳证据。",
+    "expected_output": {
+      "title": "原告主张借贷关系成立",
+      "body": "原告持有被告签署的借条原件[ev-note]，载明借款金额218,000元、利率及还款期限，具备完整借贷合意要素。同时银行转账记录[ev-transfer]证明款项已实际交付，形成完整的借贷证据链。借条与转账凭证相互印证，足以认定借贷关系成立（孤证，证明力需质证确认）。",
+      "issue_ids": ["issue-loan-001"],
+      "evidence_citations": ["ev-note", "ev-transfer"],
+      "own_weaknesses": ["借条未约定具体还款方式，仅约定月还金额，若被告主张已部分清偿存在计算争议"],
+      "risk_flags": [
+        {
+          "flag_id": "rf-001",
+          "description": "转账金额228,000元与借条本金218,000元存在10,000元差额，需解释",
+          "impact_objects": ["supported_amount"],
+          "impact_objects_scored": true
+        }
+      ],
+      "arguments": [
+        {
+          "issue_id": "issue-loan-001",
+          "position": "借条原件+银行转账双重证据证明借贷合意及款项交付，借贷关系依法成立",
+          "supporting_evidence_ids": ["ev-note", "ev-transfer"],
+          "legal_basis": "《民法典》第六百六十七条、第六百七十九条"
+        }
+      ]
+    }
+  }
+]

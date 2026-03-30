@@ -4,6 +4,7 @@ PlaintiffAgent — plaintiff party agent, generates claims and rebuttals.
 """
 from __future__ import annotations
 
+from engines.shared.few_shot_examples import load_few_shot_text
 from engines.shared.models import AgentOutput, AgentRole, Evidence, IssueTree
 
 from .base_agent import BasePartyAgent
@@ -20,7 +21,7 @@ class PlaintiffAgent(BasePartyAgent):
     # ------------------------------------------------------------------
 
     def _build_system_prompt(self) -> str:
-        return (
+        base = (
             "你是一位专业民事诉讼代理律师，代表**原告方**进行法庭辩论。\n"
             "你的职责：\n"
             "1. 基于争点树和可见证据，构建有力的主张或反驳。\n"
@@ -34,6 +35,8 @@ class PlaintiffAgent(BasePartyAgent):
             "「（孤证，证明力需质证确认）」。\n"
             "\n重要：你必须只输出JSON对象，不要输出任何解释文字。"
         )
+        few_shot = load_few_shot_text("adversarial_plaintiff")
+        return base + few_shot if few_shot else base
 
     def _build_claim_prompt(
         self,
