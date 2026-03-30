@@ -28,6 +28,9 @@ SYSTEM_PROMPT = """\
 - admissibility_gate：本路径成立的前提——哪些证据必须被法庭采信（evidence_id 列表）
 - result_scope：裁判范围标签列表（可多选：principal / interest / penalty / liability_allocation / credibility / attorney_fee / costs）
 - fallback_path_id：若本路径关键证据未被采信或争点结论不利，降级到哪条路径的 path_id（最后一条路径可为空字符串）
+- probability：本路径在当前证据状态下的触发概率（0.0-1.0 浮点数）；综合评估以下因素：① 支撑证据数量与质量（直接证据 vs 间接证据）；② 关键阻断条件能否被满足；③ 法律先例与裁判口径的对齐度；④ 争点树中高影响力争点的分布
+- probability_rationale：概率评估依据（1-2 句话，说明主要支撑因素和制约因素）
+- party_favored：本路径结果对哪方更有利，枚举值之一：plaintiff（对原告有利）/ defendant（对被告有利）/ neutral（中性）
 
 ## 证据极性规则（Evidence Polarity）—— 最高优先级
 
@@ -117,7 +120,10 @@ SYSTEM_PROMPT = """\
       "fallback_path_id": "path-C",
       "possible_outcome": "全额支持原告——认定借贷关系成立，判令被告偿还借款本金及利息",
       "confidence_interval": {"lower": 0.3, "upper": 0.6},
-      "path_notes": "依赖原告转账凭证与借贷合意的直接证据；counter_evidence_ids 中的被告证据系对本路径结论的反驳"
+      "path_notes": "依赖原告转账凭证与借贷合意的直接证据；counter_evidence_ids 中的被告证据系对本路径结论的反驳",
+      "probability": 0.45,
+      "probability_rationale": "原告持有直接转账凭证（直接证据），但借贷合意缺少书面合同支撑（制约因素），综合评估概率中等偏下。",
+      "party_favored": "plaintiff"
     }
   ],
   "blocking_conditions": [

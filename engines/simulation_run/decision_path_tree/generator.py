@@ -41,6 +41,7 @@ from engines.shared.models import (
     EvidenceIndex,
     EvidenceStatus,
     LLMClient,
+    PathRankingItem,
 )
 
 from .prompts import PROMPT_REGISTRY
@@ -184,6 +185,8 @@ class DecisionPathTreeGenerator:
             known_evidence_ids=known_evidence_ids,
         )
 
+        ranking = self._compute_path_ranking(cleaned_paths)
+
         return DecisionPathTree(
             tree_id=f"tree-{uuid4().hex[:8]}",
             case_id=inp.case_id,
@@ -191,6 +194,10 @@ class DecisionPathTreeGenerator:
             paths=cleaned_paths,
             blocking_conditions=cleaned_blocking,
             created_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            most_likely_path=ranking["most_likely_path"],
+            plaintiff_best_path=ranking["plaintiff_best_path"],
+            defendant_best_path=ranking["defendant_best_path"],
+            path_ranking=ranking["path_ranking"],
         )
 
     # ------------------------------------------------------------------
@@ -427,6 +434,33 @@ class DecisionPathTreeGenerator:
                         p["fallback_path_id"] = p.pop(alias)
                         break
 
+            # --- v1.6: probability aliases ---
+            # Note: if LLM returned probability_label/probability_tier earlier (already consumed
+            # into confidence_interval), we only handle numeric probability here.
+            if "probability" not in p:
+                for alias in ("path_probability", "trigger_probability", "概率"):
+                    if alias in p:
+                        val = p.pop(alias)
+                        if isinstance(val, (int, float)):
+                            p["probability"] = float(val)
+                        break
+
+            # --- v1.6: probability_rationale aliases ---
+            if "probability_rationale" not in p:
+                for alias in ("probability_reason", "rationale", "probability_basis",
+                              "概率依据", "probability_explanation"):
+                    if alias in p:
+                        p["probability_rationale"] = str(p.pop(alias))
+                        break
+
+            # --- v1.6: party_favored aliases ---
+            if "party_favored" not in p:
+                for alias in ("favored_party", "favorable_to", "beneficiary",
+                              "有利方", "party_benefit"):
+                    if alias in p:
+                        p["party_favored"] = str(p.pop(alias))
+                        break
+
             # --- Layer 2: pattern-based fallback for possible_outcome ---
             if "possible_outcome" not in p:
                 _OUTCOME_PATS = ("outcome", "result", "ruling", "judgment",
@@ -658,6 +692,18 @@ class DecisionPathTreeGenerator:
             clean_scope = [s for s in item.result_scope if s in _VALID_RESULT_SCOPES]
             fallback = item.fallback_path_id if item.fallback_path_id else None
 
+            # v1.6: probability — clamp to [0, 1]; default 0.5 if missing
+            probability = max(0.0, min(1.0, item.probability))
+
+            # v1.6: party_favored — normalise to known values
+            raw_party = (item.party_favored or "").strip().lower()
+            if raw_party in ("plaintiff", "原告"):
+                party_favored = "plaintiff"
+            elif raw_party in ("defendant", "被告"):
+                party_favored = "defendant"
+            else:
+                party_favored = "neutral"
+
             result.append(DecisionPath(
                 path_id=item.path_id,
                 trigger_condition=item.trigger_condition,
@@ -670,6 +716,9 @@ class DecisionPathTreeGenerator:
                 admissibility_gate=clean_gate,
                 result_scope=clean_scope,
                 fallback_path_id=fallback,
+                probability=probability,
+                probability_rationale=item.probability_rationale,
+                party_favored=party_favored,
             ))
 
         return result
@@ -729,6 +778,49 @@ class DecisionPathTreeGenerator:
             ))
 
         return result
+
+    @staticmethod
+    def _compute_path_ranking(paths: list[DecisionPath]) -> dict:
+        """从已处理的路径列表计算概率排名比较结果。
+
+        Returns a dict with:
+            most_likely_path, plaintiff_best_path, defendant_best_path, path_ranking
+        """
+        if not paths:
+            return {
+                "most_likely_path": None,
+                "plaintiff_best_path": None,
+                "defendant_best_path": None,
+                "path_ranking": [],
+            }
+
+        # Sort by probability descending
+        ranked = sorted(paths, key=lambda p: p.probability, reverse=True)
+
+        most_likely_path = ranked[0].path_id
+
+        plaintiff_paths = [p for p in ranked if p.party_favored == "plaintiff"]
+        defendant_paths = [p for p in ranked if p.party_favored == "defendant"]
+
+        plaintiff_best_path = plaintiff_paths[0].path_id if plaintiff_paths else None
+        defendant_best_path = defendant_paths[0].path_id if defendant_paths else None
+
+        path_ranking = [
+            PathRankingItem(
+                path_id=p.path_id,
+                probability=p.probability,
+                party_favored=p.party_favored,
+                key_conditions=[p.trigger_condition] if p.trigger_condition else [],
+            )
+            for p in ranked
+        ]
+
+        return {
+            "most_likely_path": most_likely_path,
+            "plaintiff_best_path": plaintiff_best_path,
+            "defendant_best_path": defendant_best_path,
+            "path_ranking": path_ranking,
+        }
 
     def _empty_tree(self, inp: DecisionPathTreeInput) -> DecisionPathTree:
         """LLM 失败时返回空 DecisionPathTree。"""

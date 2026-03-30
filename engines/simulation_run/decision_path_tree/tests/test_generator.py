@@ -781,6 +781,211 @@ class TestEvidencePolarity:
         assert "ev-defendant-006" in path.counter_evidence_ids
 
 
+class TestPathProbabilityRanking:
+    """v1.6: 路径概率排名测试。"""
+
+    def _llm_response_with_probabilities(
+        self,
+        paths_spec: list[dict],
+    ) -> str:
+        """构造带有概率字段的 LLM 响应 JSON。"""
+        paths = []
+        for i, spec in enumerate(paths_spec):
+            paths.append({
+                "path_id": spec.get("path_id", f"path-{chr(65 + i)}"),
+                "trigger_condition": spec.get("trigger_condition", f"触发条件 {i + 1}"),
+                "trigger_issue_ids": spec.get("trigger_issue_ids", ["issue-001"]),
+                "key_evidence_ids": spec.get("key_evidence_ids", ["ev-001"]),
+                "possible_outcome": spec.get("possible_outcome", f"裁判结果 {i + 1}"),
+                "confidence_interval": {"lower": 0.2, "upper": 0.6},
+                "path_notes": "",
+                "probability": spec.get("probability", 0.5),
+                "probability_rationale": spec.get("probability_rationale", "测试依据"),
+                "party_favored": spec.get("party_favored", "neutral"),
+            })
+        return json.dumps({"paths": paths, "blocking_conditions": []}, ensure_ascii=False)
+
+    @pytest.mark.asyncio
+    async def test_most_likely_path_is_highest_probability(self):
+        """most_likely_path 应指向概率最高的路径。"""
+        response = self._llm_response_with_probabilities([
+            {"path_id": "path-A", "probability": 0.3, "party_favored": "plaintiff"},
+            {"path_id": "path-B", "probability": 0.6, "party_favored": "defendant"},
+            {"path_id": "path-C", "probability": 0.1, "party_favored": "neutral"},
+        ])
+        result = await _make_generator(response).generate(_make_input())
+
+        assert result.most_likely_path == "path-B"
+
+    @pytest.mark.asyncio
+    async def test_plaintiff_best_path_is_highest_probability_plaintiff_path(self):
+        """plaintiff_best_path 应是 plaintiff 路径中概率最高的。"""
+        response = self._llm_response_with_probabilities([
+            {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
+            {"path_id": "path-B", "probability": 0.7, "party_favored": "defendant"},
+            {"path_id": "path-C", "probability": 0.55, "party_favored": "plaintiff"},
+        ])
+        result = await _make_generator(response).generate(_make_input())
+
+        assert result.plaintiff_best_path == "path-C"
+
+    @pytest.mark.asyncio
+    async def test_defendant_best_path_is_highest_probability_defendant_path(self):
+        """defendant_best_path 应是 defendant 路径中概率最高的。"""
+        response = self._llm_response_with_probabilities([
+            {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
+            {"path_id": "path-B", "probability": 0.5, "party_favored": "defendant"},
+            {"path_id": "path-C", "probability": 0.3, "party_favored": "defendant"},
+        ])
+        result = await _make_generator(response).generate(_make_input())
+
+        assert result.defendant_best_path == "path-B"
+
+    @pytest.mark.asyncio
+    async def test_path_ranking_sorted_by_probability_descending(self):
+        """path_ranking 按概率降序排列。"""
+        response = self._llm_response_with_probabilities([
+            {"path_id": "path-A", "probability": 0.2, "party_favored": "plaintiff"},
+            {"path_id": "path-B", "probability": 0.7, "party_favored": "defendant"},
+            {"path_id": "path-C", "probability": 0.5, "party_favored": "neutral"},
+        ])
+        result = await _make_generator(response).generate(_make_input())
+
+        assert len(result.path_ranking) == 3
+        probs = [r.probability for r in result.path_ranking]
+        assert probs == sorted(probs, reverse=True)
+        assert result.path_ranking[0].path_id == "path-B"
+
+    @pytest.mark.asyncio
+    async def test_path_ranking_contains_correct_party_favored(self):
+        """path_ranking 条目的 party_favored 与路径一致。"""
+        response = self._llm_response_with_probabilities([
+            {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
+            {"path_id": "path-B", "probability": 0.6, "party_favored": "defendant"},
+        ])
+        result = await _make_generator(response).generate(_make_input())
+
+        by_id = {r.path_id: r for r in result.path_ranking}
+        assert by_id["path-A"].party_favored == "plaintiff"
+        assert by_id["path-B"].party_favored == "defendant"
+
+    @pytest.mark.asyncio
+    async def test_plaintiff_best_path_none_when_no_plaintiff_paths(self):
+        """没有 plaintiff 路径时 plaintiff_best_path 为 None。"""
+        response = self._llm_response_with_probabilities([
+            {"path_id": "path-A", "probability": 0.6, "party_favored": "defendant"},
+            {"path_id": "path-B", "probability": 0.4, "party_favored": "neutral"},
+        ])
+        result = await _make_generator(response).generate(_make_input())
+
+        assert result.plaintiff_best_path is None
+
+    @pytest.mark.asyncio
+    async def test_path_probability_rationale_preserved(self):
+        """probability_rationale 字段被保留到 DecisionPath。"""
+        response = self._llm_response_with_probabilities([
+            {
+                "path_id": "path-A",
+                "probability": 0.6,
+                "party_favored": "plaintiff",
+                "probability_rationale": "直接转账凭证支撑，主体认定清晰",
+            },
+        ])
+        result = await _make_generator(response).generate(_make_input())
+
+        assert len(result.paths) == 1
+        assert result.paths[0].probability_rationale == "直接转账凭证支撑，主体认定清晰"
+
+    @pytest.mark.asyncio
+    async def test_party_favored_normalised_to_known_values(self):
+        """party_favored 归一化：'原告' → 'plaintiff', '被告' → 'defendant', 其他 → 'neutral'。"""
+        response = json.dumps({
+            "paths": [
+                {
+                    "path_id": "path-A",
+                    "trigger_condition": "触发",
+                    "trigger_issue_ids": ["issue-001"],
+                    "key_evidence_ids": ["ev-001"],
+                    "possible_outcome": "结果",
+                    "confidence_interval": {"lower": 0.2, "upper": 0.6},
+                    "path_notes": "",
+                    "probability": 0.5,
+                    "probability_rationale": "",
+                    "party_favored": "原告",
+                },
+                {
+                    "path_id": "path-B",
+                    "trigger_condition": "触发",
+                    "trigger_issue_ids": ["issue-001"],
+                    "key_evidence_ids": ["ev-001"],
+                    "possible_outcome": "结果",
+                    "confidence_interval": {"lower": 0.2, "upper": 0.6},
+                    "path_notes": "",
+                    "probability": 0.3,
+                    "probability_rationale": "",
+                    "party_favored": "被告",
+                },
+                {
+                    "path_id": "path-C",
+                    "trigger_condition": "触发",
+                    "trigger_issue_ids": ["issue-001"],
+                    "key_evidence_ids": ["ev-001"],
+                    "possible_outcome": "结果",
+                    "confidence_interval": {"lower": 0.2, "upper": 0.6},
+                    "path_notes": "",
+                    "probability": 0.2,
+                    "probability_rationale": "",
+                    "party_favored": "unknown_value",
+                },
+            ],
+            "blocking_conditions": [],
+        }, ensure_ascii=False)
+        result = await _make_generator(response).generate(_make_input())
+
+        by_id = {p.path_id: p for p in result.paths}
+        assert by_id["path-A"].party_favored == "plaintiff"
+        assert by_id["path-B"].party_favored == "defendant"
+        assert by_id["path-C"].party_favored == "neutral"
+
+    @pytest.mark.asyncio
+    async def test_empty_paths_produces_empty_ranking(self):
+        """LLM 失败时路径为空，ranking 也为空，比较字段为 None。"""
+        result = await _make_generator("", fail=True).generate(_make_input())
+
+        assert result.most_likely_path is None
+        assert result.plaintiff_best_path is None
+        assert result.defendant_best_path is None
+        assert result.path_ranking == []
+
+    @pytest.mark.asyncio
+    async def test_compute_path_ranking_static_method_directly(self):
+        """直接测试 _compute_path_ranking 静态方法。"""
+        from engines.shared.models import DecisionPath, ConfidenceInterval
+        paths = [
+            DecisionPath(
+                path_id="p1",
+                trigger_condition="条件1",
+                possible_outcome="结果1",
+                probability=0.3,
+                party_favored="plaintiff",
+            ),
+            DecisionPath(
+                path_id="p2",
+                trigger_condition="条件2",
+                possible_outcome="结果2",
+                probability=0.7,
+                party_favored="defendant",
+            ),
+        ]
+        ranking = DecisionPathTreeGenerator._compute_path_ranking(paths)
+
+        assert ranking["most_likely_path"] == "p2"
+        assert ranking["plaintiff_best_path"] == "p1"
+        assert ranking["defendant_best_path"] == "p2"
+        assert ranking["path_ranking"][0].path_id == "p2"
+        assert ranking["path_ranking"][1].path_id == "p1"
+
+
 class TestOpusStyleNormalization:
     """测试 Opus 风格 LLM 输出归一化。"""
 
