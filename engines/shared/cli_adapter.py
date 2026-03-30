@@ -2,27 +2,40 @@
 CLI Adapter — 通过 subprocess 调用 Claude CLI 和 Codex CLI 的 LLMClient 实现。
 CLI Adapter — LLMClient implementations that call Claude CLI and Codex CLI via subprocess.
 
-两个类都实现 LLMClient Protocol（engines/shared/models.py），可直接传给所有引擎组件。
-Both classes implement the LLMClient Protocol and can be passed to any engine component.
+三个类都实现 LLMClient Protocol（engines/shared/models.py），可直接传给所有引擎组件。
+All three classes implement the LLMClient Protocol and can be passed to any engine component.
 
 用法 / Usage::
 
-    from engines.shared.cli_adapter import ClaudeCLIClient, CodexCLIClient
+    from engines.shared.cli_adapter import ClaudeCLIClient, CodexCLIClient, AnthropicSDKClient
 
-    claude = ClaudeCLIClient()
-    codex  = CodexCLIClient()
+    claude = ClaudeCLIClient()        # Claude CLI subprocess（向后兼容）
+    codex  = CodexCLIClient()         # Codex CLI subprocess
+    sdk    = AnthropicSDKClient()     # Anthropic Python SDK（支持 tool_use 结构化输出）
 
     text = await claude.create_message(system="你是律师", user="分析这份借条")
     text = await codex.create_message(system="你是律师", user="分析这份借条")
+    text = await sdk.create_message(system="你是律师", user="分析这份借条")
+
+    # tool_use 结构化输出 / Structured output via tool_use:
+    json_str = await sdk.create_message(
+        system="你是律师", user="分析这份借条",
+        tools=[{"name": "t", "description": "...", "input_schema": {...}}],
+        tool_choice={"type": "tool", "name": "t"},
+    )  # 返回 json.dumps(block.input) / returns json.dumps(block.input)
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 import re
 import shutil
 import sys
 from typing import Any
+
+_sdk_logger = logging.getLogger(__name__)
 
 
 class CLINotFoundError(RuntimeError):
@@ -315,3 +328,109 @@ class CodexCLIClient:
             raise CLICallError("codex", proc.returncode, stderr.decode(errors="replace"))
 
         return stdout.decode(errors="replace").strip()
+
+
+# ---------------------------------------------------------------------------
+# AnthropicSDKClient
+# ---------------------------------------------------------------------------
+
+
+class AnthropicSDKClient:
+    """通过 Anthropic Python SDK 直接调用 Claude API 的 LLMClient 实现。
+    LLMClient implementation using the Anthropic Python SDK directly.
+
+    相比 ClaudeCLIClient，优势在于支持 tool_use（结构化输出）：
+    When create_message receives a ``tools`` kwarg, it uses the Claude API's
+    tool_use mode and returns ``json.dumps(block.input)`` — a JSON string
+    guaranteed to conform to the tool's ``input_schema``.  This is consumed
+    by ``_extract_json_object`` in the normal pipeline, requiring zero changes
+    to the downstream parsing/validation logic.
+
+    当 ``tools`` 未传入时，行为与 ClaudeCLIClient 等价，返回普通文本响应。
+    Without ``tools``, behaviour is equivalent to ClaudeCLIClient — plain text.
+
+    Args:
+        api_key:  Anthropic API key（None 则读取 ANTHROPIC_API_KEY 环境变量）
+                  None reads from ANTHROPIC_API_KEY env var.
+        timeout:  每次调用最长等待秒数 / Max seconds per call (default 120)
+    """
+
+    # 标记位：evidence_indexer 等需要数组输出的引擎通过此属性判断是否走 tool_use 路径
+    # Marker flag: engines that need array output (e.g. evidence_indexer) use this to
+    # decide whether to take the tool_use path or the _extract_json_array fallback path.
+    _supports_structured_output: bool = True
+
+    def __init__(self, api_key: str | None = None, timeout: float = 120.0) -> None:
+        try:
+            from anthropic import AsyncAnthropic  # noqa: PLC0415
+        except ImportError as exc:
+            raise ImportError(
+                "anthropic 库未安装。请运行: pip install 'anthropic>=0.39.0'\n"
+                "anthropic package not installed. Run: pip install 'anthropic>=0.39.0'"
+            ) from exc
+        self._client = AsyncAnthropic(api_key=api_key, timeout=timeout)
+
+    async def create_message(
+        self,
+        *,
+        system: str,
+        user: str,
+        model: str = "claude-sonnet-4-6",
+        temperature: float = 0.0,
+        max_tokens: int = 4096,
+        tools: list[dict] | None = None,
+        tool_choice: dict | None = None,
+        **kwargs: Any,
+    ) -> str:
+        """调用 Anthropic Claude API 并返回文本响应。
+        Call Anthropic Claude API and return a text response.
+
+        tool_use 模式 / tool_use mode:
+          当 ``tools`` 非 None 时，传入 tool_use 参数并强制使用指定 tool。
+          返回 ``json.dumps(block.input)``（符合 input_schema 的 JSON 字符串）。
+          When ``tools`` is not None, passes tool_use params and forces the
+          specified tool.  Returns ``json.dumps(block.input)`` — a JSON string
+          conforming to ``input_schema``.
+
+        Raises:
+            anthropic.APIError: API 调用失败（由 call_llm_with_retry 捕获并重试）
+                                 API call failed (caught and retried by call_llm_with_retry).
+        """
+        params: dict[str, Any] = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "messages": [{"role": "user", "content": user}],
+        }
+        if system:
+            params["system"] = system
+        # Claude API 仅在 temperature>0 时接受该参数；0 则使用默认值
+        # Claude API only accepts temperature when > 0; use default otherwise
+        if temperature > 0.0:
+            params["temperature"] = temperature
+        if tools is not None:
+            params["tools"] = tools
+        if tool_choice is not None:
+            params["tool_choice"] = tool_choice
+
+        response = await self._client.messages.create(**params)
+
+        # tool_use 模式：提取 tool_use block 并序列化 input 为 JSON 字符串
+        # tool_use mode: extract the tool_use block and serialize input as JSON
+        if tools is not None:
+            for block in response.content:
+                if block.type == "tool_use":
+                    return json.dumps(block.input, ensure_ascii=False)
+            # 理论上不会执行到这里（tool_choice 强制使用了指定 tool）
+            # Should not reach here when tool_choice forces a specific tool
+            _sdk_logger.warning(
+                "AnthropicSDKClient: tools provided (%d) but no tool_use block in response "
+                "(stop_reason=%s); falling back to text extraction",
+                len(tools),
+                getattr(response, "stop_reason", "unknown"),
+            )
+
+        # 普通文本模式：返回第一个 text block / Normal text mode: return first text block
+        for block in response.content:
+            if hasattr(block, "text"):
+                return block.text  # type: ignore[return-value]
+        return ""

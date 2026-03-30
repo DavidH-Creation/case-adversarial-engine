@@ -51,6 +51,8 @@ async def call_llm_with_retry(
     temperature: float = 0.0,
     max_tokens: int = 4096,
     max_retries: int = 3,
+    tools: "list[dict] | None" = None,
+    tool_choice: "dict | None" = None,
     **kwargs: Any,
 ) -> str:
     """LLM 调用（带指数退避重试）。
@@ -70,10 +72,20 @@ async def call_llm_with_retry(
         max_retries: 失败后最大重试次数（默认 3）。max_retries=3 → 最多 4 次总调用。
                      Max retries after initial failure (default 3).
                      max_retries=3 → up to 4 total calls.
+        tools:       tool_use 模式的 tool 定义列表（可选）。
+                     AnthropicSDKClient 会使用 tool_use API；其他客户端通过 **kwargs
+                     透传，由 create_message 自行决定是否处理。
+                     Tool definitions for tool_use mode (optional).
+                     AnthropicSDKClient uses tool_use API; other clients receive it
+                     via **kwargs and may ignore it.
+        tool_choice: tool_use 模式的 tool 选择策略（可选，配合 tools 使用）。
+                     Tool selection strategy for tool_use mode (optional, used with tools).
         **kwargs:    透传给 create_message 的额外参数 / Extra kwargs forwarded.
 
     Returns:
         LLM 文本响应 / LLM text response.
+        当 tools 被 AnthropicSDKClient 处理时，返回 json.dumps(block.input) 字符串。
+        When tools are handled by AnthropicSDKClient, returns json.dumps(block.input).
 
     Raises:
         RuntimeError: 所有重试均失败 / All attempts failed.
@@ -91,12 +103,18 @@ async def call_llm_with_retry(
             await _sleep(delay)
 
         try:
+            extra: dict[str, Any] = {}
+            if tools is not None:
+                extra["tools"] = tools
+            if tool_choice is not None:
+                extra["tool_choice"] = tool_choice
             return await llm.create_message(
                 system=system,
                 user=user,
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                **extra,
                 **kwargs,
             )
         except Exception as e:  # noqa: BLE001

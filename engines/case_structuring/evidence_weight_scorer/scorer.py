@@ -36,12 +36,17 @@ from engines.shared.models import (
     Vulnerability,
 )
 
+from engines.shared.structured_output import call_structured_llm
+
 from .prompts import PROMPT_REGISTRY
 from .schemas import (
     EvidenceWeightScorerInput,
     LLMEvidenceWeightItem,
     LLMEvidenceWeightOutput,
 )
+
+# tool_use JSON Schema（模块加载时计算一次）
+_TOOL_SCHEMA: dict = LLMEvidenceWeightOutput.model_json_schema()
 
 # 枚举映射表（字符串 → 枚举值）
 _AUTHENTICITY_RISK_MAP: dict[str, AuthenticityRisk] = {v.value: v for v in AuthenticityRisk}
@@ -130,33 +135,29 @@ class EvidenceWeightScorer:
     async def _call_llm(
         self, inp: EvidenceWeightScorerInput
     ) -> LLMEvidenceWeightOutput | None:
-        """调用 LLM，失败时返回 None（不抛异常）。"""
+        """调用 LLM（结构化输出优先，fallback 到 json_utils），失败时返回 None（不抛异常）。
+        Call LLM (structured output first, fallback to json_utils); returns None on failure.
+        """
         system = self._prompts["system"]
         user = self._prompts["build_user"](evidence_index=inp.evidence_index)
 
-        from engines.shared.llm_utils import call_llm_with_retry
         try:
-            raw = await call_llm_with_retry(
+            data = await call_structured_llm(
                 self._llm,
                 system=system,
                 user=user,
                 model=self._model,
+                tool_name="score_evidence_weights",
+                tool_description="对案件证据进行四维度权重评分（真实性风险、相关度、证明力、脆弱性）。"
+                                 "Score case evidence on four dimensions: authenticity risk, "
+                                 "relevance, probative value, and vulnerability.",
+                tool_schema=_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_retries=self._max_retries,
             )
-            return self._parse_llm_output(raw)
-        except Exception as e:  # noqa: BLE001
-            logger.debug("EvidenceWeightScorer LLM 调用失败: %s", type(e).__name__)
-            return None
-
-    def _parse_llm_output(self, raw: str) -> LLMEvidenceWeightOutput | None:
-        """解析 LLM 输出 JSON，失败时返回 None。"""
-        from engines.shared.json_utils import _extract_json_object
-        try:
-            data = _extract_json_object(raw)
             return LLMEvidenceWeightOutput.model_validate(data)
         except Exception as e:  # noqa: BLE001
-            logger.debug("EvidenceWeightScorer LLM 输出解析失败: %s", e)
+            logger.debug("EvidenceWeightScorer LLM 调用或解析失败: %s", type(e).__name__)
             return None
 
     def _build_scored_map(

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from engines.shared.json_utils import _extract_json_array
 from engines.shared.models import LLMClient
+from engines.shared.structured_output import call_structured_llm
 
 from .schemas import (
     AccessDomain,
@@ -21,6 +22,20 @@ from .schemas import (
     LLMEvidenceItem,
     RawMaterial,
 )
+
+# tool_use 模式：将证据列表包装在对象内（Anthropic tool_use 要求顶层为 object）
+# tool_use mode: wrap evidence list inside an object (Anthropic tool_use requires top-level object)
+_TOOL_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "evidence_items": {
+            "type": "array",
+            "description": "从案件材料中提取的证据列表 / List of evidence items extracted from case materials",
+            "items": LLMEvidenceItem.model_json_schema(),
+        }
+    },
+    "required": ["evidence_items"],
+}
 
 
 
@@ -174,11 +189,9 @@ class EvidenceIndexer:
             materials=materials_block,
         )
 
-        # 调用 LLM（带重试）/ Call LLM with retry
-        raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
-
-        # 解析 LLM 输出 / Parse LLM output
-        raw_items = _extract_json_array(raw_response)
+        # 调用 LLM（结构化输出优先，fallback 到 json_utils）
+        # Call LLM (structured output first, fallback to json_utils)
+        raw_items = await self._call_llm_structured(system_prompt, user_prompt)
 
         # 构建 Evidence 对象 / Build Evidence objects
         evidences = self._build_evidences(raw_items, case_id, owner_party_id, case_slug)
@@ -195,23 +208,42 @@ class EvidenceIndexer:
 
         return evidences
 
-    async def _call_llm_with_retry(
-        self, system: str, user: str
-    ) -> str:
-        """调用 LLM 并在失败时重试 / Call LLM with retry on failure.
+    async def _call_llm_structured(self, system: str, user: str) -> list[dict]:
+        """调用 LLM 并返回证据条目列表（结构化输出优先，fallback 到 json_utils）。
+        Call LLM and return list of evidence items (structured output first, fallback to json_utils).
 
-        Args:
-            system: 系统提示词 / System prompt
-            user: 用户消息 / User message
+        主路径（AnthropicSDKClient）：使用 tool_use，返回包装对象中的 evidence_items 列表。
+        Primary path (AnthropicSDKClient): uses tool_use, returns evidence_items from wrapped object.
 
-        Returns:
-            LLM 的文本响应 / LLM text response
+        Fallback 路径（其他客户端）：LLM 返回 JSON 数组，由 _extract_json_array 解析。
+        Fallback path (other clients): LLM returns JSON array, parsed by _extract_json_array.
 
         Raises:
             RuntimeError: 超过最大重试次数 / Exceeded max retries
+            ValueError:   响应无法解析 / Response cannot be parsed
         """
+        # AnthropicSDKClient 支持 tool_use：使用包装 schema，返回 {"evidence_items": [...]}
+        # AnthropicSDKClient supports tool_use: use wrapped schema, returns {"evidence_items": [...]}
+        if getattr(self._llm_client, "_supports_structured_output", False):
+            data = await call_structured_llm(
+                self._llm_client,
+                system=system,
+                user=user,
+                model=self._model,
+                tool_name="index_evidence",
+                tool_description="从案件材料中提取结构化证据条目列表。"
+                                 "Extract a list of structured evidence items from case materials.",
+                tool_schema=_TOOL_SCHEMA,
+                temperature=self._temperature,
+                max_tokens=self._max_tokens,
+                max_retries=self._max_retries,
+            )
+            return data.get("evidence_items", [])
+
+        # Fallback：LLM 返回裸 JSON 数组，由 _extract_json_array 解析
+        # Fallback: LLM returns a bare JSON array, parsed by _extract_json_array
         from engines.shared.llm_utils import call_llm_with_retry
-        return await call_llm_with_retry(
+        raw = await call_llm_with_retry(
             self._llm_client,
             system=system,
             user=user,
@@ -220,6 +252,7 @@ class EvidenceIndexer:
             max_tokens=self._max_tokens,
             max_retries=self._max_retries,
         )
+        return _extract_json_array(raw)
 
     def _build_evidences(
         self,

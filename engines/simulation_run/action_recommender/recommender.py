@@ -35,7 +35,46 @@ from engines.shared.models import (
     TrialExplanationPriority,
 )
 
+from engines.shared.structured_output import call_structured_llm
+
 from .schemas import ActionRecommenderInput
+
+# tool_use JSON Schema for the strategic layer output
+_STRATEGIC_TOOL_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "strategic_headline": {
+            "type": "string",
+            "description": "一句话战略标题（≤200字）/ One-line strategic headline (≤200 chars)",
+        },
+        "plaintiff_recommendations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "recommendation_text": {"type": "string"},
+                    "linked_issue_ids": {"type": "array", "items": {"type": "string"}},
+                    "priority": {"type": "integer"},
+                    "rationale": {"type": "string"},
+                },
+                "required": ["recommendation_text"],
+            },
+        },
+        "defendant_recommendations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "recommendation_text": {"type": "string"},
+                    "linked_issue_ids": {"type": "array", "items": {"type": "string"}},
+                    "priority": {"type": "integer"},
+                    "rationale": {"type": "string"},
+                },
+                "required": ["recommendation_text"],
+            },
+        },
+    },
+}
 
 logger = logging.getLogger(__name__)
 
@@ -249,16 +288,18 @@ class ActionRecommender:
                 proponent_party_id=inp.proponent_party_id,
             )
 
-            raw = await self._llm.create_message(
+            data = await call_structured_llm(
+                self._llm,
                 system=system_prompt,
                 user=user_prompt,
                 model=self._model,
+                tool_name="generate_strategic_recommendations",
+                tool_description="生成当事人策略建议和战略标题。"
+                                 "Generate party-specific strategic recommendations and strategic headline.",
+                tool_schema=_STRATEGIC_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_tokens=self._max_tokens,
             )
-
-            from engines.shared.json_utils import _extract_json_object
-            data = _extract_json_object(raw)
             return self._parse_strategic_output(data, inp)
 
         except Exception:  # noqa: BLE001

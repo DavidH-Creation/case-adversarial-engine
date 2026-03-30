@@ -29,6 +29,8 @@ import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from engines.shared.structured_output import call_structured_llm
+
 from engines.shared.models import (
     AmountConflict,
     BlockingCondition,
@@ -50,6 +52,9 @@ from .schemas import (
 )
 
 import re
+
+# tool_use JSON Schema（模块加载时计算一次）
+_TOOL_SCHEMA: dict = LLMDecisionPathTreeOutput.model_json_schema()
 
 _MAX_PATHS = 6
 _VALID_RESULT_SCOPES = frozenset({
@@ -195,7 +200,7 @@ class DecisionPathTreeGenerator:
     async def _call_llm(
         self, inp: DecisionPathTreeInput, admitted_index: EvidenceIndex
     ) -> LLMDecisionPathTreeOutput | None:
-        """调用 LLM，失败时返回 None（不抛异常）。"""
+        """调用 LLM（结构化输出），失败时返回 None（不抛异常）。"""
         system = self._prompts["system"]
         user = self._prompts["build_user"](
             issue_tree=inp.ranked_issue_tree,
@@ -203,17 +208,20 @@ class DecisionPathTreeGenerator:
             amount_report=inp.amount_calculation_report,
         )
 
-        from engines.shared.llm_utils import call_llm_with_retry
         try:
-            raw = await call_llm_with_retry(
+            data = await call_structured_llm(
                 self._llm,
                 system=system,
                 user=user,
                 model=self._model,
+                tool_name="generate_decision_paths",
+                tool_description="生成裁判路径树，包含 3-6 条裁判路径和阻断条件。"
+                                 "Generate a decision path tree with 3-6 paths and blocking conditions.",
+                tool_schema=_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_retries=self._max_retries,
             )
-            return self._parse_llm_output(raw)
+            return self._parse_llm_output(data)
         except Exception:  # noqa: BLE001
             logger.warning("Decision tree: LLM call failed", exc_info=True)
             return None
@@ -431,15 +439,9 @@ class DecisionPathTreeGenerator:
 
         return data
 
-    def _parse_llm_output(self, raw: str) -> LLMDecisionPathTreeOutput | None:
-        """解析 LLM 输出 JSON，失败时返回 None。
-        注意：_extract_json_object 在失败时抛出 ValueError（不返回 None），由此处的
-        except Exception 捕获并统一返回 None。
-        """
-        from engines.shared.json_utils import _extract_json_object
+    def _parse_llm_output(self, data: dict) -> LLMDecisionPathTreeOutput | None:
+        """规范化 LLM 输出 dict，失败时返回 None。"""
         try:
-            logger.info("Decision tree LLM 响应长度: %d chars", len(raw))
-            data = _extract_json_object(raw)
             logger.info("JSON 顶层键: %s, paths 数: %s",
                         list(data.keys()),
                         len(data.get("paths", data.get("decision_paths", []))))
