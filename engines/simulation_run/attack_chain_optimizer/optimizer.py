@@ -35,8 +35,10 @@ from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
+from engines.shared.evidence_state_machine import EvidenceStateMachine
 from engines.shared.models import (
     AttackNode,
+    EvidenceStatus,
     LLMClient,
     OptimalAttackChain,
 )
@@ -94,6 +96,20 @@ class AttackChainOptimizer:
         Returns:
             OptimalAttackChain — 结构化最强攻击链，已完成规则层校验
         """
+        # v2: enforce — all evidence must be at least submitted (not private)
+        # Attack chain uses full evidence for strategy, but evidence should have
+        # passed through pretrial submission at minimum.
+        submitted_ids = [
+            ev.evidence_id for ev in inp.evidence_index.evidence
+            if ev.status != EvidenceStatus.private
+        ]
+        if submitted_ids:
+            EvidenceStateMachine().enforce_minimum_status(
+                inp.evidence_index,
+                EvidenceStatus.submitted,
+                evidence_ids=submitted_ids,
+            )
+
         # 构建已知 ID 集合（规则层过滤用）
         known_issue_ids: set[str] = {
             issue.issue_id for issue in inp.issue_tree.issues

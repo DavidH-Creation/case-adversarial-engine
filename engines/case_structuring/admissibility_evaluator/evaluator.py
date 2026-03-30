@@ -27,7 +27,8 @@ from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
-from engines.shared.models import EvidenceIndex, LLMClient
+from engines.shared.evidence_state_machine import EvidenceStateMachine
+from engines.shared.models import EvidenceIndex, EvidenceStatus, LLMClient
 
 from .prompts import PROMPT_REGISTRY
 from .schemas import (
@@ -80,6 +81,18 @@ class AdmissibilityEvaluator:
         """
         if not inp.evidence_index.evidence:
             return inp.evidence_index
+
+        # v2: enforce — only evaluate evidence that has been at least submitted
+        non_private = [
+            ev.evidence_id for ev in inp.evidence_index.evidence
+            if ev.status != EvidenceStatus.private
+        ]
+        if non_private:
+            EvidenceStateMachine().enforce_minimum_status(
+                inp.evidence_index,
+                EvidenceStatus.submitted,
+                evidence_ids=non_private,
+            )
 
         known_ids: set[str] = {ev.evidence_id for ev in inp.evidence_index.evidence}
 

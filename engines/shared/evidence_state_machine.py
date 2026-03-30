@@ -33,6 +33,22 @@ class IllegalTransitionError(ValueError):
     """非法状态迁移。Illegal evidence state transition."""
 
 
+class EvidenceStatusViolation(ValueError):
+    """证据未达到要求的最低状态。Evidence does not meet minimum status requirement."""
+
+
+# ---------------------------------------------------------------------------
+# 状态排序 / Status ordering (for enforce_minimum_status)
+# ---------------------------------------------------------------------------
+
+_STATUS_ORDER: dict[EvidenceStatus, int] = {
+    EvidenceStatus.private: 0,
+    EvidenceStatus.submitted: 1,
+    EvidenceStatus.challenged: 2,
+    EvidenceStatus.admitted_for_discussion: 3,
+}
+
+
 # ---------------------------------------------------------------------------
 # 合法迁移表 / Legal transition table
 # ---------------------------------------------------------------------------
@@ -148,6 +164,44 @@ class EvidenceStateMachine:
         return self.transition(
             evidence, EvidenceStatus.admitted_for_discussion, "system", "采纳"
         )
+
+    def enforce_minimum_status(
+        self,
+        evidence_index: EvidenceIndex,
+        min_status: EvidenceStatus,
+        *,
+        evidence_ids: list[str] | None = None,
+    ) -> None:
+        """校验证据是否达到最低状态要求。
+
+        Validate that evidence items meet a minimum status threshold.
+
+        Args:
+            evidence_index:  证据索引
+            min_status:      要求的最低状态
+            evidence_ids:    可选，只检查指定 ID 的证据；为 None 时检查全部
+
+        Raises:
+            EvidenceStatusViolation: 存在不满足条件的证据
+        """
+        min_order = _STATUS_ORDER[min_status]
+        id_filter = set(evidence_ids) if evidence_ids else None
+
+        violations: list[str] = []
+        for ev in evidence_index.evidence:
+            if id_filter is not None and ev.evidence_id not in id_filter:
+                continue
+            if _STATUS_ORDER[ev.status] < min_order:
+                violations.append(
+                    f"{ev.evidence_id}: {ev.status.value} (需要 {min_status.value})"
+                )
+
+        if violations:
+            detail = "; ".join(violations[:5])
+            raise EvidenceStatusViolation(
+                f"{len(violations)} 条证据未达到 {min_status.value} 状态: {detail}"
+                f" / {len(violations)} evidence items below {min_status.value}: {detail}"
+            )
 
     def bulk_submit(
         self,

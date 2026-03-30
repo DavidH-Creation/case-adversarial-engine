@@ -29,6 +29,7 @@ import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from engines.shared.evidence_state_machine import EvidenceStateMachine
 from engines.shared.structured_output import call_structured_llm
 
 from engines.shared.models import (
@@ -144,6 +145,18 @@ class DecisionPathTreeGenerator:
         Returns:
             DecisionPathTree — 结构化裁判路径树，已完成规则层校验
         """
+        # v2: enforce — admitted evidence must have valid state machine status
+        admitted_ids = [
+            ev.evidence_id for ev in inp.evidence_index.evidence
+            if ev.status == EvidenceStatus.admitted_for_discussion
+        ]
+        if admitted_ids:
+            EvidenceStateMachine().enforce_minimum_status(
+                inp.evidence_index,
+                EvidenceStatus.admitted_for_discussion,
+                evidence_ids=admitted_ids,
+            )
+
         check = inp.amount_calculation_report.consistency_check_result
 
         # 只取 admitted_for_discussion 状态的证据
