@@ -35,6 +35,7 @@ class LLMDecisionPathItem(BaseModel):
     trigger_condition: str = Field(default="")
     trigger_issue_ids: list[str] = Field(default_factory=list)
     key_evidence_ids: list[str] = Field(default_factory=list)
+    counter_evidence_ids: list[str] = Field(default_factory=list)
     possible_outcome: str = Field(default="")
     confidence_interval: Optional[LLMConfidenceInterval] = None
     path_notes: str = Field(default="")

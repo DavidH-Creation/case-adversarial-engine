@@ -664,6 +664,123 @@ class TestGeneratorMetadata:
         assert "verdict_block_active: True" in mock.last_user
 
 
+class TestEvidencePolarity:
+    """证据极性分离：key_evidence_ids（支持）vs counter_evidence_ids（反驳）。"""
+
+    @pytest.mark.asyncio
+    async def test_counter_evidence_ids_populated_and_filtered(self):
+        """LLM 返回 counter_evidence_ids → 过滤非法 ID 后保留在结果中。"""
+        response = json.dumps({
+            "paths": [{
+                "path_id": "path-A",
+                "trigger_condition": "法院认定借贷关系成立",
+                "trigger_issue_ids": ["issue-001"],
+                "key_evidence_ids": ["ev-001"],
+                "counter_evidence_ids": ["ev-002", "ev-UNKNOWN"],
+                "possible_outcome": "支持原告",
+                "confidence_interval": {"lower": 0.3, "upper": 0.6},
+                "path_notes": "",
+            }],
+            "blocking_conditions": [],
+        })
+        inp = _make_input(evidence_ids=["ev-001", "ev-002", "ev-003"])
+        result = await _make_generator(response).generate(inp)
+
+        assert len(result.paths) == 1
+        path = result.paths[0]
+        assert "ev-001" in path.key_evidence_ids
+        assert "ev-002" in path.counter_evidence_ids
+        assert "ev-UNKNOWN" not in path.counter_evidence_ids
+
+    @pytest.mark.asyncio
+    async def test_overlap_between_key_and_counter_removed(self):
+        """同一证据不得同时出现在 key_evidence_ids 和 counter_evidence_ids 中。"""
+        response = json.dumps({
+            "paths": [{
+                "path_id": "path-A",
+                "trigger_condition": "法院认定借贷关系成立",
+                "trigger_issue_ids": ["issue-001"],
+                "key_evidence_ids": ["ev-001", "ev-002"],
+                "counter_evidence_ids": ["ev-002", "ev-003"],  # ev-002 重叠
+                "possible_outcome": "支持原告",
+                "confidence_interval": {"lower": 0.3, "upper": 0.6},
+                "path_notes": "",
+            }],
+            "blocking_conditions": [],
+        })
+        inp = _make_input(evidence_ids=["ev-001", "ev-002", "ev-003"])
+        result = await _make_generator(response).generate(inp)
+
+        assert len(result.paths) == 1
+        path = result.paths[0]
+        # ev-002 is in key_evidence_ids → must NOT be in counter_evidence_ids
+        assert "ev-002" in path.key_evidence_ids
+        assert "ev-002" not in path.counter_evidence_ids
+        # ev-003 is only in counter → should be there
+        assert "ev-003" in path.counter_evidence_ids
+
+    @pytest.mark.asyncio
+    async def test_counter_evidence_ids_empty_by_default(self):
+        """LLM 未返回 counter_evidence_ids 时，结果中该字段为空列表。"""
+        inp = _make_input(evidence_ids=["ev-001", "ev-002", "ev-003"])
+        result = await _make_generator(_llm_response(3)).generate(inp)
+
+        for path in result.paths:
+            assert path.counter_evidence_ids == []
+
+    @pytest.mark.asyncio
+    async def test_counter_evidence_alias_normalization(self):
+        """LLM 使用别名 'counter_evidence' → 归一化为 counter_evidence_ids。"""
+        response = json.dumps({
+            "paths": [{
+                "path_id": "path-A",
+                "trigger_condition": "法院认定借贷关系成立",
+                "trigger_issue_ids": ["issue-001"],
+                "key_evidence_ids": ["ev-001"],
+                "counter_evidence": ["ev-002"],  # alias, not counter_evidence_ids
+                "possible_outcome": "支持原告",
+                "confidence_interval": {"lower": 0.3, "upper": 0.6},
+                "path_notes": "",
+            }],
+            "blocking_conditions": [],
+        })
+        inp = _make_input(evidence_ids=["ev-001", "ev-002", "ev-003"])
+        result = await _make_generator(response).generate(inp)
+
+        assert len(result.paths) == 1
+        assert "ev-002" in result.paths[0].counter_evidence_ids
+
+    @pytest.mark.asyncio
+    async def test_key_evidence_not_contaminated_by_counter(self):
+        """key_evidence_ids 只含支持证据，LLM 误放的反驳证据不污染 key_evidence_ids。"""
+        # Simulates the v07 bug: path-D had ev-defendant-006 (contradicting evidence)
+        # listed in key_evidence_ids. With proper prompting, LLM should put it in
+        # counter_evidence_ids instead. Here we test that if LLM correctly separates them,
+        # the generator preserves the separation.
+        response = json.dumps({
+            "paths": [{
+                "path_id": "path-D",
+                "trigger_condition": "法院认定三方当面达成借款合意",
+                "trigger_issue_ids": ["issue-001"],
+                "key_evidence_ids": ["ev-001", "ev-002"],        # supporting evidence
+                "counter_evidence_ids": ["ev-defendant-006"],    # ev-defendant-006: 小陈已离场，反驳三方面谈
+                "possible_outcome": "部分支持原告，连带责任",
+                "confidence_interval": {"lower": 0.1, "upper": 0.25},
+                "path_notes": "",
+            }],
+            "blocking_conditions": [],
+        })
+        inp = _make_input(
+            evidence_ids=["ev-001", "ev-002", "ev-defendant-006"],
+        )
+        result = await _make_generator(response).generate(inp)
+
+        assert len(result.paths) == 1
+        path = result.paths[0]
+        assert "ev-defendant-006" not in path.key_evidence_ids
+        assert "ev-defendant-006" in path.counter_evidence_ids
+
+
 class TestOpusStyleNormalization:
     """测试 Opus 风格 LLM 输出归一化。"""
 

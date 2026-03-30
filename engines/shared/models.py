@@ -1029,7 +1029,14 @@ class DecisionPath(BaseModel):
     path_id: str = Field(..., min_length=1)
     trigger_condition: str = Field(..., min_length=1, description="触发本路径的关键条件描述")
     trigger_issue_ids: list[str] = Field(default_factory=list, description="触发条件关联的争点 ID 列表")
-    key_evidence_ids: list[str] = Field(default_factory=list, description="本路径依赖的关键证据 ID 列表")
+    key_evidence_ids: list[str] = Field(
+        default_factory=list,
+        description="本路径依赖的关键证据 ID 列表（仅含支持本路径结论的证据）",
+    )
+    counter_evidence_ids: list[str] = Field(
+        default_factory=list,
+        description="与本路径结论相悖的证据 ID 列表（反驳/对立证据，不得与 key_evidence_ids 重叠）",
+    )
     possible_outcome: str = Field(..., min_length=1, description="可能的裁判结果描述")
     confidence_interval: Optional[ConfidenceInterval] = Field(
         default=None, description="置信度区间；verdict_block_active=True 时必须为 None"
