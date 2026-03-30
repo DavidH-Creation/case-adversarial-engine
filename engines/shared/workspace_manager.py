@@ -6,7 +6,7 @@ WorkspaceManager — single persistence entry point for CaseWorkspace.
 四步序列（创建 Run → 引擎执行 → 写产物 → 写 Run）由调用方（pipeline）负责编排；
 WorkspaceManager 只保证每个单步的写操作原子性，不提供跨步事务。
 
-Each save_* and save_run call is individually atomic (write .tmp then replace).
+Each save_* and save_run call is individually atomic (write .tmp file then replace).
 The four-step sequence (create Run → execute engines → save artifacts → save Run)
 is orchestrated by the caller (pipeline); WorkspaceManager only guarantees
 per-call atomicity, not cross-step transactions.
@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -33,6 +35,17 @@ from engines.shared.models import (
     Scenario,
     WorkflowStage,
 )
+
+_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
+
+
+def _validate_id(value: str, field: str) -> None:
+    """Raise ValueError if *value* contains characters outside [a-zA-Z0-9_\\-]."""
+    if not _ID_RE.match(value):
+        raise ValueError(
+            f"Invalid {field}: {value!r}. "
+            "Only alphanumeric characters, hyphens, and underscores are allowed."
+        )
 
 
 class WorkspaceManager:
@@ -57,9 +70,11 @@ class WorkspaceManager:
     """
 
     def __init__(self, base_dir: Path, case_id: str) -> None:
+        _validate_id(case_id, "case_id")
         self.base_dir = base_dir
         self.case_id = case_id
         self.workspace_dir = base_dir / case_id
+        self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
     # 内部辅助 / Internal helpers
@@ -91,6 +106,7 @@ class WorkspaceManager:
         Build initial workspace.json content (empty run_ids).
         """
         return {
+            "schema_version": "1.0",
             "workspace_id": f"ws-{self.case_id}",
             "case_id": self.case_id,
             "case_type": case_type,
@@ -135,12 +151,18 @@ class WorkspaceManager:
     def init_workspace(self, case_type: str) -> dict:
         """初始化工作区：创建目录结构和初始 workspace.json。
         Initialize workspace: create directory layout and initial workspace.json.
-        Always overwrites any existing workspace.json.
+        Raises FileExistsError if a workspace already exists for this case_id.
         Returns the written workspace dict.
         """
-        workspace = self._empty_workspace(case_type)
-        self._atomic_write(self._workspace_path(), workspace)
-        return workspace
+        with self._lock:
+            if self._workspace_path().exists():
+                raise FileExistsError(
+                    f"Workspace already exists for case_id={self.case_id!r}. "
+                    "Use load_workspace() to read it, or delete it manually to reinitialize."
+                )
+            workspace = self._empty_workspace(case_type)
+            self._atomic_write(self._workspace_path(), workspace)
+            return workspace
 
     def load_workspace(self) -> Optional[dict]:
         """读取 workspace.json。
@@ -165,13 +187,14 @@ class WorkspaceManager:
 
         Atomic per step; steps are NOT jointly atomic.
         """
-        # Step 1: write run file
-        self._atomic_write(self._run_path(run.run_id), run.model_dump())
-        # Step 2: register in workspace
-        ws = self._load_or_raise()
-        if run.run_id not in ws["run_ids"]:
-            ws["run_ids"].append(run.run_id)
-        self._atomic_write(self._workspace_path(), ws)
+        with self._lock:
+            # Step 1: write run file
+            self._atomic_write(self._run_path(run.run_id), run.model_dump())
+            # Step 2: register in workspace
+            ws = self._load_or_raise()
+            if run.run_id not in ws["run_ids"]:
+                ws["run_ids"].append(run.run_id)
+            self._atomic_write(self._workspace_path(), ws)
 
     def load_run(self, run_id: str) -> Optional[Run]:
         """加载 Run 快照。
@@ -197,19 +220,20 @@ class WorkspaceManager:
         """持久化证据索引，更新 material_index.Evidence。
         Persist EvidenceIndex and update material_index.Evidence refs.
         """
-        storage_ref = "artifacts/evidence_index.json"
-        path = self._artifacts_dir() / "evidence_index.json"
-        self._atomic_write(path, evidence_index.model_dump())
-        ws = self._load_or_raise()
-        ws["material_index"]["Evidence"] = [
-            {
-                "object_type": "Evidence",
-                "object_id": e.evidence_id,
-                "storage_ref": storage_ref,
-            }
-            for e in evidence_index.evidence
-        ]
-        self._atomic_write(self._workspace_path(), ws)
+        with self._lock:
+            storage_ref = "artifacts/evidence_index.json"
+            path = self._artifacts_dir() / "evidence_index.json"
+            self._atomic_write(path, evidence_index.model_dump())
+            ws = self._load_or_raise()
+            ws["material_index"]["Evidence"] = [
+                {
+                    "object_type": "Evidence",
+                    "object_id": e.evidence_id,
+                    "storage_ref": storage_ref,
+                }
+                for e in evidence_index.evidence
+            ]
+            self._atomic_write(self._workspace_path(), ws)
 
     def save_claims_defenses(
         self, claims: list[Claim], defenses: list[Defense]
@@ -217,75 +241,78 @@ class WorkspaceManager:
         """持久化诉请与抗辩，更新 material_index.Claim / Defense。
         Persist Claims and Defenses and update material_index entries.
         """
-        storage_ref = "artifacts/claim_defense.json"
-        data = {
-            "case_id": self.case_id,
-            "claims": [c.model_dump() for c in claims],
-            "defenses": [d.model_dump() for d in defenses],
-        }
-        path = self._artifacts_dir() / "claim_defense.json"
-        self._atomic_write(path, data)
-        ws = self._load_or_raise()
-        ws["material_index"]["Claim"] = [
-            {
-                "object_type": "Claim",
-                "object_id": c.claim_id,
-                "storage_ref": storage_ref,
+        with self._lock:
+            storage_ref = "artifacts/claim_defense.json"
+            data = {
+                "case_id": self.case_id,
+                "claims": [c.model_dump() for c in claims],
+                "defenses": [d.model_dump() for d in defenses],
             }
-            for c in claims
-        ]
-        ws["material_index"]["Defense"] = [
-            {
-                "object_type": "Defense",
-                "object_id": d.defense_id,
-                "storage_ref": storage_ref,
-            }
-            for d in defenses
-        ]
-        self._atomic_write(self._workspace_path(), ws)
+            path = self._artifacts_dir() / "claim_defense.json"
+            self._atomic_write(path, data)
+            ws = self._load_or_raise()
+            ws["material_index"]["Claim"] = [
+                {
+                    "object_type": "Claim",
+                    "object_id": c.claim_id,
+                    "storage_ref": storage_ref,
+                }
+                for c in claims
+            ]
+            ws["material_index"]["Defense"] = [
+                {
+                    "object_type": "Defense",
+                    "object_id": d.defense_id,
+                    "storage_ref": storage_ref,
+                }
+                for d in defenses
+            ]
+            self._atomic_write(self._workspace_path(), ws)
 
     def save_issue_tree(self, issue_tree: IssueTree) -> None:
         """持久化争点树，更新 material_index.Issue / Burden。
         Persist IssueTree and update material_index.Issue and Burden refs.
         """
-        storage_ref = "artifacts/issue_tree.json"
-        path = self._artifacts_dir() / "issue_tree.json"
-        self._atomic_write(path, issue_tree.model_dump())
-        ws = self._load_or_raise()
-        ws["material_index"]["Issue"] = [
-            {
-                "object_type": "Issue",
-                "object_id": i.issue_id,
-                "storage_ref": storage_ref,
-            }
-            for i in issue_tree.issues
-        ]
-        ws["material_index"]["Burden"] = [
-            {
-                "object_type": "Burden",
-                "object_id": b.burden_id,
-                "storage_ref": storage_ref,
-            }
-            for b in issue_tree.burdens
-        ]
-        self._atomic_write(self._workspace_path(), ws)
+        with self._lock:
+            storage_ref = "artifacts/issue_tree.json"
+            path = self._artifacts_dir() / "issue_tree.json"
+            self._atomic_write(path, issue_tree.model_dump())
+            ws = self._load_or_raise()
+            ws["material_index"]["Issue"] = [
+                {
+                    "object_type": "Issue",
+                    "object_id": i.issue_id,
+                    "storage_ref": storage_ref,
+                }
+                for i in issue_tree.issues
+            ]
+            ws["material_index"]["Burden"] = [
+                {
+                    "object_type": "Burden",
+                    "object_id": b.burden_id,
+                    "storage_ref": storage_ref,
+                }
+                for b in issue_tree.burdens
+            ]
+            self._atomic_write(self._workspace_path(), ws)
 
     def save_report(self, report: ReportArtifact) -> None:
         """持久化报告产物，更新 artifact_index.ReportArtifact。
         Persist ReportArtifact and update artifact_index.ReportArtifact ref.
         """
-        storage_ref = "artifacts/report.json"
-        path = self._artifacts_dir() / "report.json"
-        self._atomic_write(path, report.model_dump())
-        ws = self._load_or_raise()
-        ws["artifact_index"]["ReportArtifact"] = [
-            {
-                "object_type": "ReportArtifact",
-                "object_id": report.report_id,
-                "storage_ref": storage_ref,
-            }
-        ]
-        self._atomic_write(self._workspace_path(), ws)
+        with self._lock:
+            storage_ref = "artifacts/report.json"
+            path = self._artifacts_dir() / "report.json"
+            self._atomic_write(path, report.model_dump())
+            ws = self._load_or_raise()
+            ws["artifact_index"]["ReportArtifact"] = [
+                {
+                    "object_type": "ReportArtifact",
+                    "object_id": report.report_id,
+                    "storage_ref": storage_ref,
+                }
+            ]
+            self._atomic_write(self._workspace_path(), ws)
 
     def save_interaction_turn(self, turn: InteractionTurn) -> None:
         """持久化追问轮次，顺序追加到 artifact_index.InteractionTurn。
@@ -296,70 +323,40 @@ class WorkspaceManager:
         Sequential number derived from current InteractionTurn count in workspace.json
         so numbering stays consistent after checkpoint resume.
         """
-        ws = self._load_or_raise()
-        turn_num = len(ws["artifact_index"]["InteractionTurn"]) + 1
-        filename = f"turn_{turn_num:03d}.json"
-        storage_ref = f"artifacts/turns/{filename}"
-        path = self._artifacts_dir() / "turns" / filename
-        self._atomic_write(path, turn.model_dump())
-        ws["artifact_index"]["InteractionTurn"].append(
-            {
-                "object_type": "InteractionTurn",
-                "object_id": turn.turn_id,
-                "storage_ref": storage_ref,
-            }
-        )
-        self._atomic_write(self._workspace_path(), ws)
+        with self._lock:
+            ws = self._load_or_raise()
+            turn_num = len(ws["artifact_index"]["InteractionTurn"]) + 1
+            filename = f"turn_{turn_num:03d}.json"
+            storage_ref = f"artifacts/turns/{filename}"
+            path = self._artifacts_dir() / "turns" / filename
+            self._atomic_write(path, turn.model_dump())
+            ws["artifact_index"]["InteractionTurn"].append(
+                {
+                    "object_type": "InteractionTurn",
+                    "object_id": turn.turn_id,
+                    "storage_ref": storage_ref,
+                }
+            )
+            self._atomic_write(self._workspace_path(), ws)
 
     def save_scenario_result(self, scenario: Scenario) -> None:
         """持久化场景结果，追加到 artifact_index.Scenario。
         Persist Scenario result and append to artifact_index.Scenario.
         """
-        storage_ref = f"artifacts/scenarios/scenario_{scenario.scenario_id}.json"
-        path = self._artifacts_dir() / "scenarios" / f"scenario_{scenario.scenario_id}.json"
-        self._atomic_write(path, scenario.model_dump())
-        ws = self._load_or_raise()
-        ws["artifact_index"]["Scenario"].append(
-            {
-                "object_type": "Scenario",
-                "object_id": scenario.scenario_id,
-                "storage_ref": storage_ref,
-            }
-        )
-        self._atomic_write(self._workspace_path(), ws)
-
-    def save_executive_summary(self, summary: ExecutiveSummaryArtifact) -> None:
-        """持久化一页式执行摘要，更新 artifact_index.ExecutiveSummaryArtifact。
-        Persist ExecutiveSummaryArtifact and update artifact_index ref.
-        """
-        storage_ref = "artifacts/executive_summary.json"
-        path = self._artifacts_dir() / "executive_summary.json"
-        self._atomic_write(path, summary.model_dump())
-        ws = self._load_or_raise()
-        ws["artifact_index"]["ExecutiveSummaryArtifact"] = [
-            {
-                "object_type": "ExecutiveSummaryArtifact",
-                "object_id": summary.summary_id,
-                "storage_ref": storage_ref,
-            }
-        ]
-        self._atomic_write(self._workspace_path(), ws)
-
-    def load_executive_summary(self) -> Optional[ExecutiveSummaryArtifact]:
-        """加载一页式执行摘要。
-        Load ExecutiveSummaryArtifact. Returns None if not found.
-        Raises ValueError on case_id mismatch.
-        """
-        path = self._artifacts_dir() / "executive_summary.json"
-        if not path.exists():
-            return None
-        data = json.loads(path.read_text(encoding="utf-8"))
-        if data.get("case_id") != self.case_id:
-            raise ValueError(
-                f"case_id mismatch in executive_summary.json: "
-                f"expected {self.case_id!r}, got {data.get('case_id')!r}"
+        _validate_id(scenario.scenario_id, "scenario_id")
+        with self._lock:
+            storage_ref = f"artifacts/scenarios/scenario_{scenario.scenario_id}.json"
+            path = self._artifacts_dir() / "scenarios" / f"scenario_{scenario.scenario_id}.json"
+            self._atomic_write(path, scenario.model_dump())
+            ws = self._load_or_raise()
+            ws["artifact_index"]["Scenario"].append(
+                {
+                    "object_type": "Scenario",
+                    "object_id": scenario.scenario_id,
+                    "storage_ref": storage_ref,
+                }
             )
-        return ExecutiveSummaryArtifact.model_validate(data)
+            self._atomic_write(self._workspace_path(), ws)
 
     # ------------------------------------------------------------------
     # 产物加载 / Artifact loading（checkpoint resume）
@@ -456,6 +453,7 @@ class WorkspaceManager:
         """
         output_id = output.output_id
         owner = output.owner_party_id
+        _validate_id(owner, "owner_party_id")
 
         if access_domain == AccessDomain.owner_private:
             storage_ref = f"artifacts/private/{owner}/agent_outputs/{output_id}.json"
@@ -481,25 +479,32 @@ class WorkspaceManager:
         else:
             raise ValueError(f"Unsupported access_domain: {access_domain!r}")
 
-        self._atomic_write(path, output.model_dump())
-
-        ws = self._load_or_raise()
-        ws["artifact_index"]["AgentOutput"].append(
-            {
-                "object_type": "AgentOutput",
-                "object_id": output_id,
-                "storage_ref": storage_ref,
-            }
-        )
-        self._atomic_write(self._workspace_path(), ws)
+        with self._lock:
+            self._atomic_write(path, output.model_dump())
+            ws = self._load_or_raise()
+            ws["artifact_index"]["AgentOutput"].append(
+                {
+                    "object_type": "AgentOutput",
+                    "object_id": output_id,
+                    "storage_ref": storage_ref,
+                }
+            )
+            self._atomic_write(self._workspace_path(), ws)
         return storage_ref
 
     def load_agent_output(self, output_id: str, storage_ref: str) -> Optional[AgentOutput]:
         """按 storage_ref 加载 AgentOutput。
         Load AgentOutput by storage_ref. Returns None if not found.
-        Raises ValueError on case_id mismatch.
+        Raises ValueError on path traversal or case_id mismatch.
         """
         path = self.workspace_dir / storage_ref
+        # Guard against path traversal: resolved path must stay inside workspace_dir
+        try:
+            path.resolve().relative_to(self.workspace_dir.resolve())
+        except ValueError:
+            raise ValueError(
+                f"Path traversal detected in storage_ref: {storage_ref!r}"
+            )
         if not path.exists():
             return None
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -518,18 +523,19 @@ class WorkspaceManager:
         """持久化执行摘要产物，更新 artifact_index.ExecutiveSummaryArtifact。
         Persist ExecutiveSummaryArtifact and update artifact_index ref.
         """
-        storage_ref = "artifacts/executive_summary.json"
-        path = self._artifacts_dir() / "executive_summary.json"
-        self._atomic_write(path, summary.model_dump())
-        ws = self._load_or_raise()
-        ws["artifact_index"]["ExecutiveSummaryArtifact"] = [
-            {
-                "object_type": "ExecutiveSummaryArtifact",
-                "object_id": summary.summary_id,
-                "storage_ref": storage_ref,
-            }
-        ]
-        self._atomic_write(self._workspace_path(), ws)
+        with self._lock:
+            storage_ref = "artifacts/executive_summary.json"
+            path = self._artifacts_dir() / "executive_summary.json"
+            self._atomic_write(path, summary.model_dump())
+            ws = self._load_or_raise()
+            ws["artifact_index"]["ExecutiveSummaryArtifact"] = [
+                {
+                    "object_type": "ExecutiveSummaryArtifact",
+                    "object_id": summary.summary_id,
+                    "storage_ref": storage_ref,
+                }
+            ]
+            self._atomic_write(self._workspace_path(), ws)
 
     def load_executive_summary(self) -> Optional[ExecutiveSummaryArtifact]:
         """加载执行摘要产物。
@@ -555,8 +561,9 @@ class WorkspaceManager:
         """推进工作流阶段，原子更新 workspace.json。
         Advance workflow stage; atomically update workspace.json.
         """
-        ws = self._load_or_raise()
-        ws["current_workflow_stage"] = (
-            stage.value if isinstance(stage, WorkflowStage) else str(stage)
-        )
-        self._atomic_write(self._workspace_path(), ws)
+        with self._lock:
+            ws = self._load_or_raise()
+            ws["current_workflow_stage"] = (
+                stage.value if isinstance(stage, WorkflowStage) else str(stage)
+            )
+            self._atomic_write(self._workspace_path(), ws)
