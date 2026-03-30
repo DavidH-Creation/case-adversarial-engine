@@ -137,22 +137,20 @@ class AttackChainOptimizer:
             evidence_index=inp.evidence_index,
         )
 
-        for attempt in range(self._max_retries + 1):
-            try:
-                raw = await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                )
-                result = self._parse_llm_output(raw)
-                if result is not None:
-                    return result
-                logger.warning("Attack chain: attempt %d parse returned None", attempt + 1)
-            except Exception as e:  # noqa: BLE001
-                logger.warning("Attack chain: attempt %d LLM call failed: %s", attempt + 1, e)
-
-        return None
+        from engines.shared.llm_utils import call_llm_with_retry
+        try:
+            raw = await call_llm_with_retry(
+                self._llm,
+                system=system,
+                user=user,
+                model=self._model,
+                temperature=self._temperature,
+                max_retries=self._max_retries,
+            )
+            return self._parse_llm_output(raw)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Attack chain: LLM call failed: %s", type(e).__name__)
+            return None
 
     @staticmethod
     def _normalize_llm_json(data: dict) -> dict:

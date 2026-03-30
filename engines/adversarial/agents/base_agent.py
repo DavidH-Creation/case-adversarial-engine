@@ -143,14 +143,17 @@ class BasePartyAgent:
         - AgentOutputValidationError（空 issue_ids / evidence_citations / citation 幻觉）
         """
         system_prompt = self._build_system_prompt()
-        last_error: str | None = None
+        # 只传递错误类别提示，不传递 LLM 原始输出，防止 prompt 注入。
+        # Only pass a safe error-category hint — never raw LLM output — to prevent prompt injection.
+        _error_hint: str | None = None
+        _last_exc: Exception | None = None
 
         for attempt in range(1, self._config.max_retries + 1):
             current_prompt = user_prompt
-            if last_error:
+            if _error_hint:
                 current_prompt = (
                     f"{user_prompt}\n\n"
-                    f"[上次输出验证失败，请修正：{last_error}]"
+                    f"[上次输出验证失败，请修正：{_error_hint}]"
                 )
 
             try:
@@ -162,7 +165,8 @@ class BasePartyAgent:
                     max_tokens=self._config.max_tokens_per_output,
                 )
             except Exception as e:
-                last_error = str(e)
+                _last_exc = e
+                _error_hint = "LLM 调用异常，请重试"
                 continue
 
             try:
@@ -171,12 +175,18 @@ class BasePartyAgent:
                 self._validate_citations(output, visible_evidence)
                 return output
             except AgentOutputValidationError as e:
-                last_error = str(e)
+                _last_exc = e
+                # 安全提示：仅描述错误类别，不含 LLM 生成的内容（防注入）。
+                # Safe hint: describe error category only, no LLM-generated content.
+                _error_hint = (
+                    "输出格式不合法：请确保 issue_ids 非空，"
+                    "evidence_citations 仅引用可见证据列表中的 ID"
+                )
                 continue
 
         raise RuntimeError(
             f"LLM 调用失败，已重试 {self._config.max_retries} 次。"
-            f"最后错误: {last_error}"
+            f"最后错误类型: {type(_last_exc).__name__}"
         )
 
     def _parse_agent_output(
