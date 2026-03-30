@@ -110,6 +110,7 @@ class WorkspaceManager:
                 "InteractionTurn": [],
                 "Scenario": [],
                 "ExecutiveSummaryArtifact": [],
+                "AdversarialResult": [],
             },
             "run_ids": [],
             "active_scenario_id": None,

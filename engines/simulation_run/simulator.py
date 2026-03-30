@@ -17,8 +17,11 @@ Generates a structured diff summary from IssueTree + EvidenceIndex + ChangeSet v
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any, Protocol, runtime_checkable
+
+logger = logging.getLogger(__name__)
 
 from engines.shared.json_utils import _extract_json_object
 
@@ -243,6 +246,12 @@ class ScenarioSimulator:
         except Exception:
             # LLM 调用或解析失败：构造 failed ScenarioResult 返回，不向上抛出
             # LLM call or parse failure: return a failed ScenarioResult instead of raising
+            logger.exception(
+                "场景推演失败，返回 failed ScenarioResult / "
+                "Scenario simulation failed, returning failed ScenarioResult: "
+                "scenario_id=%s, case_id=%s",
+                scenario_input.scenario_id, case_id,
+            )
             failed_scenario = Scenario(
                 scenario_id=scenario_input.scenario_id,
                 case_id=case_id,

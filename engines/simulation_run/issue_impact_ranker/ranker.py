@@ -209,10 +209,10 @@ class IssueImpactRanker:
     # LLM 输出归一化 / LLM output normalization
     # ------------------------------------------------------------------
 
-    _EVALUATIONS_ALIASES = {
+    _EVALUATIONS_ALIASES = (
         "issue_assessments", "assessments", "issues", "issue_evaluations",
         "争点评估", "评估结果",
-    }
+    )
 
     @classmethod
     def _normalize_evaluation_keys(cls, raw: dict) -> dict:
@@ -232,17 +232,17 @@ class IssueImpactRanker:
                 return raw
 
         # 尝试找任意值为 list[dict] 的键
-        for key, val in raw.items():
+        for key, val in list(raw.items()):
             if isinstance(val, list) and val and isinstance(val[0], dict) and "issue_id" in val[0]:
                 logger.info("自动检测评估列表键: %s → evaluations", key)
-                raw["evaluations"] = val
+                raw["evaluations"] = raw.pop(key)
                 return raw
 
         # 尝试找任意值为 list[dict] 的键（即使没有 issue_id）
-        for key, val in raw.items():
+        for key, val in list(raw.items()):
             if isinstance(val, list) and len(val) >= 2 and isinstance(val[0], dict):
                 logger.info("推测评估列表键: %s (len=%d) → evaluations", key, len(val))
-                raw["evaluations"] = val
+                raw["evaluations"] = raw.pop(key)
                 return raw
 
         logger.warning("无法找到评估列表键，可用键: %s", list(raw.keys()))
@@ -413,7 +413,7 @@ class IssueImpactRanker:
         if max(values.values()) <= 0:
             return result  # 全零，无需放大
 
-        if all(v <= 10 for v in values.values()) and max(values.values()) > 0:
+        if all(v <= 10 for v in values.values()):
             for field, val in values.items():
                 result[field] = val * 10
             result["_score_rescaled"] = True
