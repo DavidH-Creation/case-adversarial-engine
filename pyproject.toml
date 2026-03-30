@@ -17,6 +17,11 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.4.0",
 ]
+api = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "python-multipart>=0.0.9",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
