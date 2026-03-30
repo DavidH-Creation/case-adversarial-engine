@@ -20,6 +20,7 @@ Usage:
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -149,6 +150,22 @@ def _build_issue_info(issue_tree) -> dict[str, tuple[str, str]]:
         itype = getattr(iss.issue_type, "value", str(iss.issue_type)) if hasattr(iss, "issue_type") else ""
         info[iss.issue_id] = (iss.title, itype)
     return info
+
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def _is_uuid(s: str) -> bool:
+    """Return True if s looks like a raw UUID string."""
+    return bool(_UUID_RE.match(s))
+
+
+def _filter_uuids(items: list[str]) -> list[str]:
+    """Remove raw UUID strings from a list of text items."""
+    return [item for item in items if not _is_uuid(item)]
 
 
 # ---------------------------------------------------------------------------
@@ -439,11 +456,12 @@ def _render_issue_ranking(doc, exec_summary: dict):
     doc.add_heading("争点影响排序", level=1)
     top5 = exec_summary.get("top5_decisive_issues", [])
     _styled(doc, "前五大决定性争点:", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
-    if top5:
-        for iid in top5:
+    visible = _filter_uuids(top5) if isinstance(top5, list) else []
+    if visible:
+        for iid in visible:
             _bullet(doc, iid, size=SZ_NORMAL, color=CLR_BODY)
     else:
-        _styled(doc, "（暂无排序数��）", size=SZ_NORMAL, color=CLR_GRAY)
+        _styled(doc, "（暂无排序数据）", size=SZ_NORMAL, color=CLR_GRAY)
 
 
 def _render_decision_tree(doc, decision_tree: dict):
@@ -547,7 +565,7 @@ def _render_action_recommendations(doc, exec_summary: dict):
     if actions and actions != "未启用":
         _styled(doc, "前三项立即行动：", bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
         if isinstance(actions, list):
-            for a in actions:
+            for a in _filter_uuids(actions):
                 _bullet(doc, a, size=SZ_NORMAL, color=CLR_BODY)
         else:
             _styled(doc, str(actions), size=SZ_NORMAL, color=CLR_GRAY)
@@ -556,7 +574,7 @@ def _render_action_recommendations(doc, exec_summary: dict):
     if gaps and gaps != "未启用":
         _styled(doc, "关键缺证：", bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
         if isinstance(gaps, list):
-            for g in gaps:
+            for g in _filter_uuids(gaps):
                 _bullet(doc, g, size=SZ_NORMAL, color=CLR_BODY)
         else:
             _styled(doc, str(gaps), size=SZ_NORMAL, color=CLR_GRAY)

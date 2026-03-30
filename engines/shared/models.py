@@ -361,6 +361,7 @@ class Evidence(BaseModel):
     submitted_by_party_id: Optional[str] = None
     challenged_by_party_ids: list[str] = Field(default_factory=list)
     admissibility_notes: Optional[str] = None
+    admissibility_risk: Optional[str] = None  # P1 新增：可采性风险说明（如来源争议、取证程序瑕疵等）
     # P1.5: 证据权重评分扩展字段（向后兼容，全部 Optional）
     authenticity_risk: Optional[AuthenticityRisk] = None
     relevance_score: Optional[RelevanceScore] = None
@@ -426,6 +427,8 @@ class Issue(BaseModel):
     )
     # P1.6: 争点类型分类扩展字段（向后兼容，Optional）
     issue_category: Optional[IssueCategory] = None
+    # P1 新增：争点依赖关系（上游争点 issue_id 列表；空列表表示根争点）
+    depends_on: list[str] = Field(default_factory=list)
 
 
 class Burden(BaseModel):
