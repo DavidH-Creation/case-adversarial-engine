@@ -1,0 +1,25 @@
+# Scenario Engine what-if change_set example.
+#
+# Usage:
+#   python scripts/run_scenario.py \
+#     --baseline outputs/<run>/ \
+#     --change-set scenarios/example_remove_evidence.yaml
+#
+# Format:
+#   scenario_id: unique identifier for this what-if scenario
+#   changes: list of ChangeItem objects
+#     - target_object_type: one of Evidence, Issue, Claim, Defense, Burden,
+#                           Party, ProcedureState, AgentOutput, ReportArtifact
+#     - target_object_id: ID of the target object
+#     - field_path: dot-separated path to the field being changed
+#     - old_value: original value (for audit trail)
+#     - new_value: hypothetical new value
+
+scenario_id: "scenario-whatif-remove-evidence-001"
+
+changes:
+  - target_object_type: Evidence
+    target_object_id: "evidence-civil-loan-test-001-01"
+    field_path: "summary"
+    old_value: "载明借款50万元的借条原件"
+    new_value: "借条复印件，原件遗失，金额50万元"
