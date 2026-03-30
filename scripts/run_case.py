@@ -505,7 +505,7 @@ async def _run_post_debate(
         amount_report = None
 
     # P0.1: IssueImpactRanker (LLM)
-    if amount_report:
+    if issue_tree:
         print("  - Issue impact ranking...")
         ranker = IssueImpactRanker(
             llm_client=llm_client, model=model,
@@ -533,11 +533,12 @@ async def _run_post_debate(
             score = f"{iss.composite_score:.1f}" if iss.composite_score else "0"
             print(f"      [{impact}|cs={score}] {iss.issue_id}: {iss.title}")
     else:
+        print("  - Skipping IssueImpactRanker: issue_tree not available")
         ranked_tree = issue_tree
         artifacts["ranked_issues"] = None
 
     # P0.3 + P0.4: DecisionPathTree + AttackChainOptimizer (parallel, LLM)
-    if amount_report:
+    if issue_tree:
         print("  - Decision path tree + attack chain...")
         dpt_gen = DecisionPathTreeGenerator(
             llm_client=llm_client, model=model,
@@ -575,11 +576,12 @@ async def _run_post_debate(
             admitted = sum(1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion)
             print(f"    ⚠ Attack chain empty despite LLM success — admitted evidence: {admitted}/{len(ev_index.evidence)}")
     else:
+        print("  - Skipping DecisionPathTree + AttackChainOptimizer: issue_tree not available")
         decision_tree = None
         attack_chain = None
 
     # P1.8: ActionRecommender (hybrid: rule-based + LLM strategic layer)
-    if amount_report and attack_chain:
+    if attack_chain:
         print("  - Action recommendations...")
         action_rec = await ActionRecommender(
             llm_client=llm_client, model=model,
@@ -599,10 +601,11 @@ async def _run_post_debate(
         if action_rec.case_dispute_category:
             print(f"    \u2713 Category: {action_rec.case_dispute_category}")
     else:
+        print("  - Skipping ActionRecommender: attack_chain not available")
         action_rec = None
 
     # P2.12: ExecutiveSummarizer (sync, rule-based)
-    if amount_report and attack_chain:
+    if attack_chain:
         print("  - Executive summary...")
         exec_summary = ExecutiveSummarizer().summarize(ExecutiveSummarizerInput(
             case_id=case_id, run_id=run_id,
@@ -615,6 +618,7 @@ async def _run_post_debate(
         artifacts["exec_summary"] = exec_summary
         print(f"    \u2713 Top 5 issues: {exec_summary.top5_decisive_issues}")
     else:
+        print("  - Skipping ExecutiveSummarizer: attack_chain not available")
         exec_summary = None
 
     return artifacts
