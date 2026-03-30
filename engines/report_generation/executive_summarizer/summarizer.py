@@ -23,8 +23,10 @@ from typing import Optional
 from engines.shared.models import (
     ActionRecommendation,
     AmountCalculationReport,
+    ConfidenceMetrics,
     EvidenceGapItem,
     ExecutiveSummaryArtifact,
+    ExecutiveSummaryStructuredOutput,
     Issue,
     OptimalAttackChain,
     OutcomeImpact,
@@ -66,6 +68,15 @@ class ExecutiveSummarizer:
             inp.amount_calculation_report, inp.action_recommendation,
         )
         critical_gaps = self._critical_evidence_gaps(inp.evidence_gap_items)
+        structured = self._build_structured_output(
+            issues=inp.issue_list,
+            top5_issue_ids=top5,
+            top3_actions=top3_actions,
+            top3_attacks=top3_attacks,
+            critical_gaps=critical_gaps,
+            amount_report=inp.amount_calculation_report,
+            action_recommendation=inp.action_recommendation,
+        )
 
         return ExecutiveSummaryArtifact(
             summary_id=str(uuid.uuid4()),
@@ -79,6 +90,7 @@ class ExecutiveSummarizer:
             current_most_stable_claim=claim_text,
             amount_report_id=inp.amount_calculation_report.report_id,
             critical_evidence_gaps=critical_gaps,
+            structured_output=structured,
         )
 
     # ------------------------------------------------------------------
@@ -200,6 +212,87 @@ class ExecutiveSummarizer:
             return "未启用"
         sorted_gaps = sorted(gap_items, key=lambda g: g.roi_rank)
         return [g.gap_id for g in sorted_gaps[:3]]
+
+    def _build_structured_output(
+        self,
+        issues: list[Issue],
+        top5_issue_ids: list[str],
+        top3_actions: list[str] | str,
+        top3_attacks: list[str],
+        critical_gaps: list[str] | str,
+        amount_report: AmountCalculationReport,
+        action_recommendation: Optional[ActionRecommendation],
+    ) -> ExecutiveSummaryStructuredOutput:
+        """构建 P2 结构化 JSON 输出（纯规则层）。
+
+        从已有叙述性产物中提取关键信息，生成机器可读的结构化摘要。
+        """
+        # case_overview: 案件基本情况
+        issue_count = len(issues)
+        high_count = sum(
+            1 for i in issues if i.outcome_impact == OutcomeImpact.high
+        )
+        overview = (
+            f"案件共有 {issue_count} 个争点，其中 {high_count} 个高影响争点。"
+            f"绑定金额报告 {amount_report.report_id}。"
+        )
+        if action_recommendation and action_recommendation.strategic_headline:
+            overview = f"{action_recommendation.strategic_headline}。{overview}"
+
+        # key_findings: 从 top5 争点提取
+        issue_map = {i.issue_id: i for i in issues}
+        key_findings: list[str] = []
+        for issue_id in top5_issue_ids:
+            issue = issue_map.get(issue_id)
+            if issue is None:
+                continue
+            impact_str = issue.outcome_impact.value if issue.outcome_impact else "未评估"
+            key_findings.append(
+                f"争点「{issue.title}」影响程度：{impact_str}"
+            )
+
+        # risk_assessment: 基于高影响争点和攻击链
+        if high_count > 0:
+            risk_assessment = (
+                f"存在 {high_count} 个高影响争点，"
+                f"对方最优攻击节点 {len(top3_attacks)} 个，需重点防御。"
+            )
+        else:
+            risk_assessment = (
+                f"无高影响争点，整体风险可控，"
+                f"对方攻击节点 {len(top3_attacks)} 个。"
+            )
+        if isinstance(critical_gaps, list) and critical_gaps:
+            risk_assessment += f" 存在 {len(critical_gaps)} 条关键缺证，建议优先补充。"
+
+        # recommended_actions: 来自 top3_immediate_actions
+        if isinstance(top3_actions, list):
+            recommended_actions = [f"执行行动 {aid}" for aid in top3_actions]
+        else:
+            recommended_actions = ["P1.8 行动建议未启用，建议人工审查"]
+
+        # confidence_metrics: 基于证据 + 争点评估完整度
+        evaluated_count = sum(1 for i in issues if i.outcome_impact is not None)
+        evidence_completeness = evaluated_count / issue_count if issue_count > 0 else 0.0
+
+        gaps_count = len(critical_gaps) if isinstance(critical_gaps, list) else 0
+        legal_clarity = max(0.0, 1.0 - gaps_count * 0.15)
+
+        overall_confidence = (evidence_completeness + legal_clarity) / 2.0
+
+        confidence_metrics = ConfidenceMetrics(
+            overall_confidence=round(overall_confidence, 3),
+            evidence_completeness=round(evidence_completeness, 3),
+            legal_clarity=round(legal_clarity, 3),
+        )
+
+        return ExecutiveSummaryStructuredOutput(
+            case_overview=overview,
+            key_findings=key_findings,
+            risk_assessment=risk_assessment,
+            recommended_actions=recommended_actions,
+            confidence_metrics=confidence_metrics,
+        )
 
     @staticmethod
     def _amount_summary(report: AmountCalculationReport) -> str:
