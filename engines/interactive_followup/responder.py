@@ -14,6 +14,7 @@ Receives report + user question, generates cited answers, supports multi-turn co
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -27,6 +28,8 @@ from .schemas import (
     ReportArtifact,
     StatementClass,
 )
+
+logger = logging.getLogger(__name__)
 
 # tool_use JSON Schema（模块加载时计算一次）
 _TOOL_SCHEMA: dict = LLMFollowupOutput.model_json_schema()
@@ -211,6 +214,68 @@ class FollowupResponder:
             len(previous_turns),
             effective_run_id,
         )
+
+    async def respond_safe(
+        self,
+        report: ReportArtifact,
+        question: str,
+        *,
+        previous_turns: list[InteractionTurn] | None = None,
+        turn_slug: str = "turn",
+        run_id: str | None = None,
+    ) -> InteractionTurn:
+        """错误恢复版追问响应 — LLM 失败时返回结构化错误 Turn，不抛出异常。
+        Error-recovering followup response — returns structured error Turn on LLM failure.
+
+        与 respond() 相同参数，但不会因 LLM 调用失败而抛出 RuntimeError。
+        Same parameters as respond(), but never raises RuntimeError from LLM failures.
+        ValueError（输入无效）仍然会抛出。
+        ValueError (invalid input) is still raised.
+
+        Returns:
+            InteractionTurn — 成功时正常返回，失败时返回包含错误信息的 Turn。
+        """
+        try:
+            return await self.respond(
+                report,
+                question,
+                previous_turns=previous_turns,
+                turn_slug=turn_slug,
+                run_id=run_id,
+            )
+        except ValueError:
+            # Input validation errors should still propagate
+            raise
+        except Exception as exc:
+            logger.error(
+                "Followup response failed, returning error turn: %s: %s",
+                type(exc).__name__,
+                str(exc)[:200],
+            )
+            now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            previous_turns = previous_turns or []
+            effective_run_id = run_id or report.run_id
+            unique_suffix = uuid.uuid4().hex[:8]
+            one_based = len(previous_turns) + 1
+            turn_id = f"turn-{turn_slug}-{one_based:02d}-{unique_suffix}"
+
+            # Fallback issue_ids from report
+            report_issue_ids = self._collect_report_issue_ids(report)
+            fallback_issue_ids = sorted(report_issue_ids)[:1]
+
+            return InteractionTurn(
+                turn_id=turn_id,
+                case_id=report.case_id,
+                report_id=report.report_id,
+                run_id=effective_run_id,
+                turn_index=one_based,
+                question=question,
+                answer=f"[系统错误] 追问处理失败，请稍后重试。/ [System Error] Followup processing failed: {type(exc).__name__}",
+                issue_ids=fallback_issue_ids,
+                evidence_ids=[],
+                statement_class=StatementClass.inference,
+                created_at=now,
+            )
 
     async def _call_llm_structured(self, system: str, user: str) -> dict:
         """调用 LLM（结构化输出）。

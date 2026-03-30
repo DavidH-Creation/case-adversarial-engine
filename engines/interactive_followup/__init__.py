@@ -17,13 +17,17 @@ from .schemas import (
     LLMFollowupOutput,
     ReportArtifact,
     ReportSection,
+    SessionState,
     StatementClass,
 )
+from .session_manager import SessionManager
 from .validator import (
+    MAX_QUESTION_LENGTH,
     InteractionValidationError,
     TurnValidationError,
     ValidationReport,
     ValidationResult,
+    sanitize_question,
     validate_turn,
     validate_turn_strict,
 )
@@ -32,6 +36,9 @@ __all__ = [
     # Engine
     "FollowupResponder",
     "LLMClient",
+    # Session
+    "SessionManager",
+    "SessionState",
     # Core schemas
     "InteractionTurn",
     "IssueTree",
@@ -44,10 +51,12 @@ __all__ = [
     "LLMCitationItem",
     "LLMFollowupOutput",
     # Validator
+    "MAX_QUESTION_LENGTH",
     "ValidationReport",
     "ValidationResult",
     "TurnValidationError",
     "InteractionValidationError",
+    "sanitize_question",
     "validate_turn",
     "validate_turn_strict",
 ]

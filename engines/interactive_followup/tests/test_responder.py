@@ -13,6 +13,8 @@ Unit tests for FollowupResponder.
 - 空问题抛出 ValueError / Empty question raises ValueError
 - 不支持案由类型抛出 ValueError / Unsupported case type raises ValueError
 - 校验器集成 / Validator integration
+- 错误恢复：respond_safe 返回错误 Turn / Error recovery: respond_safe returns error Turn
+- 输入净化：长度限制、HTML 过滤、空输入 / Input sanitization
 """
 
 from __future__ import annotations
@@ -593,3 +595,127 @@ def test_validate_turn_strict_raises_on_invalid():
 
     with pytest.raises(TurnValidationError):
         validate_turn_strict(bad_turn, known_issue_ids={"issue-1"})
+
+
+# ---------------------------------------------------------------------------
+# 错误恢复测试 / Error recovery tests (respond_safe)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_respond_safe_returns_turn_on_llm_failure():
+    """respond_safe() 在 LLM 完全失败时应返回包含错误信息的 InteractionTurn（不抛异常）。
+    respond_safe() should return an error InteractionTurn when LLM fails (no exception).
+    """
+    client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=100)
+    responder = FollowupResponder(
+        llm_client=client, case_type="civil_loan", max_retries=2
+    )
+
+    turn = await responder.respond_safe(
+        report=_SAMPLE_REPORT,
+        question="错误恢复测试",
+        run_id=_RUN_ID,
+    )
+
+    assert isinstance(turn, InteractionTurn)
+    assert "[系统错误]" in turn.answer or "[System Error]" in turn.answer
+    assert turn.case_id == _CASE_ID
+    assert turn.issue_ids  # should have fallback issue_ids
+
+
+@pytest.mark.asyncio
+async def test_respond_safe_succeeds_normally():
+    """respond_safe() 在 LLM 正常时应返回正常 InteractionTurn。
+    respond_safe() should return normal InteractionTurn when LLM succeeds.
+    """
+    client = MockLLMClient(_MOCK_LLM_RESPONSE)
+    responder = FollowupResponder(llm_client=client, case_type="civil_loan")
+
+    turn = await responder.respond_safe(
+        report=_SAMPLE_REPORT,
+        question="正常追问测试",
+        run_id=_RUN_ID,
+    )
+
+    assert isinstance(turn, InteractionTurn)
+    assert "[系统错误]" not in turn.answer
+    assert turn.answer  # non-empty real answer
+
+
+@pytest.mark.asyncio
+async def test_respond_safe_still_raises_on_invalid_input():
+    """respond_safe() 对无效输入（空问题）仍应抛出 ValueError。
+    respond_safe() should still raise ValueError for invalid input.
+    """
+    client = MockLLMClient(_MOCK_LLM_RESPONSE)
+    responder = FollowupResponder(llm_client=client, case_type="civil_loan")
+
+    with pytest.raises(ValueError, match="question"):
+        await responder.respond_safe(
+            report=_SAMPLE_REPORT,
+            question="",
+            run_id=_RUN_ID,
+        )
+
+
+# ---------------------------------------------------------------------------
+# 输入净化测试 / Input sanitization tests (sanitize_question)
+# ---------------------------------------------------------------------------
+
+
+class TestSanitizeQuestion:
+    """sanitize_question() 测试 / Tests for sanitize_question()."""
+
+    def test_normal_input_passes_through(self):
+        """正常输入应原样返回（去除首尾空白）。"""
+        from engines.interactive_followup.validator import sanitize_question
+        assert sanitize_question("  请问借贷关系如何认定？  ") == "请问借贷关系如何认定？"
+
+    def test_empty_input_raises(self):
+        """空输入应抛出 ValueError。"""
+        from engines.interactive_followup.validator import sanitize_question
+        with pytest.raises(ValueError, match="不能为空|cannot be empty"):
+            sanitize_question("")
+
+    def test_whitespace_only_raises(self):
+        """仅空白字符应抛出 ValueError。"""
+        from engines.interactive_followup.validator import sanitize_question
+        with pytest.raises(ValueError, match="不能为空|cannot be empty"):
+            sanitize_question("   \n\t  ")
+
+    def test_html_tags_removed(self):
+        """HTML 标签应被移除。"""
+        from engines.interactive_followup.validator import sanitize_question
+        result = sanitize_question("请问<script>alert('xss')</script>这个问题")
+        assert "<script>" not in result
+        assert "alert" not in result
+        assert "请问" in result
+        assert "这个问题" in result
+
+    def test_html_only_input_raises(self):
+        """仅含 HTML 标签的输入在标签移除后应抛出 ValueError。"""
+        from engines.interactive_followup.validator import sanitize_question
+        with pytest.raises(ValueError, match="HTML"):
+            sanitize_question("<script>alert(1)</script>")
+
+    def test_truncation_at_max_length(self):
+        """超长输入应截断至 MAX_QUESTION_LENGTH。"""
+        from engines.interactive_followup.validator import sanitize_question, MAX_QUESTION_LENGTH
+        long_input = "测" * (MAX_QUESTION_LENGTH + 500)
+        result = sanitize_question(long_input)
+        assert len(result) == MAX_QUESTION_LENGTH
+
+    def test_input_at_max_length_not_truncated(self):
+        """恰好 MAX_QUESTION_LENGTH 长度的输入不应被截断。"""
+        from engines.interactive_followup.validator import sanitize_question, MAX_QUESTION_LENGTH
+        exact_input = "A" * MAX_QUESTION_LENGTH
+        result = sanitize_question(exact_input)
+        assert len(result) == MAX_QUESTION_LENGTH
+
+    def test_style_tags_removed(self):
+        """<style> 标签也应被移除。"""
+        from engines.interactive_followup.validator import sanitize_question
+        result = sanitize_question("正文<style>body{display:none}</style>继续")
+        assert "<style>" not in result
+        assert "正文" in result
