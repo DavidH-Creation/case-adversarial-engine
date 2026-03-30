@@ -446,6 +446,9 @@ def _render_issue_ranking(doc, exec_summary: dict):
         _styled(doc, "（暂无排序数��）", size=SZ_NORMAL, color=CLR_GRAY)
 
 
+_PARTY_ZH = {"plaintiff": "原告", "defendant": "被告", "neutral": "中性"}
+
+
 def _render_decision_tree(doc, decision_tree: dict):
     """裁判路径树。"""
     paths = decision_tree.get("paths", [])
@@ -456,9 +459,41 @@ def _render_decision_tree(doc, decision_tree: dict):
         return
 
     doc.add_heading(f"裁判路径树（{len(paths)}条路径）", level=1)
-    for path in paths:
+
+    # --- 概率比较摘要 ---
+    most_likely = decision_tree.get("most_likely_path")
+    plaintiff_best = decision_tree.get("plaintiff_best_path")
+    defendant_best = decision_tree.get("defendant_best_path")
+    if most_likely or plaintiff_best or defendant_best:
+        _styled(doc, "路径概率比较", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+        summary_fields = []
+        if most_likely:
+            summary_fields.append(("最可能路径", most_likely))
+        if plaintiff_best:
+            summary_fields.append(("原告最优路径", plaintiff_best))
+        if defendant_best:
+            summary_fields.append(("被告最优路径", defendant_best))
+        for label, val in summary_fields:
+            p = doc.add_paragraph()
+            _add_run(p, f"{label}：", bold=True, size=SZ_RISK, color=CLR_GRAY)
+            _add_run(p, val, size=SZ_RISK, color=CLR_BODY)
+        doc.add_paragraph()
+
+    # Sort paths by probability descending for display
+    sorted_paths = sorted(paths, key=lambda x: x.get("probability", 0.5), reverse=True)
+
+    for rank, path in enumerate(sorted_paths, start=1):
         pid = path.get("path_id", "")
-        _styled(doc, f"路径 {pid}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+        prob = path.get("probability", 0.5)
+        party = _PARTY_ZH.get(path.get("party_favored", "neutral"), "中性")
+
+        # Label most-likely path
+        label_suffix = f"  【概率 {prob:.0%} · 有利方：{party}】"
+        if pid == most_likely:
+            label_suffix += "  ★ 最可能"
+
+        _styled(doc, f"路径 {pid}{label_suffix}",
+                bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
 
         fields = [
             ("触发条件", path.get("trigger_condition", "")),
@@ -471,15 +506,18 @@ def _render_decision_tree(doc, decision_tree: dict):
             lo = ci.get("lower", 0)
             hi = ci.get("upper", 0)
             fields.append(("置信区间", f"{lo:.0%} ~ {hi:.0%}"))
+        rationale = path.get("probability_rationale", "")
+        if rationale:
+            fields.append(("概率依据", rationale))
         notes = path.get("path_notes", "")
         if notes:
             fields.append(("备注", notes))
 
-        for label, val in fields:
+        for field_label, val in fields:
             if not val:
                 continue
             p = doc.add_paragraph()
-            _add_run(p, f"{label}：", bold=True, size=SZ_RISK, color=CLR_GRAY)
+            _add_run(p, f"{field_label}：", bold=True, size=SZ_RISK, color=CLR_GRAY)
             _add_run(p, val, size=SZ_RISK, color=CLR_BODY)
         doc.add_paragraph()
 

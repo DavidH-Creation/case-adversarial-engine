@@ -1019,6 +1019,16 @@ class ConfidenceInterval(BaseModel):
         return self
 
 
+class PathRankingItem(BaseModel):
+    """路径概率排序条目。DecisionPathTree.path_ranking 列表元素。"""
+    path_id: str = Field(..., min_length=1, description="路径 ID")
+    probability: float = Field(..., ge=0.0, le=1.0, description="路径触发概率")
+    party_favored: str = Field(..., description="对哪方有利：plaintiff / defendant / neutral")
+    key_conditions: list[str] = Field(
+        default_factory=list, description="触发本路径需满足的关键条件（文字描述列表）"
+    )
+
+
 class DecisionPath(BaseModel):
     """单条裁判路径。"""
     path_id: str = Field(..., min_length=1)
@@ -1041,6 +1051,18 @@ class DecisionPath(BaseModel):
     )
     fallback_path_id: Optional[str] = Field(
         default=None, description="本路径失败时降级到哪条路径的 path_id"
+    )
+    # v1.6: 概率评分
+    probability: float = Field(
+        default=0.5, ge=0.0, le=1.0,
+        description="路径触发概率（0-1），基于证据支撑度、阻断条件可满足性及法律先例对齐度",
+    )
+    probability_rationale: str = Field(
+        default="", description="概率评估依据（支撑证据质量、阻断条件满足情况等）"
+    )
+    party_favored: str = Field(
+        default="neutral",
+        description="本路径结果对哪方有利：plaintiff / defendant / neutral",
     )
 
 
@@ -1067,6 +1089,19 @@ class DecisionPathTree(BaseModel):
     )
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
+    # v1.6: 路径概率比较结果
+    most_likely_path: Optional[str] = Field(
+        default=None, description="概率最高的路径 ID"
+    )
+    plaintiff_best_path: Optional[str] = Field(
+        default=None, description="对原告最有利的路径 ID（plaintiff_favored 路径中概率最高）"
+    )
+    defendant_best_path: Optional[str] = Field(
+        default=None, description="对被告最有利的路径 ID（defendant_favored 路径中概率最高）"
+    )
+    path_ranking: list[PathRankingItem] = Field(
+        default_factory=list, description="路径按概率降序排列的排名列表"
     )
 
 

@@ -42,6 +42,10 @@ class LLMDecisionPathItem(BaseModel):
     admissibility_gate: list[str] = Field(default_factory=list)
     result_scope: list[str] = Field(default_factory=list)
     fallback_path_id: str = Field(default="")
+    # v1.6: 概率评分
+    probability: float = Field(default=0.5, ge=0.0, le=1.0)
+    probability_rationale: str = Field(default="")
+    party_favored: str = Field(default="neutral")
 
 
 class LLMBlockingConditionItem(BaseModel):
