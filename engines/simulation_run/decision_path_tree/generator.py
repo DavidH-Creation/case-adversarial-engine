@@ -49,6 +49,8 @@ from .schemas import (
     LLMDecisionPathTreeOutput,
 )
 
+import re
+
 _MAX_PATHS = 6
 _VALID_RESULT_SCOPES = frozenset({
     "principal", "interest", "penalty", "liability_allocation",
@@ -56,6 +58,42 @@ _VALID_RESULT_SCOPES = frozenset({
 })
 
 logger = logging.getLogger(__name__)
+
+# 标题片段提取：去掉虚词后按中文连续字符切割，保留 ≥4 字片段
+_TITLE_STOP_WORDS = frozenset({
+    "是否", "被告", "原告", "之间", "认定", "的", "与", "及", "其",
+    "身份", "事实", "行为", "效力", "损失", "承担",
+})
+_CJK_RUN = re.compile(r'[\u4e00-\u9fff]{4,}')
+_MIN_MATCH_LEN = 4
+
+
+def _extract_title_segments(title: str) -> list[str]:
+    """从争点标题提取核心中文片段，用于模糊匹配。
+
+    去掉常见虚词后，提取所有 ≥4 字的连续中文片段。
+    """
+    cleaned = title
+    for sw in _TITLE_STOP_WORDS:
+        cleaned = cleaned.replace(sw, " ")
+    return _CJK_RUN.findall(cleaned)
+
+
+def _segment_matches(segments: list[str], text: str) -> bool:
+    """检查是否有任一片段（或其 ≥4 字子串）出现在目标文本中。
+
+    先尝试完整片段匹配，再尝试滑窗子串匹配。
+    """
+    for seg in segments:
+        if seg in text:
+            return True
+        # 滑窗：用 ≥4 字子串匹配（覆盖 LLM 改写导致的局部匹配）
+        if len(seg) > _MIN_MATCH_LEN:
+            for start in range(len(seg) - _MIN_MATCH_LEN + 1):
+                sub = seg[start:start + _MIN_MATCH_LEN]
+                if sub in text:
+                    return True
+    return False
 
 # v1.5: 只有 admitted_for_discussion 状态的证据进入裁判路径树
 _ADMITTED_STATUSES: frozenset[EvidenceStatus] = frozenset({
@@ -436,6 +474,9 @@ class DecisionPathTreeGenerator:
         """从路径文本中推断 trigger_issue_ids。
 
         按标题长度倒序匹配，避免短标题被长标题子串误命中。
+        支持两层匹配：
+        1. 完整标题子串匹配
+        2. 标题核心片段匹配（提取 ≥4 字连续中文片段，≥1 命中即算匹配）
         """
         combined = " ".join(t for t in text_fields if t)
         if not combined.strip():
@@ -443,12 +484,20 @@ class DecisionPathTreeGenerator:
 
         inferred: list[str] = []
         seen: set[str] = set()
-        # 按标题长度倒序：先匹配长标题，避免「借贷关系」误命中「借贷关系是否成立」
+        # 按标题长度倒序：先匹配长标题，避免短标题误命中
         sorted_issues = sorted(issues, key=lambda i: len(i.title), reverse=True)
         for issue in sorted_issues:
             if len(issue.title) < 4:
                 continue
+            # Layer 1: 完整标题或 issue_id 子串匹配
             if issue.title in combined or issue.issue_id in combined:
+                if issue.issue_id not in seen:
+                    inferred.append(issue.issue_id)
+                    seen.add(issue.issue_id)
+                continue
+            # Layer 2: 核心片段匹配（LLM 常改写标题，如去掉"是否"、"被告"等）
+            segments = _extract_title_segments(issue.title)
+            if segments and _segment_matches(segments, combined):
                 if issue.issue_id not in seen:
                     inferred.append(issue.issue_id)
                     seen.add(issue.issue_id)
