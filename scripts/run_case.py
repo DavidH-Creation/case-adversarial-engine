@@ -195,7 +195,10 @@ def _build_financials(
 # Output helpers
 # ---------------------------------------------------------------------------
 
-def _output_dir() -> Path:
+def _output_dir(override: Path | None = None) -> Path:
+    if override is not None:
+        override.mkdir(parents=True, exist_ok=True)
+        return override
     ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     d = _PROJECT_ROOT / "outputs" / ts
     d.mkdir(parents=True, exist_ok=True)
@@ -680,7 +683,7 @@ async def _run_post_debate(
 # Main entry point
 # ---------------------------------------------------------------------------
 
-async def main(case_path: str, model_override: str | None = None, claude_only: bool = False) -> None:
+async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
         print(f"[Error] Case file not found: {case_file}")
@@ -765,7 +768,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
 
     # Step 4: Write outputs
     print("\n[Step 4] Writing outputs...")
-    out = _output_dir()
+    out = _output_dir(Path(output_dir) if output_dir else None)
     jp = _write_json(out, result)
     mp = _write_md(
         out, result, issue_tree, case_data,
@@ -841,6 +844,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", default=None, help="Override LLM model (default: from YAML or claude-sonnet-4-6)")
     parser.add_argument("--claude-only", action="store_true", help="Use Claude CLI for all agents (skip Codex)")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging for engines")
+    parser.add_argument("--output-dir", default=None, help="Override output directory (default: outputs/<timestamp>)")
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG, format="%(name)s %(levelname)s: %(message)s")
@@ -854,7 +858,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     try:
-        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only))
+        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir))
     except CLINotFoundError as e:
         print(f"\n[Error] CLI not available: {e}")
         sys.exit(1)
