@@ -34,6 +34,7 @@ materials:
       metadata:
         document_type: "identity_documents"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-complaint"
       text: |
@@ -51,6 +52,7 @@ materials:
       metadata:
         document_type: "complaint"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-transfers"
       text: |
@@ -64,6 +66,7 @@ materials:
         document_type: "bank_transfer_records"
         direction: "outgoing"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-sms"
       text: |
@@ -72,6 +75,7 @@ materials:
       metadata:
         document_type: "communication_records"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-wechat-moments"
       text: |
@@ -83,6 +87,7 @@ materials:
       metadata:
         document_type: "social_media_records"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
   defendant:
     - source_id: "src-d-id"
@@ -90,6 +95,7 @@ materials:
       metadata:
         document_type: "identity_documents"
         submitter: "defendant"
+        status: "admitted_for_discussion"
 
     - source_id: "src-d-business-license"
       text: |
@@ -100,6 +106,7 @@ materials:
       metadata:
         document_type: "business_records"
         submitter: "defendant"
+        status: "admitted_for_discussion"
 
     - source_id: "src-d-wechat-transfer-instructions"
       text: |
@@ -110,6 +117,7 @@ materials:
       metadata:
         document_type: "communication_records"
         submitter: "defendant"
+        status: "admitted_for_discussion"
 
     - source_id: "src-d-didi-record"
       text: |
@@ -119,6 +127,7 @@ materials:
       metadata:
         document_type: "transportation_records"
         submitter: "defendant"
+        status: "admitted_for_discussion"
 
     - source_id: "src-d-recordings-wechat"
       text: |
@@ -140,6 +149,7 @@ materials:
       metadata:
         document_type: "audio_video_records"
         submitter: "defendant"
+        status: "admitted_for_discussion"
 
 claims:
   - claim_id: "c-001"

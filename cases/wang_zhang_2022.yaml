@@ -33,6 +33,7 @@ materials:
       metadata:
         document_type: "identity_documents"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-transfers-out"
       text: |
@@ -47,6 +48,7 @@ materials:
         document_type: "bank_transfer_records"
         direction: "outgoing"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-pre-note-repayment"
       text: |
@@ -58,6 +60,7 @@ materials:
         direction: "incoming"
         date: "2022-02-28"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-note"
       text: |
@@ -73,6 +76,7 @@ materials:
         date: "2022-03-01"
         principal: "218000"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-repayments"
       text: |
@@ -86,6 +90,7 @@ materials:
         document_type: "bank_transfer_records"
         direction: "incoming"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
     - source_id: "src-p-lawyer"
       text: |
@@ -97,6 +102,7 @@ materials:
         document_type: "attorney_contract"
         amount: "8000"
         submitter: "plaintiff"
+        status: "admitted_for_discussion"
 
   defendant:
     - source_id: "src-d-id"
@@ -104,6 +110,7 @@ materials:
       metadata:
         document_type: "identity_documents"
         submitter: "defendant"
+        status: "admitted_for_discussion"
 
     - source_id: "src-d-repayments"
       text: |
@@ -117,6 +124,7 @@ materials:
         document_type: "bank_transfer_records"
         direction: "outgoing"
         submitter: "defendant"
+        status: "admitted_for_discussion"
 
     - source_id: "src-d-objections"
       text: |
@@ -127,6 +135,7 @@ materials:
       metadata:
         document_type: "objection_statement"
         submitter: "defendant"
+        status: "admitted_for_discussion"
 
 claims:
   - claim_id: "c-001"
