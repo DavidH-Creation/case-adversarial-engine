@@ -528,12 +528,15 @@ class IssueImpactRanker:
 
         enriched: list[Issue] = []
         unevaluated: list[str] = []
+        # 区分"LLM 完全未返回"和"返回了但分类字段校验失败"
+        not_in_eval_map: set[str] = set()
 
         for issue in issues:
             ev = eval_map.get(issue.issue_id)
             if ev is None:
                 # LLM 未返回该争点的评估
                 unevaluated.append(issue.issue_id)
+                not_in_eval_map.add(issue.issue_id)
                 enriched.append(issue)
                 continue
 
@@ -597,11 +600,11 @@ class IssueImpactRanker:
             enriched.append(issue.model_copy(update=updates))
 
         # 计算 composite_score（需在富化完成后）
-        # unevaluated 争点显式设为 None，避免旧值或默认 depth_score 制造伪排名
-        unevaluated_set = set(unevaluated)
+        # 仅"LLM 完全未返回"的争点设 composite_score=None
+        # "返回了但分类字段校验失败"的争点仍用 v2 评分维度计算 composite_score
         enriched = [
             i.model_copy(update={"composite_score": self._compute_composite_score(i)})
-            if i.issue_id not in unevaluated_set
+            if i.issue_id not in not_in_eval_map
             else i.model_copy(update={"composite_score": None})
             for i in enriched
         ]

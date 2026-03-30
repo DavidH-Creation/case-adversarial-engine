@@ -164,9 +164,22 @@ class AttackChainOptimizer:
         # Top-level: attack_chain / attacks / optimal_attacks → top_attacks
         if "top_attacks" not in data:
             for alias in ("attack_chain", "attacks", "optimal_attacks", "attack_nodes"):
-                if alias in data and isinstance(data[alias], list):
+                if alias not in data:
+                    continue
+                val = data[alias]
+                if isinstance(val, list):
                     data["top_attacks"] = data.pop(alias)
                     break
+                # LLM 可能将节点包在 dict 里: {"attack_chain": {"nodes": [...]}}
+                if isinstance(val, dict):
+                    for sub_key in ("nodes", "attacks", "top_attacks", "attack_nodes"):
+                        if sub_key in val and isinstance(val[sub_key], list):
+                            data["top_attacks"] = val[sub_key]
+                            data.pop(alias)
+                            logger.info("Unwrapped top_attacks from %s.%s", alias, sub_key)
+                            break
+                    if "top_attacks" in data:
+                        break
 
         # Normalize individual attack nodes
         for node in data.get("top_attacks", []):
