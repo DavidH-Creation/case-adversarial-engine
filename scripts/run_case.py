@@ -78,6 +78,9 @@ from engines.simulation_run.issue_dependency_graph import IssueDependencyGraphGe
 from engines.simulation_run.issue_dependency_graph.schemas import IssueDependencyGraphInput
 from engines.simulation_run.hearing_order import HearingOrderGenerator, HearingOrderInput
 from engines.simulation_run.defense_chain import DefenseChainOptimizer, DefenseChainInput
+from engines.interactive_followup.responder import FollowupResponder
+from engines.interactive_followup.session_manager import SessionManager
+from engines.interactive_followup.validator import sanitize_question
 
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -724,7 +727,7 @@ async def _run_post_debate(
 # Main entry point
 # ---------------------------------------------------------------------------
 
-async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False) -> None:
+async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False, interactive: bool = False, question: str | None = None) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
         print(f"[Error] Case file not found: {case_file}")
@@ -948,6 +951,85 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
             docx_path = None
         ckpt.save(STEP_DOCX, {"report_docx": str(docx_path) if docx_path else ""})
 
+    # Step 6: Interactive followup (optional — triggered by --interactive or --question)
+    if interactive or question:
+        print("\n[Step 6] Interactive followup...")
+        from engines.shared.models import ReportArtifact, ReportSection, KeyConclusion, StatementClass
+
+        # Build a minimal ReportArtifact from pipeline outputs
+        report_sections = []
+        all_evidence_ids = [e.evidence_id for e in ev_index.evidence]
+        for idx, iss in enumerate(issue_tree.issues, 1):
+            report_sections.append(ReportSection(
+                section_id=f"sec-{idx:03d}",
+                section_index=idx,
+                title=iss.title,
+                body=f"争点分析: {iss.title}",
+                linked_issue_ids=[iss.issue_id],
+                linked_evidence_ids=iss.evidence_ids or [],
+                key_conclusions=[],
+            ))
+        report_artifact = ReportArtifact(
+            report_id=f"report-{case_id}",
+            case_id=case_id,
+            run_id=case_id,
+            title=f"{case_type} 诊断报告",
+            summary=result.summary.overall_assessment[:500] if result.summary else "案件分析报告",
+            sections=report_sections,
+        )
+
+        followup = FollowupResponder(
+            llm_client=claude, case_type=case_type, model=model, max_retries=2,
+        )
+        session_mgr = SessionManager(out)
+        session = session_mgr.load_or_create(case_id, report_artifact.report_id, case_id)
+
+        if question:
+            # Single question mode: --question "..."
+            try:
+                clean_q = sanitize_question(question)
+            except ValueError as e:
+                print(f"  [Error] Invalid question: {e}")
+                sys.exit(1)
+            turn = await followup.respond_safe(
+                report=report_artifact,
+                question=clean_q,
+                previous_turns=session.turns,
+                run_id=case_id,
+            )
+            session_mgr.append_turn(session, turn)
+            print(f"  Q: {clean_q}")
+            print(f"  A: {turn.answer}")
+            print(f"  Issues: {turn.issue_ids}  Evidence: {turn.evidence_ids}")
+        else:
+            # Interactive loop mode: --interactive
+            print("  Entering interactive mode. Type 'quit' or 'exit' to stop.\n")
+            while True:
+                try:
+                    raw_input = input("  [追问/Question] > ")
+                except (EOFError, KeyboardInterrupt):
+                    print("\n  [Exit] Interactive mode ended.")
+                    break
+                if raw_input.strip().lower() in ("quit", "exit", "q"):
+                    print("  [Exit] Interactive mode ended.")
+                    break
+                try:
+                    clean_q = sanitize_question(raw_input)
+                except ValueError as e:
+                    print(f"  [Invalid] {e}")
+                    continue
+                turn = await followup.respond_safe(
+                    report=report_artifact,
+                    question=clean_q,
+                    previous_turns=session.turns,
+                    run_id=case_id,
+                )
+                session_mgr.append_turn(session, turn)
+                print(f"  A: {turn.answer}")
+                print(f"  Issues: {turn.issue_ids}  Evidence: {turn.evidence_ids}\n")
+
+        print(f"  Session saved: {session_mgr.session_path} ({session.turn_count} turns)")
+
     print(f"\n{'=' * 60}")
     print(f"\u2713 Run complete")
     print(f"  Result JSON: {jp}")
@@ -992,6 +1074,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", default=None, help="Override output directory (default: outputs/<timestamp>)")
     parser.add_argument("--no-redact", action="store_true", help="Disable PII redaction in reports (for debugging)")
     parser.add_argument("--resume", action="store_true", help="Resume from checkpoint in --output-dir (requires --output-dir)")
+    parser.add_argument("--interactive", action="store_true", help="Enter interactive followup mode after pipeline completes (Step 6)")
+    parser.add_argument("--question", default=None, help="Single followup question to ask after pipeline completes (Step 6)")
     args = parser.parse_args()
     if args.resume and not args.output_dir:
         parser.error("--resume requires --output-dir to specify the run directory to resume from")
@@ -1007,7 +1091,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     try:
-        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume))
+        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume, interactive=args.interactive, question=args.question))
     except CLINotFoundError as e:
         print(f"\n[Error] CLI not available: {e}")
         sys.exit(1)

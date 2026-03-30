@@ -1,6 +1,6 @@
 """
-交互追问校验器 — 对 InteractionTurn 进行合约合规性验证。
-Interaction turn validator — validates InteractionTurn against contract constraints.
+交互追问校验器 — 对 InteractionTurn 进行合约合规性验证 + 输入净化。
+Interaction turn validator — validates InteractionTurn against contract constraints + input sanitization.
 
 校验维度 / Validation dimensions:
 1. 证据边界（evidence_ids ⊆ 报告已引用证据）/ Evidence boundary
@@ -8,13 +8,32 @@ Interaction turn validator — validates InteractionTurn against contract constr
 3. 陈述分类（statement_class 有效）/ Statement classification
 4. 必填字段完整性 / Required field completeness
 5. 悬空争点引用（issue_ids 中的 ID 在已知争点集合中存在）/ Dangling issue reference
+
+输入净化 / Input sanitization:
+- 最大长度 2000 字符 / Max length 2000 characters
+- HTML/script 标签过滤 / HTML/script tag filtering
+- 空输入拒绝 / Empty input rejection
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from .schemas import InteractionTurn, StatementClass
+
+# ---------------------------------------------------------------------------
+# 输入净化常量 / Input sanitization constants
+# ---------------------------------------------------------------------------
+
+MAX_QUESTION_LENGTH = 2000
+
+# 匹配 <script>...</script> 和 <style>...</style> 整块内容（含标签和内容）
+_SCRIPT_STYLE_RE = re.compile(
+    r"<(script|style)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL
+)
+# 匹配剩余的 HTML 标签 / Matches remaining HTML tags
+_HTML_TAG_RE = re.compile(r"<[^>]+>", re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------
@@ -219,3 +238,53 @@ def validate_turn_strict(
     if not result.is_valid:
         raise TurnValidationError(result)
     return result
+
+
+# ---------------------------------------------------------------------------
+# 输入净化函数 / Input sanitization functions
+# ---------------------------------------------------------------------------
+
+
+def sanitize_question(question: str) -> str:
+    """净化用户追问输入。
+    Sanitize user followup question input.
+
+    处理逻辑 / Processing:
+    1. 去除首尾空白 / Strip leading/trailing whitespace
+    2. 移除 HTML/script 标签 / Remove HTML/script tags
+    3. 截断至 MAX_QUESTION_LENGTH 字符 / Truncate to MAX_QUESTION_LENGTH characters
+
+    Args:
+        question: 原始用户输入 / Raw user input
+
+    Returns:
+        净化后的问题字符串 / Sanitized question string
+
+    Raises:
+        ValueError: 净化后为空字符串 / Empty string after sanitization
+    """
+    # Strip whitespace
+    cleaned = question.strip()
+
+    # Reject empty input
+    if not cleaned:
+        raise ValueError(
+            "问题不能为空 / Question cannot be empty"
+        )
+
+    # Remove <script>/<style> blocks (including content), then remaining tags
+    cleaned = _SCRIPT_STYLE_RE.sub("", cleaned)
+    cleaned = _HTML_TAG_RE.sub("", cleaned)
+
+    # Re-check after tag removal
+    if not cleaned.strip():
+        raise ValueError(
+            "问题在移除 HTML 标签后为空 / Question is empty after HTML tag removal"
+        )
+    cleaned = cleaned.strip()
+
+    # Truncate to max length
+    if len(cleaned) > MAX_QUESTION_LENGTH:
+        cleaned = cleaned[:MAX_QUESTION_LENGTH]
+
+    return cleaned
