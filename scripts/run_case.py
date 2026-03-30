@@ -59,8 +59,10 @@ from engines.shared.model_selector import ModelSelector
 from engines.shared.logging_config import get_token_tracker, reset_token_tracker, setup_pipeline_logging
 from engines.shared.models import (
     AgentRole, ClaimType, DisputedAmountAttribution,
-    EvidenceIndex, EvidenceStatus, LoanTransaction, RawMaterial,
-    RepaymentAttribution, RepaymentTransaction,
+    EvidenceGapItem, EvidenceIndex, EvidenceStatus,
+    LoanTransaction, OutcomeImpactSize, PracticallyObtainable,
+    RawMaterial, RepaymentAttribution, RepaymentTransaction,
+    SupplementCost,
 )
 from engines.report_generation.docx_generator import generate_docx_report
 from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_EMOJI, RISK_LABEL_ZH
@@ -616,6 +618,44 @@ async def _run_rounds(
 
 
 # ---------------------------------------------------------------------------
+# Post-debate helpers
+# ---------------------------------------------------------------------------
+
+
+def _derive_evidence_gaps(
+    conference_result: PretrialConferenceResult | None,
+    case_id: str,
+    run_id: str,
+) -> list[EvidenceGapItem]:
+    """Derive evidence gap indicators from pretrial cross-examination results.
+
+    Unresolved focus items indicate disputed evidence points that may require
+    supplementation — these serve as gap indicators until P1.7 provides a
+    dedicated evidence gap analyzer.
+    """
+    if conference_result is None:
+        return []
+
+    gaps: list[EvidenceGapItem] = []
+    for idx, focus in enumerate(conference_result.cross_examination_result.focus_list):
+        if focus.is_resolved:
+            continue
+        gaps.append(EvidenceGapItem(
+            gap_id=f"xexam-{focus.evidence_id}-{focus.issue_id}",
+            case_id=case_id,
+            run_id=run_id,
+            related_issue_id=focus.issue_id,
+            gap_description=f"[质证争议] {focus.dispute_summary}",
+            supplement_cost=SupplementCost.medium,
+            outcome_impact_size=OutcomeImpactSize.moderate,
+            practically_obtainable=PracticallyObtainable.uncertain,
+            alternative_evidence_paths=[],
+            roi_rank=idx + 1,
+        ))
+    return gaps
+
+
+# ---------------------------------------------------------------------------
 # Post-debate analysis pipeline
 # ---------------------------------------------------------------------------
 
@@ -626,6 +666,7 @@ async def _run_post_debate(
     llm_client,
     case_data: dict,
     selector: ModelSelector,
+    conference_result: PretrialConferenceResult | None = None,
 ) -> dict[str, Any]:
     """Run post-debate analysis pipeline. Returns dict of all artifacts."""
     case_id = case_data["case_id"]
@@ -634,6 +675,9 @@ async def _run_post_debate(
     d_id = case_data["parties"]["defendant"]["party_id"]
 
     artifacts: dict[str, Any] = {}
+
+    # Derive evidence gaps from pretrial cross-examination (placeholder until P1.7)
+    evidence_gaps = _derive_evidence_gaps(conference_result, case_id, run_id)
 
     # P0.2: AmountCalculator (sync, rule-based)
     amount_input = _build_financials(case_data.get("financials", {}), case_id, run_id)
@@ -732,10 +776,11 @@ async def _run_post_debate(
         ).recommend(ActionRecommenderInput(
             case_id=case_id, run_id=run_id,
             issue_list=ranked_tree.issues,
-            evidence_gap_list=[],
+            evidence_gap_list=evidence_gaps,
             amount_calculation_report=amount_report,
             proponent_party_id=p_id,
             evidence_index=ev_index,
+            decision_path_tree=decision_tree,
         ))
         artifacts["action_rec"] = action_rec
         print(f"    \u2713 Amendments: {len(action_rec.recommended_claim_amendments)}")
@@ -747,23 +792,6 @@ async def _run_post_debate(
     else:
         print("  - Skipping ActionRecommender: attack_chain not available")
         action_rec = None
-
-    # P2.12: ExecutiveSummarizer (sync, rule-based)
-    if attack_chain:
-        print("  - Executive summary...")
-        exec_summary = ExecutiveSummarizer().summarize(ExecutiveSummarizerInput(
-            case_id=case_id, run_id=run_id,
-            issue_list=ranked_tree.issues,
-            adversary_attack_chain=attack_chain,
-            amount_calculation_report=amount_report,
-            action_recommendation=action_rec,
-            evidence_gap_items=None,
-        ))
-        artifacts["exec_summary"] = exec_summary
-        print(f"    \u2713 Top 5 issues: {exec_summary.top5_decisive_issues}")
-    else:
-        print("  - Skipping ExecutiveSummarizer: attack_chain not available")
-        exec_summary = None
 
     # P2: AdmissibilityEvaluator (async, LLM)
     print("  - Admissibility evaluation...")
@@ -777,6 +805,7 @@ async def _run_post_debate(
     print(f"    \u2713 Admissibility scored: {scored}/{len(admissibility_result.evidence)} evidence items")
 
     # P2: IssueDependencyGraph (sync, rule-based)
+    defense_chain_result = None
     if ranked_tree:
         print("  - Issue dependency graph...")
         dep_graph = IssueDependencyGraphGenerator().build(IssueDependencyGraphInput(
@@ -811,6 +840,25 @@ async def _run_post_debate(
         print(f"    \u2713 Defense points: {len(chain.defense_points)}")
     else:
         print("  - Skipping dependency graph / hearing order / defense chain: ranked_tree not available")
+
+    # P2.12: ExecutiveSummarizer (sync, rule-based)
+    # Moved after defense_chain so all upstream artifacts are available.
+    if attack_chain:
+        print("  - Executive summary...")
+        exec_summary = ExecutiveSummarizer().summarize(ExecutiveSummarizerInput(
+            case_id=case_id, run_id=run_id,
+            issue_list=ranked_tree.issues,
+            adversary_attack_chain=attack_chain,
+            amount_calculation_report=amount_report,
+            action_recommendation=action_rec,
+            evidence_gap_items=evidence_gaps or None,
+            decision_path_tree=decision_tree,
+            defense_chain_result=defense_chain_result,
+        ))
+        artifacts["exec_summary"] = exec_summary
+        print(f"    \u2713 Top 5 issues: {exec_summary.top5_decisive_issues}")
+    else:
+        print("  - Skipping ExecutiveSummarizer: attack_chain not available")
 
     return artifacts
 
@@ -1038,7 +1086,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         print(f"  \u2713 Post-debate artifacts already on disk")
     else:
         print("\n[Step 3.5] Post-debate analysis...")
-        artifacts = await _run_post_debate(result, issue_tree, ev_index, claude, case_data, selector)
+        artifacts = await _run_post_debate(result, issue_tree, ev_index, claude, case_data, selector, conference_result=conference_result)
         # Serialize post-debate artifacts immediately
         for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary",
                      "admissibility_result", "dep_graph", "hearing_order", "defense_chain"):
