@@ -604,6 +604,7 @@ class TestRankFullFlow:
         assert result.created_at
         assert "T" in result.created_at  # ISO-8601 格式
 
+<<<<<<< HEAD
 
 # ---------------------------------------------------------------------------
 # 测试：Opus 风格 LLM 输出归一化
@@ -725,3 +726,24 @@ class TestOpusStyleNormalization:
         if len(scored) >= 2:
             scores = {i.issue_id: i.composite_score for i in issues}
             assert scores.get("issue-001", 0) > scores.get("issue-002", 0)
+
+    @pytest.mark.asyncio
+    async def test_unevaluated_issue_has_no_composite_score(self):
+        """LLM 未返回评估的争点不应有 composite_score（避免默认值污染排序）。"""
+        issues = [
+            _make_issue("i-evaluated", evidence_ids=["ev-001"]),
+            _make_issue("i-unevaluated", evidence_ids=["ev-001"]),
+        ]
+        # LLM 只返回 i-evaluated 的评估
+        evaluations = [_eval_entry("i-evaluated", outcome_impact="high")]
+        client = MockLLMClient(_stub_response(evaluations))
+        ranker = IssueImpactRanker(client)
+        result = await ranker.rank(_make_ranker_input(issues))
+
+        assert "i-unevaluated" in result.unevaluated_issue_ids
+
+        by_id = {i.issue_id: i for i in result.ranked_issue_tree.issues}
+        # 已评估争点有 composite_score
+        assert by_id["i-evaluated"].composite_score is not None
+        # 未评估争点 composite_score 为 None，排在末尾
+        assert by_id["i-unevaluated"].composite_score is None
