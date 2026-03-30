@@ -7,9 +7,10 @@ Guides LLM to evaluate each issue on 5 dimensions and output strict JSON.
 """
 from __future__ import annotations
 
+from engines.shared.few_shot_examples import load_few_shot_text
 from engines.shared.models import AmountConsistencyCheck, EvidenceIndex, IssueTree
 
-SYSTEM_PROMPT = """\
+_BASE_SYSTEM_PROMPT = """\
 你是一名专业的中国民间借贷案件法律分析助手，负责对案件争点进行结构化影响评估。
 
 你的任务是对每个争点从以下十个维度进行评估：
@@ -106,6 +107,8 @@ SYSTEM_PROMPT = """\
 - 使用嵌套对象（如 {"dimensions": {"importance": {"score": 85}}}）
 - 添加任何前言、说明、markdown 标题或注释\
 """
+
+SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text("issue_impact_ranker")
 
 
 def build_user_prompt(

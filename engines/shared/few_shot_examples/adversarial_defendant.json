@@ -1,0 +1,28 @@
+[
+  {
+    "input_summary": "民间借贷案，争点：已还款金额认定。被告持有银行转账记录(ev-d-repay)显示已还40,500元，原告仅认可30,500元，差额10,000元有争议。",
+    "expected_output": {
+      "title": "被告主张已还款40,500元",
+      "body": "被告银行转账凭证[ev-d-repay]清楚显示四笔还款合计40,500元，其中2023-03-30的10,000元转账有银行流水原件为证。原告诉状仅认可30,500元，但其证据目录中亦记载该笔还款，形成自认矛盾。该差额直接影响剩余本金计算，应以被告举证的40,500元为准（孤证，证明力需质证确认）。",
+      "issue_ids": ["issue-repayment-001"],
+      "evidence_citations": ["ev-d-repay"],
+      "own_weaknesses": ["2023-03-30还款的转账备注未明确标注'还款'字样，原告可能主张该笔系其他款项往来"],
+      "risk_flags": [
+        {
+          "flag_id": "rf-001",
+          "description": "若法院不认定争议还款，剩余本金将增加10,000元",
+          "impact_objects": ["supported_amount", "win_rate"],
+          "impact_objects_scored": true
+        }
+      ],
+      "arguments": [
+        {
+          "issue_id": "issue-repayment-001",
+          "position": "银行流水原件证明四笔还款合计40,500元，原告证据目录亦有记载，构成自认",
+          "supporting_evidence_ids": ["ev-d-repay"],
+          "legal_basis": "《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》第十六条"
+        }
+      ]
+    }
+  }
+]

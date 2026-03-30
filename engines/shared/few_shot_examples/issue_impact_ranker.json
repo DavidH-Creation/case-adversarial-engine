@@ -1,0 +1,50 @@
+[
+  {
+    "input_summary": "民间借贷案，争点issue-001「借贷关系是否成立」（根争点，factual类型），原告证据：借条原件+银行转账凭证，被告无直接反驳证据。fact_dispute_ratio: 0/3条命题存在争议，3/3条已有证据支撑。",
+    "expected_output": {
+      "evaluations": [
+        {
+          "issue_id": "issue-001",
+          "outcome_impact": "high",
+          "impact_targets": ["principal", "interest", "penalty"],
+          "proponent_evidence_strength": "strong",
+          "proponent_evidence_ids": ["ev-note", "ev-transfer"],
+          "opponent_attack_strength": "weak",
+          "opponent_attack_evidence_ids": ["ev-d-objection"],
+          "recommended_action": "explain_in_trial",
+          "recommended_action_basis": "证据链完整，庭审中陈述即可",
+          "recommended_action_evidence_ids": ["ev-note"],
+          "importance_score": 90,
+          "swing_score": 15,
+          "evidence_strength_gap": 60,
+          "dependency_depth": 0,
+          "credibility_impact": 20
+        }
+      ]
+    }
+  },
+  {
+    "input_summary": "同案争点issue-002「已还款金额认定」（子争点，依赖issue-001），原告主张已还30,500元，被告主张40,500元，差额10,000元有银行凭证。fact_dispute_ratio: 1/2条命题存在争议。",
+    "expected_output": {
+      "evaluations": [
+        {
+          "issue_id": "issue-002",
+          "outcome_impact": "medium",
+          "impact_targets": ["principal"],
+          "proponent_evidence_strength": "medium",
+          "proponent_evidence_ids": ["ev-p-repay"],
+          "opponent_attack_strength": "strong",
+          "opponent_attack_evidence_ids": ["ev-d-repay"],
+          "recommended_action": "supplement_evidence",
+          "recommended_action_basis": "需补充2023-03-30转账的性质说明（非还款的证据）",
+          "recommended_action_evidence_ids": ["ev-p-repay"],
+          "importance_score": 35,
+          "swing_score": 75,
+          "evidence_strength_gap": -30,
+          "dependency_depth": 1,
+          "credibility_impact": 45
+        }
+      ]
+    }
+  }
+]
