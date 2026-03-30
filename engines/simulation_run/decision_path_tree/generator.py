@@ -314,6 +314,23 @@ class DecisionPathTreeGenerator:
                         p["key_evidence_ids"] = ids
                         break
 
+            # --- counter_evidence_ids aliases ---
+            if "counter_evidence_ids" not in p or not p["counter_evidence_ids"]:
+                for alias in ("counter_evidence", "contradicting_evidence",
+                              "opposing_evidence", "blocking_evidence",
+                              "rebuttal_evidence", "adverse_evidence"):
+                    if alias in p and isinstance(p[alias], list):
+                        ids = []
+                        for x in p.pop(alias):
+                            if isinstance(x, str):
+                                ids.append(x)
+                            elif isinstance(x, dict):
+                                eid = x.get("evidence_id", "")
+                                if eid:
+                                    ids.append(eid)
+                        p["counter_evidence_ids"] = ids
+                        break
+
             # Layer 1b: extract from chain-like structures (fallback)
             chain = (
                 p.get("decision_chain")
@@ -570,6 +587,11 @@ class DecisionPathTreeGenerator:
 
             clean_issue_ids = [i for i in item.trigger_issue_ids if i in known_issue_ids]
             clean_evidence_ids = [e for e in item.key_evidence_ids if e in known_evidence_ids]
+            # counter_evidence_ids: filter to known IDs, then remove any overlap with key_evidence_ids
+            clean_counter_ids = [
+                e for e in item.counter_evidence_ids
+                if e in known_evidence_ids and e not in set(clean_evidence_ids)
+            ]
 
             # 推断层：如果 LLM 未返回 trigger_issue_ids，从文本推断
             if not clean_issue_ids and issues:
@@ -639,6 +661,7 @@ class DecisionPathTreeGenerator:
                 trigger_condition=item.trigger_condition,
                 trigger_issue_ids=clean_issue_ids,
                 key_evidence_ids=clean_evidence_ids,
+                counter_evidence_ids=clean_counter_ids,
                 possible_outcome=item.possible_outcome,
                 confidence_interval=ci,
                 path_notes=item.path_notes,

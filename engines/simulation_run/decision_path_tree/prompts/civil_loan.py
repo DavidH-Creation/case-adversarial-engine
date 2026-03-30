@@ -20,13 +20,23 @@ SYSTEM_PROMPT = """\
 - path_id：路径唯一标识（如 path-A、path-B）
 - trigger_condition：触发本路径的核心事实条件（一句话描述）
 - trigger_issue_ids：与触发条件直接相关的争点 ID 列表（只引用已知的 issue_id）
-- key_evidence_ids：本路径成立的关键证据 ID 列表（只引用已知的 evidence_id）
+- key_evidence_ids：**仅包含支持本路径结论的证据** ID 列表（只引用已知的 evidence_id）
+- counter_evidence_ids：**与本路径结论相悖的证据** ID 列表——即那些挑战、反驳或削弱本路径结论的证据（只引用已知的 evidence_id，可为空列表）
 - possible_outcome：本路径下法院可能的裁判结果（具体到诉请支持情况，不超过 200 字）
 - confidence_interval：置信度区间（lower/upper，均为 [0,1] 之间的浮点数；若系统提示标注 verdict_block_active=true，则此字段设为 null）
 - path_notes：路径说明或注意事项（可为空字符串）
 - admissibility_gate：本路径成立的前提——哪些证据必须被法庭采信（evidence_id 列表）
 - result_scope：裁判范围标签列表（可多选：principal / interest / penalty / liability_allocation / credibility / attorney_fee / costs）
 - fallback_path_id：若本路径关键证据未被采信或争点结论不利，降级到哪条路径的 path_id（最后一条路径可为空字符串）
+
+## 证据极性规则（Evidence Polarity）—— 最高优先级
+
+**key_evidence_ids 与 counter_evidence_ids 的区别是本模块最核心的正确性约束，违反将导致错误的裁判分析。**
+
+- `key_evidence_ids`：**仅放支持本路径结论的证据**。若一条证据的内容/结论与本路径的 trigger_condition 或 possible_outcome 相悖，绝对不得列入 key_evidence_ids。
+- `counter_evidence_ids`：放置**反驳或削弱本路径结论**的证据。被告方提交的、用于驳斥原告主张的证据，若本路径倾向支持原告，则该类证据通常属于 counter_evidence_ids。
+- **党派对齐原则**：若本路径结论有利于原告，则被告证据中主动反驳该结论的证据（如证明"三方未曾会面"的证据）应归入 counter_evidence_ids，而非 key_evidence_ids；反之亦然。例外：对方当事人作出的不利于己的自认（admission against interest）可列入 key_evidence_ids。
+- key_evidence_ids 与 counter_evidence_ids **不得有重叠**。
 
 ## 严格非空约束（违反则路径无效）—— 最高优先级
 
@@ -37,16 +47,18 @@ SYSTEM_PROMPT = """\
 - 若 verdict_block_active=false，每条 path 必须给出 confidence_interval（lower/upper 均为浮点数）
 - 不得返回 trigger_issue_ids: [] 或 key_evidence_ids: [] 的路径
 
-示例（借款人主体争议案）：
+示例（借款人主体争议案，原告有利路径）：
 ```json
 {
   "path_id": "path-A",
   "trigger_condition": "法院认定借贷关系在原告与被告之间成立",
   "trigger_issue_ids": ["issue-001", "issue-002"],
-  "key_evidence_ids": ["ev-plaintiff-001", "ev-defendant-003"],
+  "key_evidence_ids": ["ev-plaintiff-001", "ev-plaintiff-002"],
+  "counter_evidence_ids": ["ev-defendant-003", "ev-defendant-006"],
   "possible_outcome": "支持原告全部诉请，判令被告偿还本金20万元及利息"
 }
 ```
+注意：ev-defendant-003 和 ev-defendant-006 是被告方提出的反驳证据，不得列入 key_evidence_ids。
 
 ## 阻断条件（blocking_conditions）要求
 
@@ -99,12 +111,13 @@ SYSTEM_PROMPT = """\
       "trigger_condition": "法院认定收款人与原告之间存在借贷合意",
       "trigger_issue_ids": ["issue-001", "issue-002"],
       "key_evidence_ids": ["ev-001", "ev-003"],
+      "counter_evidence_ids": ["ev-defendant-002", "ev-defendant-006"],
       "admissibility_gate": ["ev-001"],
       "result_scope": ["principal", "interest"],
       "fallback_path_id": "path-C",
       "possible_outcome": "全额支持原告——认定借贷关系成立，判令被告偿还借款本金及利息",
       "confidence_interval": {"lower": 0.3, "upper": 0.6},
-      "path_notes": "依赖原告转账凭证与借贷合意的直接证据"
+      "path_notes": "依赖原告转账凭证与借贷合意的直接证据；counter_evidence_ids 中的被告证据系对本路径结论的反驳"
     }
   ],
   "blocking_conditions": [
