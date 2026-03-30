@@ -19,6 +19,7 @@ Both classes implement the LLMClient Protocol and can be passed to any engine co
 from __future__ import annotations
 
 import asyncio
+import re
 import shutil
 import sys
 from typing import Any
@@ -33,15 +34,52 @@ class CLICallError(RuntimeError):
 
     Attributes:
         returncode: 进程退出码
-        stderr:     stderr 文本（截断至 1000 字符）
+        stderr:     清洗后的 stderr 摘要（已移除 token、路径等敏感信息）
     """
 
     def __init__(self, tool: str, returncode: int, stderr: str) -> None:
         self.returncode = returncode
         self.stderr = stderr
+        sanitized = _sanitize_stderr(stderr)
         super().__init__(
-            f"{tool} CLI 调用失败 (exit {returncode}): {stderr[:1000]}"
+            f"{tool} CLI 调用失败 (exit {returncode}): {sanitized}"
         )
+
+
+# ---------------------------------------------------------------------------
+# stderr 清洗工具 / stderr sanitization utility
+# ---------------------------------------------------------------------------
+
+# 触发整行脱敏的关键词（不区分大小写）
+_SENSITIVE_KEYWORDS = frozenset({
+    "token", "key", "bearer", "authorization", "credential",
+    "password", "secret", "apikey", "api_key", "auth",
+})
+
+# 文件系统路径正则（Windows 和 Unix）
+_WIN_PATH_RE = re.compile(r"[A-Za-z]:\\[^\s,;\"'<>]+")
+_UNIX_PATH_RE = re.compile(r"(?<!\w)/(?:home|usr|var|tmp|etc|opt|root|Users)[^\s,;\"'<>]*")
+
+
+def _sanitize_stderr(raw: str) -> str:
+    """清洗 stderr 文本，移除可能的 token、路径等敏感信息。
+    Sanitize stderr text by removing potentially sensitive tokens and paths.
+
+    策略 / Strategy:
+    - 包含敏感关键词的行整行替换为 [REDACTED]
+    - 绝对路径替换为 [PATH]
+    - 截断至 500 字符（清洗后）
+    """
+    lines = raw.splitlines()
+    cleaned: list[str] = []
+    for line in lines:
+        if any(kw in line.lower() for kw in _SENSITIVE_KEYWORDS):
+            cleaned.append("[REDACTED]")
+        else:
+            line = _WIN_PATH_RE.sub("[PATH]", line)
+            line = _UNIX_PATH_RE.sub("[PATH]", line)
+            cleaned.append(line)
+    return "\n".join(cleaned)[:500]
 
 
 # ---------------------------------------------------------------------------

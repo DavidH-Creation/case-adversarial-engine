@@ -830,5 +830,5 @@ async def test_procedure_planner_failure_degradation(sample_materials, sample_cl
         "output_branching 阶段即使在 fallback 配置中也只能使用 admitted_for_discussion"
     )
 
-    # LLM 客户端应被调用过（重试 3 次后放弃）
-    assert failing_client.call_count == 3
+    # LLM 客户端应被调用过（max_retries=3: 1次初始调用 + 3次重试 = 4次总调用）
+    assert failing_client.call_count == 4

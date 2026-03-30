@@ -134,19 +134,20 @@ class EvidenceWeightScorer:
         system = self._prompts["system"]
         user = self._prompts["build_user"](evidence_index=inp.evidence_index)
 
-        for _attempt in range(self._max_retries + 1):
-            try:
-                raw = await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                )
-                return self._parse_llm_output(raw)
-            except Exception as e:  # noqa: BLE001
-                logger.debug("EvidenceWeightScorer LLM 调用失败（attempt=%d）: %s", _attempt, e)
-
-        return None
+        from engines.shared.llm_utils import call_llm_with_retry
+        try:
+            raw = await call_llm_with_retry(
+                self._llm,
+                system=system,
+                user=user,
+                model=self._model,
+                temperature=self._temperature,
+                max_retries=self._max_retries,
+            )
+            return self._parse_llm_output(raw)
+        except Exception as e:  # noqa: BLE001
+            logger.debug("EvidenceWeightScorer LLM 调用失败: %s", type(e).__name__)
+            return None
 
     def _parse_llm_output(self, raw: str) -> LLMEvidenceWeightOutput | None:
         """解析 LLM 输出 JSON，失败时返回 None。"""

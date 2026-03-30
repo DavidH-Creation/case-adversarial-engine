@@ -159,23 +159,23 @@ class JudgeAgent:
             defendant_party_id=defendant_party_id,
         )
 
-        for _attempt in range(self._max_retries + 1):
-            try:
-                raw = await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                )
-                return self._parse_and_validate(
-                    raw,
-                    known_evidence_ids=known_evidence_ids,
-                    known_issue_ids=known_issue_ids,
-                )
-            except Exception:  # noqa: BLE001
-                pass
-
-        return []
+        from engines.shared.llm_utils import call_llm_with_retry
+        try:
+            raw = await call_llm_with_retry(
+                self._llm,
+                system=system,
+                user=user,
+                model=self._model,
+                temperature=self._temperature,
+                max_retries=self._max_retries,
+            )
+            return self._parse_and_validate(
+                raw,
+                known_evidence_ids=known_evidence_ids,
+                known_issue_ids=known_issue_ids,
+            )
+        except Exception:  # noqa: BLE001
+            return []
 
     def _parse_and_validate(
         self,
