@@ -15,6 +15,54 @@
 
 当前仓库首先承担 `source of truth` 的职责：先冻结产品边界、路线图、架构、对象模型和评测口径，再驱动后续实现。
 
+## Installation
+
+**Requirements**: Python >= 3.11, Claude Code CLI (or Codex CLI) installed and in PATH.
+
+```bash
+# Clone the repo and install in editable mode with dev dependencies
+pip install -e ".[dev]"
+
+# Set your Anthropic API key (required for Claude CLI usage)
+export ANTHROPIC_API_KEY="sk-ant-..."   # Linux / macOS
+set ANTHROPIC_API_KEY=sk-ant-...        # Windows cmd
+$env:ANTHROPIC_API_KEY="sk-ant-..."     # Windows PowerShell
+```
+
+## Quick Start
+
+Run the full adversarial pipeline on a YAML case file:
+
+```bash
+# Run with the default model (claude-sonnet-4-6)
+python scripts/run_case.py cases/wang_v_chen_zhuang_2025.yaml
+
+# Specify a different model
+python scripts/run_case.py cases/my_case.yaml --model claude-opus-4-6
+
+# Use only the Claude CLI (skip Codex)
+python scripts/run_case.py cases/my_case.yaml --claude-only
+```
+
+Outputs are written to `outputs/<timestamp>/`:
+
+```
+outputs/20260329-123456/
+  result.json          # AdversarialResult — full debate record
+  report.md            # human-readable summary
+  decision_tree.json   # JudgmentPathTree
+  executive_summary.json
+  attack_chain.json
+  amount_report.json
+  对抗分析报告.docx     # Word report
+```
+
+Run the test suite:
+
+```bash
+pytest
+```
+
 ## What This Is Not
 
 - 不是 AI 法官
@@ -103,7 +151,9 @@ tests/
 3. [docs/02_architecture.md](docs/02_architecture.md)
 4. [docs/01_product_roadmap.md](docs/01_product_roadmap.md)
 5. [docs/04_eval_and_acceptance.md](docs/04_eval_and_acceptance.md)
-6. [plans/current_plan.md](plans/current_plan.md)
+   _(docs/05 is intentionally absent — that slot is reserved for the v1.5 programmatic pretrial-conference spec, not yet written)_
+6. [docs/06_v1.2_spec.md](docs/06_v1.2_spec.md)
+7. [plans/current_plan.md](plans/current_plan.md)
 
 ## Design Principles
 
