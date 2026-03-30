@@ -630,9 +630,9 @@ async def main(claude_only: bool = False) -> None:
     print(f"    ✓ 裁判路径: {len(decision_tree.paths)} 条")
     print(f"    ✓ 攻击节点: {len(attack_chain.top_attacks)} 个")
 
-    # P1.8: ActionRecommender（纯规则，同步）
+    # P1.8: ActionRecommender（规则层 + 可选 LLM 策略层）
     print("  - 行动建议生成...")
-    action_rec = ActionRecommender().recommend(ActionRecommenderInput(
+    action_rec = await ActionRecommender().recommend(ActionRecommenderInput(
         case_id=CASE_ID, run_id=run_id,
         issue_list=ranked_tree.issues,
         evidence_gap_list=[],   # P1.7 暂未启用
