@@ -101,7 +101,8 @@ class TestClaudeCLIClient:
         cmd = list(call_args)
         assert "claude" in cmd[0]
         assert "--print" in cmd
-        assert "--bare" in cmd
+        assert "--output-format" in cmd
+        assert "text" in cmd
         assert "--system-prompt" in cmd
         assert "system text" in cmd
         assert "--model" in cmd
@@ -163,63 +164,6 @@ class TestClaudeCLIClient:
              patch("asyncio.wait_for", side_effect=_wait_for_timeout):
             with pytest.raises(asyncio.TimeoutError):
                 await client.create_message(system="s", user="u")
-
-    # ── --bare fallback / 认证回退 ────────────────────────────────────────
-
-    @pytest.mark.asyncio
-    async def test_bare_fallback_retries_without_bare_on_auth_error(
-        self, client: ClaudeCLIClient
-    ) -> None:
-        """当 --bare 因未登录而失败时，自动去掉 --bare 重试。"""
-        # 第一次调用（--bare）返回 "Not logged in"；第二次（无 --bare）成功
-        bare_proc = MagicMock()
-        bare_proc.returncode = 1
-        bare_proc.communicate = AsyncMock(
-            return_value=(b"Not logged in", b"")
-        )
-        ok_proc = MagicMock()
-        ok_proc.returncode = 0
-        ok_proc.communicate = AsyncMock(return_value=(b"success", b""))
-
-        call_count = 0
-
-        async def _mock_exec(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                return bare_proc
-            return ok_proc
-
-        with patch("shutil.which", return_value="/usr/bin/claude"), \
-             patch("asyncio.create_subprocess_exec", side_effect=_mock_exec) as mock_exec:
-            result = await client.create_message(system="s", user="u")
-
-        assert result == "success"
-        assert call_count == 2
-        # 第一次调用含 --bare，第二次不含
-        first_cmd = list(mock_exec.call_args_list[0][0])
-        second_cmd = list(mock_exec.call_args_list[1][0])
-        assert "--bare" in first_cmd
-        assert "--bare" not in second_cmd
-
-    @pytest.mark.asyncio
-    async def test_bare_fallback_raises_on_non_auth_error(
-        self, client: ClaudeCLIClient
-    ) -> None:
-        """非认证错误（如 --bare 失败但 stderr 无 'Not logged in'）不重试，直接抛异常。"""
-        mock_proc = MagicMock()
-        mock_proc.returncode = 1
-        mock_proc.communicate = AsyncMock(
-            return_value=(b"", b"some other error")
-        )
-
-        with patch("shutil.which", return_value="/usr/bin/claude"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc):
-            with pytest.raises(CLICallError) as exc_info:
-                await client.create_message(system="s", user="u")
-
-        assert exc_info.value.returncode == 1
-        assert "some other error" in str(exc_info.value)
 
     # ── 配置 / Configuration ─────────────────────────────────────────────
 
