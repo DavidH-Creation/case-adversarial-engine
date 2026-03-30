@@ -33,6 +33,8 @@ maintaining backward compatibility — tests using MockLLMClient continue to pas
 from __future__ import annotations
 
 import logging
+import time
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -40,6 +42,7 @@ if TYPE_CHECKING:
 
 from engines.shared.json_utils import _extract_json_object
 from engines.shared.llm_utils import call_llm_with_retry
+from engines.shared.logging_config import LLMCallRecord, get_token_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -112,15 +115,48 @@ async def call_structured_llm(
     ]
     tool_choice: dict[str, Any] = {"type": "tool", "name": tool_name}
 
-    raw = await call_llm_with_retry(
-        llm,
-        system=system,
-        user=user,
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        max_retries=max_retries,
-        tools=tools,
-        tool_choice=tool_choice,
-    )
+    t0 = time.monotonic()
+    success = True
+    error_msg: str | None = None
+    try:
+        raw = await call_llm_with_retry(
+            llm,
+            system=system,
+            user=user,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            max_retries=max_retries,
+            tools=tools,
+            tool_choice=tool_choice,
+        )
+    except Exception as exc:
+        success = False
+        error_msg = f"{type(exc).__name__}: {str(exc)[:200]}"
+        raise
+    finally:
+        latency_ms = (time.monotonic() - t0) * 1000
+        usage = getattr(llm, "_last_usage", None)
+        rec = LLMCallRecord(
+            timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            module=tool_name,
+            model=model,
+            input_tokens=usage.get("input_tokens") if usage else None,
+            output_tokens=usage.get("output_tokens") if usage else None,
+            latency_ms=round(latency_ms, 1),
+            success=success,
+            error=error_msg,
+        )
+        get_token_tracker().record(rec)
+        logger.info(
+            "LLM call: %s model=%s tokens=%s/%s latency=%.0fms success=%s",
+            tool_name,
+            model,
+            rec.input_tokens,
+            rec.output_tokens,
+            latency_ms,
+            success,
+            extra={"llm_call": rec},
+        )
+
     return _extract_json_object(raw)

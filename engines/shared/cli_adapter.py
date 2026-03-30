@@ -116,6 +116,7 @@ class ClaudeCLIClient:
     def __init__(self, timeout: float = 120.0, cli_bin: str = "claude") -> None:
         self._timeout = timeout
         self._cli_bin = cli_bin
+        self._last_usage: dict[str, int] | None = None
 
     async def create_message(
         self,
@@ -142,6 +143,7 @@ class ClaudeCLIClient:
                 f" / `{self._cli_bin}` not found. Ensure Claude Code CLI is installed and in PATH."
             )
 
+        self._last_usage = None
         stdout, stderr, rc = await self._invoke(
             resolved_bin, system=system, user=user, model=model
         )
@@ -228,6 +230,7 @@ class CodexCLIClient:
         self._timeout = timeout
         self._cli_bin = cli_bin
         self._default_model = model
+        self._last_usage: dict[str, int] | None = None
 
     async def create_message(
         self,
@@ -250,6 +253,7 @@ class CodexCLIClient:
             CLICallError:     进程以非零状态退出
             asyncio.TimeoutError: 超过 timeout 秒
         """
+        self._last_usage = None
         resolved_codex = shutil.which(self._cli_bin)
         if not resolved_codex:
             raise CLINotFoundError(
@@ -339,6 +343,7 @@ class AnthropicSDKClient:
                 "anthropic package not installed. Run: pip install 'anthropic>=0.39.0'"
             ) from exc
         self._client = AsyncAnthropic(api_key=api_key, timeout=timeout)
+        self._last_usage: dict[str, int] | None = None
 
     async def create_message(
         self,
@@ -382,7 +387,16 @@ class AnthropicSDKClient:
         if tool_choice is not None:
             params["tool_choice"] = tool_choice
 
+        self._last_usage = None
         response = await self._client.messages.create(**params)
+
+        # 提取 token 用量 / Extract token usage from response
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            self._last_usage = {
+                "input_tokens": getattr(usage, "input_tokens", 0),
+                "output_tokens": getattr(usage, "output_tokens", 0),
+            }
 
         # tool_use 模式：提取 tool_use block 并序列化 input 为 JSON 字符串
         # tool_use mode: extract the tool_use block and serialize input as JSON

@@ -54,6 +54,7 @@ from engines.case_structuring.evidence_indexer.indexer import EvidenceIndexer
 from engines.case_structuring.issue_extractor.extractor import IssueExtractor
 from engines.shared.access_control import AccessController
 from engines.shared.cli_adapter import CLINotFoundError, ClaudeCLIClient, CodexCLIClient
+from engines.shared.logging_config import get_token_tracker, reset_token_tracker, setup_pipeline_logging
 from engines.shared.models import (
     AgentRole, ClaimType, DisputedAmountAttribution,
     EvidenceIndex, EvidenceStatus, LoanTransaction, RawMaterial,
@@ -699,6 +700,11 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     p_name = case_data["parties"]["plaintiff"].get("name", p_id)
     d_name = case_data["parties"]["defendant"].get("name", d_id)
 
+    # 初始化结构化日志 + token 追踪 / Init structured logging + token tracking
+    reset_token_tracker()
+    out_base = _output_dir(Path(output_dir) if output_dir else None)
+    setup_pipeline_logging(log_file=out_base / "pipeline.log")
+
     print("=" * 60)
     print(f"Case: {case_id}")
     print(f"Parties: {p_name} (plaintiff) vs {d_name} (defendant)")
@@ -768,7 +774,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
 
     # Step 4: Write outputs
     print("\n[Step 4] Writing outputs...")
-    out = _output_dir(Path(output_dir) if output_dir else None)
+    out = out_base
     jp = _write_json(out, result)
     mp = _write_md(
         out, result, issue_tree, case_data,
@@ -831,6 +837,20 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     if result.summary:
         print(f"\nOverall assessment:")
         print(f"  {result.summary.overall_assessment[:300]}")
+
+    # Token 用量汇总 / Token usage summary
+    token_summary = get_token_tracker().summary()
+    (out / "token_summary.json").write_text(
+        json.dumps(token_summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print(f"\nToken usage:")
+    print(f"  Total input:  {token_summary['total_input_tokens']}")
+    print(f"  Total output: {token_summary['total_output_tokens']}")
+    print(f"  Est. cost:    ${token_summary['total_cost_estimate']:.4f}")
+    print(f"  Total calls:  {token_summary['total_calls']}")
+    for mod, stats in token_summary["per_module_breakdown"].items():
+        print(f"    {mod}: {stats['calls']} calls, {stats['input_tokens']}+{stats['output_tokens']} tokens")
+
     print("=" * 60)
 
 
