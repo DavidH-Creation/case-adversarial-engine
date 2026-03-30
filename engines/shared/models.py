@@ -368,6 +368,19 @@ class Evidence(BaseModel):
     evidence_weight_scored: bool = False
     # P2.9: 可信度折损扩展字段（向后兼容，Optional/默认值）
     is_copy_only: bool = Field(default=False, description="关键证据仅有复印件无原件（CRED-02）")
+    # 可采性门控扩展字段（向后兼容，全部有默认值）
+    admissibility_score: float = Field(
+        default=1.0, ge=0.0, le=1.0,
+        description="证据可采性评分 (1.0=完全可采, 0.0=被排除；由 AdmissibilityEvaluator 填充)",
+    )
+    admissibility_challenges: list[str] = Field(
+        default_factory=list,
+        description="证据被质疑可采性的理由列表（如录音合法性、传闻规则等）",
+    )
+    exclusion_impact: Optional[str] = Field(
+        default=None,
+        description="该证据被排除后对案件的影响描述（由 AdmissibilityEvaluator 填充）",
+    )
 
 
 class FactProposition(BaseModel):
