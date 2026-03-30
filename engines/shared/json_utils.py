@@ -8,7 +8,10 @@ Shared across all four engines to avoid duplication.
 from __future__ import annotations
 
 import json
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 
 def _repair_json_string(text: str) -> str:
@@ -39,7 +42,7 @@ def _repair_json_string(text: str) -> str:
                 while j < len(text) and text[j] in " \t\r\n":
                     j += 1
                 next_meaningful = text[j] if j < len(text) else ""
-                if next_meaningful in (": ", ":", ",", "]", "}", ""):
+                if next_meaningful in (":", ",", "]", "}", ""):
                     in_string = False
                     result.append(c)
                 else:
@@ -122,6 +125,12 @@ def _extract_json_object(text: str) -> dict:
             try:
                 result = json.loads(candidate)
                 if isinstance(result, dict):
+                    logger.warning(
+                        "截断恢复成功但 JSON 数据可能不完整 / "
+                        "Truncation recovery succeeded but JSON data may be incomplete: "
+                        "open_braces=%d, open_brackets=%d, text_len=%d",
+                        open_braces, open_brackets, len(text),
+                    )
                     return result
             except json.JSONDecodeError:
                 pass
