@@ -1,0 +1,43 @@
+# Multi-model tiered strategy configuration
+# 多模型分级策略配置
+#
+# Three tiers:
+#   fast     — lightweight tasks (haiku)
+#   balanced — standard analysis (sonnet)
+#   deep     — complex reasoning (opus)
+#
+# Priority: this file > CLI --model flag > hardcoded defaults
+# 优先级: 此文件 > CLI --model 参数 > 代码内置默认值
+
+tiers:
+  fast: claude-haiku-4-5-20251001
+  balanced: claude-sonnet-4-6
+  deep: claude-opus-4-6
+
+tasks:
+  # fast — high volume, low complexity
+  evidence_indexer: fast
+  issue_classifier: fast
+  issue_category_classifier: fast
+  hearing_order: fast
+
+  # balanced — core analysis
+  plaintiff_agent: balanced
+  defendant_agent: balanced
+  issue_impact_ranker: balanced
+  defense_chain: balanced
+  evidence_manager: balanced
+  admissibility_evaluator: balanced
+  issue_extractor: balanced
+  decision_path_tree: balanced
+  attack_chain_optimizer: balanced
+  issue_dependency_graph: balanced
+
+  # deep — complex reasoning
+  executive_summarizer: deep
+  scenario_simulator: deep
+  action_recommender: deep
+  pretrial_conference: deep
+  followup_responder: deep
+
+fallback_tier: balanced

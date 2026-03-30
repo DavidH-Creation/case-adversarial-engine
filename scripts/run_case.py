@@ -55,6 +55,7 @@ from engines.case_structuring.issue_extractor.extractor import IssueExtractor
 from engines.shared.access_control import AccessController
 from engines.shared.checkpoint import CheckpointManager
 from engines.shared.cli_adapter import CLINotFoundError, ClaudeCLIClient, CodexCLIClient
+from engines.shared.model_selector import ModelSelector
 from engines.shared.logging_config import get_token_tracker, reset_token_tracker, setup_pipeline_logging
 from engines.shared.models import (
     AgentRole, ClaimType, DisputedAmountAttribution,
@@ -537,7 +538,7 @@ async def _run_post_debate(
     ev_index: EvidenceIndex,
     llm_client,
     case_data: dict,
-    model: str,
+    selector: ModelSelector,
 ) -> dict[str, Any]:
     """Run post-debate analysis pipeline. Returns dict of all artifacts."""
     case_id = case_data["case_id"]
@@ -564,7 +565,7 @@ async def _run_post_debate(
     if issue_tree:
         print("  - Issue impact ranking...")
         ranker = IssueImpactRanker(
-            llm_client=llm_client, model=model,
+            llm_client=llm_client, model=selector.select("issue_impact_ranker"),
             temperature=0.0, max_retries=2,
         )
         ranking_result = await ranker.rank(IssueImpactRankerInput(
@@ -597,11 +598,11 @@ async def _run_post_debate(
     if issue_tree:
         print("  - Decision path tree + attack chain...")
         dpt_gen = DecisionPathTreeGenerator(
-            llm_client=llm_client, model=model,
+            llm_client=llm_client, model=selector.select("decision_path_tree"),
             temperature=0.0, max_retries=2,
         )
         aco = AttackChainOptimizer(
-            llm_client=llm_client, model=model,
+            llm_client=llm_client, model=selector.select("attack_chain_optimizer"),
             temperature=0.0, max_retries=2,
         )
         decision_tree, attack_chain = await asyncio.gather(
@@ -640,7 +641,7 @@ async def _run_post_debate(
     if attack_chain:
         print("  - Action recommendations...")
         action_rec = await ActionRecommender(
-            llm_client=llm_client, model=model,
+            llm_client=llm_client, model=selector.select("action_recommender"),
         ).recommend(ActionRecommenderInput(
             case_id=case_id, run_id=run_id,
             issue_list=ranked_tree.issues,
@@ -679,7 +680,7 @@ async def _run_post_debate(
 
     # P2: AdmissibilityEvaluator (async, LLM)
     print("  - Admissibility evaluation...")
-    adm_evaluator = AdmissibilityEvaluator(llm_client=llm_client, model=model, temperature=0.0, max_retries=2)
+    adm_evaluator = AdmissibilityEvaluator(llm_client=llm_client, model=selector.select("admissibility_evaluator"), temperature=0.0, max_retries=2)
     admissibility_result = await adm_evaluator.evaluate(AdmissibilityEvaluatorInput(
         case_id=case_id, run_id=run_id,
         evidence_index=ev_index,
@@ -711,7 +712,7 @@ async def _run_post_debate(
         # P2: DefenseChainOptimizer (async, LLM)
         print("  - Defense chain optimization...")
         defense_chain_result = await DefenseChainOptimizer(
-            llm_client=llm_client, model=model, max_retries=2,
+            llm_client=llm_client, model=selector.select("defense_chain"), max_retries=2,
         ).optimize(DefenseChainInput(
             case_id=case_id, run_id=run_id,
             issues=ranked_tree.issues,
@@ -731,7 +732,7 @@ async def _run_post_debate(
 # Main entry point
 # ---------------------------------------------------------------------------
 
-async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False, skip_pretrial: bool = False, interactive: bool = False, question: str | None = None) -> None:
+async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False, skip_pretrial: bool = False, interactive: bool = False, question: str | None = None, model_config: str | None = None) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
         print(f"[Error] Case file not found: {case_file}")
@@ -741,7 +742,17 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     case_id = case_data["case_id"]
     case_slug = case_data["case_slug"]
     case_type = case_data.get("case_type", "civil_loan")
-    model = model_override or case_data.get("model", DEFAULT_MODEL)
+    # Multi-model tiered strategy: config file > CLI --model override > defaults
+    _effective_override = model_override or case_data.get("model")
+    if model_config:
+        selector = ModelSelector.from_yaml(model_config, model_override=_effective_override)
+    else:
+        # Try project-level default config, fall back to hardcoded defaults
+        _default_cfg = _PROJECT_ROOT / "config" / "model_tiers.yaml"
+        if _default_cfg.exists():
+            selector = ModelSelector.from_yaml(_default_cfg, model_override=_effective_override)
+        else:
+            selector = ModelSelector(model_override=_effective_override)
     p_id = case_data["parties"]["plaintiff"]["party_id"]
     d_id = case_data["parties"]["defendant"]["party_id"]
     p_name = case_data["parties"]["plaintiff"].get("name", p_id)
@@ -755,7 +766,10 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     print("=" * 60)
     print(f"Case: {case_id}")
     print(f"Parties: {p_name} (plaintiff) vs {d_name} (defendant)")
-    print(f"Model: {model}")
+    if selector.model_override:
+        print(f"Model: {selector.model_override} (override — all tasks)")
+    else:
+        print(f"Model: tiered (fast/balanced/deep)")
     print("=" * 60)
 
     # --- Checkpoint: determine output dir & load existing state ----------
@@ -803,7 +817,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         print(f"  \u2713 Loaded evidence index from checkpoint ({len(ev_index.evidence)} items)")
     else:
         print("\n[Step 1] Indexing evidence...")
-        indexer = EvidenceIndexer(llm_client=claude, case_type=case_type, model=model, max_retries=2)
+        indexer = EvidenceIndexer(llm_client=claude, case_type=case_type, model=selector.select("evidence_indexer"), max_retries=2)
         p_materials = _build_materials(case_data["materials"]["plaintiff"])
         d_materials = _build_materials(case_data["materials"]["defendant"])
         p_ev = await indexer.index(p_materials, case_id, p_id, "plaintiff")
@@ -826,7 +840,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         print(f"  \u2713 Loaded issue tree from checkpoint ({len(issue_tree.issues)} issues)")
     else:
         print("\n[Step 2] Extracting issues...")
-        extractor = IssueExtractor(llm_client=claude, case_type=case_type, model=model, max_retries=2)
+        extractor = IssueExtractor(llm_client=claude, case_type=case_type, model=selector.select("issue_extractor"), max_retries=2)
         ev_dicts = [e.model_dump() for e in ev_index.evidence]
         claims = _build_claims(case_data["claims"], case_id, p_id)
         defenses = _build_defenses(case_data["defenses"], case_id, d_id)
@@ -851,7 +865,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         print(f"  \u2713 Loaded debate result from checkpoint")
     else:
         print("\n[Step 3] Three-round adversarial debate...")
-        config = RoundConfig(model=model, max_tokens_per_output=2000, max_retries=2)
+        config = RoundConfig(model=selector.select("plaintiff_agent"), max_tokens_per_output=2000, max_retries=2)
         result = await _run_rounds(
             issue_tree, ev_index, claude, codex, claude, config, p_id, d_id,
         )
@@ -898,7 +912,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     else:
         print("\n[Step 3.1] Pretrial conference...")
         pretrial_engine = PretrialConferenceEngine(
-            llm_client=claude, model=model, temperature=0.0, max_retries=2,
+            llm_client=claude, model=selector.select("pretrial_conference"), temperature=0.0, max_retries=2,
         )
         # Submit all cited evidence from both parties
         p_cited = [eid for eid in cited_ids if any(
@@ -937,7 +951,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         print(f"  \u2713 Post-debate artifacts already on disk")
     else:
         print("\n[Step 3.5] Post-debate analysis...")
-        artifacts = await _run_post_debate(result, issue_tree, ev_index, claude, case_data, model)
+        artifacts = await _run_post_debate(result, issue_tree, ev_index, claude, case_data, selector)
         # Serialize post-debate artifacts immediately
         for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary",
                      "admissibility_result", "dep_graph", "hearing_order", "defense_chain"):
@@ -1038,7 +1052,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         )
 
         followup = FollowupResponder(
-            llm_client=claude, case_type=case_type, model=model, max_retries=2,
+            llm_client=claude, case_type=case_type, model=selector.select("followup_responder"), max_retries=2,
         )
         session_mgr = SessionManager(out)
         session = session_mgr.load_or_create(case_id, report_artifact.report_id, case_id)
@@ -1124,10 +1138,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run adversarial case analysis from a YAML case file",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Example:\n  python scripts/run_case.py cases/wang_zhang_2022.yaml --model claude-opus-4-6",
+        epilog="Examples:\n  python scripts/run_case.py cases/wang_zhang_2022.yaml\n  python scripts/run_case.py cases/wang_zhang_2022.yaml --model claude-opus-4-6\n  python scripts/run_case.py cases/wang_zhang_2022.yaml --model-config config/model_tiers.yaml",
     )
     parser.add_argument("case_file", help="Path to YAML case definition file")
-    parser.add_argument("--model", default=None, help="Override LLM model (default: from YAML or claude-sonnet-4-6)")
+    parser.add_argument("--model", default=None, help="Override LLM model for ALL tasks (default: tiered selection)")
+    parser.add_argument("--model-config", default=None, help="Path to model tier config YAML (default: config/model_tiers.yaml)")
     parser.add_argument("--claude-only", action="store_true", help="Use Claude CLI for all agents (skip Codex)")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging for engines")
     parser.add_argument("--output-dir", default=None, help="Override output directory (default: outputs/<timestamp>)")
@@ -1151,7 +1166,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     try:
-        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume, skip_pretrial=args.skip_pretrial, interactive=args.interactive, question=args.question))
+        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume, skip_pretrial=args.skip_pretrial, interactive=args.interactive, question=args.question, model_config=args.model_config))
     except CLINotFoundError as e:
         print(f"\n[Error] CLI not available: {e}")
         sys.exit(1)
