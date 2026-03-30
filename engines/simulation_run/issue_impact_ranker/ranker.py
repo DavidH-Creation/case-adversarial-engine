@@ -36,7 +36,6 @@ from engines.shared.models import (
     RecommendedAction,
 )
 
-from engines.shared.json_utils import _extract_json_object
 from engines.shared.structured_output import call_structured_llm
 
 from .schemas import (
@@ -159,13 +158,8 @@ class IssueImpactRanker:
                     amount_check=inp.amount_calculation_report.consistency_check_result,
                 )
 
-                raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
+                raw_dict = await self._call_llm_structured(system_prompt, user_prompt)
 
-                logger.info(
-                    "批次 %d/%d LLM 响应长度: %d chars",
-                    batch_idx + 1, len(batches), len(raw_response),
-                )
-                raw_dict = _extract_json_object(raw_response)
                 logger.info(
                     "批次 %d/%d JSON 解析成功，顶层键: %s",
                     batch_idx + 1, len(batches), list(raw_dict.keys()),

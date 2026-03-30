@@ -497,7 +497,7 @@ class TestCurrentMostStableClaim:
         assert "RPT-001" in result.current_most_stable_claim
 
     def test_strategic_headline_non_amount_category_no_amount_note(self):
-        """借款人主体争议案型：strategic_headline 输出不附加金额附注。"""
+        """借款人主体争议案型：strategic_summary 不附加金额附注；current_most_stable_claim 保持金额语义。"""
         rec = _make_action_recommendation()
         rec = rec.model_copy(update={
             "strategic_headline": "本案核心为借款人主体之争",
@@ -505,15 +505,15 @@ class TestCurrentMostStableClaim:
         })
         inp = _make_full_input(action_recommendation=rec)
         result = self.summarizer.summarize(inp)
-        claim = result.current_most_stable_claim
-        assert "本案核心为借款人主体之争" in claim
-        assert "borrower_identity" in claim
-        # 金额附注不应出现在非金额争议案型的策略输出中
-        assert "delta=" not in claim
-        assert "principal" not in claim
+        # strategic_summary 包含策略标题，不含金额附注
+        assert result.strategic_summary is not None
+        assert "本案核心为借款人主体之争" in result.strategic_summary
+        assert "borrower_identity" in result.strategic_summary
+        assert "delta=" not in result.strategic_summary
+        assert "principal" not in result.strategic_summary
 
     def test_strategic_headline_amount_dispute_includes_amount_note(self):
-        """金额争议案型：strategic_headline 输出应附加金额附注。"""
+        """金额争议案型：strategic_summary 附加金额附注。"""
         rec = _make_action_recommendation()
         rec = rec.model_copy(update={
             "strategic_headline": "本金计算存在实质分歧",
@@ -521,11 +521,11 @@ class TestCurrentMostStableClaim:
         })
         inp = _make_full_input(action_recommendation=rec)
         result = self.summarizer.summarize(inp)
-        claim = result.current_most_stable_claim
-        assert "本金计算存在实质分歧" in claim
-        assert "amount_dispute" in claim
-        # 金额附注应出现（delta=0 表示一致）
-        assert "delta=" in claim
+        # strategic_summary 包含策略标题和金额附注
+        assert result.strategic_summary is not None
+        assert "本金计算存在实质分歧" in result.strategic_summary
+        assert "amount_dispute" in result.strategic_summary
+        assert "delta=" in result.strategic_summary
 
 
 # ---------------------------------------------------------------------------
