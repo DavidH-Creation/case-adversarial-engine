@@ -67,6 +67,9 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["F821"]  # forward-ref string annotations in test helper methods
 
+[tool.setuptools.packages.find]
+include = ["engines*"]
+
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
