@@ -28,12 +28,25 @@ SYSTEM_PROMPT = """\
 - result_scope：裁判范围标签列表（可多选：principal / interest / penalty / liability_allocation / credibility / attorney_fee / costs）
 - fallback_path_id：若本路径关键证据未被采信或争点结论不利，降级到哪条路径的 path_id（最后一条路径可为空字符串）
 
-## 严格非空约束（违反则路径无效）
+## 严格非空约束（违反则路径无效）—— 最高优先级
+
+**trigger_issue_ids 和 key_evidence_ids 是必填字段，绝对不能为空列表。**
 
 - 每条 path 的 trigger_issue_ids 必须包含至少 1 个 issue_id — 空列表 = 无效路径
 - 每条 path 的 key_evidence_ids 必须包含至少 1 个 evidence_id — 空列表 = 无效路径
 - 若 verdict_block_active=false，每条 path 必须给出 confidence_interval（lower/upper 均为浮点数）
 - 不得返回 trigger_issue_ids: [] 或 key_evidence_ids: [] 的路径
+
+示例（借款人主体争议案）：
+```json
+{
+  "path_id": "path-A",
+  "trigger_condition": "法院认定借贷关系在原告与被告之间成立",
+  "trigger_issue_ids": ["issue-001", "issue-002"],
+  "key_evidence_ids": ["ev-plaintiff-001", "ev-defendant-003"],
+  "possible_outcome": "支持原告全部诉请，判令被告偿还本金20万元及利息"
+}
+```
 
 ## 阻断条件（blocking_conditions）要求
 

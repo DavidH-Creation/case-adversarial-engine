@@ -49,6 +49,8 @@ from .schemas import (
     LLMDecisionPathTreeOutput,
 )
 
+import re
+
 _MAX_PATHS = 6
 _VALID_RESULT_SCOPES = frozenset({
     "principal", "interest", "penalty", "liability_allocation",
@@ -56,6 +58,42 @@ _VALID_RESULT_SCOPES = frozenset({
 })
 
 logger = logging.getLogger(__name__)
+
+# 标题片段提取：去掉虚词后按中文连续字符切割，保留 ≥4 字片段
+_TITLE_STOP_WORDS = frozenset({
+    "是否", "被告", "原告", "之间", "认定", "的", "与", "及", "其",
+    "身份", "事实", "行为", "效力", "损失", "承担",
+})
+_CJK_RUN = re.compile(r'[\u4e00-\u9fff]{4,}')
+_MIN_MATCH_LEN = 4
+
+
+def _extract_title_segments(title: str) -> list[str]:
+    """从争点标题提取核心中文片段，用于模糊匹配。
+
+    去掉常见虚词后，提取所有 ≥4 字的连续中文片段。
+    """
+    cleaned = title
+    for sw in _TITLE_STOP_WORDS:
+        cleaned = cleaned.replace(sw, " ")
+    return _CJK_RUN.findall(cleaned)
+
+
+def _segment_matches(segments: list[str], text: str) -> bool:
+    """检查是否有任一片段（或其 ≥4 字子串）出现在目标文本中。
+
+    先尝试完整片段匹配，再尝试滑窗子串匹配。
+    """
+    for seg in segments:
+        if seg in text:
+            return True
+        # 滑窗：用 ≥4 字子串匹配（覆盖 LLM 改写导致的局部匹配）
+        if len(seg) > _MIN_MATCH_LEN:
+            for start in range(len(seg) - _MIN_MATCH_LEN + 1):
+                sub = seg[start:start + _MIN_MATCH_LEN]
+                if sub in text:
+                    return True
+    return False
 
 # v1.5: 只有 admitted_for_discussion 状态的证据进入裁判路径树
 _ADMITTED_STATUSES: frozenset[EvidenceStatus] = frozenset({
@@ -129,6 +167,8 @@ class DecisionPathTreeGenerator:
             known_issue_ids=known_issue_ids,
             known_evidence_ids=known_evidence_ids,
             verdict_block_active=check.verdict_block_active,
+            issues=list(inp.ranked_issue_tree.issues),
+            evidence_index=inp.evidence_index,
         )
 
         # 规则层处理阻断条件
@@ -163,22 +203,20 @@ class DecisionPathTreeGenerator:
             amount_report=inp.amount_calculation_report,
         )
 
-        for attempt in range(self._max_retries + 1):
-            try:
-                raw = await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                )
-                result = self._parse_llm_output(raw)
-                if result is not None:
-                    return result
-                logger.warning("Decision tree: attempt %d parse returned None", attempt + 1)
-            except Exception:  # noqa: BLE001
-                logger.warning("Decision tree: attempt %d LLM call failed", attempt + 1, exc_info=True)
-
-        return None
+        from engines.shared.llm_utils import call_llm_with_retry
+        try:
+            raw = await call_llm_with_retry(
+                self._llm,
+                system=system,
+                user=user,
+                model=self._model,
+                temperature=self._temperature,
+                max_retries=self._max_retries,
+            )
+            return self._parse_llm_output(raw)
+        except Exception:  # noqa: BLE001
+            logger.warning("Decision tree: LLM call failed", exc_info=True)
+            return None
 
     @staticmethod
     def _normalize_llm_json(data: dict) -> dict:
@@ -422,6 +460,85 @@ class DecisionPathTreeGenerator:
             logger.warning("Decision tree LLM 解析失败", exc_info=True)
             return None
 
+    # ------------------------------------------------------------------
+    # 文本推断 / Text-based inference
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _infer_issue_ids_from_text(
+        text_fields: list[str],
+        issues: list,
+    ) -> list[str]:
+        """从路径文本中推断 trigger_issue_ids。
+
+        按标题长度倒序匹配，避免短标题被长标题子串误命中。
+        支持两层匹配：
+        1. 完整标题子串匹配
+        2. 标题核心片段匹配（提取 ≥4 字连续中文片段，≥1 命中即算匹配）
+        """
+        combined = " ".join(t for t in text_fields if t)
+        if not combined.strip():
+            return []
+
+        inferred: list[str] = []
+        seen: set[str] = set()
+        # 按标题长度倒序：先匹配长标题，避免短标题误命中
+        sorted_issues = sorted(issues, key=lambda i: len(i.title), reverse=True)
+        for issue in sorted_issues:
+            if len(issue.title) < 4:
+                continue
+            # Layer 1: 完整标题或 issue_id 子串匹配
+            if issue.title in combined or issue.issue_id in combined:
+                if issue.issue_id not in seen:
+                    inferred.append(issue.issue_id)
+                    seen.add(issue.issue_id)
+                continue
+            # Layer 2: 核心片段匹配（LLM 常改写标题，如去掉"是否"、"被告"等）
+            segments = _extract_title_segments(issue.title)
+            if segments and _segment_matches(segments, combined):
+                if issue.issue_id not in seen:
+                    inferred.append(issue.issue_id)
+                    seen.add(issue.issue_id)
+        return inferred
+
+    @staticmethod
+    def _derive_evidence_ids_from_issues(
+        issue_ids: list[str],
+        issues: list,
+        evidence_index,
+    ) -> list[str]:
+        """从推断出的 issue_ids 通过 canonical linkage 派生 evidence_ids。
+
+        优先级：
+        1. Issue.evidence_ids（争点自带的证据列表）
+        2. Evidence.target_issue_ids（证据反向引用争点）
+        3. 都没有 → 返回空列表（不做 party-based 猜测）
+        """
+        issue_id_set = set(issue_ids)
+        derived: list[str] = []
+        seen: set[str] = set()
+
+        # 1. Issue.evidence_ids
+        issue_map = {i.issue_id: i for i in issues}
+        for iid in issue_ids:
+            iss = issue_map.get(iid)
+            if iss and hasattr(iss, "evidence_ids"):
+                for eid in iss.evidence_ids:
+                    if eid not in seen:
+                        derived.append(eid)
+                        seen.add(eid)
+
+        # 2. Evidence.target_issue_ids (reverse lookup)
+        if not derived and evidence_index is not None:
+            for ev in evidence_index.evidence:
+                if hasattr(ev, "target_issue_ids"):
+                    if any(tid in issue_id_set for tid in ev.target_issue_ids):
+                        if ev.evidence_id not in seen:
+                            derived.append(ev.evidence_id)
+                            seen.add(ev.evidence_id)
+
+        return derived
+
     def _process_paths(
         self,
         llm_paths: list[LLMDecisionPathItem],
@@ -429,6 +546,8 @@ class DecisionPathTreeGenerator:
         known_issue_ids: set[str],
         known_evidence_ids: set[str],
         verdict_block_active: bool,
+        issues: list | None = None,
+        evidence_index=None,
     ) -> list[DecisionPath]:
         """规则层处理路径列表。"""
         candidates = llm_paths[:_MAX_PATHS]
@@ -452,16 +571,42 @@ class DecisionPathTreeGenerator:
             clean_issue_ids = [i for i in item.trigger_issue_ids if i in known_issue_ids]
             clean_evidence_ids = [e for e in item.key_evidence_ids if e in known_evidence_ids]
 
-            # 空字段警告（暂不拒绝，给 prompt 改进留观察窗口）
+            # 推断层：如果 LLM 未返回 trigger_issue_ids，从文本推断
+            if not clean_issue_ids and issues:
+                text_sources = [
+                    item.trigger_condition or "",
+                    item.possible_outcome or "",
+                    item.path_notes or "",
+                ]
+                clean_issue_ids = self._infer_issue_ids_from_text(text_sources, issues)
+                if clean_issue_ids:
+                    # 过滤为已知 ID
+                    clean_issue_ids = [i for i in clean_issue_ids if i in known_issue_ids]
+                    if clean_issue_ids:
+                        logger.info("Path %s: inferred %d trigger_issue_ids from text: %s",
+                                    item.path_id, len(clean_issue_ids), clean_issue_ids[:3])
+
+            # 推断层：从推断出的 issue_ids 通过 canonical linkage 派生 evidence_ids
+            if not clean_evidence_ids and clean_issue_ids and issues:
+                clean_evidence_ids = self._derive_evidence_ids_from_issues(
+                    clean_issue_ids, issues, evidence_index,
+                )
+                # 过滤为已知 evidence ID
+                clean_evidence_ids = [e for e in clean_evidence_ids if e in known_evidence_ids]
+                if clean_evidence_ids:
+                    logger.info("Path %s: derived %d key_evidence_ids from issues: %s",
+                                item.path_id, len(clean_evidence_ids), clean_evidence_ids[:3])
+
+            # 空字段警告
             if not clean_issue_ids:
                 logger.warning(
-                    "Path %s: trigger_issue_ids 过滤后为空（原始: %s）",
-                    item.path_id, item.trigger_issue_ids,
+                    "Path %s: trigger_issue_ids 为空（LLM 未返回且文本推断失败）",
+                    item.path_id,
                 )
             if not clean_evidence_ids:
                 logger.warning(
-                    "Path %s: key_evidence_ids 过滤后为空（原始: %s）",
-                    item.path_id, item.key_evidence_ids,
+                    "Path %s: key_evidence_ids 为空（无 canonical linkage 可用）",
+                    item.path_id,
                 )
 
             # confidence_interval 处理：

@@ -17,10 +17,14 @@ Generates a structured diff summary from IssueTree + EvidenceIndex + ChangeSet v
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from engines.shared.json_utils import _extract_json_object
+from engines.shared.models import LLMClient
 
 from .schemas import (
     ArtifactRef,
@@ -41,25 +45,6 @@ from .schemas import (
 # Re-export for test compatibility
 # _extract_json_object is imported above from engines.shared.json_utils
 
-
-@runtime_checkable
-class LLMClient(Protocol):
-    """LLM 客户端协议 — 兼容 Anthropic 和 OpenAI SDK。
-    LLM client protocol — compatible with Anthropic and OpenAI SDKs.
-    """
-
-    async def create_message(
-        self,
-        *,
-        system: str,
-        user: str,
-        model: str = "claude-sonnet-4-20250514",
-        temperature: float = 0.0,
-        max_tokens: int = 8192,
-        **kwargs: Any,
-    ) -> str:
-        """发送消息并返回文本响应。Send message and return text response."""
-        ...
 
 
 # ---------------------------------------------------------------------------
@@ -243,6 +228,12 @@ class ScenarioSimulator:
         except Exception:
             # LLM 调用或解析失败：构造 failed ScenarioResult 返回，不向上抛出
             # LLM call or parse failure: return a failed ScenarioResult instead of raising
+            logger.exception(
+                "场景推演失败，返回 failed ScenarioResult / "
+                "Scenario simulation failed, returning failed ScenarioResult: "
+                "scenario_id=%s, case_id=%s",
+                scenario_input.scenario_id, case_id,
+            )
             failed_scenario = Scenario(
                 scenario_id=scenario_input.scenario_id,
                 case_id=case_id,
@@ -274,26 +265,15 @@ class ScenarioSimulator:
         Raises:
             RuntimeError: 超过最大重试次数 / Max retries exceeded
         """
-        last_error: Exception | None = None
-        for attempt in range(1, self._max_retries + 1):
-            try:
-                response = await self._llm_client.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                    max_tokens=self._max_tokens,
-                )
-                return response
-            except Exception as e:
-                last_error = e
-                if attempt < self._max_retries:
-                    continue
-                break
-
-        raise RuntimeError(
-            f"LLM 调用失败，已重试 {self._max_retries} 次。"
-            f"最后一次错误 / Last error: {last_error}"
+        from engines.shared.llm_utils import call_llm_with_retry
+        return await call_llm_with_retry(
+            self._llm_client,
+            system=system,
+            user=user,
+            model=self._model,
+            temperature=self._temperature,
+            max_tokens=self._max_tokens,
+            max_retries=self._max_retries,
         )
 
     def _build_result(

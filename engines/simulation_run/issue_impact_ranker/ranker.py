@@ -151,6 +151,13 @@ class IssueImpactRanker:
                 ]
                 if raw_dict["evaluations"]:
                     logger.debug("首条评估项键: %s", list(raw_dict["evaluations"][0].keys()))
+            # 收集 rescale 审计信息（_score_rescaled 会被 Pydantic 过滤掉）
+            _rescaled_ids = []
+            if "evaluations" in raw_dict and isinstance(raw_dict["evaluations"], list):
+                for ev_item in raw_dict["evaluations"]:
+                    if isinstance(ev_item, dict) and ev_item.pop("_score_rescaled", False):
+                        _rescaled_ids.append(ev_item.get("issue_id", "?"))
+
             llm_output = LLMIssueEvaluationOutput.model_validate(raw_dict)
             logger.info("评估条目数: %d", len(llm_output.evaluations))
             if llm_output.evaluations:
@@ -170,15 +177,20 @@ class IssueImpactRanker:
             sorted_issues = self._sort_issues(enriched_issues)
             ranked_tree = inp.issue_tree.model_copy(update={"issues": sorted_issues})
 
+            meta = {
+                "model": self._model,
+                "temperature": self._temperature,
+                "evaluated_count": len(issues) - len(unevaluated),
+                "total_count": len(issues),
+                "created_at": now,
+            }
+            if _rescaled_ids:
+                meta["score_rescaled"] = True
+                meta["score_rescaled_issue_ids"] = _rescaled_ids
+
             return IssueImpactRankingResult(
                 ranked_issue_tree=ranked_tree,
-                evaluation_metadata={
-                    "model": self._model,
-                    "temperature": self._temperature,
-                    "evaluated_count": len(issues) - len(unevaluated),
-                    "total_count": len(issues),
-                    "created_at": now,
-                },
+                evaluation_metadata=meta,
                 unevaluated_issue_ids=unevaluated,
                 created_at=now,
             )
@@ -197,10 +209,10 @@ class IssueImpactRanker:
     # LLM 输出归一化 / LLM output normalization
     # ------------------------------------------------------------------
 
-    _EVALUATIONS_ALIASES = {
+    _EVALUATIONS_ALIASES = (
         "issue_assessments", "assessments", "issues", "issue_evaluations",
         "争点评估", "评估结果",
-    }
+    )
 
     @classmethod
     def _normalize_evaluation_keys(cls, raw: dict) -> dict:
@@ -220,17 +232,17 @@ class IssueImpactRanker:
                 return raw
 
         # 尝试找任意值为 list[dict] 的键
-        for key, val in raw.items():
+        for key, val in list(raw.items()):
             if isinstance(val, list) and val and isinstance(val[0], dict) and "issue_id" in val[0]:
                 logger.info("自动检测评估列表键: %s → evaluations", key)
-                raw["evaluations"] = val
+                raw["evaluations"] = raw.pop(key)
                 return raw
 
         # 尝试找任意值为 list[dict] 的键（即使没有 issue_id）
-        for key, val in raw.items():
+        for key, val in list(raw.items()):
             if isinstance(val, list) and len(val) >= 2 and isinstance(val[0], dict):
                 logger.info("推测评估列表键: %s (len=%d) → evaluations", key, len(val))
-                raw["evaluations"] = val
+                raw["evaluations"] = raw.pop(key)
                 return raw
 
         logger.warning("无法找到评估列表键，可用键: %s", list(raw.keys()))
@@ -345,9 +357,16 @@ class IssueImpactRanker:
                     # dim_val 可能是 {"score": 85, "rationale": "..."} 或直接值
                     score = None
                     if isinstance(dim_val, dict):
-                        score = dim_val.get("score", dim_val.get("value", dim_val.get("rating")))
+                        raw = dim_val.get("score", dim_val.get("value", dim_val.get("rating")))
+                        if isinstance(raw, (int, float)):
+                            score = raw
+                        elif isinstance(raw, str) and raw.replace(".", "", 1).lstrip("-").isdigit():
+                            score = float(raw)
                     elif isinstance(dim_val, (int, float)):
                         score = dim_val
+                    elif isinstance(dim_val, str) and dim_val.replace(".", "", 1).lstrip("-").isdigit():
+                        # LLM 返回字符串数字如 "85"
+                        score = float(dim_val)
                     elif isinstance(dim_val, str) and expected_type is str:
                         # 字符串枚举值（如 outcome_impact: "high"）直接提升
                         item.setdefault(field_name, dim_val)
@@ -368,6 +387,40 @@ class IssueImpactRanker:
             normalized_key = cls._EVAL_FIELD_ALIASES.get(key, key)
             if normalized_key not in result:
                 result[normalized_key] = val
+
+        # 3. 量纲检测：如果所有评分维度（importance, swing, credibility）都 ≤ 10，
+        #    可能是 LLM 使用了 0-10 量纲，需要 × 10 放大到 0-100
+        result = cls._rescale_if_needed(result)
+        return result
+
+    @classmethod
+    def _rescale_if_needed(cls, result: dict) -> dict:
+        """检测并修正 0-10 量纲评分。仅当所有相关字段一致 ≤ 10 时触发。
+
+        不触碰 dependency_depth（语义不同）和 evidence_strength_gap（可为负值）。
+        混合量纲（部分 > 10, 部分 ≤ 10）时不做任何处理。
+        """
+        _RESCALE_FIELDS = ("importance_score", "swing_score", "credibility_impact")
+        values = {}
+        for field in _RESCALE_FIELDS:
+            val = result.get(field)
+            if isinstance(val, (int, float)):
+                values[field] = val
+
+        if len(values) < 2:
+            return result  # 不够样本，不推断
+
+        if max(values.values()) <= 0:
+            return result  # 全零，无需放大
+
+        if all(v <= 10 for v in values.values()):
+            for field, val in values.items():
+                result[field] = val * 10
+            result["_score_rescaled"] = True
+            logger.warning(
+                "Score rescale 0-10→0-100 triggered: fields=%s, original=%s",
+                list(values.keys()), {k: v for k, v in values.items()},
+            )
         return result
 
     # ------------------------------------------------------------------
@@ -475,12 +528,15 @@ class IssueImpactRanker:
 
         enriched: list[Issue] = []
         unevaluated: list[str] = []
+        # 区分"LLM 完全未返回"和"返回了但分类字段校验失败"
+        not_in_eval_map: set[str] = set()
 
         for issue in issues:
             ev = eval_map.get(issue.issue_id)
             if ev is None:
                 # LLM 未返回该争点的评估
                 unevaluated.append(issue.issue_id)
+                not_in_eval_map.add(issue.issue_id)
                 enriched.append(issue)
                 continue
 
@@ -531,6 +587,11 @@ class IssueImpactRanker:
             updates["swing_score"] = max(0, min(100, ev.swing_score))
             updates["evidence_strength_gap"] = max(-100, min(100, ev.evidence_strength_gap))
             updates["dependency_depth"] = max(0, ev.dependency_depth)
+            # 规则层覆盖：有 parent_issue_id 的争点深度至少为 1
+            if issue.parent_issue_id and updates["dependency_depth"] == 0:
+                updates["dependency_depth"] = 1
+                logger.info("depth override: %s has parent=%s, forcing depth=1",
+                            issue.issue_id, issue.parent_issue_id)
             updates["credibility_impact"] = max(0, min(100, ev.credibility_impact))
 
             if issue_degraded:
@@ -539,10 +600,29 @@ class IssueImpactRanker:
             enriched.append(issue.model_copy(update=updates))
 
         # 计算 composite_score（需在富化完成后）
+        # 仅"LLM 完全未返回"的争点设 composite_score=None
+        # "返回了但分类字段校验失败"的争点仍用 v2 评分维度计算 composite_score
         enriched = [
             i.model_copy(update={"composite_score": self._compute_composite_score(i)})
+            if i.issue_id not in not_in_eval_map
+            else i.model_copy(update={"composite_score": None})
             for i in enriched
         ]
+
+        # 诊断：evaluated 争点的 composite_score 分布
+        evaluated_scores = [
+            i.composite_score for i in enriched
+            if i.composite_score is not None
+        ]
+        if len(evaluated_scores) >= 3:
+            spread = max(evaluated_scores) - min(evaluated_scores)
+            if spread < 5.0:
+                logger.warning(
+                    "Composite scores poorly differentiated: spread=%.1f, "
+                    "range=[%.1f, %.1f], count=%d",
+                    spread, min(evaluated_scores), max(evaluated_scores),
+                    len(evaluated_scores),
+                )
 
         return enriched, unevaluated
 
@@ -608,21 +688,13 @@ class IssueImpactRanker:
         Raises:
             RuntimeError: 超过最大重试次数
         """
-        last_error: Exception | None = None
-        for attempt in range(1, self._max_retries + 1):
-            try:
-                return await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                    max_tokens=self._max_tokens,
-                )
-            except Exception as e:
-                last_error = e
-                if attempt < self._max_retries:
-                    continue
-                break
-        raise RuntimeError(
-            f"LLM 调用失败，已重试 {self._max_retries} 次。最后错误: {last_error}"
+        from engines.shared.llm_utils import call_llm_with_retry
+        return await call_llm_with_retry(
+            self._llm,
+            system=system,
+            user=user,
+            model=self._model,
+            temperature=self._temperature,
+            max_tokens=self._max_tokens,
+            max_retries=self._max_retries,
         )

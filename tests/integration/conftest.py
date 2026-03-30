@@ -5,9 +5,22 @@ Shared fixtures and mock utilities for integration tests.
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from engines.case_structuring.evidence_indexer.schemas import RawMaterial
+
+
+@pytest.fixture(autouse=True)
+def _no_llm_retry_sleep(monkeypatch):
+    """消除 LLM 重试退避中的真实 sleep，保持集成测试速度。
+    Zero out LLM retry backoff sleep to keep integration tests fast.
+    """
+    async def _instant_sleep(_delay: float) -> None:  # noqa: RUF029
+        await asyncio.sleep(0)
+
+    monkeypatch.setattr("engines.shared.llm_utils._sleep", _instant_sleep)
 
 
 # ---------------------------------------------------------------------------

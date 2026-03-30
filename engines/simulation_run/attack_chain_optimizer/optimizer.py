@@ -137,22 +137,20 @@ class AttackChainOptimizer:
             evidence_index=inp.evidence_index,
         )
 
-        for attempt in range(self._max_retries + 1):
-            try:
-                raw = await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                )
-                result = self._parse_llm_output(raw)
-                if result is not None:
-                    return result
-                logger.warning("Attack chain: attempt %d parse returned None", attempt + 1)
-            except Exception as e:  # noqa: BLE001
-                logger.warning("Attack chain: attempt %d LLM call failed: %s", attempt + 1, e)
-
-        return None
+        from engines.shared.llm_utils import call_llm_with_retry
+        try:
+            raw = await call_llm_with_retry(
+                self._llm,
+                system=system,
+                user=user,
+                model=self._model,
+                temperature=self._temperature,
+                max_retries=self._max_retries,
+            )
+            return self._parse_llm_output(raw)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Attack chain: LLM call failed: %s", type(e).__name__)
+            return None
 
     @staticmethod
     def _normalize_llm_json(data: dict) -> dict:
@@ -164,9 +162,22 @@ class AttackChainOptimizer:
         # Top-level: attack_chain / attacks / optimal_attacks → top_attacks
         if "top_attacks" not in data:
             for alias in ("attack_chain", "attacks", "optimal_attacks", "attack_nodes"):
-                if alias in data and isinstance(data[alias], list):
+                if alias not in data:
+                    continue
+                val = data[alias]
+                if isinstance(val, list):
                     data["top_attacks"] = data.pop(alias)
                     break
+                # LLM 可能将节点包在 dict 里: {"attack_chain": {"nodes": [...]}}
+                if isinstance(val, dict):
+                    for sub_key in ("nodes", "attacks", "top_attacks", "attack_nodes"):
+                        if sub_key in val and isinstance(val[sub_key], list):
+                            data["top_attacks"] = val[sub_key]
+                            data.pop(alias)
+                            logger.info("Unwrapped top_attacks from %s.%s", alias, sub_key)
+                            break
+                    if "top_attacks" in data:
+                        break
 
         # Normalize individual attack nodes
         for node in data.get("top_attacks", []):
@@ -257,7 +268,10 @@ class AttackChainOptimizer:
 
             # success_conditions aliases
             if not node.get("success_conditions"):
-                for alias in ("expected_outcome", "success_condition"):
+                for alias in ("expected_outcome", "success_condition",
+                              "expected_impact", "success_criterion",
+                              "winning_condition", "expected_effect",
+                              "success_criteria"):
                     if alias in node:
                         node["success_conditions"] = node.pop(alias)
                         break
@@ -267,6 +281,46 @@ class AttackChainOptimizer:
                 for alias in ("risk_assessment", "counter_strategy", "risk"):
                     if alias in node:
                         node["counter_measure"] = node.pop(alias)
+                        break
+
+            # adversary_pivot_strategy aliases
+            if not node.get("adversary_pivot_strategy"):
+                for alias in ("pivot_strategy", "response_strategy",
+                              "fallback_strategy", "next_strategy"):
+                    if alias in node:
+                        node["adversary_pivot_strategy"] = node.pop(alias)
+                        break
+
+            # Synthesis fallback: single-field conservative recovery
+            # success_conditions ← attack_thesis (if still empty)
+            if not node.get("success_conditions"):
+                for src in ("attack_thesis",):
+                    val = node.get(src)
+                    if isinstance(val, str) and len(val) > 10:
+                        node["success_conditions"] = node.pop(src)
+                        logger.info("Synthesized success_conditions from %s for %s",
+                                    src, node.get("attack_node_id", "?"))
+                        break
+
+            # adversary_pivot_strategy ← counter_to_opponent_evidence / counter_to_plaintiff_evidence
+            if not node.get("adversary_pivot_strategy"):
+                for src in ("counter_to_opponent_evidence",
+                            "counter_to_plaintiff_evidence"):
+                    val = node.get(src)
+                    if isinstance(val, dict):
+                        # {evidence_id: reasoning} → flatten to string
+                        parts = [f"{k}: {v}" for k, v in val.items()
+                                 if isinstance(v, str) and v]
+                        if parts:
+                            node["adversary_pivot_strategy"] = "；".join(parts)
+                            node.pop(src, None)
+                            logger.info("Synthesized adversary_pivot_strategy from %s (dict) for %s",
+                                        src, node.get("attack_node_id", "?"))
+                            break
+                    elif isinstance(val, str) and len(val) > 10:
+                        node["adversary_pivot_strategy"] = node.pop(src)
+                        logger.info("Synthesized adversary_pivot_strategy from %s for %s",
+                                    src, node.get("attack_node_id", "?"))
                         break
 
         return data
