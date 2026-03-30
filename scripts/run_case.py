@@ -71,6 +71,11 @@ from engines.simulation_run.action_recommender import ActionRecommender
 from engines.simulation_run.action_recommender.schemas import ActionRecommenderInput
 from engines.report_generation.executive_summarizer import ExecutiveSummarizer
 from engines.report_generation.executive_summarizer.schemas import ExecutiveSummarizerInput
+from engines.case_structuring.admissibility_evaluator import AdmissibilityEvaluator, AdmissibilityEvaluatorInput
+from engines.simulation_run.issue_dependency_graph import IssueDependencyGraphGenerator
+from engines.simulation_run.issue_dependency_graph.schemas import IssueDependencyGraphInput
+from engines.simulation_run.hearing_order import HearingOrderGenerator, HearingOrderInput
+from engines.simulation_run.defense_chain import DefenseChainOptimizer, DefenseChainInput
 
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -621,6 +626,53 @@ async def _run_post_debate(
         print("  - Skipping ExecutiveSummarizer: attack_chain not available")
         exec_summary = None
 
+    # P2: AdmissibilityEvaluator (async, LLM)
+    print("  - Admissibility evaluation...")
+    adm_evaluator = AdmissibilityEvaluator(llm_client=llm_client, model=model, temperature=0.0, max_retries=2)
+    admissibility_result = await adm_evaluator.evaluate(AdmissibilityEvaluatorInput(
+        case_id=case_id, run_id=run_id,
+        evidence_index=ev_index,
+    ))
+    artifacts["admissibility_result"] = admissibility_result
+    scored = sum(1 for ev in admissibility_result.evidence if ev.admissibility_score is not None)
+    print(f"    \u2713 Admissibility scored: {scored}/{len(admissibility_result.evidence)} evidence items")
+
+    # P2: IssueDependencyGraph (sync, rule-based)
+    if ranked_tree:
+        print("  - Issue dependency graph...")
+        dep_graph = IssueDependencyGraphGenerator().build(IssueDependencyGraphInput(
+            case_id=case_id,
+            issues=ranked_tree.issues,
+        ))
+        artifacts["dep_graph"] = dep_graph
+        print(f"    \u2713 Nodes: {len(dep_graph.nodes)}  Edges: {len(dep_graph.edges)}  Cycles: {dep_graph.has_cycles}")
+
+        # P2: HearingOrderGenerator (sync, rule-based) — depends on dep_graph
+        print("  - Hearing order...")
+        hearing_order = HearingOrderGenerator().generate(HearingOrderInput(
+            case_id=case_id,
+            dependency_graph=dep_graph,
+            issues=ranked_tree.issues,
+        ))
+        artifacts["hearing_order"] = hearing_order
+        print(f"    \u2713 Phases: {len(hearing_order.phases)}  Total duration: {hearing_order.total_estimated_duration_minutes} min")
+
+        # P2: DefenseChainOptimizer (async, LLM)
+        print("  - Defense chain optimization...")
+        defense_chain_result = await DefenseChainOptimizer(
+            llm_client=llm_client, model=model, max_retries=2,
+        ).optimize(DefenseChainInput(
+            case_id=case_id, run_id=run_id,
+            issues=ranked_tree.issues,
+            evidence_index=ev_index,
+            plaintiff_party_id=p_id,
+        ))
+        artifacts["defense_chain"] = defense_chain_result
+        chain = defense_chain_result.chain
+        print(f"    \u2713 Defense points: {len(chain.defense_points)}")
+    else:
+        print("  - Skipping dependency graph / hearing order / defense chain: ranked_tree not available")
+
     return artifacts
 
 
@@ -725,7 +777,8 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     )
 
     # Serialize post-debate artifacts
-    for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary"):
+    for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary",
+                 "admissibility_result", "dep_graph", "hearing_order", "defense_chain"):
         obj = artifacts.get(name)
         if obj:
             (out / f"{name}.json").write_text(obj.model_dump_json(indent=2), encoding="utf-8")
@@ -767,7 +820,8 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     print(f"  Report:      {mp}")
     if docx_path:
         print(f"  Word report: {docx_path}")
-    for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary"):
+    for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary",
+                 "admissibility_result", "dep_graph", "hearing_order", "defense_chain"):
         artifact_path = out / f"{name}.json"
         if artifact_path.exists():
             print(f"  {name}: {artifact_path}")
