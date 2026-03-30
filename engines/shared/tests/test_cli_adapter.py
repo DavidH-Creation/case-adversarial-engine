@@ -152,9 +152,15 @@ class TestClaudeCLIClient:
         mock_proc.kill = MagicMock()
         mock_proc.communicate = AsyncMock(side_effect=asyncio.TimeoutError)
 
+        def _wait_for_timeout(coro, *args, **kwargs):
+            # Close the coroutine so the GC never sees an unawaited coroutine.
+            if hasattr(coro, "close"):
+                coro.close()
+            raise asyncio.TimeoutError()
+
         with patch("shutil.which", return_value="/usr/bin/claude"), \
              patch("asyncio.create_subprocess_exec", return_value=mock_proc), \
-             patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
+             patch("asyncio.wait_for", side_effect=_wait_for_timeout):
             with pytest.raises(asyncio.TimeoutError):
                 await client.create_message(system="s", user="u")
 
@@ -354,9 +360,15 @@ class TestCodexCLIClient:
         mock_proc.kill = MagicMock()
         mock_proc.communicate = AsyncMock(return_value=(b"", b""))
 
+        def _wait_for_timeout(coro, *args, **kwargs):
+            # Close the coroutine so the GC never sees an unawaited coroutine.
+            if hasattr(coro, "close"):
+                coro.close()
+            raise asyncio.TimeoutError()
+
         with patch("shutil.which", return_value="/usr/bin/codex"), \
              patch("asyncio.create_subprocess_exec", return_value=mock_proc), \
-             patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
+             patch("asyncio.wait_for", side_effect=_wait_for_timeout):
             with pytest.raises(asyncio.TimeoutError):
                 await client.create_message(system="s", user="u")
 
