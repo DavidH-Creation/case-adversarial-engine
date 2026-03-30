@@ -311,6 +311,21 @@ class IssueCategory(str, Enum):
     procedure_credibility_issue = "procedure_credibility_issue"
 
 
+class Perspective(str, Enum):
+    """输出视角标注（v7）。每个 section/建议必须显式标注视角。"""
+    neutral = "neutral"
+    plaintiff = "plaintiff"
+    defendant = "defendant"
+
+
+class AdmissibilityStatus(str, Enum):
+    """证据可采性状态（v7 可采性闸门）。"""
+    clear = "clear"            # 证据可采性无争议
+    uncertain = "uncertain"    # 可采性存疑
+    weak = "weak"              # 可采性较弱，可能被排除
+    excluded = "excluded"      # 已被排除
+
+
 class OutcomeImpactSize(str, Enum):
     """补证后对结果的影响大小（P1.7）。"""
     significant = "significant"
@@ -384,6 +399,37 @@ class Evidence(BaseModel):
         default=None,
         description="该证据被排除后对案件的影响描述（由 AdmissibilityEvaluator 填充）",
     )
+    # v7: 证据关联与对抗扩展字段
+    admissibility_status: AdmissibilityStatus = Field(
+        default=AdmissibilityStatus.clear,
+        description="可采性状态枚举：clear/uncertain/weak/excluded（v7 可采性闸门）",
+    )
+    supports: list[str] = Field(
+        default_factory=list,
+        description="该证据支持的争点 issue_id 列表（正向关联）",
+    )
+    is_attacked_by: list[str] = Field(
+        default_factory=list,
+        description="攻击/反驳该证据的其他证据 evidence_id 列表",
+    )
+    stability_score: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0,
+        description="证据稳定性 (0-1)：即使被质证也不容易崩的程度。区别于 probative_value(冲击力)。"
+                    "stability_score 优先于 probative_value 参与排序。",
+    )
+    support_strength: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0,
+        description="证据支撑强度 (0-1)：表面直观说服力。",
+    )
+    counter_evidence_strength: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0,
+        description="对立证据强度 (0-1)：反驳该证据的力度。",
+    )
+    dispute_ratio: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0,
+        description="争议比 (0-1)：counter_evidence_strength / (support_strength + counter_evidence_strength)。"
+                    "高值表明该证据被强反证、排序时应自动降权。",
+    )
 
 
 class FactProposition(BaseModel):
@@ -442,6 +488,11 @@ class Issue(BaseModel):
     issue_category: Optional[IssueCategory] = None
     # P1 新增：争点依赖关系（上游争点 issue_id 列表；空列表表示根争点）
     depends_on: list[str] = Field(default_factory=list)
+    # v7: 真正决定裁判的子问题（二-2）
+    decisive_sub_question: Optional[str] = Field(
+        default=None,
+        description="真正决定裁判结果的核心子问题（如'借款合意是否成立'），由 LLM 评估填充",
+    )
 
 
 class Burden(BaseModel):
@@ -567,7 +618,7 @@ class KeyConclusion(BaseModel):
 
 
 class ReportSection(BaseModel):
-    """报告章节。"""
+    """报告章节。v7 起每个 section 必须标注视角、置信度和依赖。"""
     section_id: str = Field(..., min_length=1)
     section_index: int = Field(..., ge=1)
     title: str = Field(..., min_length=1)
@@ -578,6 +629,19 @@ class ReportSection(BaseModel):
         ..., description="章节引用的证据 ID 列表"
     )
     key_conclusions: list[KeyConclusion] = Field(default_factory=list)
+    # v7: section 顶部元数据
+    perspective: Perspective = Field(
+        default=Perspective.neutral,
+        description="本 section 的视角：neutral=中立评估, plaintiff=原告策略, defendant=被告策略",
+    )
+    confidence: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0,
+        description="本 section 结论置信度 (0-1)",
+    )
+    section_depends_on: list[str] = Field(
+        default_factory=list,
+        description="本 section 依赖的其他 section_id 列表（用于一致性校验的拓扑排序）",
+    )
 
 
 class ReportArtifact(BaseModel):
@@ -1415,6 +1479,114 @@ class AlternativeClaimSuggestion(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# v7：诉请拆分 / Claim decomposition  (修订清单 一-2)
+# ---------------------------------------------------------------------------
+
+
+class ClaimDecomposition(BaseModel):
+    """拆分后的诉请结构（v7）。替代原 current_most_stable_claim 单一 str 字段。
+
+    三个字段对应修订清单一-2 的要求：
+    - formal_claim:            正式诉请金额（原告实际起诉数额）
+    - fallback_anchor:         保底锚点/最有把握主张（路径树最现实路径支持的金额）
+    - expected_recovery_range: 预期回收区间 [lower, upper]
+
+    合约保证：
+    - fallback_anchor <= formal_claim（路径树显示仅部分支持时自动下调）
+    - expected_recovery_range.lower <= expected_recovery_range.upper
+    """
+    formal_claim: Decimal = Field(
+        ..., ge=0, description="正式诉请金额（原告实际起诉数额）"
+    )
+    fallback_anchor: Decimal = Field(
+        ..., ge=0, description="保底锚点：最有把握获得支持的金额（不高于 formal_claim）"
+    )
+    expected_recovery_lower: Decimal = Field(
+        ..., ge=0, description="预期回收区间下界"
+    )
+    expected_recovery_upper: Decimal = Field(
+        ..., ge=0, description="预期回收区间上界"
+    )
+    decomposition_rationale: str = Field(
+        default="", description="拆分依据说明（路径树哪条路径支持哪部分金额）"
+    )
+
+    @model_validator(mode="after")
+    def _validate_ranges(self) -> "ClaimDecomposition":
+        if self.fallback_anchor > self.formal_claim:
+            raise ValueError(
+                f"fallback_anchor ({self.fallback_anchor}) 不得大于 "
+                f"formal_claim ({self.formal_claim})"
+            )
+        if self.expected_recovery_lower > self.expected_recovery_upper:
+            raise ValueError(
+                f"expected_recovery_lower ({self.expected_recovery_lower}) 不得大于 "
+                f"expected_recovery_upper ({self.expected_recovery_upper})"
+            )
+        return self
+
+
+# ---------------------------------------------------------------------------
+# v7：内部决策版本 / Internal decision summary  (修订清单 二-3)
+# ---------------------------------------------------------------------------
+
+
+class InternalDecisionSummary(BaseModel):
+    """内部决策版本摘要（v7）。不对外展示，仅供律师/内部团队决策使用。
+
+    包含：最可能输赢方向、最现实可回收金额、最先该补哪条证据。
+    """
+    most_likely_winner: str = Field(
+        ..., description="最可能胜诉方：plaintiff / defendant / uncertain"
+    )
+    most_likely_winner_rationale: str = Field(
+        default="", description="判断依据"
+    )
+    realistic_recovery_amount: Optional[Decimal] = Field(
+        default=None, ge=0, description="最现实可回收金额"
+    )
+    priority_evidence_to_supplement: Optional[str] = Field(
+        default=None, description="最先应补强的证据 gap_id"
+    )
+    priority_supplement_rationale: str = Field(
+        default="", description="补证优先理由"
+    )
+
+
+# ---------------------------------------------------------------------------
+# v7：一致性校验结果 / Consistency check result  (修订清单 一-3, 三, 四)
+# ---------------------------------------------------------------------------
+
+
+class ConsistencyCheckResult(BaseModel):
+    """输出前一致性校验结果（v7）。附加在最终输出末尾。
+
+    校验维度（修订清单四）：
+    1. perspective_consistent:    视角一致性（同 section 不混用中立+一方策略）
+    2. recommendation_consistent: 推荐一致性（推荐与路径树判断对齐）
+    3. admissibility_gate_passed: 可采性闸门（程序性争点不因内容严重就置顶）
+    4. strong_argument_demoted:   强论点降权（被强反证的证据已降权）
+    5. action_stance_aligned:     行动建议对齐（建议方向与整体态势匹配）
+    """
+    overall_pass: bool = Field(
+        ..., description="全部校验通过为 True"
+    )
+    perspective_consistent: bool = Field(default=True)
+    recommendation_consistent: bool = Field(default=True)
+    admissibility_gate_passed: bool = Field(default=True)
+    strong_argument_demoted: bool = Field(default=True)
+    action_stance_aligned: bool = Field(default=True)
+    failures: list[str] = Field(
+        default_factory=list,
+        description="失败原因列表（why_fail）",
+    )
+    sections_to_regenerate: list[str] = Field(
+        default_factory=list,
+        description="因一致性检查失败需要重生成的 section_id 列表",
+    )
+
+
 class ConfidenceMetrics(BaseModel):
     """执行摘要置信度指标（P2 结构化输出）。
 
@@ -1505,8 +1677,14 @@ class ExecutiveSummaryArtifact(BaseModel):
     adversary_attack_chain_id: str = Field(
         ..., min_length=1, description="绑定的 OptimalAttackChain.chain_id（可回连）"
     )
+    # v7: 拆分后的诉请结构（替代原 current_most_stable_claim 单一 str）
+    claim_decomposition: Optional[ClaimDecomposition] = Field(
+        default=None,
+        description="v7 诉请拆分：formal_claim + fallback_anchor + expected_recovery_range",
+    )
     current_most_stable_claim: str = Field(
-        ..., min_length=1, description="最稳诉请版本说明文本（绑定 amount_report_id）"
+        default="",
+        description="[已废弃] v6 最稳诉请文本，向后兼容保留。v7 起使用 claim_decomposition。",
     )
     strategic_summary: Optional[str] = Field(
         default=None,
@@ -1522,6 +1700,23 @@ class ExecutiveSummaryArtifact(BaseModel):
     structured_output: Optional[ExecutiveSummaryStructuredOutput] = Field(
         default=None,
         description="P2 结构化 JSON 输出（与叙述性输出并存，机器可读）",
+    )
+    # v7: 最终建议区固定输出字段（修订清单三）
+    primary_risk: Optional[str] = Field(
+        default=None, description="当前案件主要风险点（一句话）",
+    )
+    next_best_action: Optional[str] = Field(
+        default=None, description="下一步最优行动建议（一句话）",
+    )
+    # v7: 内部决策版本（修订清单二-3）
+    internal_decision_summary: Optional[InternalDecisionSummary] = Field(
+        default=None,
+        description="内部决策版本摘要：最可能输赢方向、最现实可回收金额、最先该补哪条证据",
+    )
+    # v7: 一致性校验结果（修订清单三末尾 + 四）
+    consistency_check: Optional[ConsistencyCheckResult] = Field(
+        default=None,
+        description="输出前自动校验结果：pass/fail + why_fail + sections_to_regenerate",
     )
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

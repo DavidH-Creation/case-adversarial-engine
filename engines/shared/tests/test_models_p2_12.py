@@ -142,9 +142,10 @@ class TestRequiredFields:
         with pytest.raises(ValidationError):
             _make_artifact(amount_report_id="")
 
-    def test_empty_current_most_stable_claim_raises(self):
-        with pytest.raises(ValidationError):
-            _make_artifact(current_most_stable_claim="")
+    def test_empty_current_most_stable_claim_deprecated_ok(self):
+        """v7: current_most_stable_claim 已废弃，空字符串不再报错（向后兼容）。"""
+        artifact = _make_artifact(current_most_stable_claim="")
+        assert artifact.current_most_stable_claim == ""
 
 
 # ---------------------------------------------------------------------------

@@ -28,6 +28,7 @@ from copy import deepcopy
 logger = logging.getLogger(__name__)
 
 from engines.shared.models import (
+    AdmissibilityStatus,
     AuthenticityRisk,
     EvidenceIndex,
     LLMClient,
@@ -120,6 +121,15 @@ class EvidenceWeightScorer:
                 if item["admissibility_notes"]:
                     ev.admissibility_notes = item["admissibility_notes"]
                 ev.evidence_weight_scored = True
+                # v7: 计算 stability_score（稳 ≠ 强）
+                ev.stability_score = self._compute_stability_score(
+                    item["authenticity_risk"], item["vulnerability"],
+                )
+                # v7: 派生 admissibility_status
+                ev.admissibility_status = self._derive_admissibility_status(
+                    item["authenticity_risk"], item["vulnerability"],
+                    ev.admissibility_challenges, ev.status.value if ev.status else "",
+                )
             updated_evidence.append(ev)
 
         return EvidenceIndex(
@@ -215,3 +225,50 @@ class EvidenceWeightScorer:
             }
 
         return result
+
+    # ------------------------------------------------------------------
+    # v7: stability_score 计算 / Stability score computation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _compute_stability_score(
+        authenticity_risk: AuthenticityRisk,
+        vulnerability: Vulnerability,
+    ) -> float:
+        """计算证据稳定性得分 (0-1)。
+
+        稳定性 = 即使被质证也不容易崩的程度。
+        - authenticity_risk=low + vulnerability=low  → 1.0（最稳）
+        - authenticity_risk=high + vulnerability=high → 0.2（最不稳）
+
+        区别于 probative_value（冲击力/表面说服力）。
+        排序时 stability_score 优先于 probative_value。
+        """
+        _AR_SCORE = {AuthenticityRisk.low: 1.0, AuthenticityRisk.medium: 0.6, AuthenticityRisk.high: 0.2}
+        _VL_SCORE = {Vulnerability.low: 1.0, Vulnerability.medium: 0.6, Vulnerability.high: 0.2}
+        ar_s = _AR_SCORE.get(authenticity_risk, 0.5)
+        vl_s = _VL_SCORE.get(vulnerability, 0.5)
+        return round((ar_s + vl_s) / 2.0, 2)
+
+    @staticmethod
+    def _derive_admissibility_status(
+        authenticity_risk: AuthenticityRisk,
+        vulnerability: Vulnerability,
+        challenges: list[str],
+        evidence_status: str,
+    ) -> AdmissibilityStatus:
+        """从四维评分 + 质疑记录派生可采性状态枚举。
+
+        规则（保守策略）：
+        - 已被排除（evidence_status 含 excluded 信号）→ excluded
+        - authenticity_risk=high 且有质疑记录             → weak
+        - authenticity_risk=high 或 vulnerability=high    → uncertain
+        - 其他                                            → clear
+        """
+        if "excluded" in evidence_status.lower():
+            return AdmissibilityStatus.excluded
+        if authenticity_risk == AuthenticityRisk.high and challenges:
+            return AdmissibilityStatus.weak
+        if authenticity_risk == AuthenticityRisk.high or vulnerability == Vulnerability.high:
+            return AdmissibilityStatus.uncertain
+        return AdmissibilityStatus.clear

@@ -16,6 +16,7 @@ from engines.shared.models import (  # noqa: F401
     AmountCalculationReport,
     ClaimAbandonSuggestion,
     ClaimAmendmentSuggestion,
+    DecisionPathTree,
     EvidenceGapItem,
     EvidenceIndex,
     Issue,
@@ -33,6 +34,7 @@ class ActionRecommenderInput(BaseModel):
         issue_list:                 含 P0.1 扩展字段的争点列表（可为空）
         evidence_gap_list:          含 roi_rank 的缺证项列表（来自 P1.7，可为空）
         amount_calculation_report:  P0.2 金额一致性报告
+        decision_path_tree:         P0.3 裁判路径树（v7 新增，用于推荐-路径对齐）
     """
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
@@ -44,4 +46,8 @@ class ActionRecommenderInput(BaseModel):
     proponent_party_id: str = Field(default="", description="主张方 party_id（用于 party-specific 建议）")
     evidence_index: Optional[EvidenceIndex] = Field(
         default=None, description="证据索引（LLM 策略层需要，纯规则层可省略）"
+    )
+    decision_path_tree: Optional[DecisionPathTree] = Field(
+        default=None,
+        description="v7: P0.3 裁判路径树，用于推荐一致性校验和行动对齐",
     )

@@ -20,13 +20,18 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
+from decimal import Decimal
+
 from engines.shared.models import (
     ActionRecommendation,
     AmountCalculationReport,
+    ClaimDecomposition,
     ConfidenceMetrics,
+    DecisionPathTree,
     EvidenceGapItem,
     ExecutiveSummaryArtifact,
     ExecutiveSummaryStructuredOutput,
+    InternalDecisionSummary,
     Issue,
     OptimalAttackChain,
     OutcomeImpact,
@@ -79,6 +84,21 @@ class ExecutiveSummarizer:
             action_recommendation=inp.action_recommendation,
         )
 
+        # v7: 构建诉请拆分（替代原 current_most_stable_claim）
+        decision_tree = getattr(inp, "decision_path_tree", None)
+        claim_decomposition = self._build_claim_decomposition(
+            inp.amount_calculation_report, decision_tree,
+        )
+        # v7: 内部决策版本
+        internal_decision = self._build_internal_decision_summary(
+            inp.issue_list, decision_tree, critical_gaps,
+        )
+        # v7: 主要风险 + 下一步最优行动
+        primary_risk = self._compute_primary_risk(inp.issue_list, top3_attacks)
+        next_action = self._compute_next_best_action(
+            top3_actions, critical_gaps, inp.action_recommendation,
+        )
+
         return ExecutiveSummaryArtifact(
             summary_id=str(uuid.uuid4()),
             case_id=inp.case_id,
@@ -89,10 +109,14 @@ class ExecutiveSummarizer:
             top3_adversary_optimal_attacks=top3_attacks,
             adversary_attack_chain_id=inp.adversary_attack_chain.chain_id,
             current_most_stable_claim=claim_text,
+            claim_decomposition=claim_decomposition,
             strategic_summary=strategic_summary,
             amount_report_id=inp.amount_calculation_report.report_id,
             critical_evidence_gaps=critical_gaps,
             structured_output=structured,
+            primary_risk=primary_risk,
+            next_best_action=next_action,
+            internal_decision_summary=internal_decision,
         )
 
     # ------------------------------------------------------------------
@@ -297,6 +321,119 @@ class ExecutiveSummarizer:
             recommended_actions=recommended_actions,
             confidence_metrics=confidence_metrics,
         )
+
+    # ------------------------------------------------------------------
+    # v7: 新增构建方法 / v7 builders
+    # ------------------------------------------------------------------
+
+    def _build_claim_decomposition(
+        self,
+        report: AmountCalculationReport,
+        decision_tree: Optional[DecisionPathTree],
+    ) -> Optional[ClaimDecomposition]:
+        """构建 v7 诉请拆分。
+
+        formal_claim:            诉请总额
+        fallback_anchor:         路径树最现实路径支持的金额（无路径树时 = formal_claim）
+        expected_recovery_range: [lower, upper]
+        """
+        table = report.claim_calculation_table
+        if not table:
+            return None
+
+        formal = sum(e.claimed_amount for e in table)
+        # 若有计算值，使用最小 delta 对应的 calculated_amount 作为 fallback
+        calculable = [e for e in table if e.calculated_amount is not None]
+        if calculable:
+            fallback_total = sum(e.calculated_amount for e in calculable)
+            # 加上不可计算的部分（保守按 claimed_amount 计入）
+            non_calc = [e for e in table if e.calculated_amount is None]
+            fallback_total += sum(e.claimed_amount for e in non_calc)
+        else:
+            fallback_total = formal
+
+        # 路径树调整：如果最可能路径对被告有利，fallback 下调 30%
+        if decision_tree and decision_tree.most_likely_path:
+            for path in decision_tree.paths:
+                if path.path_id == decision_tree.most_likely_path:
+                    if path.party_favored == "defendant":
+                        fallback_total = fallback_total * Decimal("0.7")
+                    break
+
+        fallback_total = min(fallback_total, formal)
+        # 预期回收区间：下界=fallback*0.7，上界=min(formal, fallback*1.2)
+        lower = max(Decimal("0"), fallback_total * Decimal("0.7"))
+        upper = min(formal, fallback_total * Decimal("1.2"))
+
+        return ClaimDecomposition(
+            formal_claim=formal,
+            fallback_anchor=fallback_total,
+            expected_recovery_lower=lower,
+            expected_recovery_upper=upper,
+            decomposition_rationale=(
+                f"正式诉请 {formal}，系统计算保底 {fallback_total}，"
+                f"预期回收 [{lower}, {upper}]"
+            ),
+        )
+
+    def _build_internal_decision_summary(
+        self,
+        issues: list[Issue],
+        decision_tree: Optional[DecisionPathTree],
+        critical_gaps: list[str] | str,
+    ) -> Optional[InternalDecisionSummary]:
+        """构建 v7 内部决策版本摘要。"""
+        winner = "uncertain"
+        rationale = ""
+
+        if decision_tree and decision_tree.most_likely_path:
+            for path in decision_tree.paths:
+                if path.path_id == decision_tree.most_likely_path:
+                    winner = path.party_favored
+                    rationale = (
+                        f"最可能路径 {path.path_id} 有利于 {path.party_favored}"
+                        f"（概率 {path.probability:.0%}）：{path.trigger_condition}"
+                    )
+                    break
+
+        priority_gap = None
+        gap_rationale = ""
+        if isinstance(critical_gaps, list) and critical_gaps:
+            priority_gap = critical_gaps[0]
+            gap_rationale = f"ROI 排序最高的缺证项 {priority_gap}"
+
+        return InternalDecisionSummary(
+            most_likely_winner=winner,
+            most_likely_winner_rationale=rationale,
+            priority_evidence_to_supplement=priority_gap,
+            priority_supplement_rationale=gap_rationale,
+        )
+
+    def _compute_primary_risk(
+        self, issues: list[Issue], top3_attacks: list[str],
+    ) -> Optional[str]:
+        """计算主要风险点（一句话）。"""
+        high_issues = [i for i in issues if i.outcome_impact == OutcomeImpact.high]
+        if not high_issues:
+            return None
+        worst = high_issues[0]
+        return (
+            f"高影响争点「{worst.title}」"
+            + (f"面临 {len(top3_attacks)} 个对方攻击节点" if top3_attacks else "")
+        )
+
+    def _compute_next_best_action(
+        self,
+        top3_actions: list[str] | str,
+        critical_gaps: list[str] | str,
+        recommendation: Optional[ActionRecommendation],
+    ) -> Optional[str]:
+        """计算下一步最优行动（一句话）。"""
+        if isinstance(top3_actions, list) and top3_actions:
+            return top3_actions[0]
+        if isinstance(critical_gaps, list) and critical_gaps:
+            return f"优先补证：{critical_gaps[0]}"
+        return None
 
     @staticmethod
     def _amount_summary(report: AmountCalculationReport) -> str:

@@ -27,7 +27,9 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 from engines.shared.models import (
+    AdmissibilityStatus,
     AttackStrength,
+    Evidence,
     EvidenceStrength,
     ImpactTarget,
     Issue,
@@ -227,6 +229,7 @@ class IssueImpactRanker:
                 evaluations=all_evaluations,
                 known_issue_ids=known_issue_ids,
                 known_evidence_ids=known_evidence_ids,
+                evidence_list=list(inp.evidence_index.evidence),
             )
 
             # 规则层：排序
@@ -556,6 +559,7 @@ class IssueImpactRanker:
         evaluations: list[LLMSingleIssueEvaluation],
         known_issue_ids: set[str],
         known_evidence_ids: set[str],
+        evidence_list: Optional[list["Evidence"]] = None,
     ) -> tuple[list[Issue], list[str]]:
         """将 LLM 评估结果校验后富化到 Issue 对象。
 
@@ -676,6 +680,76 @@ class IssueImpactRanker:
             else i.model_copy(update={"composite_score": None})
             for i in enriched
         ]
+
+        # v7: 可采性闸门 — 争点证据全部可采性存疑时封顶 composite_score
+        if evidence_list:
+            evidence_map = {e.evidence_id: e for e in evidence_list}
+            _ADMISSIBILITY_CAP = 40.0  # 可采性存疑时 composite_score 最大值
+            _PROBLEMATIC = {
+                AdmissibilityStatus.uncertain,
+                AdmissibilityStatus.weak,
+                AdmissibilityStatus.excluded,
+            }
+            capped_ids: list[str] = []
+            enriched_capped: list[Issue] = []
+            for issue in enriched:
+                score = issue.composite_score
+                if (
+                    score is not None
+                    and score > _ADMISSIBILITY_CAP
+                    and issue.evidence_ids
+                    and all(
+                        evidence_map.get(eid) is not None
+                        and evidence_map[eid].admissibility_status in _PROBLEMATIC
+                        for eid in issue.evidence_ids
+                        if eid in evidence_map
+                    )
+                ):
+                    enriched_capped.append(
+                        issue.model_copy(update={"composite_score": _ADMISSIBILITY_CAP})
+                    )
+                    capped_ids.append(issue.issue_id)
+                else:
+                    enriched_capped.append(issue)
+            if capped_ids:
+                logger.info(
+                    "Admissibility gate: capped composite_score for %d issues: %s",
+                    len(capped_ids), capped_ids,
+                )
+            enriched = enriched_capped
+
+        # v7: 强论点降权 — 争点证据全部 dispute_ratio > 0.6 时 composite_score 打折
+        if evidence_list:
+            _DISPUTE_THRESHOLD = 0.6
+            _DISPUTE_PENALTY = 0.5  # 打五折
+            demoted_ids: list[str] = []
+            enriched_demoted: list[Issue] = []
+            for issue in enriched:
+                score = issue.composite_score
+                if (
+                    score is not None
+                    and issue.evidence_ids
+                    and all(
+                        evidence_map.get(eid) is not None
+                        and (evidence_map[eid].dispute_ratio or 0) > _DISPUTE_THRESHOLD
+                        for eid in issue.evidence_ids
+                        if eid in evidence_map
+                    )
+                ):
+                    enriched_demoted.append(
+                        issue.model_copy(update={
+                            "composite_score": score * _DISPUTE_PENALTY,
+                        })
+                    )
+                    demoted_ids.append(issue.issue_id)
+                else:
+                    enriched_demoted.append(issue)
+            if demoted_ids:
+                logger.info(
+                    "Strong argument demotion: demoted %d issues: %s",
+                    len(demoted_ids), demoted_ids,
+                )
+            enriched = enriched_demoted
 
         # 诊断：evaluated 争点的 composite_score 分布
         evaluated_scores = [

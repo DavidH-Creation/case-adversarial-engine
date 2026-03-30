@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from engines.shared.models import (  # noqa: F401
     ActionRecommendation,
     AmountCalculationReport,
+    DecisionPathTree,
     EvidenceGapItem,
     ExecutiveSummaryArtifact,
     Issue,
@@ -32,6 +33,7 @@ class ExecutiveSummarizerInput(BaseModel):
         amount_calculation_report:  P0.2 金额一致性报告（必须）
         action_recommendation:      P1.8 行动建议产物（可选，None 时降级为"未启用"）
         evidence_gap_items:         P1.7 缺证项列表（可选，None 时降级为"未启用"）
+        decision_path_tree:         P0.3 裁判路径树（v7 新增，用于诉请拆分和内部决策摘要）
     """
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
@@ -40,3 +42,7 @@ class ExecutiveSummarizerInput(BaseModel):
     amount_calculation_report: AmountCalculationReport
     action_recommendation: Optional[ActionRecommendation] = None
     evidence_gap_items: Optional[list[EvidenceGapItem]] = None
+    decision_path_tree: Optional[DecisionPathTree] = Field(
+        default=None,
+        description="v7: P0.3 裁判路径树，用于诉请拆分（一-2）和内部决策摘要（二-3）",
+    )

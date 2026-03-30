@@ -26,10 +26,12 @@ from engines.shared.models import (
     ActionRecommendation,
     ClaimAbandonSuggestion,
     ClaimAmendmentSuggestion,
+    DecisionPathTree,
     EvidenceGapItem,
     Issue,
     LLMClient,
     PartyActionPlan,
+    Perspective,
     RecommendedAction,
     StrategicRecommendation,
     TrialExplanationPriority,
@@ -183,6 +185,12 @@ class ActionRecommender:
                 + list(gap_ids[:3])
             })
 
+        # ---- v7: 行动建议-路径对齐校验 ----
+        if inp.decision_path_tree:
+            strategic_headline, plaintiff_plan, defendant_plan = self._align_with_path_tree(
+                inp.decision_path_tree, strategic_headline, plaintiff_plan, defendant_plan,
+            )
+
         return ActionRecommendation(
             recommendation_id=str(uuid.uuid4()),
             case_id=inp.case_id,
@@ -196,6 +204,60 @@ class ActionRecommender:
             case_dispute_category=dispute_category,
             strategic_headline=strategic_headline,
         )
+
+    # ------------------------------------------------------------------
+    # v7: 行动建议-路径对齐 / Action-path alignment
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _align_with_path_tree(
+        tree: DecisionPathTree,
+        headline: Optional[str],
+        plaintiff_plan: Optional[PartyActionPlan],
+        defendant_plan: Optional[PartyActionPlan],
+    ) -> tuple[Optional[str], Optional[PartyActionPlan], Optional[PartyActionPlan]]:
+        """根据路径树整体态势调整策略建议。
+
+        修订清单一-3/一-6：
+        - 若最可能路径对被告有利，原告建议自动下调（去除攻击性表述）
+        - 若最可能路径对原告有利，被告建议自动下调
+
+        Returns:
+            (adjusted_headline, adjusted_plaintiff_plan, adjusted_defendant_plan)
+        """
+        most_likely_favored = None
+        if tree.most_likely_path:
+            for path in tree.paths:
+                if path.path_id == tree.most_likely_path:
+                    most_likely_favored = path.party_favored
+                    break
+
+        if most_likely_favored is None:
+            return headline, plaintiff_plan, defendant_plan
+
+        # 清理 headline 中不一致的信号
+        _OVERCONFIDENT = ["全额", "稳拿", "必胜", "确保获赔", "完全支持"]
+        if headline and most_likely_favored == "defendant":
+            for signal in _OVERCONFIDENT:
+                if signal in headline:
+                    headline = headline.replace(signal, "争取部分支持")
+                    logger.info("Path alignment: headline adjusted, removed '%s'", signal)
+
+        # 原告处于劣势时，原告策略建议降级
+        if most_likely_favored == "defendant" and plaintiff_plan:
+            adjusted_recs = []
+            for sr in (plaintiff_plan.strategic_recommendations or []):
+                _AGGRESSIVE = ["全额主张", "坚持全额", "加大力度", "扩大诉请"]
+                text = sr.recommendation_text
+                for signal in _AGGRESSIVE:
+                    if signal in text:
+                        text = text.replace(signal, "争取保底金额")
+                adjusted_recs.append(sr.model_copy(update={"recommendation_text": text}))
+            plaintiff_plan = plaintiff_plan.model_copy(
+                update={"strategic_recommendations": adjusted_recs}
+            )
+
+        return headline, plaintiff_plan, defendant_plan
 
     # ------------------------------------------------------------------
     # 案型检测 / Dispute category detection
