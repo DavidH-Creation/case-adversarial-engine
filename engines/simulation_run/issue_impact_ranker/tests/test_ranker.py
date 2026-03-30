@@ -604,7 +604,6 @@ class TestRankFullFlow:
         assert result.created_at
         assert "T" in result.created_at  # ISO-8601 格式
 
-<<<<<<< HEAD
 
 # ---------------------------------------------------------------------------
 # 测试：Opus 风格 LLM 输出归一化

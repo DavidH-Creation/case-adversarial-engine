@@ -36,6 +36,7 @@ from engines.shared.models import (
     RecommendedAction,
 )
 
+from engines.shared.json_utils import _extract_json_object
 from engines.shared.structured_output import call_structured_llm
 
 from .schemas import (
