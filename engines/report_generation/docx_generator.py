@@ -29,6 +29,8 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.shared import Emu, RGBColor
 
+from engines.shared.disclaimer_templates import DISCLAIMER_DOCX_BODY, DISCLAIMER_DOCX_TITLE
+
 # ---------------------------------------------------------------------------
 # 样式常量 / Style constants
 # ---------------------------------------------------------------------------
@@ -215,6 +217,8 @@ def generate_docx_report(
 
     # ── 标题块 ──
     _render_title(doc, case_data, result)
+    # ── 免责声明 ──
+    _render_disclaimer(doc)
     # ── 案件摘要 ──
     _render_case_summary(doc, case_data, result)
     # ── 争点列表 ──
@@ -249,6 +253,13 @@ def generate_docx_report(
 # ---------------------------------------------------------------------------
 # 各章节渲染函数 / Section renderers
 # ---------------------------------------------------------------------------
+
+def _render_disclaimer(doc):
+    """免责声明块（首页标题后）。"""
+    _styled(doc, DISCLAIMER_DOCX_TITLE, bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
+    _styled(doc, DISCLAIMER_DOCX_BODY, size=SZ_NORMAL, color=CLR_GRAY)
+    doc.add_paragraph()
+
 
 def _render_title(doc, case_data: dict, result: dict):
     """封面标题块。"""

@@ -19,6 +19,7 @@ from typing import Any
 
 from engines.shared.json_utils import _extract_json_object  # noqa: F401 — re-exported for tests
 from engines.shared.models import LLMClient
+from engines.shared.pii_redactor import redact_text
 from engines.shared.structured_output import call_structured_llm
 
 from .schemas import (
@@ -56,6 +57,45 @@ def _resolve_statement_class(raw: str) -> StatementClass:
         "假设": StatementClass.assumption,
     }
     return _MAP.get(raw.strip().lower(), StatementClass.inference)
+
+
+# ---------------------------------------------------------------------------
+# PII 脱敏 / PII redaction
+# ---------------------------------------------------------------------------
+
+
+def redact_report(
+    report: ReportArtifact,
+    *,
+    party_names: list[str] | None = None,
+) -> ReportArtifact:
+    """对 ReportArtifact 的所有面向用户的文本字段执行 PII 脱敏。
+
+    Redact PII from all user-facing text fields in a ReportArtifact.
+    Returns a new ReportArtifact with redacted content (immutable style).
+    """
+    def _r(text: str) -> str:
+        return redact_text(text, party_names=party_names)
+
+    redacted_sections = []
+    for sec in report.sections:
+        redacted_conclusions = [
+            kc.model_copy(update={"text": _r(kc.text)})
+            for kc in sec.key_conclusions
+        ]
+        redacted_sections.append(
+            sec.model_copy(update={
+                "title": _r(sec.title),
+                "body": _r(sec.body),
+                "key_conclusions": redacted_conclusions,
+            })
+        )
+
+    return report.model_copy(update={
+        "title": _r(report.title),
+        "summary": _r(report.summary),
+        "sections": redacted_sections,
+    })
 
 
 # ---------------------------------------------------------------------------

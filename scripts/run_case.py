@@ -222,9 +222,22 @@ def _write_md(
     attack_chain=None,
     action_rec=None,
     exec_summary=None,
+    no_redact: bool = False,
 ) -> Path:
+    from engines.shared.disclaimer_templates import DISCLAIMER_MD
+    from engines.shared.pii_redactor import redact_text
+
+    # 收集当事人姓名用于脱敏白名单 / Collect party names for redaction whitelist
+    party_names: list[str] = []
+    for _role, info in case_data.get("parties", {}).items():
+        name = info.get("name", "")
+        if name:
+            party_names.append(name)
+
     p = out / "report.md"
     lines = [
+        DISCLAIMER_MD,
+        "",
         "# " + case_data.get("case_type", "civil_loan").replace("_", " ").title() + " Case Report",
         "",
         f"**Case ID**: {result.case_id}  |  **Run ID**: {result.run_id}",
@@ -381,7 +394,10 @@ def _write_md(
             lines.append(f"**Critical evidence gaps**: {exec_summary.critical_evidence_gaps}")
         lines.append("")
 
-    p.write_text("\n".join(lines), encoding="utf-8")
+    content = "\n".join(lines)
+    if not no_redact:
+        content = redact_text(content, party_names=party_names or None)
+    p.write_text(content, encoding="utf-8")
     return p
 
 
@@ -683,7 +699,7 @@ async def _run_post_debate(
 # Main entry point
 # ---------------------------------------------------------------------------
 
-async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None) -> None:
+async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
         print(f"[Error] Case file not found: {case_file}")
@@ -777,6 +793,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         attack_chain=artifacts.get("attack_chain"),
         action_rec=artifacts.get("action_rec"),
         exec_summary=artifacts.get("exec_summary"),
+        no_redact=no_redact,
     )
 
     # Serialize post-debate artifacts
@@ -845,6 +862,7 @@ if __name__ == "__main__":
     parser.add_argument("--claude-only", action="store_true", help="Use Claude CLI for all agents (skip Codex)")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging for engines")
     parser.add_argument("--output-dir", default=None, help="Override output directory (default: outputs/<timestamp>)")
+    parser.add_argument("--no-redact", action="store_true", help="Disable PII redaction in reports (for debugging)")
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG, format="%(name)s %(levelname)s: %(message)s")
@@ -858,7 +876,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     try:
-        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir))
+        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact))
     except CLINotFoundError as e:
         print(f"\n[Error] CLI not available: {e}")
         sys.exit(1)
