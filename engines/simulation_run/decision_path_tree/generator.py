@@ -203,22 +203,20 @@ class DecisionPathTreeGenerator:
             amount_report=inp.amount_calculation_report,
         )
 
-        for attempt in range(self._max_retries + 1):
-            try:
-                raw = await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                )
-                result = self._parse_llm_output(raw)
-                if result is not None:
-                    return result
-                logger.warning("Decision tree: attempt %d parse returned None", attempt + 1)
-            except Exception:  # noqa: BLE001
-                logger.warning("Decision tree: attempt %d LLM call failed", attempt + 1, exc_info=True)
-
-        return None
+        from engines.shared.llm_utils import call_llm_with_retry
+        try:
+            raw = await call_llm_with_retry(
+                self._llm,
+                system=system,
+                user=user,
+                model=self._model,
+                temperature=self._temperature,
+                max_retries=self._max_retries,
+            )
+            return self._parse_llm_output(raw)
+        except Exception:  # noqa: BLE001
+            logger.warning("Decision tree: LLM call failed", exc_info=True)
+            return None
 
     @staticmethod
     def _normalize_llm_json(data: dict) -> dict:

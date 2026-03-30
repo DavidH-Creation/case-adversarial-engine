@@ -61,14 +61,15 @@ class EvidenceManagerAgent:
         user_prompt = self._build_analysis_prompt(
             issue_tree, evidence_index, plaintiff_outputs, defendant_outputs
         )
-        last_error: str | None = None
+        _error_hint: str | None = None
+        _last_exc: Exception | None = None
 
         for attempt in range(1, self._config.max_retries + 1):
             current_prompt = user_prompt
-            if last_error:
+            if _error_hint:
                 current_prompt = (
                     f"{user_prompt}\n\n"
-                    f"[上次输出验证失败，请修正：{last_error}]"
+                    f"[上次输出验证失败，请修正：{_error_hint}]"
                 )
 
             try:
@@ -80,7 +81,8 @@ class EvidenceManagerAgent:
                     max_tokens=self._config.max_tokens_per_output,
                 )
             except Exception as e:
-                last_error = str(e)
+                _last_exc = e
+                _error_hint = "LLM 调用异常，请重试"
                 continue
 
             try:
@@ -91,12 +93,16 @@ class EvidenceManagerAgent:
                 conflicts = self._parse_conflicts(data)
                 return output, conflicts
             except AgentOutputValidationError as e:
-                last_error = str(e)
+                _last_exc = e
+                _error_hint = (
+                    "输出格式不合法：请确保 issue_ids 非空，"
+                    "evidence_citations 仅引用可见证据列表中的 ID"
+                )
                 continue
 
         raise RuntimeError(
             f"EvidenceManager LLM 调用失败，已重试 {self._config.max_retries} 次。"
-            f"最后错误: {last_error}"
+            f"最后错误类型: {type(_last_exc).__name__}"
         )
 
     # ------------------------------------------------------------------

@@ -488,7 +488,7 @@ async def test_llm_retry_exhausted_raises_runtime_error():
             case_id="case-civil-loan-001",
         )
 
-    assert client.call_count == 3  # exactly max_retries attempts
+    assert client.call_count == 4  # max_retries=3: 1 initial + 3 retries = 4 total calls
 
 
 @pytest.mark.asyncio

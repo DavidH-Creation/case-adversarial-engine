@@ -249,21 +249,13 @@ class IssueCategoryClassifier:
         Raises:
             RuntimeError: 超过最大重试次数
         """
-        last_error: Exception | None = None
-        for attempt in range(1, self._max_retries + 1):
-            try:
-                return await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._model,
-                    temperature=self._temperature,
-                    max_tokens=self._max_tokens,
-                )
-            except Exception as e:
-                last_error = e
-                if attempt < self._max_retries:
-                    continue
-                break
-        raise RuntimeError(
-            f"LLM 调用失败，已重试 {self._max_retries} 次。最后错误: {last_error}"
+        from engines.shared.llm_utils import call_llm_with_retry
+        return await call_llm_with_retry(
+            self._llm,
+            system=system,
+            user=user,
+            model=self._model,
+            temperature=self._temperature,
+            max_tokens=self._max_tokens,
+            max_retries=self._max_retries,
         )

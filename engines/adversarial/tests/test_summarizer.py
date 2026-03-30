@@ -283,7 +283,7 @@ class TestAdversarialSummarizer:
         """超重试次数后抛出 RuntimeError。"""
         config = RoundConfig(max_retries=2)
         summarizer = AdversarialSummarizer(FailingMockLLM(), config)
-        with pytest.raises(RuntimeError, match="AdversarialSummarizer"):
+        with pytest.raises(RuntimeError, match="LLM 调用失败"):
             await summarizer.summarize(minimal_result, issue_tree)
 
 

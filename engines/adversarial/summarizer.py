@@ -201,24 +201,15 @@ class AdversarialSummarizer:
         Raises:
             RuntimeError: 超过最大重试次数 / Max retries exceeded
         """
-        last_error: Exception | None = None
-        for attempt in range(1, self._config.max_retries + 1):
-            try:
-                return await self._llm.create_message(
-                    system=system,
-                    user=user,
-                    model=self._config.model,
-                    temperature=self._config.temperature,
-                    max_tokens=self._config.max_tokens_per_output,
-                )
-            except Exception as e:
-                last_error = e
-                if attempt < self._config.max_retries:
-                    continue
-                break
-        raise RuntimeError(
-            f"AdversarialSummarizer LLM 调用失败，已重试 {self._config.max_retries} 次。"
-            f"最后错误 / Last error: {last_error}"
+        from engines.shared.llm_utils import call_llm_with_retry
+        return await call_llm_with_retry(
+            self._llm,
+            system=system,
+            user=user,
+            model=self._config.model,
+            temperature=self._config.temperature,
+            max_tokens=self._config.max_tokens_per_output,
+            max_retries=self._config.max_retries,
         )
 
     # ------------------------------------------------------------------
