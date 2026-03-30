@@ -73,6 +73,10 @@ class IssueImpactRanker:
         max_retries: LLM 调用失败时的最大重试次数
     """
 
+    # 每批最多发送给 LLM 的争点数量。超过时自动分批，每批独立重试。
+    # Max issues per LLM call. Larger batches increase the risk of schema failures.
+    _BATCH_SIZE: int = 5
+
     def __init__(
         self,
         llm_client: LLMClient,
@@ -128,46 +132,104 @@ class IssueImpactRanker:
             e.evidence_id for e in inp.evidence_index.evidence
         }
 
-        try:
-            # 构建 prompt
-            system_prompt = self._prompt_module.SYSTEM_PROMPT
-            user_prompt = self._prompt_module.build_user_prompt(
-                issue_tree=inp.issue_tree,
-                evidence_index=inp.evidence_index,
-                proponent_party_id=inp.proponent_party_id,
-                amount_check=inp.amount_calculation_report.consistency_check_result,
+        # 将争点分批，每批最多 _BATCH_SIZE 条，避免 LLM 因输入过长而返回非法 schema
+        batches = [
+            issues[i : i + self._BATCH_SIZE]
+            for i in range(0, len(issues), self._BATCH_SIZE)
+        ]
+        logger.info(
+            "批量评估：%d 条争点分为 %d 批（每批最多 %d 条）",
+            len(issues), len(batches), self._BATCH_SIZE,
+        )
+
+        system_prompt = self._prompt_module.SYSTEM_PROMPT
+        all_evaluations: list[LLMSingleIssueEvaluation] = []
+        _rescaled_ids: list[str] = []
+        failed_batch_count = 0
+
+        for batch_idx, batch_issues in enumerate(batches):
+            try:
+                # 为本批次构建独立 prompt（临时 IssueTree 仅含本批争点）
+                batch_tree = inp.issue_tree.model_copy(update={"issues": batch_issues})
+                user_prompt = self._prompt_module.build_user_prompt(
+                    issue_tree=batch_tree,
+                    evidence_index=inp.evidence_index,
+                    proponent_party_id=inp.proponent_party_id,
+                    amount_check=inp.amount_calculation_report.consistency_check_result,
+                )
+
+                raw_response = await self._call_llm_with_retry(system_prompt, user_prompt)
+
+                logger.info(
+                    "批次 %d/%d LLM 响应长度: %d chars",
+                    batch_idx + 1, len(batches), len(raw_response),
+                )
+                raw_dict = _extract_json_object(raw_response)
+                logger.info(
+                    "批次 %d/%d JSON 解析成功，顶层键: %s",
+                    batch_idx + 1, len(batches), list(raw_dict.keys()),
+                )
+                raw_dict = self._normalize_evaluation_keys(raw_dict)
+
+                if "evaluations" in raw_dict and isinstance(raw_dict["evaluations"], list):
+                    raw_dict["evaluations"] = [
+                        self._normalize_single_eval(item) if isinstance(item, dict) else item
+                        for item in raw_dict["evaluations"]
+                    ]
+                    if raw_dict["evaluations"]:
+                        logger.debug(
+                            "批次 %d/%d 首条评估项键: %s",
+                            batch_idx + 1, len(batches),
+                            list(raw_dict["evaluations"][0].keys()),
+                        )
+                    for ev_item in raw_dict["evaluations"]:
+                        if isinstance(ev_item, dict) and ev_item.pop("_score_rescaled", False):
+                            _rescaled_ids.append(ev_item.get("issue_id", "?"))
+
+                batch_output = LLMIssueEvaluationOutput.model_validate(raw_dict)
+                logger.info(
+                    "批次 %d/%d 评估条目数: %d",
+                    batch_idx + 1, len(batches), len(batch_output.evaluations),
+                )
+                all_evaluations.extend(batch_output.evaluations)
+
+            except Exception:
+                failed_batch_count += 1
+                batch_ids = [i.issue_id for i in batch_issues]
+                logger.warning(
+                    "批次 %d/%d 调用或解析失败（争点: %s）",
+                    batch_idx + 1, len(batches), batch_ids,
+                    exc_info=True,
+                )
+
+        # 所有批次均失败 → 退化为失败结果（原始 issue_tree，全部争点进 unevaluated）
+        if failed_batch_count == len(batches):
+            logger.warning("全部 %d 批次均失败", len(batches))
+            return IssueImpactRankingResult(
+                ranked_issue_tree=inp.issue_tree,
+                evaluation_metadata={"failed": True, "created_at": now},
+                unevaluated_issue_ids=[i.issue_id for i in issues],
+                created_at=now,
             )
 
-            # 调用 LLM（结构化输出）
-            raw_dict = await self._call_llm_structured(system_prompt, user_prompt)
-            logger.info("JSON 解析成功, 顶层键: %s", list(raw_dict.keys()))
-            raw_dict = self._normalize_evaluation_keys(raw_dict)
-            # 归一化个别评估项的字段名
-            if "evaluations" in raw_dict and isinstance(raw_dict["evaluations"], list):
-                raw_dict["evaluations"] = [
-                    self._normalize_single_eval(item) if isinstance(item, dict) else item
-                    for item in raw_dict["evaluations"]
-                ]
-                if raw_dict["evaluations"]:
-                    logger.debug("首条评估项键: %s", list(raw_dict["evaluations"][0].keys()))
-            # 收集 rescale 审计信息（_score_rescaled 会被 Pydantic 过滤掉）
-            _rescaled_ids = []
-            if "evaluations" in raw_dict and isinstance(raw_dict["evaluations"], list):
-                for ev_item in raw_dict["evaluations"]:
-                    if isinstance(ev_item, dict) and ev_item.pop("_score_rescaled", False):
-                        _rescaled_ids.append(ev_item.get("issue_id", "?"))
+        if all_evaluations:
+            sample = all_evaluations[0]
+            logger.info(
+                "首条评估: issue_id=%s, outcome_impact=%s, importance=%d",
+                sample.issue_id, sample.outcome_impact, sample.importance_score,
+            )
+        logger.info(
+            "共收集评估条目: %d（%d 批成功，%d 批失败）",
+            len(all_evaluations),
+            len(batches) - failed_batch_count,
+            failed_batch_count,
+        )
 
-            llm_output = LLMIssueEvaluationOutput.model_validate(raw_dict)
-            logger.info("评估条目数: %d", len(llm_output.evaluations))
-            if llm_output.evaluations:
-                sample = llm_output.evaluations[0]
-                logger.info("首条 issue_id=%s, outcome_impact=%s, importance=%d",
-                            sample.issue_id, sample.outcome_impact, sample.importance_score)
-
+        try:
             # 规则层：校验 + 富化
             enriched_issues, unevaluated = self._apply_evaluations(
                 issues=issues,
-                evaluations=llm_output.evaluations,
+                evaluations=all_evaluations,
                 known_issue_ids=known_issue_ids,
                 known_evidence_ids=known_evidence_ids,
             )
@@ -176,13 +238,16 @@ class IssueImpactRanker:
             sorted_issues = self._sort_issues(enriched_issues)
             ranked_tree = inp.issue_tree.model_copy(update={"issues": sorted_issues})
 
-            meta = {
+            meta: dict[str, Any] = {
                 "model": self._model,
                 "temperature": self._temperature,
                 "evaluated_count": len(issues) - len(unevaluated),
                 "total_count": len(issues),
                 "created_at": now,
+                "batch_count": len(batches),
             }
+            if failed_batch_count:
+                meta["failed_batch_count"] = failed_batch_count
             if _rescaled_ids:
                 meta["score_rescaled"] = True
                 meta["score_rescaled_issue_ids"] = _rescaled_ids
@@ -195,8 +260,7 @@ class IssueImpactRanker:
             )
 
         except Exception:
-            logger.warning("Ranker LLM 调用或解析失败", exc_info=True)
-            # LLM 调用或解析失败：原始 issue_tree 保持原顺序，所有评估字段为 None
+            logger.warning("Ranker 规则层处理失败", exc_info=True)
             return IssueImpactRankingResult(
                 ranked_issue_tree=inp.issue_tree,
                 evaluation_metadata={"failed": True, "created_at": now},
