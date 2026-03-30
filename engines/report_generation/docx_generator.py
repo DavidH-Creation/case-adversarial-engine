@@ -30,6 +30,8 @@ from docx.oxml.ns import qn
 from docx.shared import Emu, RGBColor
 
 from engines.shared.disclaimer_templates import DISCLAIMER_DOCX_BODY, DISCLAIMER_DOCX_TITLE
+from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_LABEL_ZH, RiskLevel
+from engines.report_generation.mediation_range import compute_mediation_range
 
 # ---------------------------------------------------------------------------
 # 样式常量 / Style constants
@@ -180,10 +182,12 @@ def generate_docx_report(
     case_data: dict,
     result: dict,
     issue_tree: Any = None,
+    ranked_issues: Any = None,
     decision_tree: dict | None = None,
     attack_chain: dict | None = None,
     exec_summary: dict | None = None,
     amount_report: dict | None = None,
+    action_rec: Any = None,
     filename: str | None = None,
 ) -> Path:
     """生成通用对抗分析 Word 报告。
@@ -219,6 +223,8 @@ def generate_docx_report(
     _render_title(doc, case_data, result)
     # ── 免责声明 ──
     _render_disclaimer(doc)
+    # ── 行动优先级清单 ──
+    _render_action_priority_list(doc, exec_summary, action_rec)
     # ── 案件摘要 ──
     _render_case_summary(doc, case_data, result)
     # ── 争点列表 ──
@@ -233,10 +239,16 @@ def generate_docx_report(
     _render_missing_evidence(doc, result, party_zh)
     # ─��� 争点影响排序 ──
     _render_issue_ranking(doc, exec_summary)
+    # ── 风险热力图 ──
+    _render_risk_heatmap(doc, ranked_issues)
     # ── 裁判路径树 ──
     _render_decision_tree(doc, decision_tree)
+    # ── 调解区间 ──
+    _render_mediation_range(doc, amount_report, decision_tree)
     # ── 攻击链 ──
     _render_attack_chain(doc, attack_chain, party_zh)
+    # ── 对方策略预警 ──
+    _render_opponent_strategy_warning(doc, result, attack_chain)
     # ── 行动建议 ���─
     _render_action_recommendations(doc, exec_summary)
     # ── 执行摘要 ──
@@ -654,3 +666,169 @@ def _render_executive_summary(doc, exec_summary: dict, amount_report: dict):
     _add_run(p, "金额一致性校验：", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
     _add_run(p, f"阻断裁判={'是' if verdict_block else '否'}，未解决冲突={n_conflicts}条",
              size=SZ_NORMAL, color=CLR_RED if verdict_block else CLR_GREEN)
+
+
+# ---------------------------------------------------------------------------
+# Unit 11: 报告增强 — 新增章节渲染函数
+# ---------------------------------------------------------------------------
+
+_RISK_COLOR: dict[str, RGBColor] = {
+    "favorable": CLR_GREEN,
+    "neutral": CLR_ORANGE,
+    "unfavorable": CLR_RED,
+}
+
+
+def _render_action_priority_list(doc, exec_summary: dict | None, action_rec: Any | None):
+    """行动优先级清单 — 你现在最该做的 3 件事。"""
+    items: list[str] = []
+
+    if exec_summary and isinstance(exec_summary.get("top3_immediate_actions"), list):
+        items = exec_summary["top3_immediate_actions"][:3]
+    elif action_rec is not None:
+        # Fallback: derive from action_rec fields
+        ev_prios = getattr(action_rec, "evidence_supplement_priorities", None)
+        if ev_prios:
+            items.append(f"补强证据: {ev_prios[0]}")
+        amendments = getattr(action_rec, "recommended_claim_amendments", None)
+        if amendments:
+            items.append(f"调整诉请: {amendments[0].amendment_description}")
+        abandons = getattr(action_rec, "claims_to_abandon", None)
+        if abandons:
+            items.append(f"考虑放弃: {abandons[0].abandon_reason}")
+
+    if not items:
+        return
+
+    doc.add_heading("你现在最该做的 3 件事", level=1)
+    visible = _filter_uuids(items)
+    for i, item in enumerate(visible[:3], 1):
+        p = doc.add_paragraph()
+        _add_run(p, f"{i}. ", bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
+        _add_run(p, item, size=SZ_BODY, color=CLR_BODY)
+    doc.add_paragraph()
+
+
+def _render_risk_heatmap(doc, ranked_issues: Any | None):
+    """风险热力图表格。"""
+    rows = build_risk_heatmap(ranked_issues)
+    if not rows:
+        return
+
+    doc.add_heading(f"风险热力图（{len(rows)}个争点）", level=1)
+
+    table = doc.add_table(rows=1, cols=6)
+    table.style = "Light Grid Accent 1"
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    hdr = table.rows[0].cells
+    hdr[0].text = "争点"
+    hdr[1].text = "结果影响"
+    hdr[2].text = "攻击强度"
+    hdr[3].text = "证据强度"
+    hdr[4].text = "风险等级"
+    hdr[5].text = "建议行动"
+
+    for row in rows:
+        cells = table.add_row().cells
+        cells[0].text = f"{row.issue_id}: {row.title[:20]}"
+        cells[1].text = row.outcome_impact or "-"
+        cells[2].text = row.attack_strength or "-"
+        cells[3].text = row.evidence_strength or "-"
+        label = RISK_LABEL_ZH.get(row.risk_level, "")
+        cells[4].text = label
+        # Color the risk cell
+        color = _RISK_COLOR.get(row.risk_level.value, CLR_BODY)
+        for para in cells[4].paragraphs:
+            for run in para.runs:
+                run.font.color.rgb = color
+                run.font.bold = True
+        cells[5].text = row.recommended_action or "-"
+
+    _set_table_font(table)
+
+
+def _render_mediation_range(doc, amount_report: dict | None, decision_tree: dict | None):
+    """调解区间评估。"""
+    med = compute_mediation_range(amount_report, decision_tree)
+    if med is None:
+        return
+
+    doc.add_heading("调解区间评估", level=1)
+
+    rows_data = [
+        ("诉请总额", f"{med.total_claimed:,} 元"),
+        ("可核实金额", f"{med.total_verified:,} 元"),
+        ("最低可能", f"{med.min_amount:,} 元"),
+        ("最高可能", f"{med.max_amount:,} 元"),
+        ("建议调解点", f"{med.suggested_amount:,} 元"),
+    ]
+
+    table = doc.add_table(rows=len(rows_data), cols=2)
+    table.style = "Light Grid Accent 1"
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for i, (label, val) in enumerate(rows_data):
+        table.rows[i].cells[0].text = label
+        table.rows[i].cells[1].text = val
+    _set_table_font(table)
+
+    # Highlight the suggested amount row
+    last_row = table.rows[-1]
+    for cell in last_row.cells:
+        for para in cell.paragraphs:
+            for run in para.runs:
+                run.font.bold = True
+                run.font.color.rgb = CLR_GREEN
+
+    _styled(doc, f"计算依据: {med.rationale}", size=SZ_RISK, color=CLR_GRAY)
+
+
+def _render_opponent_strategy_warning(doc, result: dict, attack_chain: dict | None):
+    """对方策略预警 — 被告核心抗辩 + 攻击路径预警。"""
+    summary = result.get("summary")
+    defenses = summary.get("defendant_strongest_defenses", []) if summary else []
+    attacks = (attack_chain or {}).get("top_attacks", [])
+
+    if not defenses and not attacks:
+        return
+
+    doc.add_heading("对方策略预警", level=1)
+
+    if defenses:
+        _styled(doc, "被告核心抗辩及应对建议", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+        for d in defenses:
+            p = doc.add_paragraph()
+            _add_run(p, f"[{d['issue_id']}] ", bold=True, size=SZ_NORMAL, color=CLR_RED)
+            _add_run(p, d.get("position", ""), size=SZ_NORMAL, color=CLR_BODY)
+            reasoning = d.get("reasoning", "")
+            if reasoning:
+                _styled(doc, f"对方论据: {reasoning}", size=SZ_RISK, color=CLR_GRAY)
+            # Match counter_measure from attack_chain
+            if attacks:
+                target_id = d.get("issue_id", "")
+                for node in attacks:
+                    if node.get("target_issue_id") == target_id:
+                        cm = node.get("counter_measure", "")
+                        if cm:
+                            _styled(doc, f"应对建议: {cm}", size=SZ_RISK, color=CLR_GREEN)
+                        break
+        doc.add_paragraph()
+
+    if attacks:
+        _styled(doc, "对方最优攻击路径预警", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+        for node in attacks:
+            nid = node.get("attack_node_id", "")
+            target = node.get("target_issue_id", "")
+            desc = node.get("attack_description", "")
+            p = doc.add_paragraph()
+            _add_run(p, f"{nid} → {target}: ", bold=True, size=SZ_RISK, color=CLR_RED)
+            _add_run(p, desc, size=SZ_RISK, color=CLR_BODY)
+
+            cond = node.get("success_conditions", "")
+            if cond:
+                _styled(doc, f"成功条件: {cond}", size=SZ_RISK, color=CLR_GRAY)
+            cm = node.get("counter_measure", "")
+            if cm:
+                _styled(doc, f"应对: {cm}", size=SZ_RISK, color=CLR_GREEN)
+            pivot = node.get("adversary_pivot_strategy", "")
+            if pivot:
+                _styled(doc, f"对方可能转向: {pivot}", size=SZ_RISK, color=CLR_ORANGE)

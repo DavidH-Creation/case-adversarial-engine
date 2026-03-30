@@ -62,6 +62,8 @@ from engines.shared.models import (
     RepaymentAttribution, RepaymentTransaction,
 )
 from engines.report_generation.docx_generator import generate_docx_report
+from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_EMOJI, RISK_LABEL_ZH
+from engines.report_generation.mediation_range import compute_mediation_range
 
 # Post-debate modules
 from engines.case_structuring.amount_calculator import AmountCalculator, AmountCalculatorInput, AmountClaimDescriptor
@@ -254,6 +256,7 @@ def _write_md(
     attack_chain=None,
     action_rec=None,
     exec_summary=None,
+    amount_report=None,
     no_redact: bool = False,
 ) -> Path:
     from engines.shared.disclaimer_templates import DISCLAIMER_MD
@@ -276,6 +279,26 @@ def _write_md(
         f"**Generated**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
         "",
     ]
+
+    # Action priority list (top of report)
+    _action_items: list[str] = []
+    if exec_summary and isinstance(getattr(exec_summary, "top3_immediate_actions", None), list):
+        _action_items = exec_summary.top3_immediate_actions[:3]
+    elif action_rec:
+        # Fallback: derive from action_rec fields
+        if action_rec.evidence_supplement_priorities:
+            _action_items.append(f"补强证据: {action_rec.evidence_supplement_priorities[0]}")
+        if action_rec.recommended_claim_amendments:
+            am = action_rec.recommended_claim_amendments[0]
+            _action_items.append(f"调整诉请: {am.amendment_description}")
+        if action_rec.claims_to_abandon:
+            ab = action_rec.claims_to_abandon[0]
+            _action_items.append(f"考虑放弃: {ab.abandon_reason}")
+    if _action_items:
+        lines += ["## ⚡ 你现在最该做的 3 件事", ""]
+        for i, item in enumerate(_action_items[:3], 1):
+            lines.append(f"{i}. {item}")
+        lines.append("")
 
     # Summary table from YAML
     summary_rows = case_data.get("summary", [])
@@ -346,6 +369,22 @@ def _write_md(
             lines.append(f"| {iss.issue_id} | {iss.title[:25]} | {impact} | {attack} | {ev_str} | {action} |")
         lines.append("")
 
+    # Risk heatmap
+    heatmap_rows = build_risk_heatmap(ranked_issues)
+    if heatmap_rows:
+        lines += ["## 风险热力图", ""]
+        lines.append("| 争点 | 标题 | 结果影响 | 攻击强度 | 证据强度 | 风险 | 建议行动 |")
+        lines.append("|------|------|----------|----------|----------|------|----------|")
+        for row in heatmap_rows:
+            emoji = RISK_EMOJI[row.risk_level]
+            label = RISK_LABEL_ZH[row.risk_level]
+            lines.append(
+                f"| {row.issue_id} | {row.title[:20]} | {row.outcome_impact} "
+                f"| {row.attack_strength} | {row.evidence_strength} "
+                f"| {emoji} {label} | {row.recommended_action} |"
+            )
+        lines.append("")
+
     # Decision path tree
     if decision_tree:
         lines += ["## Decision Path Tree", ""]
@@ -367,6 +406,21 @@ def _write_md(
                 lines.append(f"- **{bc.condition_id}**: {bc.description}")
             lines.append("")
 
+    # Mediation range
+    med_range = compute_mediation_range(amount_report, decision_tree)
+    if med_range:
+        lines += ["## 调解区间评估", ""]
+        lines.append("| 指标 | 金额 |")
+        lines.append("|------|------|")
+        lines.append(f"| 诉请总额 | {med_range.total_claimed:,} 元 |")
+        lines.append(f"| 可核实金额 | {med_range.total_verified:,} 元 |")
+        lines.append(f"| 最低可能 | {med_range.min_amount:,} 元 |")
+        lines.append(f"| 最高可能 | {med_range.max_amount:,} 元 |")
+        lines.append(f"| **建议调解点** | **{med_range.suggested_amount:,} 元** |")
+        lines.append("")
+        lines.append(f"*计算依据: {med_range.rationale}*")
+        lines.append("")
+
     # Attack chain
     if attack_chain:
         lines += ["## Adversary Optimal Attack Chain", ""]
@@ -381,6 +435,39 @@ def _write_md(
             lines.append(f"**Counter-measure**: {node.counter_measure}")
             lines.append(f"**Pivot strategy**: {node.adversary_pivot_strategy}")
             lines.append("")
+
+    # Opponent strategy warning
+    _has_opponent_section = False
+    if result.summary and result.summary.defendant_strongest_defenses:
+        _has_opponent_section = True
+        lines += ["## 对方策略预警", ""]
+        lines.append("### 被告核心抗辩及应对建议")
+        lines.append("")
+        for d in result.summary.defendant_strongest_defenses:
+            lines.append(f"**[{d.issue_id}]** {d.position}")
+            lines.append(f"> 对方论据: {d.reasoning}")
+            # Find matching counter_measure from attack_chain if available
+            if attack_chain:
+                for node in attack_chain.top_attacks:
+                    if node.target_issue_id == d.issue_id:
+                        if node.counter_measure:
+                            lines.append(f"> ✅ 应对建议: {node.counter_measure}")
+                        break
+            lines.append("")
+    if attack_chain and attack_chain.top_attacks:
+        if not _has_opponent_section:
+            lines += ["## 对方策略预警", ""]
+        lines.append("### 对方最优攻击路径预警")
+        lines.append("")
+        for node in attack_chain.top_attacks:
+            lines.append(f"- **{node.attack_node_id}** → {node.target_issue_id}: {node.attack_description}")
+            if node.success_conditions:
+                lines.append(f"  - 成功条件: {node.success_conditions}")
+            if node.counter_measure:
+                lines.append(f"  - ✅ 应对: {node.counter_measure}")
+            if node.adversary_pivot_strategy:
+                lines.append(f"  - ⚠ 对方可能转向: {node.adversary_pivot_strategy}")
+        lines.append("")
 
     # Action recommendations
     if action_rec:
@@ -971,6 +1058,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
             attack_chain=artifacts.get("attack_chain"),
             action_rec=artifacts.get("action_rec"),
             exec_summary=artifacts.get("exec_summary"),
+            amount_report=artifacts.get("amount_report"),
             no_redact=no_redact,
         )
         ckpt.save(STEP_OUTPUTS, {"result_json": str(jp), "report_md": str(mp)})
@@ -999,10 +1087,12 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
                 case_data=case_data,
                 result=json.loads(result.model_dump_json()),
                 issue_tree=ranked_for_docx,
+                ranked_issues=artifacts.get("ranked_issues"),
                 decision_tree=_artifact_dicts.get("decision_tree"),
                 attack_chain=_artifact_dicts.get("attack_chain"),
                 exec_summary=_artifact_dicts.get("exec_summary"),
                 amount_report=_artifact_dicts.get("amount_report"),
+                action_rec=artifacts.get("action_rec"),
             )
             print(f"  Word report: {docx_path}")
         except Exception as e:
