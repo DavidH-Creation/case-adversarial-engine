@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.0.0-dev] — Unreleased
+
+### In Progress
+
+- v2 多案型内核（civil_loan / labor_dispute / real_estate）
+- 文书辅助引擎
+- 统一对象模型：Party、Claim、Defense、Issue、Evidence、Burden、ProcedureState
+- 结构化输出路径 OutcomePath（胜诉路径、败诉路径、调解路径、补证路径）
+
+---
+
+## [1.5.0] — 2026-03-31
+
+程序化庭前会议 / 质证版，v1.5 `evidence_state_machine` 与法官发问机制合并到 main。
+
+### Added
+
+- `engines/pretrial_conference/` — 庭前会议引擎（法官发问、质证状态机）
+- `evidence_state_machine` — 证据状态迁移（submitted → challenged → admitted）
+- 质证维度：真实性、关联性、合法性、证明力
+- 输出：《模拟庭前会议纪要》《质证焦点清单》《法官可能追问 Top10》
+
+---
+
 ## [1.2.0] — 2026-03-28
 
 分析质量升级：新增 12 个分析子模块（P0.1–P2.12），930 个测试全部通过。

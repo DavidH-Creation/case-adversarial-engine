@@ -73,7 +73,7 @@ pytest
 
 ## Current Status
 
-当前版本：`v1.5.0`（2026-03-30）
+当前版本：`v2`（开发中）
 
 单案种（民事 `民间借贷`）、离线可跑通的双边对抗案件分析引擎，930 个测试全部通过。
 
@@ -84,12 +84,13 @@ pytest
 | v0.5 | 静态分析：案件结构化、争点提取、证据索引、报告生成 | 280 |
 | v1 | 双边对抗：原告/被告代理、证据管理员、三轮对抗、访问隔离 | 482 |
 | v1.2 | 分析质量升级：12 个分析模块（争点排序、金额校验、裁判路径树、攻击链、证据权重、行动建议等） | 930 |
+| v1.5 | 程序化庭前会议 / 质证版（`evidence_state_machine`、法官发问机制） | — |
 
-**下一目标**：`v1.5` — 程序化庭前会议 / 质证版（`evidence_state_machine`、法官发问机制）。
+**下一目标**：`v2` — 民事通用内核 Beta（多案型支持：`civil_loan` / `labor_dispute` / `real_estate`）。
 
 当前明确不做：
 
-- `judge agent`（v1.5 计划）
+- `judge agent`（v2 计划）
 - 刑事/行政
 - `ui`
 - 在线协作
@@ -181,12 +182,12 @@ tests/
 
 ## Near-Term Direction
 
-v1.2 已完成全部 12 个分析模块。下一步方向（v1.5）：
+v1.5（程序化庭前会议）已完成并合并。当前方向：`v2` — 民事通用内核 Beta：
 
-1. 程序法官角色引入
-2. 质证状态机（`submitted → challenged → admitted`）
-3. 证据状态迁移
-4. 法官发问机制
+1. 统一对象模型：`Party`、`Claim`、`Defense`、`Issue`、`Evidence`、`Burden`、`ProcedureState`
+2. 案型插件机制（`civil_loan` / `labor_dispute` / `real_estate`）
+3. 输出升级：胜诉路径、败诉路径、调解路径、补证路径
+4. 文书辅助引擎
 
 ## License / Reference Note
 
