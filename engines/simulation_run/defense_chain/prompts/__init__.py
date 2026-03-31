@@ -3,6 +3,8 @@ Defense chain prompt template registry.
 """
 from typing import Any
 
+from engines.shared.case_type_plugin import RegistryPlugin
+
 PROMPT_REGISTRY: dict[str, Any] = {}
 
 
@@ -18,3 +20,5 @@ register_prompt("labor_dispute", _labor_dispute_module)
 
 from . import real_estate as _real_estate_module  # noqa: E402
 register_prompt("real_estate", _real_estate_module)
+
+plugin = RegistryPlugin(PROMPT_REGISTRY)
