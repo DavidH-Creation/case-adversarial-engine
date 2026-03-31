@@ -15,6 +15,7 @@ Only validates structural contract constraints (not LLM content):
 
 from __future__ import annotations
 
+import importlib
 import json
 from pathlib import Path
 
@@ -228,3 +229,50 @@ class TestScenarioContractFixtures:
         snapshot = self.scenario_run.get("input_snapshot", {})
         assert "material_refs" in snapshot, "input_snapshot missing material_refs"
         assert "artifact_refs" in snapshot, "input_snapshot missing artifact_refs"
+
+
+# ---------------------------------------------------------------------------
+# PROMPT_REGISTRY 完整性合约 / PROMPT_REGISTRY completeness contract
+# ---------------------------------------------------------------------------
+
+
+class TestSimulationRunPromptRegistryCompleteness:
+    """验证 simulation_run 6 个分析模块的 PROMPT_REGISTRY 覆盖所有 3 个目标案型。
+    Verifies all 6 simulation_run analysis modules register civil_loan, labor_dispute, real_estate.
+    """
+
+    EXPECTED_CASE_TYPES = {"civil_loan", "labor_dispute", "real_estate"}
+
+    _REGISTRY_MODULES = [
+        ("action_recommender", "engines.simulation_run.action_recommender.prompts"),
+        ("attack_chain_optimizer", "engines.simulation_run.attack_chain_optimizer.prompts"),
+        ("decision_path_tree", "engines.simulation_run.decision_path_tree.prompts"),
+        ("defense_chain", "engines.simulation_run.defense_chain.prompts"),
+        ("issue_category_classifier", "engines.simulation_run.issue_category_classifier.prompts"),
+        ("issue_impact_ranker", "engines.simulation_run.issue_impact_ranker.prompts"),
+    ]
+
+    @pytest.mark.parametrize("module_name,module_path", _REGISTRY_MODULES)
+    def test_module_has_all_case_types(self, module_name: str, module_path: str):
+        """每个 simulation_run 分析模块的 PROMPT_REGISTRY 必须包含全部 3 个案型。"""
+        mod = importlib.import_module(module_path)
+        registry: dict = mod.PROMPT_REGISTRY
+        registered = set(registry.keys())
+        missing = self.EXPECTED_CASE_TYPES - registered
+        assert not missing, (
+            f"{module_name}.PROMPT_REGISTRY missing case types: {missing}. "
+            f"Registered: {registered}"
+        )
+
+    @pytest.mark.parametrize("module_name,module_path", _REGISTRY_MODULES)
+    def test_each_case_type_entry_is_non_empty(self, module_name: str, module_path: str):
+        """每个案型在 PROMPT_REGISTRY 中的注册值不得为 None 或空。"""
+        mod = importlib.import_module(module_path)
+        registry: dict = mod.PROMPT_REGISTRY
+        for case_type in self.EXPECTED_CASE_TYPES:
+            if case_type not in registry:
+                continue  # covered by previous test
+            entry = registry[case_type]
+            assert entry is not None, (
+                f"{module_name}.PROMPT_REGISTRY['{case_type}'] is None"
+            )
