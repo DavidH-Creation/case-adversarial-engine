@@ -15,13 +15,17 @@ Generates a structured diagnostic report from IssueTree + EvidenceIndex via LLM.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from engines.shared.json_utils import _extract_json_object  # noqa: F401 — re-exported for tests
 from engines.shared.models import LLMClient
 from engines.shared.pii_redactor import redact_text
 from engines.shared.structured_output import call_structured_llm
 
+from .issue_evidence_defense_matrix import (
+    build_issue_evidence_defense_matrix,
+    render_matrix_markdown,
+)
 from .schemas import (
     EvidenceIndex,
     EvidenceItem,
@@ -181,6 +185,7 @@ class ReportGenerator:
         evidence_index: EvidenceIndex,
         run_id: str,
         report_slug: str = "report",
+        defense_chain: Any = None,
     ) -> ReportArtifact:
         """执行报告生成。
         Execute report generation.
@@ -190,6 +195,7 @@ class ReportGenerator:
             evidence_index: 证据索引 / Evidence index
             run_id: 本次运行 ID / Run ID for this generation
             report_slug: 报告简称，用于生成 ID / Report slug for ID generation
+            defense_chain: 原告方防御策略链（可选）/ PlaintiffDefenseChain (optional)
 
         Returns:
             结构化 ReportArtifact / Structured ReportArtifact
@@ -221,7 +227,7 @@ class ReportGenerator:
         llm_output = LLMReportOutput.model_validate(raw_dict)
 
         # 构建 ReportArtifact / Build ReportArtifact
-        return self._build_report(
+        report = self._build_report(
             llm_output,
             issue_tree,
             evidence_index,
@@ -229,6 +235,59 @@ class ReportGenerator:
             run_id,
             report_slug,
         )
+
+        # 附加争点-证据-抗辩矩阵章节 / Append Issue-Evidence-Defense Matrix section
+        report = self._append_matrix_section(
+            report, issue_tree, evidence_index, defense_chain, run_id, report_slug
+        )
+
+        return report
+
+    def _append_matrix_section(
+        self,
+        report: ReportArtifact,
+        issue_tree: IssueTree,
+        evidence_index: EvidenceIndex,
+        defense_chain: Any,
+        run_id: str,
+        report_slug: str,
+    ) -> ReportArtifact:
+        """构建矩阵并作为额外章节附加到报告。
+        Build the matrix and attach it as an extra section to the report.
+
+        Returns a new ReportArtifact with the matrix section appended.
+        """
+        matrix = build_issue_evidence_defense_matrix(
+            issue_tree, evidence_index, defense_chain
+        )
+        if matrix is None:
+            return report
+
+        md = render_matrix_markdown(matrix)
+        sec_idx = len(report.sections) + 1
+        section_id = f"sec-{report_slug}-matrix"
+
+        # Collect all unique evidence IDs from matrix rows for section linking
+        matrix_evidence_ids: list[str] = []
+        seen: set[str] = set()
+        for row in matrix.rows:
+            for eid in row.evidence_ids:
+                if eid not in seen:
+                    matrix_evidence_ids.append(eid)
+                    seen.add(eid)
+
+        matrix_section = ReportSection(
+            section_id=section_id,
+            section_index=sec_idx,
+            title="争点-证据-抗辩矩阵 / Issue-Evidence-Defense Matrix",
+            body=md,
+            linked_issue_ids=[r.issue_id for r in matrix.rows],
+            linked_output_ids=[f"run:{run_id}"] if run_id else [],
+            linked_evidence_ids=matrix_evidence_ids,
+            key_conclusions=[],
+        )
+
+        return report.model_copy(update={"sections": [*report.sections, matrix_section]})
 
     async def _call_llm_structured(self, system: str, user: str) -> dict:
         """调用 LLM（结构化输出）。

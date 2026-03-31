@@ -41,6 +41,41 @@ from engines.shared.models import (  # noqa: F401
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# 争点-证据-抗辩矩阵 / Issue-Evidence-Defense Matrix
+# ---------------------------------------------------------------------------
+
+
+class MatrixRow(BaseModel):
+    """矩阵单行：一个争点及其关联证据和抗辩点。
+    Matrix row: one issue with associated evidence IDs and defense point IDs.
+    """
+    issue_id: str
+    issue_label: str
+    issue_impact: str = ""  # high / medium / low / ""
+    evidence_ids: list[str] = Field(default_factory=list)
+    defense_ids: list[str] = Field(default_factory=list)
+    evidence_count: int = 0
+    has_unrebutted_evidence: bool = False
+
+
+class IssueEvidenceDefenseMatrix(BaseModel):
+    """争点-证据-抗辩三维关联矩阵。
+    Three-dimensional association matrix: IssueTree × EvidenceIndex × DefenseChain.
+
+    rows 按 issue_impact 降序排列（high > medium > low）。
+    Rows sorted by issue_impact descending (high > medium > low).
+    """
+    rows: list[MatrixRow] = Field(default_factory=list)
+    total_issues: int = 0
+    issues_with_evidence: int = 0
+
+
+# ---------------------------------------------------------------------------
+# LLM 中间结构 / LLM intermediate structures
+# ---------------------------------------------------------------------------
+
+
 class LLMConclusionItem(BaseModel):
     """LLM 返回的单条关键结论（尚未分配 ID）。"""
     text: str
