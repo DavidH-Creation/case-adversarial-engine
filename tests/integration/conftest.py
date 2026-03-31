@@ -21,6 +21,7 @@ def pytest_collection_modifyitems(config, items):
             if "integration" in str(item.fspath):
                 item.add_marker(skip)
 
+
 from engines.case_structuring.evidence_indexer.schemas import RawMaterial
 
 

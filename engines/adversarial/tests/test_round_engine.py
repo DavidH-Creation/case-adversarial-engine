@@ -528,9 +528,7 @@ class TestRound3Parallelism:
     """验证 Round 3 原被告 rebuttal 使用 asyncio.gather 并行执行。"""
 
     @pytest.mark.asyncio
-    async def test_round3_rebuttals_run_concurrently(
-        self, config, issue_tree, evidence_index
-    ):
+    async def test_round3_rebuttals_run_concurrently(self, config, issue_tree, evidence_index):
         """p_rebuttal 和 d_rebuttal 的开始时间差应 < 单次调用耗时（并行标志）。"""
         import asyncio
 
