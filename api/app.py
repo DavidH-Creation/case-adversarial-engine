@@ -348,6 +348,54 @@ async def stream_analysis(case_id: str):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/cases/{run_id}/progress — SSE 管道步骤进度流
+# ---------------------------------------------------------------------------
+
+@app.get("/api/cases/{run_id}/progress")
+async def stream_pipeline_progress(run_id: str):
+    """
+    Server-Sent Events: real-time pipeline step progress for *run_id*.
+
+    事件格式 / Event schema:
+      data: {"step": N, "status": "started"|"completed"|"failed", "name": "..."}
+      data: {"step": N, "status": "failed", "error": "..."}
+      data: {"type": "ping"}
+      data: {"type": "done"}
+
+    进度由 SSEProgressReporter 推送；pipeline 完成后流自动关闭。
+    """
+    from engines.shared.progress_reporter import get_progress_queue
+
+    queue = get_progress_queue(run_id)
+    if queue is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No progress stream registered for run_id: {run_id}",
+        )
+
+    async def event_stream():
+        while True:
+            try:
+                event = await asyncio.wait_for(queue.get(), timeout=30.0)
+            except asyncio.TimeoutError:
+                yield f"data: {json.dumps({'type': 'ping'}, ensure_ascii=False)}\n\n"
+                continue
+            if event is None:
+                yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+                break
+            yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # GET /api/cases/{case_id}/report — 下载 DOCX 报告
 # ---------------------------------------------------------------------------
 

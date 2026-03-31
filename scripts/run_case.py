@@ -91,6 +91,7 @@ from engines.document_assistance.schemas import DocumentAssistanceInput, Documen
 from engines.pretrial_conference.conference_engine import PretrialConferenceEngine
 from engines.pretrial_conference.schemas import PretrialConferenceResult
 from engines.shared.evidence_state_machine import EvidenceStateMachine
+from engines.shared.progress_reporter import CLIProgressReporter
 
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -958,6 +959,8 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
             print("\n[Config] Plaintiff/Evidence/Summary -> Claude  |  Defendant -> Codex")
             codex = CodexCLIClient(timeout=600.0)
 
+    reporter = CLIProgressReporter(total_steps=5)
+
     # Step 1: Index evidence
     if _should_skip(STEP_EVIDENCE, last_completed):
         print("\n[Step 1] Skipped (checkpoint)")
@@ -965,20 +968,26 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         ev_index = EvidenceIndex.model_validate_json(ev_path.read_text(encoding="utf-8"))
         print(f"  \u2713 Loaded evidence index from checkpoint ({len(ev_index.evidence)} items)")
     else:
-        print("\n[Step 1] Indexing evidence...")
-        indexer = EvidenceIndexer(llm_client=claude, case_type=case_type, model=selector.select("evidence_indexer"), max_retries=2)
-        p_materials = _build_materials(case_data["materials"]["plaintiff"])
-        d_materials = _build_materials(case_data["materials"]["defendant"])
-        p_ev = await indexer.index(p_materials, case_id, p_id, "plaintiff")
-        print(f"  \u2713 Plaintiff evidence: {len(p_ev)}")
-        d_ev = await indexer.index(d_materials, case_id, d_id, "defendant")
-        print(f"  \u2713 Defendant evidence: {len(d_ev)}")
-        all_ev = p_ev + d_ev
-        ev_index = EvidenceIndex(case_id=case_id, evidence=all_ev)
-        print(f"  \u2713 Total evidence: {len(all_ev)}")
-        # Save evidence index artifact & checkpoint
-        (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
-        ckpt.save(STEP_EVIDENCE, {"evidence_index": str(out / "evidence_index.json")}, run_id=case_id)
+        reporter.on_step_start(1, "Index Evidence")
+        try:
+            print("\n[Step 1] Indexing evidence...")
+            indexer = EvidenceIndexer(llm_client=claude, case_type=case_type, model=selector.select("evidence_indexer"), max_retries=2)
+            p_materials = _build_materials(case_data["materials"]["plaintiff"])
+            d_materials = _build_materials(case_data["materials"]["defendant"])
+            p_ev = await indexer.index(p_materials, case_id, p_id, "plaintiff")
+            print(f"  \u2713 Plaintiff evidence: {len(p_ev)}")
+            d_ev = await indexer.index(d_materials, case_id, d_id, "defendant")
+            print(f"  \u2713 Defendant evidence: {len(d_ev)}")
+            all_ev = p_ev + d_ev
+            ev_index = EvidenceIndex(case_id=case_id, evidence=all_ev)
+            print(f"  \u2713 Total evidence: {len(all_ev)}")
+            # Save evidence index artifact & checkpoint
+            (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
+            ckpt.save(STEP_EVIDENCE, {"evidence_index": str(out / "evidence_index.json")}, run_id=case_id)
+            reporter.on_step_complete(1, "Index Evidence")
+        except Exception as _e:
+            reporter.on_error(1, str(_e))
+            raise
 
     # Step 2: Extract issue tree
     if _should_skip(STEP_ISSUES, last_completed):
@@ -988,18 +997,24 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         issue_tree = IssueTree.model_validate_json(it_path.read_text(encoding="utf-8"))
         print(f"  \u2713 Loaded issue tree from checkpoint ({len(issue_tree.issues)} issues)")
     else:
-        print("\n[Step 2] Extracting issues...")
-        extractor = IssueExtractor(llm_client=claude, case_type=case_type, model=selector.select("issue_extractor"), max_retries=2)
-        ev_dicts = [e.model_dump() for e in ev_index.evidence]
-        claims = _build_claims(case_data["claims"], case_id, p_id)
-        defenses = _build_defenses(case_data["defenses"], case_id, d_id)
-        issue_tree = await extractor.extract(claims, defenses, ev_dicts, case_id, case_slug)
-        print(f"  \u2713 Issues: {len(issue_tree.issues)}  |  Burdens: {len(issue_tree.burdens)}")
-        for iss in issue_tree.issues:
-            print(f"    - [{iss.issue_id}] {iss.title}")
-        # Save issue tree artifact & checkpoint
-        (out / "issue_tree.json").write_text(issue_tree.model_dump_json(indent=2), encoding="utf-8")
-        ckpt.save(STEP_ISSUES, {"issue_tree": str(out / "issue_tree.json")})
+        reporter.on_step_start(2, "Extract Issues")
+        try:
+            print("\n[Step 2] Extracting issues...")
+            extractor = IssueExtractor(llm_client=claude, case_type=case_type, model=selector.select("issue_extractor"), max_retries=2)
+            ev_dicts = [e.model_dump() for e in ev_index.evidence]
+            claims = _build_claims(case_data["claims"], case_id, p_id)
+            defenses = _build_defenses(case_data["defenses"], case_id, d_id)
+            issue_tree = await extractor.extract(claims, defenses, ev_dicts, case_id, case_slug)
+            print(f"  \u2713 Issues: {len(issue_tree.issues)}  |  Burdens: {len(issue_tree.burdens)}")
+            for iss in issue_tree.issues:
+                print(f"    - [{iss.issue_id}] {iss.title}")
+            # Save issue tree artifact & checkpoint
+            (out / "issue_tree.json").write_text(issue_tree.model_dump_json(indent=2), encoding="utf-8")
+            ckpt.save(STEP_ISSUES, {"issue_tree": str(out / "issue_tree.json")})
+            reporter.on_step_complete(2, "Extract Issues")
+        except Exception as _e:
+            reporter.on_error(2, str(_e))
+            raise
 
     # Step 3: Three-round adversarial debate
     if _should_skip(STEP_DEBATE, last_completed):
@@ -1013,18 +1028,24 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         )
         print(f"  \u2713 Loaded debate result from checkpoint")
     else:
-        print("\n[Step 3] Three-round adversarial debate...")
-        config = RoundConfig(model=selector.select("plaintiff_agent"), max_tokens_per_output=max_tokens_per_output, max_retries=2)
-        result = await _run_rounds(
-            issue_tree, ev_index, claude, codex, claude, config, p_id, d_id,
-        )
-        # Save debate result & checkpoint (evidence_index NOT yet promoted)
-        (out / "result.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
-        (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
-        ckpt.save(STEP_DEBATE, {
-            "result": str(out / "result.json"),
-            "evidence_index": str(out / "evidence_index.json"),
-        })
+        reporter.on_step_start(3, "Adversarial Debate")
+        try:
+            print("\n[Step 3] Three-round adversarial debate...")
+            config = RoundConfig(model=selector.select("plaintiff_agent"), max_tokens_per_output=max_tokens_per_output, max_retries=2)
+            result = await _run_rounds(
+                issue_tree, ev_index, claude, codex, claude, config, p_id, d_id,
+            )
+            # Save debate result & checkpoint (evidence_index NOT yet promoted)
+            (out / "result.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
+            (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
+            ckpt.save(STEP_DEBATE, {
+                "result": str(out / "result.json"),
+                "evidence_index": str(out / "evidence_index.json"),
+            })
+            reporter.on_step_complete(3, "Adversarial Debate")
+        except Exception as _e:
+            reporter.on_error(3, str(_e))
+            raise
 
     # Extract cited evidence IDs from debate rounds (always needed for pretrial/skip-pretrial)
     cited_ids: set[str] = set()
@@ -1125,19 +1146,25 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         jp = out / "result.json"
         mp = out / "report.md"
     else:
-        print("\n[Step 4] Writing outputs...")
-        jp = _write_json(out, result)
-        mp = _write_md(
-            out, result, issue_tree, case_data,
-            ranked_issues=artifacts.get("ranked_issues"),
-            decision_tree=artifacts.get("decision_tree"),
-            attack_chain=artifacts.get("attack_chain"),
-            action_rec=artifacts.get("action_rec"),
-            exec_summary=artifacts.get("exec_summary"),
-            amount_report=artifacts.get("amount_report"),
-            no_redact=no_redact,
-        )
-        ckpt.save(STEP_OUTPUTS, {"result_json": str(jp), "report_md": str(mp)})
+        reporter.on_step_start(4, "Write Outputs")
+        try:
+            print("\n[Step 4] Writing outputs...")
+            jp = _write_json(out, result)
+            mp = _write_md(
+                out, result, issue_tree, case_data,
+                ranked_issues=artifacts.get("ranked_issues"),
+                decision_tree=artifacts.get("decision_tree"),
+                attack_chain=artifacts.get("attack_chain"),
+                action_rec=artifacts.get("action_rec"),
+                exec_summary=artifacts.get("exec_summary"),
+                amount_report=artifacts.get("amount_report"),
+                no_redact=no_redact,
+            )
+            ckpt.save(STEP_OUTPUTS, {"result_json": str(jp), "report_md": str(mp)})
+            reporter.on_step_complete(4, "Write Outputs")
+        except Exception as _e:
+            reporter.on_error(4, str(_e))
+            raise
 
     # Step 5: Generate Word document
     if _should_skip(STEP_DOCX, last_completed):
@@ -1146,6 +1173,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         if not docx_path.exists():
             docx_path = None
     else:
+        reporter.on_step_start(5, "Generate DOCX")
         print("\n[Step 5] Generating Word report...")
         try:
             _artifact_dicts = {}
@@ -1171,8 +1199,10 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
                 action_rec=artifacts.get("action_rec"),
             )
             print(f"  Word report: {docx_path}")
+            reporter.on_step_complete(5, "Generate DOCX")
         except Exception as e:
             print(f"  [Warning] Word report generation failed: {e}")
+            reporter.on_error(5, str(e))
             docx_path = None
         ckpt.save(STEP_DOCX, {"report_docx": str(docx_path) if docx_path else ""})
 
