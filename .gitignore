@@ -1,3 +1,5 @@
 .bulwark/
 **/__pycache__/
 *.pyc
+outputs/
+workspaces/

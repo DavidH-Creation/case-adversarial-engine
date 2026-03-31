@@ -39,6 +39,7 @@ from engines.case_structuring.evidence_indexer.indexer import EvidenceIndexer
 from engines.case_structuring.issue_extractor.extractor import IssueExtractor
 from engines.shared.access_control import AccessController
 from engines.shared.cli_adapter import ClaudeCLIClient
+from engines.shared.evidence_state_machine import EvidenceStateMachine
 from engines.shared.models import (
     AgentRole,
     EvidenceIndex,
@@ -46,6 +47,7 @@ from engines.shared.models import (
     IssueTree,
     RawMaterial,
 )
+from engines.shared.workspace_manager import WorkspaceManager
 
 from .schemas import CaseStatus
 
@@ -78,6 +80,10 @@ class CaseRecord:
         self.artifacts: dict[str, Any] = {}
         # Markdown 格式报告内容
         self.report_markdown: Optional[str] = None
+        # 分析 run_id（用于场景推演 baseline 定位）
+        self.run_id: Optional[str] = None
+        # 工作区管理器（用于持久化，进程重启后可恢复状态）
+        self.workspace_manager: Optional[WorkspaceManager] = None
         # 进度日志
         self.progress: list[str] = []
         self.error: Optional[str] = None
@@ -119,17 +125,70 @@ class CaseRecord:
 # ---------------------------------------------------------------------------
 
 class CaseStore:
-    def __init__(self) -> None:
+    def __init__(self, workspaces_dir: Optional[Path] = None) -> None:
         self._cases: dict[str, CaseRecord] = {}
+        self._workspaces_dir = workspaces_dir or (_PROJECT_ROOT / "workspaces")
 
     def create(self, info: dict[str, Any]) -> CaseRecord:
         case_id = f"case-{uuid.uuid4().hex[:12]}"
         record = CaseRecord(case_id, info)
+
+        # P2-3: 初始化 WorkspaceManager 并持久化案件元数据
+        wm = WorkspaceManager(self._workspaces_dir, case_id)
+        try:
+            wm.init_workspace(info.get("case_type", "civil_loan"))
+        except FileExistsError:
+            pass  # workspace 已存在（不应发生于全新 case_id）
+        wm.save_case_meta({
+            "case_id": case_id,
+            "info": info,
+            "status": record.status.value,
+            "materials": record.materials,
+        })
+        record.workspace_manager = wm
+
         self._cases[case_id] = record
         return record
 
     def get(self, case_id: str) -> Optional[CaseRecord]:
-        return self._cases.get(case_id)
+        if case_id in self._cases:
+            return self._cases[case_id]
+        # P2-3: 进程重启后从磁盘恢复案件状态
+        return self._load_from_disk(case_id)
+
+    def _load_from_disk(self, case_id: str) -> Optional[CaseRecord]:
+        """从 WorkspaceManager 持久化存储中恢复 CaseRecord。"""
+        wm = WorkspaceManager(self._workspaces_dir, case_id)
+        meta = wm.load_case_meta()
+        if meta is None:
+            return None
+
+        from .schemas import CaseStatus as _CaseStatus
+        record = CaseRecord(case_id, meta["info"])
+        try:
+            record.status = _CaseStatus(meta.get("status", "created"))
+        except ValueError:
+            record.status = _CaseStatus.created
+        record.materials = meta.get("materials", {"plaintiff": [], "defendant": []})
+        record.workspace_manager = wm
+
+        # 恢复提取产物
+        record.ev_index = wm.load_evidence_index()
+        record.issue_tree = wm.load_issue_tree()
+        if record.ev_index is not None and record.issue_tree is not None:
+            record.extraction_data = {
+                "evidence": [e.model_dump(mode="json") for e in record.ev_index.evidence],
+                "issues": [i.model_dump(mode="json") for i in record.issue_tree.issues],
+            }
+
+        # 恢复分析产物
+        analysis_path = wm.workspace_dir / "artifacts" / "analysis_data.json"
+        if analysis_path.exists():
+            record.analysis_data = json.loads(analysis_path.read_text(encoding="utf-8"))
+            record.run_id = (record.analysis_data or {}).get("run_id")
+
+        self._cases[case_id] = record
+        return record
 
 
 # 全局单例
@@ -211,6 +270,18 @@ async def run_extraction(record: CaseRecord) -> None:
             "issues": [i.model_dump(mode="json") for i in record.issue_tree.issues],
         }
         record.status = CaseStatus.extracted
+
+        # P2-3: 持久化提取产物到工作区
+        if record.workspace_manager is not None:
+            record.workspace_manager.save_evidence_index(record.ev_index)
+            record.workspace_manager.save_issue_tree(record.issue_tree)
+            record.workspace_manager.save_case_meta({
+                "case_id": record.case_id,
+                "info": record.info,
+                "status": CaseStatus.extracted.value,
+                "materials": record.materials,
+            })
+
         record.log("[提取] 完成 ✓")
 
     except Exception as exc:
@@ -344,18 +415,53 @@ async def run_analysis(record: CaseRecord) -> None:
         for rd in result.rounds:
             for o in rd.outputs:
                 cited_ids.update(o.evidence_citations)
+
+        # P1-1: 通过 EvidenceStateMachine 提升被引用证据状态，确保 access_domain 同步更新。
+        # private → submitted → admitted_for_discussion（两步合法迁移）
+        # submitted/challenged → admitted_for_discussion（单步合法迁移）
+        esm = EvidenceStateMachine()
+        new_evidence = []
         promoted = 0
         for ev in record.ev_index.evidence:
-            if ev.evidence_id in cited_ids and ev.status == EvidenceStatus.private:
-                ev.status = EvidenceStatus.admitted_for_discussion
-                promoted += 1
+            if ev.evidence_id in cited_ids:
+                if ev.status == EvidenceStatus.private:
+                    ev = esm.submit(ev, ev.owner_party_id)
+                    ev = esm.admit(ev)
+                    promoted += 1
+                elif ev.status in (EvidenceStatus.submitted, EvidenceStatus.challenged):
+                    ev = esm.admit(ev)
+                    promoted += 1
+                # EvidenceStatus.admitted_for_discussion: 终态，无需操作
+            new_evidence.append(ev)
+        # 用不可变副本替换证据列表，保证 access_domain 一致性
+        record.ev_index = record.ev_index.model_copy(update={"evidence": new_evidence})
         record.log(f"[分析] 证据提升至 admitted_for_discussion：{promoted}/{len(record.ev_index.evidence)}")
+
+        # P1-2: 持久化 baseline 文件到 outputs/<run_id>/，供场景推演 API 使用。
+        # 在证据状态更新后写入，确保 baseline 反映最新的 access_domain。
+        run_id = result.run_id
+        record.run_id = run_id
+        baseline_dir = _PROJECT_ROOT / "outputs" / run_id
+        baseline_dir.mkdir(parents=True, exist_ok=True)
+        (baseline_dir / "issue_tree.json").write_text(
+            record.issue_tree.model_dump_json(), encoding="utf-8"
+        )
+        (baseline_dir / "evidence_index.json").write_text(
+            record.ev_index.model_dump_json(), encoding="utf-8"
+        )
 
         # 序列化分析结果
         result_dict = json.loads(result.model_dump_json())
         summary = result.summary
 
+        # 写入 result.json（load_baseline 用其中的 run_id 字段）
+        (baseline_dir / "result.json").write_text(
+            json.dumps(result_dict, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        record.log(f"[分析] baseline 已写入 outputs/{run_id}/")
+
         record.analysis_data = {
+            "run_id": run_id,  # P1-2: 暴露给场景推演 API
             "overall_assessment": summary.overall_assessment if summary else None,
             "plaintiff_args": [a.model_dump(mode="json") for a in summary.plaintiff_strongest_arguments] if summary else [],
             "defendant_defenses": [d.model_dump(mode="json") for d in summary.defendant_strongest_defenses] if summary else [],
@@ -414,6 +520,29 @@ async def run_analysis(record: CaseRecord) -> None:
             record.log(f"[警告] Markdown 报告生成失败（{md_err}），可继续使用分析结果")
 
         record.status = CaseStatus.analyzed
+
+        # P2-3: 持久化分析产物和案件状态到工作区，确保进程重启后可恢复。
+        if record.workspace_manager is not None:
+            try:
+                # 持久化更新后的证据索引（状态已由 EvidenceStateMachine 更新）
+                record.workspace_manager.save_evidence_index(record.ev_index)
+                # 持久化分析数据（含 run_id）
+                analysis_path = record.workspace_manager.workspace_dir / "artifacts" / "analysis_data.json"
+                analysis_path.parent.mkdir(parents=True, exist_ok=True)
+                analysis_path.write_text(
+                    json.dumps(record.analysis_data, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                # 更新案件状态元数据
+                record.workspace_manager.save_case_meta({
+                    "case_id": record.case_id,
+                    "info": record.info,
+                    "status": CaseStatus.analyzed.value,
+                    "materials": record.materials,
+                })
+            except Exception as ws_err:
+                record.log(f"[警告] 工作区持久化失败（{ws_err}），不影响分析结果")
+
         record.log("[分析] 完成 ✓")
 
     except Exception as exc:

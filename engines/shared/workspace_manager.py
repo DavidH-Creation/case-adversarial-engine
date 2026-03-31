@@ -555,6 +555,27 @@ class WorkspaceManager:
         return ExecutiveSummaryArtifact.model_validate(data)
 
     # ------------------------------------------------------------------
+    # 案件元数据持久化 / Case metadata persistence
+    # ------------------------------------------------------------------
+
+    def save_case_meta(self, meta: dict) -> None:
+        """持久化案件元数据（case_info、status、materials）到 case_meta.json。
+        Persist case metadata (info, status, materials) to case_meta.json.
+        """
+        with self._lock:
+            path = self.workspace_dir / "case_meta.json"
+            self._atomic_write(path, meta)
+
+    def load_case_meta(self) -> Optional[dict]:
+        """加载案件元数据。
+        Load case metadata. Returns None if not found.
+        """
+        path = self.workspace_dir / "case_meta.json"
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    # ------------------------------------------------------------------
     # 阶段推进 / Stage advancement
     # ------------------------------------------------------------------
 
