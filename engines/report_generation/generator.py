@@ -22,7 +22,9 @@ from engines.shared.models import LLMClient
 from engines.shared.pii_redactor import redact_text
 from engines.shared.structured_output import call_structured_llm
 
+from .outcome_paths import build_case_outcome_paths, render_outcome_paths_md_lines  # noqa: F401
 from .schemas import (
+    CaseOutcomePaths,  # noqa: F401 — re-exported for callers
     EvidenceIndex,
     EvidenceItem,
     IssueTree,
