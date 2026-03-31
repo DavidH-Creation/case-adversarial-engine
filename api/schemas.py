@@ -120,3 +120,37 @@ class AnalysisResponse(BaseModel):
     unresolved_issues: list[str] = Field(default_factory=list)
     evidence_conflicts: list[dict[str, Any]] = Field(default_factory=list)
     rounds: list[dict[str, Any]] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/scenarios/run
+# GET  /api/scenarios/{scenario_id}
+# ---------------------------------------------------------------------------
+
+class ChangeItemRequest(BaseModel):
+    target_object_type: str
+    target_object_id: str
+    field_path: str
+    old_value: Any = None
+    new_value: Any = None
+
+
+class ScenarioRunRequest(BaseModel):
+    run_id: str
+    change_set: list[ChangeItemRequest]
+
+
+class DiffEntryResponse(BaseModel):
+    issue_id: str
+    impact_description: str
+    direction: str
+
+
+class ScenarioDiffResponse(BaseModel):
+    scenario_id: str
+    case_id: str
+    baseline_run_id: str
+    diff_entries: list[DiffEntryResponse]
+    affected_issue_ids: list[str]
+    affected_evidence_ids: list[str]
+    status: str

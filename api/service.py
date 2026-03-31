@@ -409,6 +409,66 @@ async def run_analysis(record: CaseRecord) -> None:
         record._signal_done()
 
 
+# ---------------------------------------------------------------------------
+# ScenarioService — 封装 ScenarioSimulator 的 Web 服务层
+# ---------------------------------------------------------------------------
+
+class ScenarioService:
+    """封装 ScenarioSimulator 调用，管理场景结果的存储和查询。"""
+
+    def __init__(self, outputs_dir: Path) -> None:
+        self._outputs_dir = outputs_dir
+        self._results: dict[str, dict] = {}
+
+    async def run(self, run_id: str, change_set: list[dict], case_type: str = "civil_loan") -> dict:
+        """从 outputs/{run_id}/ 加载 baseline，执行场景推演，返回序列化的 ScenarioResult。"""
+        from engines.simulation_run.schemas import ChangeItem, ScenarioInput
+        from engines.simulation_run.simulator import ScenarioSimulator, load_baseline
+
+        baseline_dir = self._outputs_dir / run_id
+        if not baseline_dir.is_dir():
+            raise FileNotFoundError(f"run_id 不存在: {run_id}")
+
+        issue_tree, evidence_index, baseline_run_id = load_baseline(baseline_dir)
+
+        scenario_id = f"scenario-{uuid.uuid4().hex[:12]}"
+        new_run_id = f"run-scenario-{uuid.uuid4().hex[:12]}"
+        change_items = [ChangeItem.model_validate(c) for c in change_set]
+        scenario_input = ScenarioInput(
+            scenario_id=scenario_id,
+            baseline_run_id=baseline_run_id,
+            change_set=change_items,
+            workspace_id=f"workspace-{run_id}",
+        )
+
+        claude = ClaudeCLIClient(timeout=600.0)
+        simulator = ScenarioSimulator(llm_client=claude, case_type=case_type, model=DEFAULT_MODEL)
+        result = await simulator.simulate(scenario_input, issue_tree, evidence_index, new_run_id)
+
+        result_dict = result.model_dump(mode="json")
+        self._results[scenario_id] = result_dict
+
+        out_dir = self._outputs_dir / f"scenario_{scenario_id}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "diff_summary.json").write_text(
+            json.dumps(result_dict, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        return result_dict
+
+    def get(self, scenario_id: str) -> Optional[dict]:
+        """查询已运行 scenario 的结果（先查内存，再查磁盘）。"""
+        if scenario_id in self._results:
+            return self._results[scenario_id]
+        diff_path = self._outputs_dir / f"scenario_{scenario_id}" / "diff_summary.json"
+        if diff_path.exists():
+            return json.loads(diff_path.read_text(encoding="utf-8"))
+        return None
+
+
+# 全局单例
+scenario_service = ScenarioService(_PROJECT_ROOT / "outputs")
+
+
 def _build_case_data_dict(record: CaseRecord) -> dict[str, Any]:
     """将 CaseRecord.info 转换为 generate_docx_report 期望的 case_data dict。"""
     info = record.info

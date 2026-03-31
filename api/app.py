@@ -23,12 +23,16 @@ from .schemas import (
     AnalysisResponse,
     CaseInfoResponse,
     CaseStatus,
+    ChangeItemRequest,
     ConfirmRequest,
     CreateCaseRequest,
     CreateCaseResponse,
+    DiffEntryResponse,
     ExtractionResponse,
+    ScenarioDiffResponse,
+    ScenarioRunRequest,
 )
-from .service import run_analysis, run_extraction, store
+from .service import run_analysis, run_extraction, scenario_service, store
 
 # ---------------------------------------------------------------------------
 # 应用初始化
@@ -361,6 +365,56 @@ async def download_report(case_id: str):
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         filename=f"case_{case_id[-8:]}_report.docx",
     )
+
+
+# ---------------------------------------------------------------------------
+# POST /api/scenarios/run — 触发场景推演
+# GET  /api/scenarios/{scenario_id} — 查询场景结果
+# ---------------------------------------------------------------------------
+
+def _build_scenario_diff_response(result: dict) -> ScenarioDiffResponse:
+    scenario = result["scenario"]
+    diff_summary = scenario.get("diff_summary") or []
+    diff_entries = [
+        DiffEntryResponse(
+            issue_id=e["issue_id"],
+            impact_description=e["impact_description"],
+            direction=e["direction"] if isinstance(e["direction"], str) else str(e["direction"]),
+        )
+        for e in diff_summary
+        if isinstance(e, dict)
+    ]
+    return ScenarioDiffResponse(
+        scenario_id=scenario["scenario_id"],
+        case_id=scenario["case_id"],
+        baseline_run_id=scenario["baseline_run_id"],
+        diff_entries=diff_entries,
+        affected_issue_ids=scenario.get("affected_issue_ids", []),
+        affected_evidence_ids=scenario.get("affected_evidence_ids", []),
+        status=scenario["status"],
+    )
+
+
+@app.post("/api/scenarios/run", response_model=ScenarioDiffResponse, status_code=200)
+async def run_scenario(body: ScenarioRunRequest) -> ScenarioDiffResponse:
+    """触发场景推演（what-if 分析），返回 ScenarioDiff。"""
+    try:
+        result = await scenario_service.run(
+            run_id=body.run_id,
+            change_set=[c.model_dump() for c in body.change_set],
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return _build_scenario_diff_response(result)
+
+
+@app.get("/api/scenarios/{scenario_id}", response_model=ScenarioDiffResponse)
+async def get_scenario(scenario_id: str) -> ScenarioDiffResponse:
+    """查询已运行 scenario 的结果（从内存或 outputs/ 读取）。"""
+    result = scenario_service.get(scenario_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"scenario_id 不存在: {scenario_id}")
+    return _build_scenario_diff_response(result)
 
 
 # ---------------------------------------------------------------------------
