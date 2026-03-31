@@ -465,3 +465,106 @@ class ReportGenerator:
             sections=sections,
             created_at=now,
         )
+
+
+# ---------------------------------------------------------------------------
+# 文书草稿集成 / Document draft integration
+# ---------------------------------------------------------------------------
+
+_DOC_TYPE_TITLE_ZH: dict[str, str] = {
+    "pleading":   "起诉状草稿",
+    "defense":    "答辩状草稿",
+    "cross_exam": "质证意见草稿",
+}
+
+
+def append_document_draft_sections(
+    report: ReportArtifact,
+    document_drafts: list,
+) -> ReportArtifact:
+    """将文书草稿附加为 ReportArtifact 的额外章节。
+    Append document drafts as extra sections to a ReportArtifact.
+
+    Args:
+        report:          已生成的 ReportArtifact / Already-generated ReportArtifact
+        document_drafts: DocumentDraft 列表 / List of DocumentDraft objects
+
+    Returns:
+        含文书章节的新 ReportArtifact（immutable style）。
+        New ReportArtifact with document sections appended (immutable style).
+    """
+    if not document_drafts:
+        return report
+
+    extra_sections: list[ReportSection] = []
+    base_idx = len(report.sections) + 1
+
+    for i, draft in enumerate(document_drafts):
+        doc_type = getattr(draft, "doc_type", "")
+        case_type = getattr(draft, "case_type", "")
+        evidence_ids_cited = getattr(draft, "evidence_ids_cited", [])
+        content = getattr(draft, "content", None)
+
+        title = f"{_DOC_TYPE_TITLE_ZH.get(doc_type, doc_type)}（{case_type}）"
+
+        # 拼接骨架内容为 body 文本
+        body_parts: list[str] = []
+        if content is not None:
+            header = getattr(content, "header", "")
+            if header:
+                body_parts.append(f"【文书标题】{header}")
+
+            if doc_type == "pleading":
+                for field, label in [
+                    ("fact_narrative_items", "事实陈述"),
+                    ("legal_claim_items", "法律依据"),
+                    ("prayer_for_relief_items", "诉讼请求"),
+                ]:
+                    items = getattr(content, field, [])
+                    if items:
+                        body_parts.append(f"【{label}】" + "；".join(items))
+
+            elif doc_type == "defense":
+                for field, label in [
+                    ("denial_items", "逐项否认"),
+                    ("defense_claim_items", "实质性抗辩"),
+                    ("counter_prayer_items", "反请求"),
+                ]:
+                    items = getattr(content, field, [])
+                    if items:
+                        body_parts.append(f"【{label}】" + "；".join(items))
+
+            elif doc_type == "cross_exam":
+                items_list = getattr(content, "items", [])
+                if items_list:
+                    opinions = [
+                        f"{getattr(it, 'evidence_id', '')}: {getattr(it, 'opinion_text', '')}"
+                        for it in items_list
+                    ]
+                    body_parts.append("【质证意见】" + "；".join(opinions[:5]))
+                    if len(items_list) > 5:
+                        body_parts.append(f"... 共 {len(items_list)} 条意见")
+
+        body = "\n".join(body_parts) if body_parts else "（文书内容见附件）"
+
+        # 构建 key_conclusions（证据引用）
+        key_conclusions: list[KeyConclusion] = []
+        if evidence_ids_cited:
+            key_conclusions.append(KeyConclusion(
+                conclusion_id=f"doc-cite-{i + 1:03d}",
+                text=f"引用证据：{', '.join(evidence_ids_cited)}",
+                supporting_evidence_ids=evidence_ids_cited,
+                statement_class=StatementClass.fact,
+            ))
+
+        extra_sections.append(ReportSection(
+            section_id=f"doc-sec-{i + 1:03d}",
+            section_index=base_idx + i,
+            title=title,
+            body=body,
+            linked_issue_ids=[],
+            linked_evidence_ids=evidence_ids_cited,
+            key_conclusions=key_conclusions,
+        ))
+
+    return report.model_copy(update={"sections": report.sections + extra_sections})

@@ -188,6 +188,7 @@ def generate_docx_report(
     exec_summary: dict | None = None,
     amount_report: dict | None = None,
     action_rec: Any = None,
+    document_drafts: list | None = None,
     filename: str | None = None,
 ) -> Path:
     """生成通用对抗分析 Word 报告。
@@ -253,6 +254,9 @@ def generate_docx_report(
     _render_action_recommendations(doc, exec_summary)
     # ── 执行摘要 ──
     _render_executive_summary(doc, exec_summary, amount_report)
+    # ── 文书草稿 ──
+    if document_drafts:
+        _render_document_drafts(doc, document_drafts)
 
     # 保存
     if filename is None:
@@ -832,3 +836,92 @@ def _render_opponent_strategy_warning(doc, result: dict, attack_chain: dict | No
             pivot = node.get("adversary_pivot_strategy", "")
             if pivot:
                 _styled(doc, f"对方可能转向: {pivot}", size=SZ_RISK, color=CLR_ORANGE)
+
+
+# ---------------------------------------------------------------------------
+# 文书草稿章节 / Document draft section renderers
+# ---------------------------------------------------------------------------
+
+_DOC_TYPE_ZH: dict[str, str] = {
+    "pleading":   "起诉状草稿",
+    "defense":    "答辩状草稿",
+    "cross_exam": "质证意见草稿",
+}
+
+
+def _render_document_drafts(doc, document_drafts: list) -> None:
+    """文书草稿章节 — 将 DocumentDraft 列表渲染为 DOCX 结构化章节。
+    Document draft sections — renders a list of DocumentDraft objects into DOCX.
+
+    每份文书草稿为独立一级标题，骨架字段按语义分组渲染。
+    Each document draft gets its own top-level heading, skeleton fields rendered by group.
+    """
+    doc.add_heading("文书草稿", level=1)
+    _styled(
+        doc,
+        "以下文书草稿由 AI 生成，仅供律师参考和编辑，不构成正式法律文件。",
+        size=SZ_NORMAL,
+        color=CLR_ORANGE,
+    )
+    doc.add_paragraph()
+
+    for draft in document_drafts:
+        doc_type = getattr(draft, "doc_type", "")
+        case_type = getattr(draft, "case_type", "")
+        heading_text = _DOC_TYPE_ZH.get(doc_type, doc_type)
+        doc.add_heading(f"{heading_text}（{case_type}）", level=2)
+
+        content = getattr(draft, "content", None)
+        if content is None:
+            _styled(doc, "（无内容）", size=SZ_NORMAL, color=CLR_GRAY)
+            continue
+
+        # 文档头
+        header = getattr(content, "header", "")
+        if header:
+            _styled(doc, header, bold=True, size=SZ_SECTION_HDR, color=CLR_TITLE_DARK)
+
+        # 按文书类型渲染各骨架字段
+        if doc_type == "pleading":
+            _render_list_section(doc, "事实陈述", getattr(content, "fact_narrative_items", []))
+            _render_list_section(doc, "法律依据", getattr(content, "legal_claim_items", []))
+            _render_list_section(doc, "诉讼请求", getattr(content, "prayer_for_relief_items", []))
+            attack_basis = getattr(content, "attack_chain_basis", "unavailable")
+            if attack_basis and attack_basis != "unavailable":
+                _styled(doc, f"攻击链策略依据：{attack_basis}", size=SZ_NORMAL, color=CLR_BLUE)
+
+        elif doc_type == "defense":
+            _render_list_section(doc, "逐项否认", getattr(content, "denial_items", []))
+            _render_list_section(doc, "实质性抗辩", getattr(content, "defense_claim_items", []))
+            _render_list_section(doc, "反请求", getattr(content, "counter_prayer_items", []))
+
+        elif doc_type == "cross_exam":
+            items = getattr(content, "items", [])
+            if items:
+                doc.add_heading("逐证据质证意见", level=3)
+                for item in items:
+                    ev_id = getattr(item, "evidence_id", "")
+                    opinion = getattr(item, "opinion_text", "")
+                    p = doc.add_paragraph()
+                    _add_run(p, f"[{ev_id}] ", bold=True, size=SZ_NORMAL, color=CLR_BLUE)
+                    _add_run(p, opinion, size=SZ_NORMAL, color=CLR_BODY)
+            else:
+                _styled(doc, "（无证据需要质证）", size=SZ_NORMAL, color=CLR_GRAY)
+
+        # 证据引用
+        ev_cited = getattr(draft, "evidence_ids_cited", [])
+        if ev_cited:
+            p = doc.add_paragraph()
+            _add_run(p, "引用证据：", bold=True, size=SZ_NORMAL, color=CLR_GRAY)
+            _add_run(p, ", ".join(ev_cited), size=SZ_NORMAL, color=CLR_GRAY)
+
+        doc.add_paragraph()
+
+
+def _render_list_section(doc, label: str, items: list[str]) -> None:
+    """渲染一个有序列表章节（标签 + 条目列表）。"""
+    if not items:
+        return
+    doc.add_heading(label, level=3)
+    for item in items:
+        _bullet(doc, item, size=SZ_NORMAL, color=CLR_BODY)

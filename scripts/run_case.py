@@ -86,6 +86,8 @@ from engines.simulation_run.defense_chain import DefenseChainOptimizer, DefenseC
 from engines.interactive_followup.responder import FollowupResponder
 from engines.interactive_followup.session_manager import SessionManager
 from engines.interactive_followup.validator import sanitize_question
+from engines.document_assistance.engine import DocumentAssistanceEngine
+from engines.document_assistance.schemas import DocumentAssistanceInput, DocumentGenerationError
 from engines.pretrial_conference.conference_engine import PretrialConferenceEngine
 from engines.pretrial_conference.schemas import PretrialConferenceResult
 from engines.shared.evidence_state_machine import EvidenceStateMachine
@@ -112,9 +114,10 @@ STEP_PRETRIAL = "step_3_1_pretrial"
 STEP_POST_DEBATE = "step_3_5_post_debate"
 STEP_OUTPUTS = "step_4_outputs"
 STEP_DOCX = "step_5_docx"
+STEP_DOCUMENTS = "step_5_5_documents"
 
 # Ordered list for resume logic
-STEP_ORDER = [STEP_EVIDENCE, STEP_ISSUES, STEP_DEBATE, STEP_PRETRIAL, STEP_POST_DEBATE, STEP_OUTPUTS, STEP_DOCX]
+STEP_ORDER = [STEP_EVIDENCE, STEP_ISSUES, STEP_DEBATE, STEP_PRETRIAL, STEP_POST_DEBATE, STEP_OUTPUTS, STEP_DOCX, STEP_DOCUMENTS]
 
 
 def _should_skip(step: str, last_completed: str | None) -> bool:
@@ -1173,6 +1176,46 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
             docx_path = None
         ckpt.save(STEP_DOCX, {"report_docx": str(docx_path) if docx_path else ""})
 
+    # Step 5.5: Generate document drafts (pleading, defense, cross_exam)
+    if _should_skip(STEP_DOCUMENTS, last_completed):
+        print("\n[Step 5.5] Skipped (checkpoint)")
+        document_drafts: dict[str, Any] = {}
+    else:
+        print("\n[Step 5.5] Generating document drafts...")
+        doc_engine = DocumentAssistanceEngine(
+            llm_client=claude,
+            model=selector.select("document_assistance"),
+            temperature=0.0,
+            max_retries=2,
+        )
+        attack_chain_obj = artifacts.get("attack_chain") if artifacts else None
+        doc_type_map = [
+            ("pleading",   "pleading_draft.json"),
+            ("defense",    "defense_statement.json"),
+            ("cross_exam", "cross_exam_opinion.json"),
+        ]
+        document_drafts = {}
+        ckpt_doc_artifacts: dict[str, str] = {}
+        for doc_type, filename in doc_type_map:
+            try:
+                draft = await doc_engine.generate(input=DocumentAssistanceInput(
+                    case_id=case_id,
+                    run_id=result.run_id,
+                    doc_type=doc_type,
+                    case_type=case_type,
+                    issue_tree=issue_tree,
+                    evidence_index=ev_index,
+                    case_data=case_data,
+                    attack_chain=attack_chain_obj,
+                ))
+                (out / filename).write_text(draft.model_dump_json(indent=2), encoding="utf-8")
+                document_drafts[doc_type] = draft
+                print(f"  \u2713 {doc_type}: {len(draft.evidence_ids_cited)} evidence cited")
+                ckpt_doc_artifacts[doc_type] = str(out / filename)
+            except DocumentGenerationError as e:
+                print(f"  [Warning] {doc_type} generation failed: {e}")
+        ckpt.save(STEP_DOCUMENTS, ckpt_doc_artifacts)
+
     # Step 6: Interactive followup (optional — triggered by --interactive or --question)
     if interactive or question:
         print("\n[Step 6] Interactive followup...")
@@ -1263,6 +1306,10 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         artifact_path = out / f"{name}.json"
         if artifact_path.exists():
             print(f"  {name}: {artifact_path}")
+    for filename in ("pleading_draft.json", "defense_statement.json", "cross_exam_opinion.json"):
+        artifact_path = out / filename
+        if artifact_path.exists():
+            print(f"  {filename}: {artifact_path}")
     if result.summary:
         print(f"\nOverall assessment:")
         print(f"  {result.summary.overall_assessment[:300]}")
