@@ -52,6 +52,9 @@ testpaths = [
     "engines/simulation_run/hearing_order/tests",
     "engines/simulation_run/issue_dependency_graph/tests",
     "tests/integration",
+    "engines/case_extraction/tests",
+    "engines/document_assistance/tests",
+    "api/tests",
 ]
 
 [tool.coverage.run]
