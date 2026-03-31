@@ -93,6 +93,17 @@ from engines.shared.evidence_state_machine import EvidenceStateMachine
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
 
+
+def _load_pipeline_config() -> dict:
+    """Load pipeline section from config.yaml at project root. Returns {} if missing."""
+    cfg_path = _PROJECT_ROOT / "config.yaml"
+    if cfg_path.exists():
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        return data.get("pipeline", {})
+    return {}
+
+
 # Pipeline step identifiers (used by checkpoint)
 STEP_EVIDENCE = "step_1_evidence"
 STEP_ISSUES = "step_2_issues"
@@ -867,7 +878,7 @@ async def _run_post_debate(
 # Main entry point
 # ---------------------------------------------------------------------------
 
-async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False, skip_pretrial: bool = False, interactive: bool = False, question: str | None = None, model_config: str | None = None) -> None:
+async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False, skip_pretrial: bool = False, interactive: bool = False, question: str | None = None, model_config: str | None = None, max_tokens_per_output: int = 2000) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
         print(f"[Error] Case file not found: {case_file}")
@@ -1000,7 +1011,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         print(f"  \u2713 Loaded debate result from checkpoint")
     else:
         print("\n[Step 3] Three-round adversarial debate...")
-        config = RoundConfig(model=selector.select("plaintiff_agent"), max_tokens_per_output=2000, max_retries=2)
+        config = RoundConfig(model=selector.select("plaintiff_agent"), max_tokens_per_output=max_tokens_per_output, max_retries=2)
         result = await _run_rounds(
             issue_tree, ev_index, claude, codex, claude, config, p_id, d_id,
         )
@@ -1290,6 +1301,10 @@ if __name__ == "__main__":
     parser.add_argument("--interactive", action="store_true", help="Enter interactive followup mode after pipeline completes (Step 6)")
     parser.add_argument("--question", default=None, help="Single followup question to ask after pipeline completes (Step 6)")
     args = parser.parse_args()
+    _pipeline_cfg = _load_pipeline_config()
+    # CLI flags take priority; config.yaml provides defaults for unset toggles
+    _skip_pretrial = args.skip_pretrial or bool(_pipeline_cfg.get("skip_pretrial", False))
+    _max_tokens = int(_pipeline_cfg.get("max_tokens_per_output", 2000))
     if args.resume and not args.output_dir:
         parser.error("--resume requires --output-dir to specify the run directory to resume from")
     if args.debug:
@@ -1304,7 +1319,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     try:
-        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume, skip_pretrial=args.skip_pretrial, interactive=args.interactive, question=args.question, model_config=args.model_config))
+        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume, skip_pretrial=_skip_pretrial, interactive=args.interactive, question=args.question, model_config=args.model_config, max_tokens_per_output=_max_tokens))
     except CLINotFoundError as e:
         print(f"\n[Error] CLI not available: {e}")
         sys.exit(1)
