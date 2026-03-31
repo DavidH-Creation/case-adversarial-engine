@@ -214,6 +214,13 @@ class ActionRecommender:
                 plaintiff_plan,
                 defendant_plan,
             )
+            # ---- v1.5: 路径-行动连接（medium closed loop）----
+            amendments, abandon_suggestions, trial_explanations = self._annotate_path_ids(
+                inp.decision_path_tree,
+                amendments,
+                abandon_suggestions,
+                trial_explanations,
+            )
 
         return ActionRecommendation(
             recommendation_id=str(uuid.uuid4()),
@@ -228,6 +235,59 @@ class ActionRecommender:
             case_dispute_category=dispute_category,
             strategic_headline=strategic_headline,
         )
+
+    # ------------------------------------------------------------------
+    # v1.5: 路径-行动连接注释 / Path-action annotation (medium closed loop)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _annotate_path_ids(
+        tree: DecisionPathTree,
+        amendments: list[ClaimAmendmentSuggestion],
+        abandon_suggestions: list[ClaimAbandonSuggestion],
+        trial_explanations: list[TrialExplanationPriority],
+    ) -> tuple[
+        list[ClaimAmendmentSuggestion],
+        list[ClaimAbandonSuggestion],
+        list[TrialExplanationPriority],
+    ]:
+        """为每条行动建议标注受影响的裁判路径 ID。
+
+        逻辑：若行动绑定的 issue_id 出现在某条路径的 trigger_issue_ids 中，
+        则该路径 ID 加入该行动的 impacted_path_ids。
+
+        Returns:
+            (annotated_amendments, annotated_abandon_suggestions, annotated_trial_explanations)
+        """
+        # 构建 issue_id → path_id 的反向索引
+        issue_to_paths: dict[str, list[str]] = {}
+        for path in tree.paths:
+            for iid in path.trigger_issue_ids:
+                issue_to_paths.setdefault(iid, []).append(path.path_id)
+
+        def _path_ids_for_issue(issue_id: str) -> list[str]:
+            return issue_to_paths.get(issue_id, [])
+
+        annotated_amendments = [
+            a.model_copy(
+                update={"impacted_path_ids": _path_ids_for_issue(a.amendment_reason_issue_id)}
+            )
+            for a in amendments
+        ]
+        annotated_abandon = [
+            s.model_copy(
+                update={"impacted_path_ids": _path_ids_for_issue(s.abandon_reason_issue_id)}
+            )
+            for s in abandon_suggestions
+        ]
+        annotated_trial = [
+            t.model_copy(
+                update={"impacted_path_ids": _path_ids_for_issue(t.issue_id)}
+            )
+            for t in trial_explanations
+        ]
+
+        return annotated_amendments, annotated_abandon, annotated_trial
 
     # ------------------------------------------------------------------
     # v7: 行动建议-路径对齐 / Action-path alignment
