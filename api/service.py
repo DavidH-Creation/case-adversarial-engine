@@ -106,7 +106,10 @@ class CaseRecord:
 
     async def iter_progress(self):
         """SSE 用异步生成器 — 先回放历史进度，再跟踪实时进度。"""
-        # 已完成/失败状态直接返回
+        # 先回放已有历史（重连时客户端可获取完整进度）
+        for msg in self.progress:
+            yield msg
+        # 已完成/失败状态无需继续监听
         if self.status in (CaseStatus.analyzed, CaseStatus.failed):
             return
         # 实时跟踪

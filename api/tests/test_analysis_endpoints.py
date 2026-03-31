@@ -514,3 +514,32 @@ class TestUnit6WorkspacePersistence:
         """load_from_workspace must return None for a case_id that was never created."""
         result = store.load_from_workspace("case-does-not-exist")
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# iter_progress — SSE 重连历史回放
+# ---------------------------------------------------------------------------
+
+class TestIterProgressReplay:
+    @pytest.mark.asyncio
+    async def test_iter_progress_replays_history_after_completion(self):
+        """已完成的 case，SSE 重连应先回放 progress 历史，再发送完成事件，不能直接返回空。"""
+        record = store.create(_CASE_INFO)
+        record.status = CaseStatus.analyzed
+        record.progress = ["step1", "step2", "done"]
+
+        events = [e async for e in record.iter_progress()]
+        assert len(events) >= 3, f"期望 ≥3 个事件，实际得到 {events}"
+        assert "step1" in events[0]
+        assert "done" in events[-1]
+
+    @pytest.mark.asyncio
+    async def test_iter_progress_replays_history_after_failed(self):
+        """失败的 case，重连也应回放已有历史。"""
+        record = store.create(_CASE_INFO)
+        record.status = CaseStatus.failed
+        record.progress = ["init", "error: timeout"]
+
+        events = [e async for e in record.iter_progress()]
+        assert len(events) >= 2
+        assert "init" in events[0]
