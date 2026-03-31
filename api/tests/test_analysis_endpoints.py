@@ -529,6 +529,53 @@ class TestUnit6WorkspacePersistence:
 
 
 # ---------------------------------------------------------------------------
+# CaseStore TTL eviction
+# ---------------------------------------------------------------------------
+
+
+class TestCaseStoreTTL:
+    def test_case_store_evicts_expired_entries(self):
+        """TTL 过期后，evict_expired 应删除该 case，get 应返回 None。"""
+        import time
+
+        from api.service import CaseStore
+
+        ttl_store = CaseStore(ttl_seconds=0.1)
+        record = ttl_store.create(_CASE_INFO)
+        case_id = record.case_id
+        assert ttl_store.get(case_id) is not None
+
+        time.sleep(0.2)
+        ttl_store.evict_expired()
+        assert ttl_store.get(case_id) is None
+
+    def test_case_store_get_evicts_lazily_on_access(self):
+        """get() 访问时如果条目已过期应直接返回 None（懒驱逐）。"""
+        import time
+
+        from api.service import CaseStore
+
+        ttl_store = CaseStore(ttl_seconds=0.1)
+        record = ttl_store.create(_CASE_INFO)
+        case_id = record.case_id
+
+        time.sleep(0.2)
+        result = ttl_store.get(case_id)
+        assert result is None
+
+    def test_case_store_non_expired_entry_survives(self):
+        """未过期的条目不应被清除。"""
+        from api.service import CaseStore
+
+        ttl_store = CaseStore(ttl_seconds=3600)
+        record = ttl_store.create(_CASE_INFO)
+        case_id = record.case_id
+
+        ttl_store.evict_expired()
+        assert ttl_store.get(case_id) is not None
+
+
+# ---------------------------------------------------------------------------
 # iter_progress — SSE 重连历史回放
 # ---------------------------------------------------------------------------
 

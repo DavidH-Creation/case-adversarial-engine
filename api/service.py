@@ -19,9 +19,11 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import Lock
 from typing import Any, Optional
 
 # ── 项目根目录注入 sys.path ──────────────────────────────────────────────────
@@ -132,13 +134,17 @@ class CaseRecord:
 
 
 class CaseStore:
-    def __init__(self) -> None:
-        self._cases: dict[str, CaseRecord] = {}
+    def __init__(self, ttl_seconds: float = 86400) -> None:
+        # value: (record, created_at_timestamp)
+        self._cases: dict[str, tuple[CaseRecord, float]] = {}
+        self._ttl = ttl_seconds
+        self._lock = Lock()
 
     def create(self, info: dict[str, Any]) -> CaseRecord:
         case_id = f"case-{uuid.uuid4().hex[:12]}"
         record = CaseRecord(case_id, info)
-        self._cases[case_id] = record
+        with self._lock:
+            self._cases[case_id] = (record, time.time())
         # Unit 6: init workspace on case creation
         if _WORKSPACE_BASE is not None:
             try:
@@ -150,7 +156,24 @@ class CaseStore:
         return record
 
     def get(self, case_id: str) -> Optional[CaseRecord]:
-        return self._cases.get(case_id)
+        with self._lock:
+            entry = self._cases.get(case_id)
+            if entry is None:
+                return None
+            record, created_at = entry
+            if time.time() - created_at > self._ttl:
+                del self._cases[case_id]
+                return None
+            return record
+
+    def evict_expired(self) -> int:
+        """清理过期条目，返回清理数量。"""
+        now = time.time()
+        with self._lock:
+            expired = [k for k, (_, t) in self._cases.items() if now - t > self._ttl]
+            for k in expired:
+                del self._cases[k]
+            return len(expired)
 
     def load_from_workspace(self, case_id: str) -> Optional["CaseRecord"]:
         """Reconstruct a CaseRecord from workspace persistence (restart recovery)."""
