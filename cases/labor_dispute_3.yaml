@@ -1,0 +1,164 @@
+# 工伤赔偿纠纷：王某诉某建筑公司（2025年）
+# Work injury compensation dispute: Wang v Construction Co. (2025)
+
+case_id: "case-labor-injury-wang-v-construct-2025"
+case_slug: "wangconstruct2025"
+case_type: "labor_dispute"
+model: "claude-sonnet-4-6"
+
+parties:
+  plaintiff:
+    party_id: "party-plaintiff-wang"
+    name: "王某"
+  defendant:
+    party_id: "party-defendant-construct"
+    name: "某建筑工程有限公司"
+
+summary:
+  - ["原告", "王某（建筑工人）"]
+  - ["被告", "某建筑工程有限公司"]
+  - ["事故时间", "2024年9月12日"]
+  - ["事故经过", "高空作业时脚手架坍塌，原告从3.5米高处坠落"]
+  - ["伤情认定", "左腿胫骨骨折，伤残等级七级"]
+  - ["工伤认定", "人社局已认定为工伤（2024年11月）"]
+  - ["争议金额", "一次性伤残补助金+停工留薪期工资+医疗费，合计约19.8万元"]
+  - ["核心争议", "劳动关系认定；被告是否应承担全额工伤保险责任"]
+
+materials:
+  plaintiff:
+    - source_id: "src-p-work-injury-cert"
+      text: |
+        工伤认定决定书（2024年11月20日，市人力资源和社会保障局）：
+        认定王某于2024年9月12日在某建筑工程有限公司工地发生的事故
+        属于工伤，适用《工伤保险条例》相关规定。
+        伤害部位：左腿胫骨骨折。
+      metadata:
+        document_type: "government_certificate"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-disability-cert"
+      text: |
+        劳动能力鉴定结论书（2025年1月15日，市劳动能力鉴定委员会）：
+        鉴定结论：王某因工致残，伤残等级七级，
+        生活自理障碍等级：无生活自理障碍。
+      metadata:
+        document_type: "disability_certificate"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-medical-records"
+      text: |
+        住院及门诊医疗记录（2024年9月12日—2025年1月）：
+        住院治疗：2024年9月12日—2024年11月30日（共80天），
+        医疗费用：128,600元（手术费、住院费、药费）
+        门诊复查费用：3,200元
+        合计医疗费：131,800元
+        工伤保险基金实际报销：98,500元，
+        剩余自付部分（因被告未足额缴纳保险）：33,300元。
+      metadata:
+        document_type: "medical_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-salary-base"
+      text: |
+        工资发放记录（2024年1月—9月，微信转账）：
+        每月转账4,500元，共9笔，合计40,500元。
+        证明：原告月均工资4,500元，为工伤待遇计算基数。
+      metadata:
+        document_type: "bank_transfer_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-accident-photos"
+      text: |
+        事故现场照片及工友证明：
+        照片显示脚手架固定螺栓明显锈蚀松动，防护措施不完善。
+        工友陈某书面证明：被告施工队从未组织安全培训，
+        工人自备安全帽，无统一安全带配发。
+      metadata:
+        document_type: "evidence_photos"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+  defendant:
+    - source_id: "src-d-subcontract"
+      text: |
+        劳务分包合同（2024年3月，被告与第三方劳务公司签订）：
+        声称王某系由劳务分包公司实际管理，与被告之间不存在直接劳动关系，
+        用工责任由劳务公司承担。
+      metadata:
+        document_type: "business_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-safety-training"
+      text: |
+        安全培训签到表（被告提供，2024年3月20日）：
+        显示王某已签字确认参加入场安全培训。
+        被告主张：已依规进行安全交底，事故系原告操作不当所致。
+      metadata:
+        document_type: "training_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-insurance-record"
+      text: |
+        工伤保险缴费记录：
+        被告已为施工项目统一购买工程意外伤害险（团体险），
+        保险公司已支付部分费用。
+        但记录显示：被告未单独为王某缴纳工伤保险。
+      metadata:
+        document_type: "insurance_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+claims:
+  - claim_id: "c-001"
+    claim_category: "一次性伤残补助金"
+    title: "支付一次性伤残补助金63,000元"
+    claim_text: >
+      原告伤残等级七级，依《工伤保险条例》第36条，
+      应享受13个月本人工资的一次性伤残补助金。
+      月均工资4,500元×13个月=58,500元。
+      因被告未缴工伤保险，应由被告直接支付。
+
+  - claim_id: "c-002"
+    claim_category: "停工留薪期工资"
+    title: "支付停工留薪期工资13,500元"
+    claim_text: >
+      原告停工留薪期3个月（2024年9月—11月），
+      依规按原工资标准支付：4,500元×3=13,500元，被告至今未付。
+
+  - claim_id: "c-003"
+    claim_category: "医疗费差额"
+    title: "支付自付医疗费差额33,300元"
+    claim_text: >
+      因被告未缴工伤保险，原告自付医疗费33,300元，
+      依法应由被告承担。
+
+defenses:
+  - defense_id: "d-001"
+    defense_category: "用工主体争议"
+    against_claim_id: "c-001"
+    title: "原告实际用工单位为劳务分包公司，被告不承担直接责任"
+    defense_text: >
+      被告与劳务公司签有分包合同，王某由劳务公司负责招募管理，
+      用工关系及工伤责任应由劳务公司承担，被告仅承担连带责任范围内的款项。
+
+  - defense_id: "d-002"
+    defense_category: "事故责任分担"
+    against_claim_id: "c-001"
+    title: "事故存在原告自身操作过失，应减轻被告赔偿责任"
+    defense_text: >
+      被告已组织安全培训，原告签字确认，但实际操作中未按规程系挂安全绳，
+      存在操作过失，应相应减轻被告的赔偿责任。
+
+  - defense_id: "d-003"
+    defense_category: "保险已覆盖"
+    against_claim_id: "c-003"
+    title: "工程意外险已部分覆盖，不应重复赔偿"
+    defense_text: >
+      被告已购买工程意外伤害险，保险公司已赔付部分费用，
+      被告赔偿额应扣除保险赔付，避免重复获偿。

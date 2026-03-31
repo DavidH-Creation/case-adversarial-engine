@@ -1,0 +1,160 @@
+# 房屋买卖纠纷：陈某诉刘某（2025年）
+# House purchase dispute: Chen v Liu (2025)
+
+case_id: "case-real-estate-sale-chen-v-liu-2025"
+case_slug: "chenliu2025"
+case_type: "real_estate"
+model: "claude-sonnet-4-6"
+
+parties:
+  plaintiff:
+    party_id: "party-plaintiff-chen"
+    name: "陈某"
+  defendant:
+    party_id: "party-defendant-liu"
+    name: "刘某"
+
+summary:
+  - ["原告", "陈某（购房方）"]
+  - ["被告", "刘某（出售方）"]
+  - ["房产地址", "某市某区某路88号2单元601室"]
+  - ["合同签订日期", "2025年1月8日"]
+  - ["合同成交价", "280万元"]
+  - ["已付定金", "28万元（合同价10%）"]
+  - ["被告行为", "2025年2月以市场回暖为由拒绝过户，要求解除合同"]
+  - ["核心争议", "合同是否有效；定金是否应双倍返还；原告是否可强制履行"]
+
+materials:
+  plaintiff:
+    - source_id: "src-p-purchase-contract"
+      text: |
+        房屋买卖合同（2025年1月8日签订，经中介公司见证）：
+        出售方：刘某（身份证号：XXXXX）
+        购买方：陈某（身份证号：XXXXX）
+        房产：某市某区某路88号2单元601室，建筑面积89.5㎡
+        成交价格：280万元整
+        付款方式：定金28万元（签约时付清）；首付112万元（30日内）；余款140万元银行按揭
+        过户时间：2025年4月30日前完成产权过户
+        违约责任：任一方违约，违约方向守约方支付合同总价20%违约金（即56万元）
+      metadata:
+        document_type: "purchase_contract"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-deposit-receipt"
+      text: |
+        定金收据（2025年1月8日）：
+        收款方：刘某
+        付款方：陈某
+        收款金额：人民币280,000元（定金）
+        银行转账凭证编号：XXXXX
+        用途：购买某路88号601室房屋定金
+      metadata:
+        document_type: "payment_receipt"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-refusal-wechat"
+      text: |
+        微信聊天记录（2025年2月15日—2月20日）：
+        2025年2月15日，刘某发送消息：
+        "这套房子我不想卖了，现在行情好，280万太亏。你把定金退给我，我双倍还你，不行的话我们打官司。"
+        陈某回复："合同已签，你不能反悔，必须按合同执行过户。"
+        刘某："反正我就是不配合，你去告吧。"
+      metadata:
+        document_type: "communication_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-bank-approval"
+      text: |
+        银行按揭贷款预批函（2025年2月20日）：
+        某银行向陈某出具贷款预批函，批准贷款金额140万元，
+        证明原告具备履约能力，可完成剩余款项支付。
+      metadata:
+        document_type: "bank_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-property-valuation"
+      text: |
+        房产评估报告（2025年2月，某评估机构出具）：
+        评估基准日：2025年2月18日
+        评估价值：318万元（较合同价上涨约38万元）
+        评估方法：市场比较法，参考周边3个月内成交案例。
+        证明：被告毁约系受市场行情变化影响，非合同瑕疵所致。
+      metadata:
+        document_type: "appraisal_report"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+  defendant:
+    - source_id: "src-d-contract-defect"
+      text: |
+        被告答辩意见：
+        1. 合同签订时被告未充分了解市场行情，存在重大误解；
+        2. 中介有诱导行为，合同系在信息不对等情况下签订；
+        3. 请求认定合同可撤销，退还定金，不支付违约金。
+      metadata:
+        document_type: "defense_statement"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-property-restriction"
+      text: |
+        房产查档记录（2025年2月，被告提供）：
+        显示该房产存在一笔抵押（2022年抵押给某银行，尚未解除），
+        被告主张抵押限制导致无法正常过户，非主观违约。
+        原告主张：合同签订前中介已告知原告该抵押情况，约定过户前由被告解除。
+      metadata:
+        document_type: "property_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+claims:
+  - claim_id: "c-001"
+    claim_category: "继续履行合同"
+    title: "被告继续履行合同，协助完成产权过户"
+    claim_text: >
+      合同合法有效，被告无正当理由拒绝过户构成违约，
+      原告要求法院判决被告继续履行合同，在约定期限内完成房产过户手续。
+
+  - claim_id: "c-002"
+    claim_category: "违约金"
+    title: "被告支付违约金560,000元"
+    claim_text: >
+      依合同第8条，被告违约须向原告支付合同总价20%的违约金，
+      280万×20%=56万元（560,000元）。
+
+  - claim_id: "c-003"
+    claim_category: "定金双倍返还（备选）"
+    title: "若合同解除，被告双倍返还定金560,000元"
+    claim_text: >
+      若法院认为合同无法继续履行，依定金罚则，
+      被告应双倍返还定金280,000×2=560,000元。
+
+defenses:
+  - defense_id: "d-001"
+    defense_category: "合同可撤销"
+    against_claim_id: "c-001"
+    title: "合同存在重大误解，被告有权申请撤销"
+    defense_text: >
+      被告签约时未委托专业人士评估房价，对市场行情存在重大误解，
+      依《民法典》第147条，有权申请撤销合同，无需承担违约责任。
+
+  - defense_id: "d-002"
+    defense_category: "客观履行障碍"
+    against_claim_id: "c-001"
+    title: "房产抵押未解除，过户存在客观障碍"
+    defense_text: >
+      房产存在抵押，需先还清银行贷款方可过户，
+      被告资金周转困难，存在客观履约障碍，
+      非主观恶意违约，请求法院减轻违约责任。
+
+  - defense_id: "d-003"
+    defense_category: "违约金过高"
+    against_claim_id: "c-002"
+    title: "约定违约金56万元明显过高，请求酌减"
+    defense_text: >
+      原告实际损失有限（定金利息损失及看房成本），
+      56万元违约金过高，依《民法典》第585条请求法院酌减至合理水平。

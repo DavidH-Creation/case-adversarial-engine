@@ -1,0 +1,169 @@
+# 租赁合同纠纷：孙某诉赵某（2025年）
+# Lease contract dispute: Sun v Zhao (2025)
+
+case_id: "case-real-estate-lease-sun-v-zhao-2025"
+case_slug: "sunzhao2025"
+case_type: "real_estate"
+model: "claude-sonnet-4-6"
+
+parties:
+  plaintiff:
+    party_id: "party-plaintiff-sun"
+    name: "孙某"
+  defendant:
+    party_id: "party-defendant-zhao"
+    name: "赵某"
+
+summary:
+  - ["原告", "孙某（房东）"]
+  - ["被告", "赵某（租客）"]
+  - ["租赁标的", "某市某区某路15号3楼整层（商业用途，270㎡）"]
+  - ["租期", "2023年6月1日—2026年5月31日（3年）"]
+  - ["月租金", "28,000元/月"]
+  - ["被告行为", "2024年10月起连续5个月未付租金，2025年3月擅自迁出"]
+  - ["争议金额", "欠付租金140,000元 + 违约金 + 提前解约赔偿"]
+  - ["核心争议", "租金拖欠是否构成违约；提前退租损失如何计算"]
+
+materials:
+  plaintiff:
+    - source_id: "src-p-lease-contract"
+      text: |
+        商业租赁合同（2023年5月25日签订）：
+        出租方：孙某
+        承租方：赵某
+        租赁物：某路15号3楼整层（商业用途，270㎡）
+        租期：2023年6月1日—2026年5月31日（36个月）
+        月租金：28,000元，每月前5日支付
+        押金：84,000元（3个月租金，已收）
+        违约条款：承租方连续两个月未付租金，出租方有权解除合同，
+        且承租方须支付剩余租期租金总额20%作为违约金。
+      metadata:
+        document_type: "lease_contract"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-deposit-receipt"
+      text: |
+        押金收据（2023年5月25日）：
+        收款方：孙某
+        付款方：赵某
+        收款金额：84,000元（租赁押金，相当于3个月租金）
+        备注：用于租赁某路15号3楼，如有欠租可直接抵扣。
+      metadata:
+        document_type: "payment_receipt"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-rent-payment-records"
+      text: |
+        租金收款记录（2023年6月—2024年9月，共16个月）：
+        每月收到转账28,000元，记录完整。
+        2024年10月至2025年2月：无任何款项入账（共5个月，欠租140,000元）。
+        2025年3月：被告通知已搬离，要求退还押金。
+      metadata:
+        document_type: "bank_transfer_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-demand-notices"
+      text: |
+        催租通知（快递挂号信，2024年11月、12月、2025年1月各一封）：
+        均已送达被告登记地址，被告均未回复。
+        另有微信催租记录：被告回复"生意不好做，再等等"。
+      metadata:
+        document_type: "communication_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-property-inspection"
+      text: |
+        房屋检查记录（2025年3月10日，原告与物业共同勘查）：
+        被告已将全部设备迁出，部分隔断被拆除，
+        导致墙面损坏约15㎡，维修费估价8,500元。
+        物业主任签字确认现场状况。
+      metadata:
+        document_type: "inspection_report"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+  defendant:
+    - source_id: "src-d-force-majeure"
+      text: |
+        被告答辩意见：
+        1. 2024年下半年受市场低迷影响，承租的商铺严重亏损，已具备不可抗力情形；
+        2. 多次与原告协商降租未果，被迫停止支付；
+        3. 请求认定情势变更，免除或减少违约金。
+      metadata:
+        document_type: "defense_statement"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-negotiation-records"
+      text: |
+        降租协商记录（微信聊天，2024年8月—10月）：
+        被告多次要求原告减租至18,000元/月，原告拒绝降价。
+        被告主张：原告拒绝协商，致使被告无法持续经营。
+      metadata:
+        document_type: "communication_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-business-loss"
+      text: |
+        被告经营财务记录（2024年第四季度）：
+        月均营业收入：12,000元
+        月均成本（含租金、人工）：41,000元
+        月均亏损：29,000元
+        被告主张：在此经营条件下继续履约明显不公平，应适用情势变更原则。
+      metadata:
+        document_type: "financial_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+claims:
+  - claim_id: "c-001"
+    claim_category: "欠付租金"
+    title: "被告支付拖欠租金140,000元"
+    claim_text: >
+      被告自2024年10月起连续5个月未支付租金，
+      按合同约定月租28,000元×5个月=140,000元，应立即支付。
+
+  - claim_id: "c-002"
+    claim_category: "违约金"
+    title: "被告支付提前解约违约金"
+    claim_text: >
+      被告擅自提前于2025年3月退租，合同剩余约15个月，
+      剩余租金总额=28,000×15=420,000元，违约金=420,000×20%=84,000元。
+
+  - claim_id: "c-003"
+    claim_category: "房屋修缮费"
+    title: "被告赔偿房屋损坏修缮费8,500元"
+    claim_text: >
+      被告拆除隔断造成墙面损坏，修缮费估价8,500元，
+      应由被告承担。押金中可抵扣，剩余押金退还原告。
+
+defenses:
+  - defense_id: "d-001"
+    defense_category: "情势变更"
+    against_claim_id: "c-001"
+    title: "市场重大变化符合情势变更条件，请求减免责任"
+    defense_text: >
+      2024年下半年整体商业环境急剧恶化，超出被告签约时合理预期，
+      依《民法典》第533条，请求法院调整或解除合同，减免违约赔偿。
+
+  - defense_id: "d-002"
+    defense_category: "原告过错"
+    against_claim_id: "c-002"
+    title: "原告拒绝降租，存在加重损失的过错"
+    defense_text: >
+      被告多次提出合理降租请求，原告一概拒绝协商，
+      不符合诚实信用原则，应相应减少其可主张的违约金数额。
+
+  - defense_id: "d-003"
+    defense_category: "押金抵扣"
+    against_claim_id: "c-001"
+    title: "押金84,000元应优先抵扣欠租，剩余部分方为欠款"
+    defense_text: >
+      合同约定押金可直接抵扣欠租，押金84,000元应先行抵扣，
+      实际欠租差额=140,000-84,000=56,000元，
+      原告要求全额140,000元未扣押金不当。

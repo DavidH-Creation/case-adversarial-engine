@@ -1,0 +1,169 @@
+# 业主与物业纠纷：周某诉某物业公司（2025年）
+# Owner vs property management dispute: Zhou v Property Mgmt Co. (2025)
+
+case_id: "case-real-estate-property-zhou-v-propco-2025"
+case_slug: "zhoupropco2025"
+case_type: "real_estate"
+model: "claude-sonnet-4-6"
+
+parties:
+  plaintiff:
+    party_id: "party-plaintiff-zhou"
+    name: "周某"
+  defendant:
+    party_id: "party-defendant-propco"
+    name: "某物业管理有限公司"
+
+summary:
+  - ["原告", "周某（业主，3栋1201室）"]
+  - ["被告", "某物业管理有限公司"]
+  - ["小区", "某市某花园小区"]
+  - ["争议起因", "电梯长期故障、公共区域设施失修、物业费标准争议"]
+  - ["物业费欠缴", "原告以物业服务不达标为由，拒缴2023年—2024年物业费（共24,000元）"]
+  - ["被告反诉", "要求原告补缴欠费及滞纳金"]
+  - ["核心争议", "物业服务是否达标；业主拒缴物业费是否合法；损失赔偿"]
+
+materials:
+  plaintiff:
+    - source_id: "src-p-property-contract"
+      text: |
+        物业服务合同（2021年，全体业主委员会与被告签订）：
+        服务期限：2021年1月1日起，按年续签。
+        物业费标准：2.5元/㎡/月，原告房屋建筑面积120㎡，月应缴300元，年缴3,600元。
+        服务内容：24小时安保、公共区域清洁、电梯日常维保、设施设备维修等。
+        服务承诺：电梯故障4小时内响应，24小时内完成修复。
+      metadata:
+        document_type: "service_contract"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-elevator-complaints"
+      text: |
+        电梯故障投诉记录（2023年1月—2024年12月）：
+        2023年共发生电梯故障27次，平均每次停运时间52小时；
+        其中3次超过72小时（最长一次持续96小时）。
+        原告所在楼栋（3栋）12层住户尤为受影响，老年业主多名。
+        投诉记录均通过物业400热线留存，被告未予书面回复。
+      metadata:
+        document_type: "complaint_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-facility-photos"
+      text: |
+        公共区域照片记录（2024年3月—6月，每月拍摄）：
+        照片显示：
+        1. 地库照明灯管损坏12处，连续3个月未更换；
+        2. 消防逃生通道堆放杂物，被告消防隐患整改通知未执行；
+        3. 小区健身器材（单杠、漫步机各2台）损坏，安全警示标志缺失。
+      metadata:
+        document_type: "evidence_photos"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-housing-bureau-notice"
+      text: |
+        住建局监察大队整改通知书（2024年5月，已向被告送达）：
+        就电梯维保不规范、公共设施失修问题，责令被告在60日内完成整改。
+        截至2024年12月，整改仍未完成。
+        证明：主管部门已认定被告物业服务存在重大缺陷。
+      metadata:
+        document_type: "government_notice"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-owner-committee"
+      text: |
+        业主委员会决议（2024年7月，36户业主联名签署）：
+        "鉴于某物业公司服务严重不达标，全体业主有权暂停缴纳物业费，
+        直至物业公司完成整改并经业主委员会验收。"
+        被告已收到该决议书面通知。
+      metadata:
+        document_type: "owner_committee_resolution"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+  defendant:
+    - source_id: "src-d-service-records"
+      text: |
+        物业服务记录（2023年—2024年，被告系统导出）：
+        电梯维保记录：每月进行定期保养，共48次保养记录；
+        故障响应记录：平均响应时间3.8小时，未超出合同4小时要求；
+        绿化保养：共完成植被修剪42次；保洁记录：共2,880人次。
+        被告主张：整体服务符合合同要求，个别瑕疵属合理范围。
+      metadata:
+        document_type: "service_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-fee-notice"
+      text: |
+        物业费催缴通知书（2024年4月，向周某送达）：
+        原告自2023年1月起停止缴纳物业费，累计欠缴24,000元（24个月×1,000元/月，注：含停车费400元/月）。
+        依合同约定，欠缴超过3个月，须按欠款额月1%支付滞纳金，
+        至2025年1月，滞纳金累计约4,800元。
+      metadata:
+        document_type: "demand_letter"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-government-response"
+      text: |
+        被告对住建局整改通知的回复（2024年7月）：
+        已完成地库照明更换（96处），逃生通道清障，
+        电梯已申请专业机构年度检验（检验在途）。
+        被告主张：整改措施已在实施中，非拒不整改。
+      metadata:
+        document_type: "government_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+claims:
+  - claim_id: "c-001"
+    claim_category: "减免物业费"
+    title: "以物业服务不达标为由减免欠缴物业费30%"
+    claim_text: >
+      被告物业服务存在重大缺陷，经政府主管部门认定，
+      依《物业管理条例》相关规定，原告有权主张减免物业费。
+      请求减免欠缴物业费（本金部分12,000元）的30%，即3,600元。
+
+  - claim_id: "c-002"
+    claim_category: "损害赔偿"
+    title: "被告赔偿因电梯故障导致的生活损失"
+    claim_text: >
+      电梯多次长时间停运，原告因行动不便（12楼）被迫购买辅助器具并约用医疗服务，
+      实际支出4,200元，被告应予赔偿。
+
+  - claim_id: "c-003"
+    claim_category: "整改要求"
+    title: "被告在60日内完成住建局整改通知要求的全部项目"
+    claim_text: >
+      请求法院判令被告在判决生效后60日内完成主管部门整改通知的全部未落实项目，
+      否则支付每日500元的迟延履行金。
+
+defenses:
+  - defense_id: "d-001"
+    defense_category: "业主无权拒缴"
+    against_claim_id: "c-001"
+    title: "业主不得以服务瑕疵为由拒绝支付物业费"
+    defense_text: >
+      物业服务合同具有约束力，即使存在个别服务瑕疵，
+      依法应通过诉讼途径主张赔偿，而非单方拒缴费用。
+      原告拒缴物业费行为不合法，应补缴全部欠款及滞纳金。
+
+  - defense_id: "d-002"
+    defense_category: "服务总体达标"
+    against_claim_id: "c-001"
+    title: "物业服务整体达到合同约定标准，个别瑕疵已整改"
+    defense_text: >
+      被告服务记录显示各项指标总体符合合同要求，
+      电梯故障响应时间平均3.8小时未超标，
+      整改措施已在落实，不构成实质性服务违约。
+
+  - defense_id: "d-003"
+    defense_category: "损失因果关系"
+    against_claim_id: "c-002"
+    title: "原告主张的损失与电梯故障无直接因果关系"
+    defense_text: >
+      原告未提供充分证明该支出系因电梯故障所必然产生的证据，
+      相关费用与物业服务之间无直接因果关系，不应由被告承担。

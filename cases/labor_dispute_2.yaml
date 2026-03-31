@@ -1,0 +1,160 @@
+# 工资拖欠纠纷：张某诉某餐饮公司（2025年）
+# Wage arrears dispute: Zhang v Restaurant Co. (2025)
+
+case_id: "case-labor-wage-zhang-v-restco-2025"
+case_slug: "zhangrestco2025"
+case_type: "labor_dispute"
+model: "claude-sonnet-4-6"
+
+parties:
+  plaintiff:
+    party_id: "party-plaintiff-zhang"
+    name: "张某"
+  defendant:
+    party_id: "party-defendant-restco"
+    name: "某餐饮管理有限公司"
+
+summary:
+  - ["原告", "张某（前厨师长）"]
+  - ["被告", "某餐饮管理有限公司"]
+  - ["劳动关系起止", "2023年6月—2025年3月（未签书面合同）"]
+  - ["欠薪期间", "2024年10月—2025年3月，共6个月"]
+  - ["月薪标准", "口头约定8,000元/月"]
+  - ["争议金额", "欠薪48,000元 + 未签合同双倍工资差额"]
+  - ["核心争议", "劳动关系是否成立；月薪标准认定；双倍工资是否适用"]
+
+materials:
+  plaintiff:
+    - source_id: "src-p-wechat-hire"
+      text: |
+        微信聊天记录（2023年5月28日，被告法人代表赵某与张某对话）：
+        赵某："你来我们这当厨师长，月薪8000，包吃包住，你看行不行？"
+        张某："行，那就这样定了，下个月来上班。"
+        证明：双方已口头约定劳动关系及薪资标准。
+      metadata:
+        document_type: "communication_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-salary-payment"
+      text: |
+        微信转账记录（2023年6月—2024年9月，共15个月，合计120,000元）：
+        2023年6月至2024年9月，每月微信转账8,000元，转账备注均为"工资"。
+        转账方均为法人代表赵某个人账户。
+        证明：被告按月支付工资8,000元，实际已持续履行劳动合同义务。
+      metadata:
+        document_type: "bank_transfer_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-attendance"
+      text: |
+        餐厅员工打卡记录（被告系统导出，2023年6月—2025年3月）：
+        显示张某每日出勤记录，含上下班时间、岗位标注"厨师长"。
+        2024年10月至2025年3月期间，打卡记录正常，但转账记录中断。
+      metadata:
+        document_type: "attendance_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-social-insurance"
+      text: |
+        社会保险缴费记录查询结果：
+        2023年6月至2024年9月：被告为张某缴纳社会保险（养老+医疗+工伤）。
+        2024年10月起：被告停止为张某缴纳社会保险。
+        证明：劳动关系存在且连续，被告自2024年10月起单方面违约。
+      metadata:
+        document_type: "social_insurance_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-demand-letter"
+      text: |
+        催薪记录（微信消息截图，2024年11月—2025年2月）：
+        张某多次向赵某催要欠薪，赵某回复"资金周转困难，稍等"、
+        "月底一定解决"等，始终未实际支付。
+      metadata:
+        document_type: "communication_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+  defendant:
+    - source_id: "src-d-no-contract"
+      text: |
+        被告答辩意见：
+        1. 双方从未签订书面劳动合同，不存在正式劳动关系。
+        2. 张某系以"合作分成"方式参与餐厅经营，非雇员身份。
+        3. 历次转账系合伙分红，非工资性质。
+      metadata:
+        document_type: "defense_statement"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-partnership-claim"
+      text: |
+        被告提交的"合伙经营协议"（手写件，落款日期2023年5月）：
+        声称张某以技术入股方式参与餐厅合伙经营，按季度利润分红。
+        注：原告否认签署该协议，主张签名系伪造。
+      metadata:
+        document_type: "business_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-financial-difficulty"
+      text: |
+        餐厅2024年第四季度财务报告（内部）：
+        营业收入同比下降42%，运营亏损。
+        被告主张资金困难系客观原因，无主观拒付工资故意。
+      metadata:
+        document_type: "financial_records"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+claims:
+  - claim_id: "c-001"
+    claim_category: "拖欠工资"
+    title: "被告支付拖欠工资48,000元"
+    claim_text: >
+      被告自2024年10月起至2025年3月共6个月未支付工资，
+      按约定月薪8,000元计算，合计欠薪48,000元，应立即足额支付。
+
+  - claim_id: "c-002"
+    claim_category: "未签合同双倍工资"
+    title: "被告支付未签书面合同双倍工资差额"
+    claim_text: >
+      被告自劳动关系建立起未与原告签订书面劳动合同，
+      依《劳动合同法》第82条，应支付2023年7月至2024年6月（11个月）
+      的双倍工资差额，共88,000元。
+
+  - claim_id: "c-003"
+    claim_category: "经济补偿金"
+    title: "被告支付解除劳动关系经济补偿金"
+    claim_text: >
+      被告拖欠工资超过两个月，原告依法解除劳动关系，
+      应获经济补偿金：月均8,000元×2年（工龄不足3年按2年计）=16,000元。
+
+defenses:
+  - defense_id: "d-001"
+    defense_category: "劳动关系不成立"
+    against_claim_id: "c-001"
+    title: "双方系合伙关系而非劳动关系，不适用劳动法"
+    defense_text: >
+      双方签有合伙经营协议，张某以技术入股参与利润分配，
+      非受雇员工。历次转账系利润分红，非工资支付。
+      餐厅亏损期间无分红可分，非拖欠工资。
+
+  - defense_id: "d-002"
+    defense_category: "双倍工资不适用"
+    against_claim_id: "c-002"
+    title: "合伙关系下不存在签订劳动合同的义务"
+    defense_text: >
+      若认定为劳动关系（被告不认可），亦因双方持续以实际合作
+      弥补书面合同之缺失，双倍工资仲裁时效已过。
+
+  - defense_id: "d-003"
+    defense_category: "经济补偿不适用"
+    against_claim_id: "c-003"
+    title: "未解除劳动关系，原告系自行离职"
+    defense_text: >
+      张某于2025年3月自行离开餐厅，非被告解除，
+      自离不符合《劳动合同法》第46条经济补偿条件。
