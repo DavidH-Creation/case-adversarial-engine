@@ -1,3 +1,6 @@
 .bulwark/
 **/__pycache__/
 *.pyc
+outputs/
+.claude/worktrees/
+*.log
