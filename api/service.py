@@ -145,6 +145,8 @@ class CaseStore:
         self._lock = Lock()
         # None means "use _WORKSPACE_BASE global at call time" so patching in tests works
         self._workspaces_dir = workspaces_dir
+        # TTL-evicted IDs: skip disk fallback for these (intentionally expired)
+        self._evicted: set[str] = set()
 
     def create(self, info: dict[str, Any]) -> CaseRecord:
         case_id = f"case-{uuid.uuid4().hex[:12]}"
@@ -170,18 +172,24 @@ class CaseStore:
 
         with self._lock:
             self._cases[case_id] = (record, time.time())
+            self._evicted.discard(case_id)
         return record
 
     def get(self, case_id: str) -> Optional[CaseRecord]:
         with self._lock:
+            if case_id in self._evicted:
+                return None  # TTL-evicted: never fall back to disk
             entry = self._cases.get(case_id)
-            if entry is None:
-                return None
-            record, created_at = entry
-            if time.time() - created_at > self._ttl:
+            if entry is not None:
+                record, created_at = entry
+                if time.time() - created_at <= self._ttl:
+                    return record
+                # Lazy TTL eviction
                 del self._cases[case_id]
+                self._evicted.add(case_id)
                 return None
-            return record
+        # Not in memory (e.g. after process restart / _cases.clear()): try disk recovery
+        return self._load_from_disk(case_id, self._workspaces_dir or _WORKSPACE_BASE)
 
     def load_from_workspace(self, case_id: str) -> Optional["CaseRecord"]:
         """Reconstruct a CaseRecord from workspace persistence (restart recovery)."""
@@ -236,6 +244,7 @@ class CaseStore:
             expired = [k for k, (_, t) in self._cases.items() if now - t > self._ttl]
             for k in expired:
                 del self._cases[k]
+                self._evicted.add(k)
             return len(expired)
 
 

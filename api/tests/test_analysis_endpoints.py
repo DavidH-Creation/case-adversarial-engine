@@ -509,11 +509,11 @@ class TestUnit6WorkspacePersistence:
             with patch("api.service._PROJECT_ROOT", tmp_path):
                 asyncio.run(run_analysis(record))
 
-        # Simulate restart: clear in-memory store
+        # Simulate restart: clear in-memory store (direct manipulation bypasses TTL eviction)
+        # get() now falls back to disk for entries not in _cases but also not TTL-evicted.
         store._cases.clear()
-        assert store.get(case_id) is None, "must be gone from memory"
 
-        # Recovery via workspace
+        # Explicit recovery via load_from_workspace()
         recovered = store.load_from_workspace(case_id)
         assert recovered is not None, "must be recoverable from workspace"
         assert recovered.case_id == case_id
