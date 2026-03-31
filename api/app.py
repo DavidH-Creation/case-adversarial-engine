@@ -14,10 +14,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from .auth import verify_token
 from .schemas import (
     AddMaterialRequest,
     AddMaterialResponse,
@@ -50,6 +51,7 @@ app = FastAPI(
     title="案件对抗分析系统",
     description="渐进式案件录入与 AI 对抗分析 API",
     version="1.0.0",
+    dependencies=[Depends(verify_token)],
 )
 
 _STATIC_DIR = Path(__file__).parent / "static"
