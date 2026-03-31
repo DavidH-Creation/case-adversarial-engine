@@ -33,6 +33,12 @@ jobs:
       - name: ruff format
         run: ruff format --check .
 
+      - name: Dependency vulnerability scan
+        run: |
+          pip install pip-audit
+          pip-audit --requirement requirements.txt --strict
+        continue-on-error: true  # advisory: 了解现有 CVE 数量后再决定是否强制
+
   # ---------------------------------------------------------------------------
   # Unit tests — all mock tests, integration tests excluded
   # ---------------------------------------------------------------------------
