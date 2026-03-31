@@ -143,27 +143,30 @@ class CaseStore:
         self._cases: dict[str, tuple[CaseRecord, float]] = {}
         self._ttl = ttl_seconds
         self._lock = Lock()
-        self._workspaces_dir = workspaces_dir or (_PROJECT_ROOT / "workspaces")
+        # None means "use _WORKSPACE_BASE global at call time" so patching in tests works
+        self._workspaces_dir = workspaces_dir
 
     def create(self, info: dict[str, Any]) -> CaseRecord:
         case_id = f"case-{uuid.uuid4().hex[:12]}"
         record = CaseRecord(case_id, info)
 
         # P2-3: 初始化 WorkspaceManager 并持久化案件元数据
-        wm = WorkspaceManager(self._workspaces_dir, case_id)
-        try:
-            wm.init_workspace(info.get("case_type", "civil_loan"))
-        except FileExistsError:
-            pass  # workspace 已存在（不应发生于全新 case_id）
-        wm.save_case_meta(
-            {
-                "case_id": case_id,
-                "info": info,
-                "status": record.status.value,
-                "materials": record.materials,
-            }
-        )
-        record.workspace_manager = wm
+        ws_base = self._workspaces_dir or _WORKSPACE_BASE
+        if ws_base is not None:
+            try:
+                wm = WorkspaceManager(ws_base, case_id)
+                wm.init_workspace(info.get("case_type", "civil_loan"))
+                wm.save_case_meta(
+                    {
+                        "case_id": case_id,
+                        "info": info,
+                        "status": record.status.value,
+                        "materials": record.materials,
+                    }
+                )
+                record.workspace_manager = wm
+            except Exception:
+                pass  # non-fatal: workspace write failure doesn't block creation
 
         with self._lock:
             self._cases[case_id] = (record, time.time())
@@ -172,17 +175,29 @@ class CaseStore:
     def get(self, case_id: str) -> Optional[CaseRecord]:
         with self._lock:
             entry = self._cases.get(case_id)
-            if entry is not None:
-                record, created_at = entry
-                if time.time() - created_at <= self._ttl:
-                    return record
+            if entry is None:
+                return None
+            record, created_at = entry
+            if time.time() - created_at > self._ttl:
                 del self._cases[case_id]
-        # TTL 过期或内存中不存在：尝试从磁盘恢复（P2-3）
-        return self._load_from_disk(case_id)
+                return None
+            return record
 
-    def _load_from_disk(self, case_id: str) -> Optional[CaseRecord]:
+    def load_from_workspace(self, case_id: str) -> Optional["CaseRecord"]:
+        """Reconstruct a CaseRecord from workspace persistence (restart recovery)."""
+        ws_base = self._workspaces_dir or _WORKSPACE_BASE
+        if ws_base is None:
+            return None
+        return self._load_from_disk(case_id, ws_base)
+
+    def _load_from_disk(
+        self, case_id: str, ws_base: Optional[Path] = None
+    ) -> Optional["CaseRecord"]:
         """从 WorkspaceManager 持久化存储中恢复 CaseRecord。"""
-        wm = WorkspaceManager(self._workspaces_dir, case_id)
+        base = ws_base or self._workspaces_dir or _WORKSPACE_BASE
+        if base is None:
+            return None
+        wm = WorkspaceManager(base, case_id)
         meta = wm.load_case_meta()
         if meta is None:
             return None
@@ -212,8 +227,6 @@ class CaseStore:
             record.analysis_data = json.loads(analysis_path.read_text(encoding="utf-8"))
             record.run_id = (record.analysis_data or {}).get("run_id")
 
-        with self._lock:
-            self._cases[case_id] = (record, time.time())
         return record
 
     def evict_expired(self) -> int:

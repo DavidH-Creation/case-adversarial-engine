@@ -7,6 +7,7 @@ End-to-end API flow test: create case → extract (mocked) → analyze (mocked) 
 - P1-2: run_analysis 持久化 baseline 文件到 outputs/<run_id>/，analysis_data 含 run_id
 - P2-3: CaseStore 与 WorkspaceManager 集成，进程重启后可从磁盘恢复案件状态
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -71,6 +72,7 @@ _CHANGE_SET = [
 # ---------------------------------------------------------------------------
 # 辅助构建函数
 # ---------------------------------------------------------------------------
+
 
 def _make_ev_index(case_id: str) -> EvidenceIndex:
     ev = Evidence(
@@ -149,6 +151,7 @@ async def _fake_run_rounds(
 # E2E 测试
 # ---------------------------------------------------------------------------
 
+
 def test_e2e_create_extract_analyze_scenario(tmp_path):
     """
     端到端流程：
@@ -165,9 +168,7 @@ def test_e2e_create_extract_analyze_scenario(tmp_path):
     # 使用独立的临时工作区目录，避免污染全局 store
     test_store = CaseStore(workspaces_dir=tmp_path / "workspaces")
 
-    with patch.object(service_module, "store", test_store), \
-         patch("api.app.store", test_store):
-
+    with patch.object(service_module, "store", test_store), patch("api.app.store", test_store):
         client = TestClient(app)
 
         # ── Step 1: 创建案件 ───────────────────────────────────────────
@@ -219,13 +220,17 @@ def test_e2e_create_extract_analyze_scenario(tmp_path):
 
         # ── Step 7: P1-2 — baseline 文件存在，run_id 在 analysis_data ─
         assert record.analysis_data is not None
-        assert "run_id" in record.analysis_data, "analysis_data must contain run_id for scenario API"
+        assert "run_id" in record.analysis_data, (
+            "analysis_data must contain run_id for scenario API"
+        )
         run_id = record.analysis_data["run_id"]
         assert run_id == record.run_id
 
         baseline_dir = _PROJECT_ROOT / "outputs" / run_id
         assert (baseline_dir / "issue_tree.json").exists(), "issue_tree.json must be persisted"
-        assert (baseline_dir / "evidence_index.json").exists(), "evidence_index.json must be persisted"
+        assert (baseline_dir / "evidence_index.json").exists(), (
+            "evidence_index.json must be persisted"
+        )
         assert (baseline_dir / "result.json").exists(), "result.json must be persisted"
 
         # result.json 中 run_id 字段正确（供 load_baseline 使用）
@@ -234,6 +239,7 @@ def test_e2e_create_extract_analyze_scenario(tmp_path):
 
         # ── Step 8: P2-3 — 工作区持久化与磁盘恢复 ─────────────────────
         from engines.shared.workspace_manager import WorkspaceManager
+
         wm = WorkspaceManager(tmp_path / "workspaces", case_id)
         meta = wm.load_case_meta()
         assert meta is not None, "case_meta.json must be saved"
