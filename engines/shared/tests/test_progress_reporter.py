@@ -45,7 +45,7 @@ class TestCLIProgressReporter:
         for n, name in enumerate(["Alpha", "Beta", "Gamma", "Delta", "Epsilon"], 1):
             reporter.on_step_complete(n, name)
 
-        lines = [l for l in capsys.readouterr().out.strip().split("\n") if l]
+        lines = [ln for ln in capsys.readouterr().out.strip().split("\n") if ln]
         assert len(lines) == 5
         for i, name in enumerate(["Alpha", "Beta", "Gamma", "Delta", "Epsilon"], 1):
             assert lines[i - 1] == f"[Step {i}/5] {name}: completed"
@@ -62,8 +62,8 @@ class TestCLIProgressReporter:
         reporter.on_step_start(3, "Adversarial Debate")
         reporter.on_error(3, "LLM timeout")
 
-        lines = [l for l in capsys.readouterr().out.strip().split("\n") if l]
-        error_line = next(l for l in lines if "failed" in l)
+        lines = [ln for ln in capsys.readouterr().out.strip().split("\n") if ln]
+        error_line = next(ln for ln in lines if "failed" in ln)
         assert "[Step 3/5]" in error_line
         assert "failed" in error_line
         assert "LLM timeout" in error_line
@@ -90,8 +90,8 @@ class TestCLIProgressReporter:
             reporter.on_step_start(n, name)
             reporter.on_step_complete(n, name)
 
-        lines = [l for l in capsys.readouterr().out.strip().split("\n") if l]
-        completed = [l for l in lines if "completed" in l]
+        lines = [ln for ln in capsys.readouterr().out.strip().split("\n") if ln]
+        completed = [ln for ln in lines if "completed" in ln]
         assert len(completed) == 5
         for i, name in enumerate(step_names, 1):
             assert f"[Step {i}/5] {name}: completed" in completed[i - 1]
