@@ -69,6 +69,7 @@ class CaseInfoResponse(BaseModel):
     error: Optional[str] = None
     has_extraction: bool = False
     has_analysis: bool = False
+    run_id: Optional[str] = None  # Unit 5: analysis run_id for Scenario API
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +115,7 @@ class ConfirmRequest(BaseModel):
 
 class AnalysisResponse(BaseModel):
     status: CaseStatus
+    run_id: Optional[str] = None  # Unit 5: stable id for Scenario API
     overall_assessment: Optional[str] = None
     plaintiff_args: list[dict[str, Any]] = Field(default_factory=list)
     defendant_defenses: list[dict[str, Any]] = Field(default_factory=list)

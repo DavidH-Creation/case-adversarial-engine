@@ -101,6 +101,7 @@ async def get_case(case_id: str) -> CaseInfoResponse:
         error=record.error,
         has_extraction=record.extraction_data is not None,
         has_analysis=record.analysis_data is not None,
+        run_id=record.run_id,
     )
 
 
