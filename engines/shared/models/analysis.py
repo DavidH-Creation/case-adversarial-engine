@@ -505,6 +505,11 @@ class ClaimAmendmentSuggestion(BaseModel):
     amendment_reason_evidence_ids: list[str] = Field(
         default_factory=list, description="修改依据关联证据 ID 列表"
     )
+    # v1.5: 路径-行动连接（medium closed loop）
+    impacted_path_ids: list[str] = Field(
+        default_factory=list,
+        description="本建议影响的裁判路径 ID 列表（来自 P0.3 DecisionPath.path_id）",
+    )
 
 
 class ClaimAbandonSuggestion(BaseModel):
@@ -523,6 +528,11 @@ class ClaimAbandonSuggestion(BaseModel):
     abandon_reason_issue_id: str = Field(
         ..., min_length=1, description="放弃依据争点 ID（零容忍空值）"
     )
+    # v1.5: 路径-行动连接（medium closed loop）
+    impacted_path_ids: list[str] = Field(
+        default_factory=list,
+        description="本建议影响的裁判路径 ID 列表（来自 P0.3 DecisionPath.path_id）",
+    )
 
 
 class TrialExplanationPriority(BaseModel):
@@ -537,6 +547,11 @@ class TrialExplanationPriority(BaseModel):
     priority_id: str = Field(..., min_length=1)
     issue_id: str = Field(..., min_length=1, description="绑定争点 ID（零容忍空值）")
     explanation_text: str = Field(..., min_length=1, description="庭审解释事项说明")
+    # v1.5: 路径-行动连接（medium closed loop）
+    impacted_path_ids: list[str] = Field(
+        default_factory=list,
+        description="本庭审事项影响的裁判路径 ID 列表（来自 P0.3 DecisionPath.path_id）",
+    )
 
 
 class StrategicRecommendation(BaseModel):

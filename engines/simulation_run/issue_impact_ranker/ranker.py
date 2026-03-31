@@ -63,6 +63,13 @@ _ATTACK_ORDER: dict[AttackStrength, int] = {
     AttackStrength.weak: 2,
 }
 
+# outcome_impact 对 composite_score 的加成（校准：确保高影响争点不被低分数淹没）
+_IMPACT_BONUS: dict[OutcomeImpact, float] = {
+    OutcomeImpact.high: 20.0,
+    OutcomeImpact.medium: 10.0,
+    OutcomeImpact.low: 0.0,
+}
+
 
 class IssueImpactRanker:
     """争点影响排序器。
@@ -564,6 +571,7 @@ class IssueImpactRanker:
         - importance_score, swing_score, credibility_impact: 直接使用 (0-100)
         - evidence_strength_gap: 取绝对值（差距越大 = 争点越不稳定 = 越需关注）
         - dependency_depth: 浅层加分（根争点=100, depth=1→75, 2→50, 3→25, 4+→0）
+        - outcome_impact 加成: high+20 / medium+10 / low+0（校准：确保高影响争点排名靠前）
         """
         w = cls._COMPOSITE_WEIGHTS
         imp = issue.importance_score or 0
@@ -573,13 +581,15 @@ class IssueImpactRanker:
         depth = issue.dependency_depth or 0
         depth_score = max(0, 100 - depth * 25)
 
-        return (
+        base = (
             w["importance"] * imp
             + w["swing"] * swi
             + w["gap_abs"] * gap
             + w["credibility"] * cred
             + w["depth"] * depth_score
         )
+        bonus = _IMPACT_BONUS.get(issue.outcome_impact, 0.0) if issue.outcome_impact else 0.0
+        return base + bonus
 
     # ------------------------------------------------------------------
     # 规则层：校验 + 富化 / Validation and enrichment

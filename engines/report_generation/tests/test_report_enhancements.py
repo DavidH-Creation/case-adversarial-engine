@@ -318,14 +318,36 @@ class TestWriteMdMediationRange:
             return (out / "report.md").read_text(encoding="utf-8")
 
     def test_mediation_range_with_data(self) -> None:
-        """amount_report + decision_tree → 显示调解区间。"""
+        """amount_report + decision_tree + with_mediation=True → 显示调解区间。"""
+        from scripts.run_case import _write_md
+
+        result = _make_result(with_summary=False)
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            _write_md(
+                out,
+                result,
+                SimpleNamespace(issues=[]),
+                _CASE_DATA,
+                amount_report=_make_amount_report(),
+                decision_tree=_make_decision_tree(),
+                no_redact=True,
+                with_mediation=True,
+            )
+            content = (out / "report.md").read_text(encoding="utf-8")
+        assert "调解区间评估" in content
+        assert "建议调解点" in content
+        assert "诉请总额" in content
+
+    def test_mediation_off_by_default(self) -> None:
+        """默认不启用 with_mediation → 不显示调解区间。"""
         content = self._write(
             amount_report=_make_amount_report(),
             decision_tree=_make_decision_tree(),
         )
-        assert "调解区间评估" in content
-        assert "建议调解点" in content
-        assert "诉请总额" in content
+        assert "调解区间评估" not in content
 
     def test_no_amount_report_no_section(self) -> None:
         """无 amount_report → 不显示。"""

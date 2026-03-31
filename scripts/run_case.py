@@ -98,6 +98,12 @@ from engines.simulation_run.attack_chain_optimizer import (
 )
 from engines.simulation_run.action_recommender import ActionRecommender
 from engines.simulation_run.action_recommender.schemas import ActionRecommenderInput
+from engines.simulation_run.evidence_gap_roi_ranker.ranker import EvidenceGapROIRanker
+from engines.simulation_run.evidence_gap_roi_ranker.schemas import (
+    EvidenceGapDescriptor,
+    EvidenceGapRankerInput,
+)
+from engines.shared.display_resolver import resolve_gaps_bulk
 from engines.report_generation.executive_summarizer import ExecutiveSummarizer
 from engines.report_generation.executive_summarizer.schemas import ExecutiveSummarizerInput
 from engines.case_structuring.admissibility_evaluator import (
@@ -315,7 +321,9 @@ def _write_md(
     action_rec=None,
     exec_summary=None,
     amount_report=None,
+    evidence_gaps=None,
     no_redact: bool = False,
+    with_mediation: bool = False,
 ) -> Path:
     from engines.shared.disclaimer_templates import DISCLAIMER_MD
     from engines.shared.pii_redactor import redact_text
@@ -477,8 +485,8 @@ def _write_md(
                 lines.append(f"- **{bc.condition_id}**: {bc.description}")
             lines.append("")
 
-    # Mediation range
-    med_range = compute_mediation_range(amount_report, decision_tree)
+    # Mediation range (only when --with-mediation is set)
+    med_range = compute_mediation_range(amount_report, decision_tree) if with_mediation else None
     if med_range:
         lines += ["## 调解区间评估", ""]
         lines.append("| 指标 | 金额 |")
@@ -550,24 +558,47 @@ def _write_md(
         if action_rec.claims_to_abandon:
             lines.append("### Claims to Abandon")
             for ab in action_rec.claims_to_abandon:
-                lines.append(f"- **{ab.suggestion_id}** ({ab.claim_id}): {ab.abandon_reason}")
+                _path_note = (
+                    f" *(路径: {', '.join(ab.impacted_path_ids)})*"
+                    if getattr(ab, "impacted_path_ids", None)
+                    else ""
+                )
+                lines.append(
+                    f"- **{ab.suggestion_id}** ({ab.claim_id}): {ab.abandon_reason}{_path_note}"
+                )
             lines.append("")
         if action_rec.recommended_claim_amendments:
             lines.append("### Claim Amendments")
             for am in action_rec.recommended_claim_amendments:
+                _path_note = (
+                    f" *(路径: {', '.join(am.impacted_path_ids)})*"
+                    if getattr(am, "impacted_path_ids", None)
+                    else ""
+                )
                 lines.append(
-                    f"- **{am.suggestion_id}** ({am.original_claim_id}): {am.amendment_description}"
+                    f"- **{am.suggestion_id}** ({am.original_claim_id}): {am.amendment_description}{_path_note}"
                 )
             lines.append("")
         if action_rec.evidence_supplement_priorities:
             lines.append("### Evidence Supplement Priorities")
-            for gap_id in action_rec.evidence_supplement_priorities:
-                lines.append(f"- {gap_id}")
+            _resolved_gaps = resolve_gaps_bulk(
+                action_rec.evidence_supplement_priorities,
+                evidence_gaps or [],
+            )
+            for _gap_id, _gap_desc in _resolved_gaps:
+                lines.append(f"- {_gap_desc}")
             lines.append("")
         if action_rec.trial_explanation_priorities:
             lines.append("### Trial Explanation Priorities")
             for tp in action_rec.trial_explanation_priorities:
-                lines.append(f"- **{tp.priority_id}** ({tp.issue_id}): {tp.explanation_text}")
+                _path_note = (
+                    f" *(路径: {', '.join(tp.impacted_path_ids)})*"
+                    if getattr(tp, "impacted_path_ids", None)
+                    else ""
+                )
+                lines.append(
+                    f"- **{tp.priority_id}** ({tp.issue_id}): {tp.explanation_text}{_path_note}"
+                )
             lines.append("")
 
     # Executive summary
@@ -752,6 +783,58 @@ def _derive_evidence_gaps(
     return gaps
 
 
+def _build_gap_descriptors_from_adversarial(
+    missing_report: list,
+    pretrial_gaps: list[EvidenceGapItem],
+) -> list[EvidenceGapDescriptor]:
+    """Build EvidenceGapDescriptor list for P1.7 from two sources:
+
+    1. Rule-based MissingEvidenceReport items from the adversarial rounds.
+    2. Pretrial cross-examination gaps (already structured).
+
+    The resulting descriptors are fed into EvidenceGapROIRanker which assigns
+    roi_rank and converts them to EvidenceGapItem objects.
+    """
+    descriptors: list[EvidenceGapDescriptor] = []
+    seen_ids: set[str] = set()
+
+    # Source 1: missing evidence from adversarial rounds (rule-based)
+    for item in missing_report:
+        gap_id = f"missing-{item.issue_id}-{item.missing_for_party_id}"
+        if gap_id in seen_ids:
+            continue
+        seen_ids.add(gap_id)
+        descriptors.append(
+            EvidenceGapDescriptor(
+                gap_id=gap_id,
+                related_issue_id=item.issue_id,
+                gap_description=item.description,
+                supplement_cost=SupplementCost.medium,
+                outcome_impact_size=OutcomeImpactSize.moderate,
+                practically_obtainable=PracticallyObtainable.uncertain,
+            )
+        )
+
+    # Source 2: pretrial cross-examination gaps (already have rich metadata)
+    for gap_item in pretrial_gaps:
+        if gap_item.gap_id in seen_ids:
+            continue
+        seen_ids.add(gap_item.gap_id)
+        descriptors.append(
+            EvidenceGapDescriptor(
+                gap_id=gap_item.gap_id,
+                related_issue_id=gap_item.related_issue_id,
+                gap_description=gap_item.gap_description,
+                supplement_cost=gap_item.supplement_cost,
+                outcome_impact_size=gap_item.outcome_impact_size,
+                practically_obtainable=gap_item.practically_obtainable,
+                alternative_evidence_paths=gap_item.alternative_evidence_paths,
+            )
+        )
+
+    return descriptors
+
+
 # ---------------------------------------------------------------------------
 # Post-debate analysis pipeline
 # ---------------------------------------------------------------------------
@@ -774,8 +857,24 @@ async def _run_post_debate(
 
     artifacts: dict[str, Any] = {}
 
-    # Derive evidence gaps from pretrial cross-examination (placeholder until P1.7)
-    evidence_gaps = _derive_evidence_gaps(conference_result, case_id, run_id)
+    # Derive pretrial cross-examination gaps (source 2 for P1.7)
+    pretrial_gaps = _derive_evidence_gaps(conference_result, case_id, run_id)
+
+    # P1.7: EvidenceGapROIRanker — aggregate gaps from adversarial rounds + pretrial,
+    # then rank by supplement ROI (obtainability × outcome_impact / cost).
+    print("  - Evidence gap ROI ranking (P1.7)...")
+    gap_descriptors = _build_gap_descriptors_from_adversarial(
+        result.missing_evidence_report, pretrial_gaps
+    )
+    if gap_descriptors:
+        gap_ranking = EvidenceGapROIRanker().rank(
+            EvidenceGapRankerInput(case_id=case_id, run_id=run_id, gap_items=gap_descriptors)
+        )
+        evidence_gaps: list[EvidenceGapItem] = gap_ranking.ranked_items
+        print(f"    ✓ Ranked {len(evidence_gaps)} gap(s)")
+    else:
+        evidence_gaps = pretrial_gaps
+        print("    - No evidence gaps identified")
 
     # P0.2: AmountCalculator (sync, rule-based)
     amount_input = _build_financials(case_data.get("financials", {}), case_id, run_id)
@@ -1019,6 +1118,9 @@ async def _run_post_debate(
     else:
         print("  - Skipping ExecutiveSummarizer: attack_chain not available")
 
+    # Expose evidence gaps in artifacts so callers can use DisplayResolver
+    artifacts["evidence_gaps"] = evidence_gaps
+
     return artifacts
 
 
@@ -1039,6 +1141,7 @@ async def main(
     question: str | None = None,
     model_config: str | None = None,
     max_tokens_per_output: int = 2000,
+    with_mediation: bool = False,
 ) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
@@ -1396,7 +1499,9 @@ async def main(
                 action_rec=artifacts.get("action_rec"),
                 exec_summary=artifacts.get("exec_summary"),
                 amount_report=artifacts.get("amount_report"),
+                evidence_gaps=artifacts.get("evidence_gaps"),
                 no_redact=no_redact,
+                with_mediation=with_mediation,
             )
             ckpt.save(STEP_OUTPUTS, {"result_json": str(jp), "report_md": str(mp)})
             reporter.on_step_complete(4, "Write Outputs")
@@ -1668,6 +1773,11 @@ if __name__ == "__main__":
         default=None,
         help="Single followup question to ask after pipeline completes (Step 6)",
     )
+    parser.add_argument(
+        "--with-mediation",
+        action="store_true",
+        help="Include mediation range analysis in report (default: off)",
+    )
     args = parser.parse_args()
     _pipeline_cfg = _load_pipeline_config()
     # CLI flags take priority; config.yaml provides defaults for unset toggles
@@ -1700,6 +1810,7 @@ if __name__ == "__main__":
                 question=args.question,
                 model_config=args.model_config,
                 max_tokens_per_output=_max_tokens,
+                with_mediation=args.with_mediation,
             )
         )
     except CLINotFoundError as e:
