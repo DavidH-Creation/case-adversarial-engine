@@ -237,7 +237,7 @@ graph TB
 
 ---
 
-- [ ] **Unit 3: Checkpoint Resume 断点续跑** `[L]`
+- [x] **Unit 3: Checkpoint Resume 断点续跑** `[L]`
 
 **Goal:** 支持 pipeline 中断后从最后完成的 step 恢复运行
 
