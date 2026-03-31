@@ -26,7 +26,9 @@ from .issue_evidence_defense_matrix import (
     build_issue_evidence_defense_matrix,
     render_matrix_markdown,
 )
+from .outcome_paths import build_case_outcome_paths, render_outcome_paths_md_lines  # noqa: F401
 from .schemas import (
+    CaseOutcomePaths,  # noqa: F401 — re-exported for callers
     EvidenceIndex,
     EvidenceItem,
     IssueTree,

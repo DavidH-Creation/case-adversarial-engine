@@ -8,6 +8,7 @@ Shared types imported from engines.shared.models; only LLM intermediate structur
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -69,6 +70,41 @@ class IssueEvidenceDefenseMatrix(BaseModel):
     rows: list[MatrixRow] = Field(default_factory=list)
     total_issues: int = 0
     issues_with_evidence: int = 0
+
+
+# ---------------------------------------------------------------------------
+# 结构化输出路径 / Structured outcome paths
+# ---------------------------------------------------------------------------
+
+
+class OutcomePathType(str, Enum):
+    """结构化输出路径类型 / Outcome path type."""
+    WIN = "WIN"
+    LOSE = "LOSE"
+    MEDIATION = "MEDIATION"
+    SUPPLEMENT = "SUPPLEMENT"
+
+
+class OutcomePath(BaseModel):
+    """单条结构化输出路径。
+    Structured outcome path (pure aggregation, no LLM).
+    """
+    path_type: OutcomePathType
+    trigger_conditions: list[str] = Field(default_factory=list)
+    key_actions: list[str] = Field(default_factory=list)
+    required_evidence_ids: list[str] = Field(default_factory=list)
+    risk_points: list[str] = Field(default_factory=list)
+    source_artifact: str = Field(default="")
+
+
+class CaseOutcomePaths(BaseModel):
+    """四路径结构化输出聚合。
+    Aggregated 4-path outcome structure for a case.
+    """
+    win_path: OutcomePath
+    lose_path: OutcomePath
+    mediation_path: OutcomePath
+    supplement_path: OutcomePath
 
 
 # ---------------------------------------------------------------------------
