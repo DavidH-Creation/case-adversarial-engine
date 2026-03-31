@@ -517,3 +517,77 @@ class TestRoundEngineWithInfrastructure:
         )
         assert isinstance(result, AdversarialResult)
         assert result.job_id == ""
+
+
+# ---------------------------------------------------------------------------
+# Round 3 并行化验证
+# ---------------------------------------------------------------------------
+
+
+class TestRound3Parallelism:
+    """验证 Round 3 原被告 rebuttal 使用 asyncio.gather 并行执行。"""
+
+    @pytest.mark.asyncio
+    async def test_round3_rebuttals_run_concurrently(
+        self, config, issue_tree, evidence_index
+    ):
+        """p_rebuttal 和 d_rebuttal 的开始时间差应 < 单次调用耗时（并行标志）。"""
+        import asyncio
+
+        call_start_times: list[float] = []
+
+        class TimedMockLLM:
+            """记录每次调用开始时间，模拟 10ms 延迟。"""
+
+            _call_count = 0
+
+            async def create_message(self, *, system: str, user: str, **kwargs) -> str:
+                import json
+
+                call_start_times.append(asyncio.get_event_loop().time())
+                await asyncio.sleep(0.01)  # 模拟 10ms LLM 延迟
+                self._call_count += 1
+                # 返回符合格式的固定响应
+                return json.dumps(
+                    {
+                        "title": f"响应 {self._call_count}",
+                        "body": "论述内容。",
+                        "case_id": CASE_ID,
+                        "issue_ids": ["issue-001"],
+                        "evidence_citations": ["ev-001"],
+                        "risk_flags": [],
+                        "arguments": [
+                            {
+                                "issue_id": "issue-001",
+                                "position": "立场",
+                                "supporting_evidence_ids": ["ev-001"],
+                                "legal_basis": "《民法典》第667条",
+                            }
+                        ],
+                        "conflicts": [],
+                    },
+                    ensure_ascii=False,
+                )
+
+        timed_llm = TimedMockLLM()
+        engine = RoundEngine(timed_llm, config)
+        await engine.run(
+            issue_tree=issue_tree,
+            evidence_index=evidence_index,
+            plaintiff_party_id=PLAINTIFF_ID,
+            defendant_party_id=DEFENDANT_ID,
+        )
+
+        # Round 3 是第 3、4 次调用（索引 2 和 3）；Round 1 p_claim、d_claim 是第 1、2 次
+        # Round 2 ev 是第 3 次，Round 3 p_rebuttal/d_rebuttal 是第 4、5 次
+        # 实际调用顺序：r1_p, r1_d, r2_ev, r3_p+r3_d (并行), summarizer
+        assert len(call_start_times) >= 5, f"期望 ≥5 次调用，实际 {len(call_start_times)}"
+
+        # 找到 Round 3 的两次 rebuttal 调用（第 4、5 次，索引 3 和 4）
+        r3_p_start = call_start_times[3]
+        r3_d_start = call_start_times[4]
+        # 并行时两者开始时间差 < 单次延迟 (0.01s)
+        time_diff = abs(r3_d_start - r3_p_start)
+        assert time_diff < 0.009, (
+            f"Round 3 rebuttals 应并行执行，开始时间差 {time_diff:.4f}s ≥ 0.009s（串行特征）"
+        )

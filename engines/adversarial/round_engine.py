@@ -15,6 +15,7 @@ Round structure (fixed 3 rounds):
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -185,32 +186,35 @@ class RoundEngine:
                 self._job_manager.update_progress(job_id, 0.66, "完成 Round 2 evidence")
 
             # ── Round 3: 针对性反驳 / rebuttal ──────────────────────────────
+            # 原被告反驳互不依赖，使用 asyncio.gather 并行执行以降低延迟。
             state_id_r3 = f"state-r3-{uuid.uuid4().hex[:8]}"
+            context_snapshot = list(all_outputs)  # 冻结当前快照供两者共用
 
-            p_rebuttal = await plaintiff.generate_rebuttal(
-                issue_tree=issue_tree,
-                visible_evidence=plaintiff_evidence,
-                context_outputs=all_outputs,
-                opponent_outputs=[d_claim],
-                run_id=run_id,
-                state_id=state_id_r3,
-                round_index=3,
+            p_rebuttal_raw, d_rebuttal_raw = await asyncio.gather(
+                plaintiff.generate_rebuttal(
+                    issue_tree=issue_tree,
+                    visible_evidence=plaintiff_evidence,
+                    context_outputs=context_snapshot,
+                    opponent_outputs=[d_claim],
+                    run_id=run_id,
+                    state_id=state_id_r3,
+                    round_index=3,
+                ),
+                defendant.generate_rebuttal(
+                    issue_tree=issue_tree,
+                    visible_evidence=defendant_evidence,
+                    context_outputs=context_snapshot,
+                    opponent_outputs=[p_claim],
+                    run_id=run_id,
+                    state_id=state_id_r3,
+                    round_index=3,
+                ),
             )
-            p_rebuttal = p_rebuttal.model_copy(update={"case_id": case_id})
+
+            p_rebuttal = p_rebuttal_raw.model_copy(update={"case_id": case_id})
+            d_rebuttal = d_rebuttal_raw.model_copy(update={"case_id": case_id})
             if self._workspace:
                 self._workspace.save_agent_output(p_rebuttal, AccessDomain.owner_private)
-
-            d_rebuttal = await defendant.generate_rebuttal(
-                issue_tree=issue_tree,
-                visible_evidence=defendant_evidence,
-                context_outputs=all_outputs,
-                opponent_outputs=[p_claim],
-                run_id=run_id,
-                state_id=state_id_r3,
-                round_index=3,
-            )
-            d_rebuttal = d_rebuttal.model_copy(update={"case_id": case_id})
-            if self._workspace:
                 self._workspace.save_agent_output(d_rebuttal, AccessDomain.owner_private)
 
             round3 = RoundState(
