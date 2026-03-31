@@ -161,22 +161,26 @@ class TestJobValidConstruction:
         assert job.message == "halfway"
 
     def test_completed_state(self):
-        job = Job(**_base_job(
-            job_status=JobStatus.completed,
-            progress=1.0,
-            result_ref=_artifact_ref(),
-        ))
+        job = Job(
+            **_base_job(
+                job_status=JobStatus.completed,
+                progress=1.0,
+                result_ref=_artifact_ref(),
+            )
+        )
         assert job.job_status == JobStatus.completed
         assert job.progress == 1.0
         assert job.result_ref is not None
         assert job.error is None
 
     def test_failed_state(self):
-        job = Job(**_base_job(
-            job_status=JobStatus.failed,
-            progress=0.4,
-            error=_job_error(),
-        ))
+        job = Job(
+            **_base_job(
+                job_status=JobStatus.failed,
+                progress=0.4,
+                error=_job_error(),
+            )
+        )
         assert job.job_status == JobStatus.failed
         assert job.error.code == "ERR_LLM"
         assert job.result_ref is None
@@ -205,19 +209,23 @@ class TestJobInvariantViolations:
 
     def test_created_with_result_ref_rejected(self):
         with pytest.raises(ValidationError, match="created"):
-            Job(**_base_job(
-                job_status=JobStatus.created,
-                progress=0.0,
-                result_ref=_artifact_ref(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.created,
+                    progress=0.0,
+                    result_ref=_artifact_ref(),
+                )
+            )
 
     def test_created_with_error_rejected(self):
         with pytest.raises(ValidationError, match="created"):
-            Job(**_base_job(
-                job_status=JobStatus.created,
-                progress=0.0,
-                error=_job_error(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.created,
+                    progress=0.0,
+                    error=_job_error(),
+                )
+            )
 
     # pending / running constraints
     def test_pending_progress_one_rejected(self):
@@ -230,54 +238,66 @@ class TestJobInvariantViolations:
 
     def test_running_with_result_ref_rejected(self):
         with pytest.raises(ValidationError):
-            Job(**_base_job(
-                job_status=JobStatus.running,
-                progress=0.5,
-                result_ref=_artifact_ref(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.running,
+                    progress=0.5,
+                    result_ref=_artifact_ref(),
+                )
+            )
 
     def test_running_with_error_rejected(self):
         with pytest.raises(ValidationError):
-            Job(**_base_job(
-                job_status=JobStatus.running,
-                progress=0.5,
-                error=_job_error(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.running,
+                    progress=0.5,
+                    error=_job_error(),
+                )
+            )
 
     # completed constraints
     def test_completed_progress_not_one_rejected(self):
         with pytest.raises(ValidationError, match="completed"):
-            Job(**_base_job(
-                job_status=JobStatus.completed,
-                progress=0.9,
-                result_ref=_artifact_ref(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.completed,
+                    progress=0.9,
+                    result_ref=_artifact_ref(),
+                )
+            )
 
     def test_completed_no_result_ref_rejected(self):
         with pytest.raises(ValidationError, match="completed"):
-            Job(**_base_job(
-                job_status=JobStatus.completed,
-                progress=1.0,
-                result_ref=None,
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.completed,
+                    progress=1.0,
+                    result_ref=None,
+                )
+            )
 
     def test_completed_with_error_rejected(self):
         with pytest.raises(ValidationError, match="completed"):
-            Job(**_base_job(
-                job_status=JobStatus.completed,
-                progress=1.0,
-                result_ref=_artifact_ref(),
-                error=_job_error(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.completed,
+                    progress=1.0,
+                    result_ref=_artifact_ref(),
+                    error=_job_error(),
+                )
+            )
 
     # failed constraints
     def test_failed_progress_one_rejected(self):
         with pytest.raises(ValidationError):
-            Job(**_base_job(
-                job_status=JobStatus.failed,
-                progress=1.0,
-                error=_job_error(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.failed,
+                    progress=1.0,
+                    error=_job_error(),
+                )
+            )
 
     def test_failed_no_error_rejected(self):
         with pytest.raises(ValidationError, match="failed"):
@@ -285,12 +305,14 @@ class TestJobInvariantViolations:
 
     def test_failed_with_result_ref_rejected(self):
         with pytest.raises(ValidationError):
-            Job(**_base_job(
-                job_status=JobStatus.failed,
-                progress=0.5,
-                error=_job_error(),
-                result_ref=_artifact_ref(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.failed,
+                    progress=0.5,
+                    error=_job_error(),
+                    result_ref=_artifact_ref(),
+                )
+            )
 
     # cancelled constraints
     def test_cancelled_progress_one_rejected(self):
@@ -299,19 +321,23 @@ class TestJobInvariantViolations:
 
     def test_cancelled_with_result_ref_rejected(self):
         with pytest.raises(ValidationError):
-            Job(**_base_job(
-                job_status=JobStatus.cancelled,
-                progress=0.2,
-                result_ref=_artifact_ref(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.cancelled,
+                    progress=0.2,
+                    result_ref=_artifact_ref(),
+                )
+            )
 
     def test_cancelled_with_error_rejected(self):
         with pytest.raises(ValidationError):
-            Job(**_base_job(
-                job_status=JobStatus.cancelled,
-                progress=0.2,
-                error=_job_error(),
-            ))
+            Job(
+                **_base_job(
+                    job_status=JobStatus.cancelled,
+                    progress=0.2,
+                    error=_job_error(),
+                )
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -326,21 +352,25 @@ class TestJobRoundtrip:
         assert restored == job
 
     def test_completed_roundtrip(self):
-        job = Job(**_base_job(
-            job_status=JobStatus.completed,
-            progress=1.0,
-            result_ref=_artifact_ref(),
-        ))
+        job = Job(
+            **_base_job(
+                job_status=JobStatus.completed,
+                progress=1.0,
+                result_ref=_artifact_ref(),
+            )
+        )
         restored = Job.model_validate(job.model_dump())
         assert restored.result_ref.object_id == "report-001"
         assert restored.result_ref.index_name == "artifact_index"
 
     def test_failed_roundtrip(self):
-        job = Job(**_base_job(
-            job_status=JobStatus.failed,
-            progress=0.3,
-            error=_job_error(),
-        ))
+        job = Job(
+            **_base_job(
+                job_status=JobStatus.failed,
+                progress=0.3,
+                error=_job_error(),
+            )
+        )
         restored = Job.model_validate(job.model_dump())
         assert restored.error.code == "ERR_LLM"
         assert restored.error.message == "LLM call failed"
@@ -365,10 +395,12 @@ class TestAgentOutputValidConstruction:
         assert out.round_index == 0
 
     def test_multiple_issues_and_citations(self):
-        out = AgentOutput(**_base_agent_output(
-            issue_ids=["issue-001", "issue-002"],
-            evidence_citations=["ev-001", "ev-002", "ev-003"],
-        ))
+        out = AgentOutput(
+            **_base_agent_output(
+                issue_ids=["issue-001", "issue-002"],
+                evidence_citations=["ev-001", "ev-002", "ev-003"],
+            )
+        )
         assert len(out.issue_ids) == 2
         assert len(out.evidence_citations) == 3
 
@@ -377,13 +409,23 @@ class TestAgentOutputValidConstruction:
         assert out.statement_class == StatementClass.inference
 
     def test_assumption_class_with_risk_flags(self):
-        out = AgentOutput(**_base_agent_output(
-            statement_class=StatementClass.assumption,
-            risk_flags=[
-                {"flag_id": "rf-001", "description": "引用不足", "impact_objects": ["win_rate"]},
-                {"flag_id": "rf-002", "description": "越权风险", "impact_objects": ["trial_credibility"]},
-            ],
-        ))
+        out = AgentOutput(
+            **_base_agent_output(
+                statement_class=StatementClass.assumption,
+                risk_flags=[
+                    {
+                        "flag_id": "rf-001",
+                        "description": "引用不足",
+                        "impact_objects": ["win_rate"],
+                    },
+                    {
+                        "flag_id": "rf-002",
+                        "description": "越权风险",
+                        "impact_objects": ["trial_credibility"],
+                    },
+                ],
+            )
+        )
         assert len(out.risk_flags) == 2
         descriptions = [rf.description for rf in out.risk_flags]
         assert "引用不足" in descriptions
@@ -405,10 +447,12 @@ class TestAgentOutputValidConstruction:
             assert out.phase == phase
 
     def test_rebuttal_phase_round_index_two(self):
-        out = AgentOutput(**_base_agent_output(
-            phase=ProcedurePhase.rebuttal,
-            round_index=2,
-        ))
+        out = AgentOutput(
+            **_base_agent_output(
+                phase=ProcedurePhase.rebuttal,
+                round_index=2,
+            )
+        )
         assert out.round_index == 2
 
 
@@ -473,10 +517,22 @@ class TestAgentOutputRoundtrip:
         assert data["statement_class"] == "fact"
 
     def test_roundtrip_with_risk_flags(self):
-        out = AgentOutput(**_base_agent_output(risk_flags=[
-            {"flag_id": "rf-001", "description": "越权风险", "impact_objects": ["win_rate"]},
-            {"flag_id": "rf-002", "description": "程序冲突", "impact_objects": ["procedural_stability"]},
-        ]))
+        out = AgentOutput(
+            **_base_agent_output(
+                risk_flags=[
+                    {
+                        "flag_id": "rf-001",
+                        "description": "越权风险",
+                        "impact_objects": ["win_rate"],
+                    },
+                    {
+                        "flag_id": "rf-002",
+                        "description": "程序冲突",
+                        "impact_objects": ["procedural_stability"],
+                    },
+                ]
+            )
+        )
         restored = AgentOutput.model_validate(out.model_dump())
         assert len(restored.risk_flags) == 2
         descriptions = [rf.description for rf in restored.risk_flags]

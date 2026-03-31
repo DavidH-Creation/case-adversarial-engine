@@ -2,6 +2,7 @@
 EvidenceManagerAgent — 整理双方证据清单，标记冲突。
 EvidenceManagerAgent — organizes evidence lists and flags conflicts.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -67,10 +68,7 @@ class EvidenceManagerAgent:
         for attempt in range(1, self._config.max_retries + 1):
             current_prompt = user_prompt
             if _error_hint:
-                current_prompt = (
-                    f"{user_prompt}\n\n"
-                    f"[上次输出验证失败，请修正：{_error_hint}]"
-                )
+                current_prompt = f"{user_prompt}\n\n[上次输出验证失败，请修正：{_error_hint}]"
 
             try:
                 raw = await self._llm.create_message(
@@ -125,10 +123,18 @@ class EvidenceManagerAgent:
         defendant_outputs: list[AgentOutput],
     ) -> str:
         # 证据清单按 owner 分组
-        plaintiff_ev = [e for e in evidence_index.evidence if e.access_domain.value != "owner_private"
-                        or e.owner_party_id in {o.owner_party_id for o in plaintiff_outputs}]
-        defendant_ev = [e for e in evidence_index.evidence if e.access_domain.value != "owner_private"
-                        or e.owner_party_id in {o.owner_party_id for o in defendant_outputs}]
+        plaintiff_ev = [
+            e
+            for e in evidence_index.evidence
+            if e.access_domain.value != "owner_private"
+            or e.owner_party_id in {o.owner_party_id for o in plaintiff_outputs}
+        ]
+        defendant_ev = [
+            e
+            for e in evidence_index.evidence
+            if e.access_domain.value != "owner_private"
+            or e.owner_party_id in {o.owner_party_id for o in defendant_outputs}
+        ]
 
         def fmt_ev(evs: list[Evidence]) -> str:
             if not evs:
@@ -139,13 +145,10 @@ class EvidenceManagerAgent:
             if not outs:
                 return "  （无）"
             return "\n".join(
-                f"  [{o.output_id}] {o.title}\n    引用证据: {o.evidence_citations}"
-                for o in outs
+                f"  [{o.output_id}] {o.title}\n    引用证据: {o.evidence_citations}" for o in outs
             )
 
-        issues_text = "\n".join(
-            f"  [{i.issue_id}] {i.title}" for i in issue_tree.issues
-        )
+        issues_text = "\n".join(f"  [{i.issue_id}] {i.title}" for i in issue_tree.issues)
 
         return f"""## 任务：整理证据清单并标记冲突
 
@@ -191,12 +194,14 @@ class EvidenceManagerAgent:
         for c in data.get("conflicts", []):
             if not c.get("issue_id") or not c.get("conflict_description"):
                 continue
-            conflicts.append(ConflictEntry(
-                issue_id=c["issue_id"],
-                plaintiff_evidence_ids=c.get("plaintiff_evidence_ids", []),
-                defendant_evidence_ids=c.get("defendant_evidence_ids", []),
-                conflict_description=c["conflict_description"],
-            ))
+            conflicts.append(
+                ConflictEntry(
+                    issue_id=c["issue_id"],
+                    plaintiff_evidence_ids=c.get("plaintiff_evidence_ids", []),
+                    defendant_evidence_ids=c.get("defendant_evidence_ids", []),
+                    conflict_description=c["conflict_description"],
+                )
+            )
         return conflicts
 
     def _build_agent_output(
@@ -240,4 +245,3 @@ class EvidenceManagerAgent:
             risk_flags=data.get("risk_flags", []),
             created_at=now,
         )
-

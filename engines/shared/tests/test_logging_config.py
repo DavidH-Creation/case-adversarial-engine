@@ -126,8 +126,12 @@ class TestTokenTracker:
     def test_multi_module_breakdown(self) -> None:
         """pipeline 结束时汇总报告包含 per_module_breakdown。"""
         tracker = TokenTracker()
-        tracker.record(self._make_record(module="extract_issues", input_tokens=1000, output_tokens=500))
-        tracker.record(self._make_record(module="extract_issues", input_tokens=800, output_tokens=400))
+        tracker.record(
+            self._make_record(module="extract_issues", input_tokens=1000, output_tokens=500)
+        )
+        tracker.record(
+            self._make_record(module="extract_issues", input_tokens=800, output_tokens=400)
+        )
         tracker.record(self._make_record(module="rank_issues", input_tokens=600, output_tokens=300))
         s = tracker.summary()
 
@@ -187,15 +191,17 @@ class TestGlobalTracker:
         t = get_token_tracker()
         assert t.summary()["total_calls"] == 0
 
-        t.record(LLMCallRecord(
-            timestamp="2026-03-31T00:00:00.000000Z",
-            module="test",
-            model="test",
-            input_tokens=100,
-            output_tokens=50,
-            latency_ms=1.0,
-            success=True,
-        ))
+        t.record(
+            LLMCallRecord(
+                timestamp="2026-03-31T00:00:00.000000Z",
+                module="test",
+                model="test",
+                input_tokens=100,
+                output_tokens=50,
+                latency_ms=1.0,
+                success=True,
+            )
+        )
         assert get_token_tracker().summary()["total_calls"] == 1
 
         reset_token_tracker()
@@ -260,8 +266,13 @@ class TestJsonFormatter:
     def test_format_without_llm_call(self) -> None:
         fmt = JsonFormatter()
         record = logging.LogRecord(
-            name="test", level=logging.WARNING, pathname="", lineno=0,
-            msg="plain message", args=(), exc_info=None,
+            name="test",
+            level=logging.WARNING,
+            pathname="",
+            lineno=0,
+            msg="plain message",
+            args=(),
+            exc_info=None,
         )
         output = fmt.format(record)
         data = json.loads(output)
@@ -342,10 +353,12 @@ class TestCliAdapterLastUsage:
 
     def test_claude_client_has_last_usage(self) -> None:
         from engines.shared.cli_adapter import ClaudeCLIClient
+
         client = ClaudeCLIClient()
         assert client._last_usage is None
 
     def test_codex_client_has_last_usage(self) -> None:
         from engines.shared.cli_adapter import CodexCLIClient
+
         client = CodexCLIClient()
         assert client._last_usage is None

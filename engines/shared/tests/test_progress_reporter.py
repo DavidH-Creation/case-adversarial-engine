@@ -6,6 +6,7 @@ Covers:
   - SSEProgressReporter: queue event schema for start / complete / error / close
   - Edge cases: error on step 3, multiple runs with separate queues
 """
+
 from __future__ import annotations
 
 import pytest
@@ -38,6 +39,7 @@ def _drain(run_id: str) -> list:
 # ---------------------------------------------------------------------------
 # CLIProgressReporter
 # ---------------------------------------------------------------------------
+
 
 class TestCLIProgressReporter:
     def test_step_complete_format(self, capsys):
@@ -100,6 +102,7 @@ class TestCLIProgressReporter:
 # ---------------------------------------------------------------------------
 # SSEProgressReporter
 # ---------------------------------------------------------------------------
+
 
 class TestSSEProgressReporter:
     def setup_method(self):
@@ -178,12 +181,12 @@ class TestSSEProgressReporter:
         reporter.close()
 
         events = _drain(_TEST_RUN_A)
-        assert events[0]["status"] == "completed"   # step 1
-        assert events[1]["status"] == "completed"   # step 2
-        assert events[2]["status"] == "started"     # step 3 started
+        assert events[0]["status"] == "completed"  # step 1
+        assert events[1]["status"] == "completed"  # step 2
+        assert events[2]["status"] == "started"  # step 3 started
         assert events[3]["step"] == 3
-        assert events[3]["status"] == "failed"      # step 3 failed
-        assert events[4] is None                    # sentinel
+        assert events[3]["status"] == "failed"  # step 3 failed
+        assert events[4] is None  # sentinel
 
     def test_separate_run_ids_have_independent_queues(self):
         r1 = SSEProgressReporter(_TEST_RUN_A)

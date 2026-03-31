@@ -16,6 +16,7 @@ Action Recommender — hybrid (rule-based + optional LLM strategic layer) engine
 - evidence_supplement_priorities 中的 gap_id 来自输入的 evidence_gap_list
 - LLM 策略层失败不影响规则层输出，仅 strategic 字段为空
 """
+
 from __future__ import annotations
 
 import logging
@@ -82,7 +83,16 @@ logger = logging.getLogger(__name__)
 
 # 案型检测关键词映射
 _DISPUTE_PATTERNS: dict[str, list[str]] = {
-    "borrower_identity": ["借款人", "主体", "适格", "代收", "代付", "名义", "实际借款人", "账户控制"],
+    "borrower_identity": [
+        "借款人",
+        "主体",
+        "适格",
+        "代收",
+        "代付",
+        "名义",
+        "实际借款人",
+        "账户控制",
+    ],
     "amount_dispute": ["金额", "本金", "利息", "计算", "还款", "差额", "违约金"],
     "contract_validity": ["合同效力", "借贷合意", "虚假", "无效", "意思表示"],
     "interest_rate": ["利率", "高利", "四倍", "LPR"],
@@ -124,6 +134,7 @@ class ActionRecommender:
     @staticmethod
     def _load_prompt_module(case_type: str):
         from .prompts import PROMPT_REGISTRY
+
         if case_type not in PROMPT_REGISTRY:
             available = ", ".join(PROMPT_REGISTRY.keys()) or "(none)"
             raise ValueError(f"不支持的案由类型: '{case_type}'。可用: {available}")
@@ -149,7 +160,9 @@ class ActionRecommender:
 
         # ---- 案型补充注入（仅当规则层产出不足时）----
         trial_explanations = self._inject_category_specific_actions(
-            dispute_category, inp.issue_list, trial_explanations,
+            dispute_category,
+            inp.issue_list,
+            trial_explanations,
         )
 
         # ---- LLM 策略层（可选）----
@@ -166,29 +179,40 @@ class ActionRecommender:
 
         # ---- 组装 structural_actions 到 PartyActionPlan ----
         if plaintiff_plan is None and (amendments or trial_explanations):
-            plaintiff_plan = PartyActionPlan(party_type="plaintiff", structural_actions=[
-                s.suggestion_id for s in amendments
-            ] + [p.priority_id for p in trial_explanations])
+            plaintiff_plan = PartyActionPlan(
+                party_type="plaintiff",
+                structural_actions=[s.suggestion_id for s in amendments]
+                + [p.priority_id for p in trial_explanations],
+            )
         elif plaintiff_plan is not None:
-            plaintiff_plan = plaintiff_plan.model_copy(update={
-                "structural_actions": [s.suggestion_id for s in amendments]
-                + [p.priority_id for p in trial_explanations]
-            })
+            plaintiff_plan = plaintiff_plan.model_copy(
+                update={
+                    "structural_actions": [s.suggestion_id for s in amendments]
+                    + [p.priority_id for p in trial_explanations]
+                }
+            )
 
         if defendant_plan is None and (abandon_suggestions or gap_ids):
-            defendant_plan = PartyActionPlan(party_type="defendant", structural_actions=[
-                s.suggestion_id for s in abandon_suggestions
-            ] + list(gap_ids[:3]))
+            defendant_plan = PartyActionPlan(
+                party_type="defendant",
+                structural_actions=[s.suggestion_id for s in abandon_suggestions]
+                + list(gap_ids[:3]),
+            )
         elif defendant_plan is not None:
-            defendant_plan = defendant_plan.model_copy(update={
-                "structural_actions": [s.suggestion_id for s in abandon_suggestions]
-                + list(gap_ids[:3])
-            })
+            defendant_plan = defendant_plan.model_copy(
+                update={
+                    "structural_actions": [s.suggestion_id for s in abandon_suggestions]
+                    + list(gap_ids[:3])
+                }
+            )
 
         # ---- v7: 行动建议-路径对齐校验 ----
         if inp.decision_path_tree:
             strategic_headline, plaintiff_plan, defendant_plan = self._align_with_path_tree(
-                inp.decision_path_tree, strategic_headline, plaintiff_plan, defendant_plan,
+                inp.decision_path_tree,
+                strategic_headline,
+                plaintiff_plan,
+                defendant_plan,
             )
 
         return ActionRecommendation(
@@ -246,7 +270,7 @@ class ActionRecommender:
         # 原告处于劣势时，原告策略建议降级
         if most_likely_favored == "defendant" and plaintiff_plan:
             adjusted_recs = []
-            for sr in (plaintiff_plan.strategic_recommendations or []):
+            for sr in plaintiff_plan.strategic_recommendations or []:
                 _AGGRESSIVE = ["全额主张", "坚持全额", "加大力度", "扩大诉请"]
                 text = sr.recommendation_text
                 for signal in _AGGRESSIVE:
@@ -312,18 +336,24 @@ class ActionRecommender:
             if issue.issue_id in existing_ids:
                 continue
             if any(kw in issue.title for kw in keywords):
-                injected.append(TrialExplanationPriority(
-                    priority_id=str(uuid.uuid4()),
-                    issue_id=issue.issue_id,
-                    explanation_text=f"庭审重点质证争点「{issue.title}」",
-                ))
+                injected.append(
+                    TrialExplanationPriority(
+                        priority_id=str(uuid.uuid4()),
+                        issue_id=issue.issue_id,
+                        explanation_text=f"庭审重点质证争点「{issue.title}」",
+                    )
+                )
                 existing_ids.add(issue.issue_id)
                 if len(injected) >= cls._MAX_INJECTED:
                     break
 
         if injected:
-            logger.info("Category '%s': injected %d trial explanations (rule layer had %d)",
-                        dispute_category, len(injected), len(existing))
+            logger.info(
+                "Category '%s': injected %d trial explanations (rule layer had %d)",
+                dispute_category,
+                len(injected),
+                len(existing),
+            )
 
         return list(existing) + injected
 
@@ -357,7 +387,7 @@ class ActionRecommender:
                 model=self._model,
                 tool_name="generate_strategic_recommendations",
                 tool_description="生成当事人策略建议和战略标题。"
-                                 "Generate party-specific strategic recommendations and strategic headline.",
+                "Generate party-specific strategic recommendations and strategic headline.",
                 tool_schema=_STRATEGIC_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_tokens=self._max_tokens,
@@ -369,7 +399,9 @@ class ActionRecommender:
             return None
 
     def _parse_strategic_output(
-        self, data: dict, inp: ActionRecommenderInput,
+        self,
+        data: dict,
+        inp: ActionRecommenderInput,
     ) -> dict[str, Any]:
         """解析 LLM 策略层输出，校验后返回结构化结果。"""
         known_issue_ids = {i.issue_id for i in inp.issue_list}
@@ -396,13 +428,15 @@ class ActionRecommender:
                 priority = rec.get("priority", 3)
                 if not isinstance(priority, int) or priority < 1 or priority > 5:
                     priority = 3
-                strategic_recs.append(StrategicRecommendation(
-                    recommendation_text=text[:200],
-                    target_party=party_type,
-                    linked_issue_ids=linked,
-                    priority=priority,
-                    rationale=str(rec.get("rationale", ""))[:200],
-                ))
+                strategic_recs.append(
+                    StrategicRecommendation(
+                        recommendation_text=text[:200],
+                        target_party=party_type,
+                        linked_issue_ids=linked,
+                        priority=priority,
+                        rationale=str(rec.get("rationale", ""))[:200],
+                    )
+                )
             if strategic_recs:
                 result[plan_key] = PartyActionPlan(
                     party_type=party_type,

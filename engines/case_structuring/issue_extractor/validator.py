@@ -34,6 +34,7 @@ from jsonschema import Draft202012Validator
 @dataclass
 class ValidationResult:
     """单条校验错误 / A single validation error entry."""
+
     code: str
     message: str
     location: str = ""
@@ -42,6 +43,7 @@ class ValidationResult:
 @dataclass
 class ValidationReport:
     """争点树校验结果汇总 / Aggregated IssueTree validation result."""
+
     errors: list[ValidationResult] = field(default_factory=list)
     warnings: list[ValidationResult] = field(default_factory=list)
 
@@ -71,9 +73,7 @@ class ValidationReport:
 # ---------------------------------------------------------------------------
 
 # 默认 schema 路径：从仓库根目录解析 / Default schema path resolved from repo root
-_DEFAULT_SCHEMA_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent / "schemas" / "case"
-)
+_DEFAULT_SCHEMA_DIR = Path(__file__).resolve().parent.parent.parent.parent / "schemas" / "case"
 _ISSUE_SCHEMA_FILENAME = "issue.schema.json"
 
 
@@ -115,8 +115,7 @@ class IssueTreeValidationError(Exception):
         self.errors = errors
         messages = [f"[{e.get('issue_id', '?')}] {e['message']}" for e in errors]
         super().__init__(
-            f"IssueTree validation failed with {len(errors)} error(s):\n"
-            + "\n".join(messages)
+            f"IssueTree validation failed with {len(errors)} error(s):\n" + "\n".join(messages)
         )
 
 
@@ -167,12 +166,14 @@ def validate_issue_tree(
         )
         for error in schema_errors:
             path = ".".join(str(p) for p in error.absolute_path) or "(root)"
-            all_errors.append({
-                "issue_id": issue_id,
-                "index": i,
-                "type": "schema",
-                "message": f"{path}: {error.message}",
-            })
+            all_errors.append(
+                {
+                    "issue_id": issue_id,
+                    "index": i,
+                    "type": "schema",
+                    "message": f"{path}: {error.message}",
+                }
+            )
 
     # ── 2. issue_id 全局唯一性 ────────────────────────────────────────────────
     # Enforce globally unique issue_ids
@@ -180,11 +181,13 @@ def validate_issue_tree(
     for issue_data in issues:
         iid = issue_data.get("issue_id", "")
         if iid in seen_ids:
-            all_errors.append({
-                "issue_id": iid,
-                "type": "contract",
-                "message": f"重复的 issue_id / Duplicate issue_id: '{iid}'",
-            })
+            all_errors.append(
+                {
+                    "issue_id": iid,
+                    "type": "contract",
+                    "message": f"重复的 issue_id / Duplicate issue_id: '{iid}'",
+                }
+            )
         seen_ids.add(iid)
 
     # ── 3. parent_issue_id 引用完整性 ─────────────────────────────────────────
@@ -192,14 +195,15 @@ def validate_issue_tree(
     for issue_data in issues:
         parent = issue_data.get("parent_issue_id")
         if parent and parent not in seen_ids:
-            all_errors.append({
-                "issue_id": issue_data.get("issue_id", "?"),
-                "type": "contract",
-                "message": (
-                    f"parent_issue_id '{parent}' 不存在于 issues 中 / "
-                    f"does not exist in issues"
-                ),
-            })
+            all_errors.append(
+                {
+                    "issue_id": issue_data.get("issue_id", "?"),
+                    "type": "contract",
+                    "message": (
+                        f"parent_issue_id '{parent}' 不存在于 issues 中 / does not exist in issues"
+                    ),
+                }
+            )
 
     # ── 4. 核心争点必须分配 Burden ─────────────────────────────────────────────
     # Root issues (no parent) must have at least one Burden assigned
@@ -208,37 +212,43 @@ def validate_issue_tree(
         if issue_data.get("parent_issue_id") is None:
             iid = issue_data.get("issue_id", "")
             if iid and iid not in burden_issue_ids:
-                all_errors.append({
-                    "issue_id": iid,
-                    "type": "contract",
-                    "message": (
-                        f"核心争点 / Root issue '{iid}' 缺少举证责任 / has no assigned Burden"
-                    ),
-                })
+                all_errors.append(
+                    {
+                        "issue_id": iid,
+                        "type": "contract",
+                        "message": (
+                            f"核心争点 / Root issue '{iid}' 缺少举证责任 / has no assigned Burden"
+                        ),
+                    }
+                )
 
     # ── 5. claim_issue_mapping 的 issue_ids 非空 ─────────────────────────────
     for mapping in claim_mappings:
         if not mapping.get("issue_ids"):
-            all_errors.append({
-                "issue_id": None,
-                "type": "contract",
-                "message": (
-                    f"claim_id '{mapping.get('claim_id')}' 的 issue_ids 为空 / "
-                    f"empty issue_ids in claim_issue_mapping"
-                ),
-            })
+            all_errors.append(
+                {
+                    "issue_id": None,
+                    "type": "contract",
+                    "message": (
+                        f"claim_id '{mapping.get('claim_id')}' 的 issue_ids 为空 / "
+                        f"empty issue_ids in claim_issue_mapping"
+                    ),
+                }
+            )
 
     # ── 6. defense_issue_mapping 的 issue_ids 非空 ───────────────────────────
     for mapping in defense_mappings:
         if not mapping.get("issue_ids"):
-            all_errors.append({
-                "issue_id": None,
-                "type": "contract",
-                "message": (
-                    f"defense_id '{mapping.get('defense_id')}' 的 issue_ids 为空 / "
-                    f"empty issue_ids in defense_issue_mapping"
-                ),
-            })
+            all_errors.append(
+                {
+                    "issue_id": None,
+                    "type": "contract",
+                    "message": (
+                        f"defense_id '{mapping.get('defense_id')}' 的 issue_ids 为空 / "
+                        f"empty issue_ids in defense_issue_mapping"
+                    ),
+                }
+            )
 
     if all_errors:
         raise IssueTreeValidationError(all_errors)
@@ -274,15 +284,19 @@ def validate_issue_tree_report(
     except IssueTreeValidationError as exc:
         for err in exc.errors:
             issue_id = err.get("issue_id") or ""
-            report.errors.append(ValidationResult(
-                code=f"ISSUE_TREE_{err.get('type', 'error').upper()}",
-                message=err.get("message", ""),
-                location=str(issue_id),
-            ))
+            report.errors.append(
+                ValidationResult(
+                    code=f"ISSUE_TREE_{err.get('type', 'error').upper()}",
+                    message=err.get("message", ""),
+                    location=str(issue_id),
+                )
+            )
     except Exception as exc:
         # schema 文件缺失、编码错误等 / Schema not found, encoding errors, etc.
-        report.errors.append(ValidationResult(
-            code="SCHEMA_LOAD_ERROR",
-            message=str(exc),
-        ))
+        report.errors.append(
+            ValidationResult(
+                code="SCHEMA_LOAD_ERROR",
+                message=str(exc),
+            )
+        )
     return report

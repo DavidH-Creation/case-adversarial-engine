@@ -1,6 +1,7 @@
 """
 P2.10 数据模型单元测试 — RiskImpactObject / RiskFlag / AgentOutput migration
 """
+
 from __future__ import annotations
 
 import pytest
@@ -18,6 +19,7 @@ from engines.shared.models import (
 # ---------------------------------------------------------------------------
 # RiskImpactObject
 # ---------------------------------------------------------------------------
+
 
 class TestRiskImpactObject:
     def test_all_five_values_exist(self):
@@ -49,6 +51,7 @@ class TestRiskImpactObject:
 # ---------------------------------------------------------------------------
 # RiskFlag
 # ---------------------------------------------------------------------------
+
 
 def _make_risk_flag(**kwargs) -> dict:
     defaults = dict(
@@ -89,12 +92,14 @@ class TestRiskFlag:
         assert rf.impact_objects_scored is False
 
     def test_multiple_impact_objects(self):
-        rf = RiskFlag(**_make_risk_flag(
-            impact_objects=[
-                RiskImpactObject.win_rate,
-                RiskImpactObject.trial_credibility,
-            ]
-        ))
+        rf = RiskFlag(
+            **_make_risk_flag(
+                impact_objects=[
+                    RiskImpactObject.win_rate,
+                    RiskImpactObject.trial_credibility,
+                ]
+            )
+        )
         assert len(rf.impact_objects) == 2
 
     def test_all_enum_values_accepted(self):
@@ -103,9 +108,11 @@ class TestRiskFlag:
             assert v in rf.impact_objects
 
     def test_roundtrip_serialization(self):
-        rf = RiskFlag(**_make_risk_flag(
-            impact_objects=[RiskImpactObject.win_rate, RiskImpactObject.supported_amount]
-        ))
+        rf = RiskFlag(
+            **_make_risk_flag(
+                impact_objects=[RiskImpactObject.win_rate, RiskImpactObject.supported_amount]
+            )
+        )
         data = rf.model_dump()
         restored = RiskFlag.model_validate(data)
         assert restored.impact_objects == rf.impact_objects
@@ -115,6 +122,7 @@ class TestRiskFlag:
 # ---------------------------------------------------------------------------
 # AgentOutput — risk_flags migration
 # ---------------------------------------------------------------------------
+
 
 def _base_output(**overrides) -> dict:
     defaults = dict(
@@ -156,12 +164,14 @@ class TestAgentOutputRiskFlags:
     def test_string_risk_flag_rejected(self):
         """v1.5: str risk_flags no longer accepted, must raise ValidationError."""
         import pytest
+
         with pytest.raises(Exception):
             AgentOutput(**_base_output(risk_flags=["越权风险", "引用不足"]))
 
     def test_mixed_str_and_risk_flag_rejected(self):
         """v1.5: mixed list with str elements must also be rejected."""
         import pytest
+
         rf_native = RiskFlag(
             flag_id="rf-native",
             description="越权风险",

@@ -5,6 +5,7 @@ LLM prompt templates for civil loan case type decision path tree generation.
 指导 LLM 生成 3-6 条结构化裁判路径，输出严格 JSON。
 注意：调用方已按 v1.2 过渡规则过滤，传入的 evidence_index 只含 admitted_record 证据。
 """
+
 from __future__ import annotations
 
 from engines.shared.models import AmountCalculationReport, EvidenceIndex, IssueTree
@@ -190,9 +191,7 @@ def build_user_prompt(
     # 证据索引摘要（已过滤为 admitted_record）
     evidence_lines = []
     for ev in evidence_index.evidence[:20]:
-        evidence_lines.append(
-            f"  - {ev.evidence_id}: {ev.title} ({ev.evidence_type.value})"
-        )
+        evidence_lines.append(f"  - {ev.evidence_id}: {ev.title} ({ev.evidence_type.value})")
     evidence_block = "【已进入庭审的证据（admitted_record）】\n" + (
         "\n".join(evidence_lines) if evidence_lines else "  （无证据）"
     )

@@ -55,14 +55,18 @@ _STATUS_ORDER: dict[EvidenceStatus, int] = {
 
 _LEGAL_TRANSITIONS: dict[EvidenceStatus, frozenset[EvidenceStatus]] = {
     EvidenceStatus.private: frozenset({EvidenceStatus.submitted}),
-    EvidenceStatus.submitted: frozenset({
-        EvidenceStatus.challenged,
-        EvidenceStatus.admitted_for_discussion,
-    }),
-    EvidenceStatus.challenged: frozenset({
-        EvidenceStatus.admitted_for_discussion,
-        EvidenceStatus.submitted,
-    }),
+    EvidenceStatus.submitted: frozenset(
+        {
+            EvidenceStatus.challenged,
+            EvidenceStatus.admitted_for_discussion,
+        }
+    ),
+    EvidenceStatus.challenged: frozenset(
+        {
+            EvidenceStatus.admitted_for_discussion,
+            EvidenceStatus.submitted,
+        }
+    ),
     EvidenceStatus.admitted_for_discussion: frozenset(),  # terminal
 }
 
@@ -147,23 +151,15 @@ class EvidenceStateMachine:
 
     def submit(self, evidence: Evidence, actor_party_id: str) -> Evidence:
         """private -> submitted。"""
-        return self.transition(
-            evidence, EvidenceStatus.submitted, actor_party_id, "提交证据"
-        )
+        return self.transition(evidence, EvidenceStatus.submitted, actor_party_id, "提交证据")
 
-    def challenge(
-        self, evidence: Evidence, challenger_party_id: str, reason: str = ""
-    ) -> Evidence:
+    def challenge(self, evidence: Evidence, challenger_party_id: str, reason: str = "") -> Evidence:
         """submitted -> challenged。"""
-        return self.transition(
-            evidence, EvidenceStatus.challenged, challenger_party_id, reason
-        )
+        return self.transition(evidence, EvidenceStatus.challenged, challenger_party_id, reason)
 
     def admit(self, evidence: Evidence) -> Evidence:
         """submitted/challenged -> admitted_for_discussion。"""
-        return self.transition(
-            evidence, EvidenceStatus.admitted_for_discussion, "system", "采纳"
-        )
+        return self.transition(evidence, EvidenceStatus.admitted_for_discussion, "system", "采纳")
 
     def enforce_minimum_status(
         self,
@@ -192,9 +188,7 @@ class EvidenceStateMachine:
             if id_filter is not None and ev.evidence_id not in id_filter:
                 continue
             if _STATUS_ORDER[ev.status] < min_order:
-                violations.append(
-                    f"{ev.evidence_id}: {ev.status.value} (需要 {min_status.value})"
-                )
+                violations.append(f"{ev.evidence_id}: {ev.status.value} (需要 {min_status.value})")
 
         if violations:
             detail = "; ".join(violations[:5])

@@ -6,6 +6,7 @@ Unit tests for issue_dependency_graph schemas.
 - Pydantic 模型的 validation 行为
 - 默认值、边界值、非法值
 """
+
 from __future__ import annotations
 
 import pytest

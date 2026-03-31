@@ -26,9 +26,7 @@ import pytest
 # Fixture 路径 / Fixture paths
 # ---------------------------------------------------------------------------
 
-_FIXTURES_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent / "benchmarks" / "fixtures"
-)
+_FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "benchmarks" / "fixtures"
 _SCENARIO_FIXTURE = _FIXTURES_DIR / "scenario_diff_example.json"
 
 
@@ -54,12 +52,8 @@ class TestScenarioContractFixtures:
         self.scenarios: list[dict] = data.get("Scenario", [])
         self.runs: list[dict] = data.get("Run", [])
         # 找到非 baseline 场景 / Find the non-baseline counterfactual scenario
-        self.counterfactual = next(
-            (s for s in self.scenarios if s.get("change_set")), None
-        )
-        self.baseline = next(
-            (s for s in self.scenarios if not s.get("change_set")), None
-        )
+        self.counterfactual = next((s for s in self.scenarios if s.get("change_set")), None)
+        self.baseline = next((s for s in self.scenarios if not s.get("change_set")), None)
         # 找到场景执行 Run / Find the scenario_execution Run
         self.scenario_run = next(
             (r for r in self.runs if r.get("trigger_type") == "scenario_execution"),
@@ -83,15 +77,18 @@ class TestScenarioContractFixtures:
     def test_scenarios_have_required_fields(self):
         """每个 Scenario 必须包含所有必填字段。"""
         required = {
-            "scenario_id", "case_id", "baseline_run_id",
-            "change_set", "diff_summary", "affected_issue_ids",
-            "affected_evidence_ids", "status",
+            "scenario_id",
+            "case_id",
+            "baseline_run_id",
+            "change_set",
+            "diff_summary",
+            "affected_issue_ids",
+            "affected_evidence_ids",
+            "status",
         }
         for sc in self.scenarios:
             missing = required - set(sc.keys())
-            assert not missing, (
-                f"Scenario {sc.get('scenario_id', '?')} missing fields: {missing}"
-            )
+            assert not missing, f"Scenario {sc.get('scenario_id', '?')} missing fields: {missing}"
 
     # ── baseline anchor 约束 / Baseline anchor constraint ────────────────────
 
@@ -161,9 +158,7 @@ class TestScenarioContractFixtures:
         diff_issue_ids = {e.get("issue_id") for e in self.counterfactual.get("diff_summary", [])}
         affected = set(self.counterfactual.get("affected_issue_ids", []))
         uncovered = diff_issue_ids - affected
-        assert not uncovered, (
-            f"affected_issue_ids missing diff_entry issue_ids: {uncovered}"
-        )
+        assert not uncovered, f"affected_issue_ids missing diff_entry issue_ids: {uncovered}"
 
     def test_affected_evidence_ids_from_change_set(self):
         """affected_evidence_ids 应包含 change_set 中 Evidence 类型对象的 ID。"""
@@ -191,9 +186,16 @@ class TestScenarioContractFixtures:
         """场景 Run 必须包含所有必填字段。"""
         assert self.scenario_run is not None
         required = {
-            "run_id", "case_id", "workspace_id", "scenario_id",
-            "trigger_type", "input_snapshot", "output_refs",
-            "started_at", "finished_at", "status",
+            "run_id",
+            "case_id",
+            "workspace_id",
+            "scenario_id",
+            "trigger_type",
+            "input_snapshot",
+            "output_refs",
+            "started_at",
+            "finished_at",
+            "status",
         }
         missing = required - set(self.scenario_run.keys())
         assert not missing, f"scenario Run missing fields: {missing}"
@@ -260,8 +262,7 @@ class TestSimulationRunPromptRegistryCompleteness:
         registered = set(registry.keys())
         missing = self.EXPECTED_CASE_TYPES - registered
         assert not missing, (
-            f"{module_name}.PROMPT_REGISTRY missing case types: {missing}. "
-            f"Registered: {registered}"
+            f"{module_name}.PROMPT_REGISTRY missing case types: {missing}. Registered: {registered}"
         )
 
     @pytest.mark.parametrize("module_name,module_path", _REGISTRY_MODULES)
@@ -273,6 +274,4 @@ class TestSimulationRunPromptRegistryCompleteness:
             if case_type not in registry:
                 continue  # covered by previous test
             entry = registry[case_type]
-            assert entry is not None, (
-                f"{module_name}.PROMPT_REGISTRY['{case_type}'] is None"
-            )
+            assert entry is not None, f"{module_name}.PROMPT_REGISTRY['{case_type}'] is None"

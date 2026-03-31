@@ -4,6 +4,7 @@ Domain models for defense_chain.
 
 PlaintiffDefenseChain 及关联模型定义于此，供 optimizer.py 和外部消费者使用。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -22,6 +23,7 @@ class DefensePoint(BaseModel):
         evidence_ids:       支持该论点的证据 ID 列表
         priority:           在链中的优先顺序（1 = 最优先）
     """
+
     point_id: str = Field(..., min_length=1)
     issue_id: str = Field(..., min_length=1)
     defense_strategy: str = Field(..., min_length=1)
@@ -50,6 +52,7 @@ class PlaintiffDefenseChain(BaseModel):
         strategic_summary:  整体策略摘要文本
         created_at:         ISO-8601 时间戳
     """
+
     chain_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     target_issues: list[str] = Field(default_factory=list)
@@ -58,9 +61,7 @@ class PlaintiffDefenseChain(BaseModel):
         default_factory=list,
         description="防御链整体引用证据 ID 汇总（去重）",
     )
-    confidence_score: float = Field(
-        ge=0.0, le=1.0, description="LLM 对整体防御策略的置信度"
-    )
+    confidence_score: float = Field(ge=0.0, le=1.0, description="LLM 对整体防御策略的置信度")
     strategic_summary: str = Field(default="", description="整体防御策略摘要")
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

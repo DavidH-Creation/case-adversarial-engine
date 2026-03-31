@@ -5,6 +5,7 @@ AlternativeClaimSuggestion 模型约束测试（P2.11）。
 - instability_issue_ids 不允许为空列表
 - 所有必需字段不允许为空字符串
 """
+
 from __future__ import annotations
 
 import pytest

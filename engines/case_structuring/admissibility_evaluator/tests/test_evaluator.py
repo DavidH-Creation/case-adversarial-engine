@@ -7,6 +7,7 @@ Unit tests for AdmissibilityEvaluator and simulate_exclusion.
 - 分层测试：模型字段 → schemas → prompts → 规则层逻辑 → 完整 evaluate() 流程 → simulate_exclusion
 - 覆盖所有合约保证（见 evaluator.py 顶部 docstring）
 """
+
 from __future__ import annotations
 
 import json
@@ -69,6 +70,7 @@ def test_evidence_admissibility_score_accepts_valid_range():
 def test_evidence_admissibility_score_rejects_out_of_range():
     """admissibility_score 超出 [0.0, 1.0] 时 Pydantic 拒绝。"""
     import pydantic
+
     with pytest.raises(pydantic.ValidationError):
         Evidence(
             evidence_id="ev-001",
@@ -290,17 +292,20 @@ def _llm_response(
     challenges: Optional[list[str]] = None,
     exclusion_impact: Optional[str] = None,
 ) -> str:
-    return json.dumps({
-        "evidence_assessments": [
-            {
-                "evidence_id": eid,
-                "admissibility_score": score,
-                "admissibility_challenges": challenges or [],
-                "exclusion_impact": exclusion_impact,
-            }
-            for eid in evidence_ids
-        ]
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "evidence_assessments": [
+                {
+                    "evidence_id": eid,
+                    "admissibility_score": score,
+                    "admissibility_challenges": challenges or [],
+                    "exclusion_impact": exclusion_impact,
+                }
+                for eid in evidence_ids
+            ]
+        },
+        ensure_ascii=False,
+    )
 
 
 def _make_evaluator(response: str, *, fail: bool = False) -> AdmissibilityEvaluator:
@@ -351,14 +356,18 @@ class TestSuccessfulEvaluation:
     @pytest.mark.asyncio
     async def test_score_rounded_to_two_decimals(self):
         """admissibility_score 被四舍五入到两位小数。"""
-        raw_resp = json.dumps({
-            "evidence_assessments": [{
-                "evidence_id": "ev-001",
-                "admissibility_score": 0.8333333,
-                "admissibility_challenges": [],
-                "exclusion_impact": None,
-            }]
-        })
+        raw_resp = json.dumps(
+            {
+                "evidence_assessments": [
+                    {
+                        "evidence_id": "ev-001",
+                        "admissibility_score": 0.8333333,
+                        "admissibility_challenges": [],
+                        "exclusion_impact": None,
+                    }
+                ]
+            }
+        )
         result = await _make_evaluator(raw_resp).evaluate(_make_input("ev-001"))
         assert result.evidence[0].admissibility_score == 0.83
 
@@ -366,9 +375,7 @@ class TestSuccessfulEvaluation:
     async def test_multiple_evidence_all_evaluated(self):
         """多条证据全部被评估。"""
         response = _llm_response("ev-001", "ev-002", "ev-003", score=0.8)
-        result = await _make_evaluator(response).evaluate(
-            _make_input("ev-001", "ev-002", "ev-003")
-        )
+        result = await _make_evaluator(response).evaluate(_make_input("ev-001", "ev-002", "ev-003"))
         assert all(ev.admissibility_score == 0.8 for ev in result.evidence)
         assert len(result.evidence) == 3
 
@@ -385,14 +392,18 @@ class TestLowScoreEnforcement:
     @pytest.mark.asyncio
     async def test_low_score_without_challenges_skips(self):
         """admissibility_score < 0.5 但无 challenges → 跳过（保持默认值）。"""
-        response = json.dumps({
-            "evidence_assessments": [{
-                "evidence_id": "ev-001",
-                "admissibility_score": 0.3,
-                "admissibility_challenges": [],
-                "exclusion_impact": None,
-            }]
-        })
+        response = json.dumps(
+            {
+                "evidence_assessments": [
+                    {
+                        "evidence_id": "ev-001",
+                        "admissibility_score": 0.3,
+                        "admissibility_challenges": [],
+                        "exclusion_impact": None,
+                    }
+                ]
+            }
+        )
         result = await _make_evaluator(response).evaluate(_make_input("ev-001"))
         assert result.evidence[0].admissibility_score == 1.0  # 默认值，未更新
 
@@ -408,22 +419,26 @@ class TestLowScoreEnforcement:
     @pytest.mark.asyncio
     async def test_score_exactly_05_without_challenges_accepted(self):
         """admissibility_score = 0.5（临界值，不触发强制）时无 challenges 也可接受。"""
-        result = await _make_evaluator(
-            _llm_response("ev-001", score=0.5)
-        ).evaluate(_make_input("ev-001"))
+        result = await _make_evaluator(_llm_response("ev-001", score=0.5)).evaluate(
+            _make_input("ev-001")
+        )
         assert result.evidence[0].admissibility_score == 0.5
 
     @pytest.mark.asyncio
     async def test_low_score_blank_challenges_skips(self):
         """challenges 全为空白字符串视为空，也被跳过。"""
-        response = json.dumps({
-            "evidence_assessments": [{
-                "evidence_id": "ev-001",
-                "admissibility_score": 0.1,
-                "admissibility_challenges": ["  ", ""],
-                "exclusion_impact": None,
-            }]
-        })
+        response = json.dumps(
+            {
+                "evidence_assessments": [
+                    {
+                        "evidence_id": "ev-001",
+                        "admissibility_score": 0.1,
+                        "admissibility_challenges": ["  ", ""],
+                        "exclusion_impact": None,
+                    }
+                ]
+            }
+        )
         result = await _make_evaluator(response).evaluate(_make_input("ev-001"))
         assert result.evidence[0].admissibility_score == 1.0
 
@@ -434,28 +449,36 @@ class TestScoreRangeValidation:
     @pytest.mark.asyncio
     async def test_score_above_one_skips(self):
         """score > 1.0 → 跳过。"""
-        response = json.dumps({
-            "evidence_assessments": [{
-                "evidence_id": "ev-001",
-                "admissibility_score": 1.5,
-                "admissibility_challenges": [],
-                "exclusion_impact": None,
-            }]
-        })
+        response = json.dumps(
+            {
+                "evidence_assessments": [
+                    {
+                        "evidence_id": "ev-001",
+                        "admissibility_score": 1.5,
+                        "admissibility_challenges": [],
+                        "exclusion_impact": None,
+                    }
+                ]
+            }
+        )
         result = await _make_evaluator(response).evaluate(_make_input("ev-001"))
         assert result.evidence[0].admissibility_score == 1.0
 
     @pytest.mark.asyncio
     async def test_score_below_zero_skips(self):
         """score < 0.0 → 跳过。"""
-        response = json.dumps({
-            "evidence_assessments": [{
-                "evidence_id": "ev-001",
-                "admissibility_score": -0.1,
-                "admissibility_challenges": [],
-                "exclusion_impact": None,
-            }]
-        })
+        response = json.dumps(
+            {
+                "evidence_assessments": [
+                    {
+                        "evidence_id": "ev-001",
+                        "admissibility_score": -0.1,
+                        "admissibility_challenges": [],
+                        "exclusion_impact": None,
+                    }
+                ]
+            }
+        )
         result = await _make_evaluator(response).evaluate(_make_input("ev-001"))
         assert result.evidence[0].admissibility_score == 1.0
 
@@ -793,7 +816,8 @@ class TestSimulateExclusion:
         dpt = _make_decision_path_tree("path-001", admissibility_gate=["ev-001"])
         chain = _make_attack_chain("chain-001", supporting_evidence_ids=["ev-001"])
         report = simulate_exclusion(
-            "ev-001", index,
+            "ev-001",
+            index,
             issue_tree=issue_tree,
             decision_path_tree=dpt,
             attack_chains=[chain],

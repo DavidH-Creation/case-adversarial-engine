@@ -15,6 +15,7 @@ Issue Dependency Graph Generator (P2).
 - topological_order 仅含无环节点（环路节点单独记录在 cycles 中）
 - 不调用 LLM（纯规则层）
 """
+
 from __future__ import annotations
 
 import logging
@@ -93,9 +94,7 @@ class IssueDependencyGraphGenerator:
                         issue.issue_id,
                         dep_id,
                     )
-            nodes.append(
-                IssueDependencyNode(issue_id=issue.issue_id, depends_on=valid_deps)
-            )
+            nodes.append(IssueDependencyNode(issue_id=issue.issue_id, depends_on=valid_deps))
 
         # Kahn 算法拓扑排序
         topological_order, cycles = self._topological_sort(nodes, known_ids)
@@ -180,15 +179,11 @@ class IssueDependencyGraphGenerator:
                     queue.append(dependent_id)
 
         # 剩余非零入度节点参与了环路
-        cycle_node_ids = {
-            node_id for node_id, deg in in_degree.items() if deg > 0
-        }
+        cycle_node_ids = {node_id for node_id, deg in in_degree.items() if deg > 0}
 
         cycles: list[list[str]] = []
         if cycle_node_ids:
-            cycles = IssueDependencyGraphGenerator._extract_cycles(
-                cycle_node_ids, nodes
-            )
+            cycles = IssueDependencyGraphGenerator._extract_cycles(cycle_node_ids, nodes)
 
         return topological_order, cycles
 

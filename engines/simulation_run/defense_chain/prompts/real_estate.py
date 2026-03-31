@@ -4,6 +4,7 @@ LLM prompt templates for real estate sale contract dispute case type defense cha
 
 指导 LLM 为原告方生成针对每个争点的最优防御策略链。
 """
+
 from __future__ import annotations
 
 from engines.shared.few_shot_examples import load_few_shot_text

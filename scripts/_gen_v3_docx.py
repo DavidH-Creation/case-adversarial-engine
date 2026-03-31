@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate v3 Word document matching v2 format exactly."""
+
 import json
 import sys
 import os
@@ -18,23 +19,23 @@ from docx.oxml.ns import qn
 # ---------------------------------------------------------------------------
 # Color palette (matching v2)
 # ---------------------------------------------------------------------------
-CLR_TITLE_DARK = RGBColor(0x1B, 0x3A, 0x5C)   # dark blue - title
-CLR_BLUE = RGBColor(0x2E, 0x75, 0xB6)          # blue - plaintiff / section headers
-CLR_RED = RGBColor(0xC0, 0x39, 0x2B)           # red - defendant / weaknesses
-CLR_GREEN = RGBColor(0x27, 0xAE, 0x60)         # green - evidence mgr / strengths
-CLR_ORANGE = RGBColor(0xE6, 0x7E, 0x22)        # orange - risk flags / warnings
-CLR_BODY = RGBColor(0x1A, 0x1A, 0x1A)          # dark - body text
-CLR_GRAY = RGBColor(0x4A, 0x4A, 0x4A)          # gray - secondary text
+CLR_TITLE_DARK = RGBColor(0x1B, 0x3A, 0x5C)  # dark blue - title
+CLR_BLUE = RGBColor(0x2E, 0x75, 0xB6)  # blue - plaintiff / section headers
+CLR_RED = RGBColor(0xC0, 0x39, 0x2B)  # red - defendant / weaknesses
+CLR_GREEN = RGBColor(0x27, 0xAE, 0x60)  # green - evidence mgr / strengths
+CLR_ORANGE = RGBColor(0xE6, 0x7E, 0x22)  # orange - risk flags / warnings
+CLR_BODY = RGBColor(0x1A, 0x1A, 0x1A)  # dark - body text
+CLR_GRAY = RGBColor(0x4A, 0x4A, 0x4A)  # gray - secondary text
 
 # Font sizes (EMU, matching v2)
-SZ_TITLE = 279400       # ~22pt
-SZ_SUBTITLE = 203200    # ~16pt
-SZ_AGENT_TITLE = 152400 # ~12pt
-SZ_SECTION_HDR = 139700 # ~11pt
-SZ_BODY = 133350        # ~10.5pt
-SZ_RISK = 120650        # ~9.5pt
-SZ_EVIDENCE = 114300    # ~9pt
-SZ_NORMAL = 127000      # ~10pt
+SZ_TITLE = 279400  # ~22pt
+SZ_SUBTITLE = 203200  # ~16pt
+SZ_AGENT_TITLE = 152400  # ~12pt
+SZ_SECTION_HDR = 139700  # ~11pt
+SZ_BODY = 133350  # ~10.5pt
+SZ_RISK = 120650  # ~9.5pt
+SZ_EVIDENCE = 114300  # ~9pt
+SZ_NORMAL = 127000  # ~10pt
 FONT_NAME = "Arial"
 
 # ---------------------------------------------------------------------------
@@ -121,11 +122,10 @@ amount_report = json.loads((out / "amount_report.json").read_text(encoding="utf-
 
 # Parse issue descriptions & types from report.md
 import re
+
 _issue_info: dict[str, tuple[str, str]] = {}  # issue_id -> (description, type)
 report_md = (out / "report.md").read_text(encoding="utf-8")
-for m in re.finditer(
-    r"- \*\*\[([^\]]+)\]\*\*\s+(.+?)\s+`(\w+)`", report_md
-):
+for m in re.finditer(r"- \*\*\[([^\]]+)\]\*\*\s+(.+?)\s+`(\w+)`", report_md):
     _issue_info[m.group(1)] = (m.group(2), m.group(3))
 
 doc = Document()
@@ -142,12 +142,15 @@ p0 = doc.add_paragraph()
 _add_run(p0, "案件09 第三版分析报告", bold=True, size=SZ_TITLE, color=CLR_TITLE_DARK)
 
 p1 = doc.add_paragraph()
-_add_run(p1, "\u501f\u8d37\u5408\u610f\u4e3b\u4f53\u4e89\u8bae\uff08\u8001\u738b\u8bc9\u5c0f\u9648\u3001\u8001\u5e84\uff09",
-         size=SZ_SUBTITLE, color=CLR_BLUE)
+_add_run(
+    p1,
+    "\u501f\u8d37\u5408\u610f\u4e3b\u4f53\u4e89\u8bae\uff08\u8001\u738b\u8bc9\u5c0f\u9648\u3001\u8001\u5e84\uff09",
+    size=SZ_SUBTITLE,
+    color=CLR_BLUE,
+)
 
 p2 = doc.add_paragraph()
-_add_run(p2, "对抗分析报告  |  v3 对抗引擎  |  Claude Opus 4.6",
-         size=SZ_NORMAL, color=CLR_GRAY)
+_add_run(p2, "对抗分析报告  |  v3 对抗引擎  |  Claude Opus 4.6", size=SZ_NORMAL, color=CLR_GRAY)
 
 doc.add_paragraph()
 
@@ -160,12 +163,27 @@ summary_rows = [
     ("\u6848\u4ef6ID", result["case_id"]),
     ("\u8fd0\u884cID", result["run_id"]),
     ("\u539f\u544a", "\u8001\u738b\uff08\u7537\uff0c\u6c49\u65cf\uff09"),
-    ("\u88ab\u544a", "\u5c0f\u9648\uff08\u5973\uff0c\u6c49\u65cf\uff09\u3001\u8001\u5e84\uff08\u7537\uff0c\u6c49\u65cf\uff09"),
+    (
+        "\u88ab\u544a",
+        "\u5c0f\u9648\uff08\u5973\uff0c\u6c49\u65cf\uff09\u3001\u8001\u5e84\uff08\u7537\uff0c\u6c49\u65cf\uff09",
+    ),
     ("\u501f\u6b3e\u65e5\u671f", "2025\u5e741\u670810\u65e5"),
-    ("\u501f\u6b3e\u91d1\u989d", "20\u4e07\u5143\uff08\u94f6\u884c\u8f6c\u8d2610\u4e07 + \u652f\u4ed8\u5b9d\u4ee3\u4ed810\u4e07\uff09"),
-    ("\u539f\u544a\u4e3b\u5f20", "\u88ab\u544a\u4ee5\u77ed\u671f\u8d44\u91d1\u5468\u8f6c\u4e3a\u7531\u501f\u6b3e\uff0c\u5e94\u507f\u8fd8\u672c\u91d1+\u5229\u606f"),
-    ("\u88ab\u544a\u6297\u8fa9", "\u6b3e\u9879\u7cfb\u8001\u5e84\u501f\u6b3e\uff0c\u5c0f\u9648\u4ec5\u4e3a\u4ee3\u6536\u4ee3\u4ed8\uff08\u8d26\u6237\u7531\u8001\u5e84\u4f7f\u7528\uff09"),
-    ("\u6838\u5fc3\u4e89\u8bae", "\u501f\u8d37\u5173\u7cfb\u4e3b\u4f53\uff1a\u5c0f\u9648 vs \u8001\u5e84\uff1b\u662f\u5426\u5b58\u5728\u9762\u5bf9\u9762\u501f\u6b3e\u5408\u610f"),
+    (
+        "\u501f\u6b3e\u91d1\u989d",
+        "20\u4e07\u5143\uff08\u94f6\u884c\u8f6c\u8d2610\u4e07 + \u652f\u4ed8\u5b9d\u4ee3\u4ed810\u4e07\uff09",
+    ),
+    (
+        "\u539f\u544a\u4e3b\u5f20",
+        "\u88ab\u544a\u4ee5\u77ed\u671f\u8d44\u91d1\u5468\u8f6c\u4e3a\u7531\u501f\u6b3e\uff0c\u5e94\u507f\u8fd8\u672c\u91d1+\u5229\u606f",
+    ),
+    (
+        "\u88ab\u544a\u6297\u8fa9",
+        "\u6b3e\u9879\u7cfb\u8001\u5e84\u501f\u6b3e\uff0c\u5c0f\u9648\u4ec5\u4e3a\u4ee3\u6536\u4ee3\u4ed8\uff08\u8d26\u6237\u7531\u8001\u5e84\u4f7f\u7528\uff09",
+    ),
+    (
+        "\u6838\u5fc3\u4e89\u8bae",
+        "\u501f\u8d37\u5173\u7cfb\u4e3b\u4f53\uff1a\u5c0f\u9648 vs \u8001\u5e84\uff1b\u662f\u5426\u5b58\u5728\u9762\u5bf9\u9762\u501f\u6b3e\u5408\u610f",
+    ),
 ]
 table = doc.add_table(rows=len(summary_rows), cols=2)
 table.style = "Light Grid Accent 1"
@@ -200,7 +218,9 @@ conflict_issues = {c["issue_id"] for c in result.get("evidence_conflicts", [])}
 n_issues = len(issue_ids_seen)
 n_burdens = 8  # from the run log
 
-doc.add_heading("\u4e89\u70b9\u5217\u8868\uff08{}\u4e2a\u4e89\u70b9\uff09".format(n_issues), level=1)
+doc.add_heading(
+    "\u4e89\u70b9\u5217\u8868\uff08{}\u4e2a\u4e89\u70b9\uff09".format(n_issues), level=1
+)
 
 table2 = doc.add_table(rows=1, cols=4)
 table2.style = "Light Grid Accent 1"
@@ -255,22 +275,30 @@ for r in result.get("rounds", []):
 
         # Agent title
         p = doc.add_paragraph()
-        _add_run(p, "{} {}".format(role_label, title_text),
-                 bold=True, size=SZ_AGENT_TITLE, color=_agent_color(role))
+        _add_run(
+            p,
+            "{} {}".format(role_label, title_text),
+            bold=True,
+            size=SZ_AGENT_TITLE,
+            color=_agent_color(role),
+        )
 
         # Body
-        _add_styled_para(doc, body[:2000] + ("..." if len(body) > 2000 else ""),
-                         size=SZ_BODY, color=CLR_BODY)
+        _add_styled_para(
+            doc, body[:2000] + ("..." if len(body) > 2000 else ""), size=SZ_BODY, color=CLR_BODY
+        )
 
         # Evidence cited
-        _add_styled_para(doc, "\u5f15\u7528\u8bc1\u636e: " + ev_cited,
-                         size=SZ_EVIDENCE, color=CLR_GRAY)
+        _add_styled_para(
+            doc, "\u5f15\u7528\u8bc1\u636e: " + ev_cited, size=SZ_EVIDENCE, color=CLR_GRAY
+        )
 
         # Risk flags (including own_weaknesses)
         risk_flags = o.get("risk_flags", [])
         if risk_flags:
-            _add_styled_para(doc, "\u98ce\u9669\u6807\u8bb0:",
-                             bold=True, size=SZ_RISK, color=CLR_ORANGE)
+            _add_styled_para(
+                doc, "\u98ce\u9669\u6807\u8bb0:", bold=True, size=SZ_RISK, color=CLR_ORANGE
+            )
             for rf in risk_flags:
                 desc = rf.get("description", "")
                 flag_id = rf.get("flag_id", "")
@@ -287,11 +315,12 @@ for r in result.get("rounds", []):
 # ---------------------------------------------------------------------------
 conflicts = result.get("evidence_conflicts", [])
 if conflicts:
-    doc.add_heading("\u8bc1\u636e\u51b2\u7a81\u5206\u6790\uff08{}\u6761\uff09".format(len(conflicts)), level=1)
+    doc.add_heading(
+        "\u8bc1\u636e\u51b2\u7a81\u5206\u6790\uff08{}\u6761\uff09".format(len(conflicts)), level=1
+    )
     for c in conflicts:
         p = doc.add_paragraph()
-        _add_run(p, "[{}] ".format(c["issue_id"]),
-                 bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+        _add_run(p, "[{}] ".format(c["issue_id"]), bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
         doc.add_paragraph()
         _add_styled_para(doc, c["conflict_description"], size=SZ_NORMAL, color=CLR_BODY)
 
@@ -314,42 +343,56 @@ if summary:
     # Plaintiff strongest
     p_args = summary.get("plaintiff_strongest_arguments", [])
     if p_args:
-        _add_styled_para(doc, "\u539f\u544a\u6700\u5f3a\u8bba\u70b9",
-                         bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+        _add_styled_para(
+            doc,
+            "\u539f\u544a\u6700\u5f3a\u8bba\u70b9",
+            bold=True,
+            size=SZ_SECTION_HDR,
+            color=CLR_BLUE,
+        )
         for a in p_args:
             p = doc.add_paragraph()
             _add_run(p, "[{}] ".format(a["issue_id"]), bold=True, size=SZ_NORMAL, color=CLR_BLUE)
             _add_run(p, a.get("position", ""), size=SZ_NORMAL, color=CLR_BODY)
             reasoning = a.get("reasoning", "")
             if reasoning:
-                _add_styled_para(doc, "\u25b6 " + reasoning,
-                                 size=SZ_NORMAL, color=CLR_GRAY)
+                _add_styled_para(doc, "\u25b6 " + reasoning, size=SZ_NORMAL, color=CLR_GRAY)
 
     # Defendant strongest
     d_args = summary.get("defendant_strongest_defenses", [])
     if d_args:
-        _add_styled_para(doc, "\u88ab\u544a\u6700\u5f3a\u6297\u8fa9",
-                         bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+        _add_styled_para(
+            doc,
+            "\u88ab\u544a\u6700\u5f3a\u6297\u8fa9",
+            bold=True,
+            size=SZ_SECTION_HDR,
+            color=CLR_RED,
+        )
         for d in d_args:
             p = doc.add_paragraph()
             _add_run(p, "[{}] ".format(d["issue_id"]), bold=True, size=SZ_NORMAL, color=CLR_RED)
             _add_run(p, d.get("position", ""), size=SZ_NORMAL, color=CLR_BODY)
             reasoning = d.get("reasoning", "")
             if reasoning:
-                _add_styled_para(doc, "\u25b6 " + reasoning,
-                                 size=SZ_NORMAL, color=CLR_GRAY)
+                _add_styled_para(doc, "\u25b6 " + reasoning, size=SZ_NORMAL, color=CLR_GRAY)
 
     # Unresolved issues
     unresolved = summary.get("unresolved_issues", [])
     if unresolved:
-        _add_styled_para(doc, "\u5173\u952e\u672a\u89e3\u51b3\u4e89\u70b9",
-                         bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+        _add_styled_para(
+            doc,
+            "\u5173\u952e\u672a\u89e3\u51b3\u4e89\u70b9",
+            bold=True,
+            size=SZ_SECTION_HDR,
+            color=CLR_BLUE,
+        )
         for u in unresolved:
             iid = u.get("issue_id", "")
             title = u.get("issue_title", "")
             why = u.get("why_unresolved", "")
-            _add_bullet(doc, "{} {}\uff1a{}".format(iid, title, why),
-                        size=SZ_NORMAL, color=CLR_BODY)
+            _add_bullet(
+                doc, "{} {}\uff1a{}".format(iid, title, why), size=SZ_NORMAL, color=CLR_BODY
+            )
 
 # ---------------------------------------------------------------------------
 # 证据缺失报告
@@ -360,9 +403,13 @@ if missing:
     for m in missing:
         p = doc.add_paragraph()
         party = m.get("missing_for_party_id", "")
-        _add_run(p, "[{}] {}: {}".format(
-            m["issue_id"], party, m["description"]),
-            bold=True, size=SZ_BODY, color=CLR_ORANGE)
+        _add_run(
+            p,
+            "[{}] {}: {}".format(m["issue_id"], party, m["description"]),
+            bold=True,
+            size=SZ_BODY,
+            color=CLR_ORANGE,
+        )
 
 # ---------------------------------------------------------------------------
 # NEW v3 sections
@@ -379,14 +426,19 @@ for iid in top5:
 paths = decision_tree.get("paths", [])
 if not paths:
     doc.add_heading("\u88c1\u5224\u8def\u5f84\u6811", level=1)
-    _add_styled_para(doc, "（本次运行未生成裁判路径，可能需重新运行庭后分析流程）",
-                     size=SZ_NORMAL, color=CLR_GRAY)
+    _add_styled_para(
+        doc,
+        "（本次运行未生成裁判路径，可能需重新运行庭后分析流程）",
+        size=SZ_NORMAL,
+        color=CLR_GRAY,
+    )
 if paths:
-    doc.add_heading("\u88c1\u5224\u8def\u5f84\u6811\uff08{}\u6761\u8def\u5f84\uff09".format(len(paths)), level=1)
+    doc.add_heading(
+        "\u88c1\u5224\u8def\u5f84\u6811\uff08{}\u6761\u8def\u5f84\uff09".format(len(paths)), level=1
+    )
     for path in paths:
         pid = path.get("path_id", "")
-        _add_styled_para(doc, "\u8def\u5f84 " + pid,
-                         bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+        _add_styled_para(doc, "\u8def\u5f84 " + pid, bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
 
         fields = [
             ("\u89e6\u53d1\u6761\u4ef6", path.get("trigger_condition", "")),
@@ -412,18 +464,24 @@ if paths:
 
     blocking = decision_tree.get("blocking_conditions", [])
     if blocking:
-        _add_styled_para(doc, "\u963b\u65ad\u6761\u4ef6",
-                         bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+        _add_styled_para(
+            doc, "\u963b\u65ad\u6761\u4ef6", bold=True, size=SZ_SECTION_HDR, color=CLR_RED
+        )
         for bc in blocking:
-            _add_bullet(doc, "{}: {}".format(bc["condition_id"], bc["description"]),
-                        size=SZ_NORMAL, color=CLR_BODY)
+            _add_bullet(
+                doc,
+                "{}: {}".format(bc["condition_id"], bc["description"]),
+                size=SZ_NORMAL,
+                color=CLR_BODY,
+            )
 
 # ── 对方最优攻击链 ──
 attacks = attack_chain.get("top_attacks", [])
 if not attacks:
     doc.add_heading("\u5bf9\u65b9\u6700\u4f18\u653b\u51fb\u94fe", level=1)
-    _add_styled_para(doc, "（本次运行未生成攻击链，可能需重新运行庭后分析流程）",
-                     size=SZ_NORMAL, color=CLR_GRAY)
+    _add_styled_para(
+        doc, "（本次运行未生成攻击链，可能需重新运行庭后分析流程）", size=SZ_NORMAL, color=CLR_GRAY
+    )
 if attacks:
     doc.add_heading("\u5bf9\u65b9\u6700\u4f18\u653b\u51fb\u94fe", level=1)
 
@@ -461,15 +519,14 @@ if attacks:
 doc.add_heading("\u884c\u52a8\u5efa\u8bae", level=1)
 
 stable_claim = exec_summary.get("current_most_stable_claim", "")
-_add_styled_para(doc, "最稳诉请版本：",
-                 bold=True, size=SZ_SECTION_HDR, color=CLR_GREEN)
-_add_styled_para(doc, stable_claim if stable_claim else "（暂无稳定诉请版本）",
-                 size=SZ_NORMAL, color=CLR_BODY)
+_add_styled_para(doc, "最稳诉请版本：", bold=True, size=SZ_SECTION_HDR, color=CLR_GREEN)
+_add_styled_para(
+    doc, stable_claim if stable_claim else "（暂无稳定诉请版本）", size=SZ_NORMAL, color=CLR_BODY
+)
 
 actions_top3 = exec_summary.get("top3_immediate_actions", [])
 if actions_top3 and actions_top3 != "\u672a\u542f\u7528":
-    _add_styled_para(doc, "前三项立即行动：",
-                     bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
+    _add_styled_para(doc, "前三项立即行动：", bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
     if isinstance(actions_top3, list):
         for a in actions_top3:
             _add_bullet(doc, a, size=SZ_NORMAL, color=CLR_BODY)
@@ -478,8 +535,9 @@ if actions_top3 and actions_top3 != "\u672a\u542f\u7528":
 
 gaps = exec_summary.get("critical_evidence_gaps", [])
 if gaps and gaps != "\u672a\u542f\u7528":
-    _add_styled_para(doc, "\u5173\u952e\u7f3a\u8bc1\uff1a",
-                     bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
+    _add_styled_para(
+        doc, "\u5173\u952e\u7f3a\u8bc1\uff1a", bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE
+    )
     if isinstance(gaps, list):
         for g in gaps:
             _add_bullet(doc, g, size=SZ_NORMAL, color=CLR_BODY)
@@ -506,10 +564,21 @@ for label, val in exec_fields:
 check = amount_report.get("consistency_check_result", {})
 verdict_block = check.get("verdict_block_active", False)
 p = doc.add_paragraph()
-_add_run(p, "\u91d1\u989d\u4e00\u81f4\u6027\u6821\u9a8c\uff1a", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
-_add_run(p, "阻断裁判={}，未解决冲突={}条".format(
-    "是" if verdict_block else "否", len(check.get("unresolved_conflicts", []))),
-    size=SZ_NORMAL, color=CLR_GREEN if not verdict_block else CLR_RED)
+_add_run(
+    p,
+    "\u91d1\u989d\u4e00\u81f4\u6027\u6821\u9a8c\uff1a",
+    bold=True,
+    size=SZ_SECTION_HDR,
+    color=CLR_BLUE,
+)
+_add_run(
+    p,
+    "阻断裁判={}，未解决冲突={}条".format(
+        "是" if verdict_block else "否", len(check.get("unresolved_conflicts", []))
+    ),
+    size=SZ_NORMAL,
+    color=CLR_GREEN if not verdict_block else CLR_RED,
+)
 
 # ---------------------------------------------------------------------------
 # Save

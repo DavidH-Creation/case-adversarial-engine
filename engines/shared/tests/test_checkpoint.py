@@ -19,6 +19,7 @@ from engines.shared.checkpoint import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def run_dir(tmp_path: Path) -> Path:
     """Return a temporary output directory for a single run."""
@@ -35,6 +36,7 @@ def mgr(run_dir: Path) -> CheckpointManager:
 # ---------------------------------------------------------------------------
 # Happy path
 # ---------------------------------------------------------------------------
+
 
 class TestSaveAndLoad:
     """save() persists state; load() recovers it."""
@@ -102,6 +104,7 @@ class TestLoadNone:
 # Edge cases
 # ---------------------------------------------------------------------------
 
+
 class TestCorruptCheckpoint:
     def test_corrupt_json_raises_valueerror(self, mgr: CheckpointManager, run_dir: Path) -> None:
         (run_dir / CHECKPOINT_FILENAME).write_text("NOT VALID JSON {{", encoding="utf-8")
@@ -126,10 +129,13 @@ class TestValidateArtifacts:
         # Create actual artifact files
         (run_dir / "a.json").write_text("{}", encoding="utf-8")
         (run_dir / "b.json").write_text("{}", encoding="utf-8")
-        mgr.save("step_2", {
-            "a": str(run_dir / "a.json"),
-            "b": str(run_dir / "b.json"),
-        })
+        mgr.save(
+            "step_2",
+            {
+                "a": str(run_dir / "a.json"),
+                "b": str(run_dir / "b.json"),
+            },
+        )
         missing = mgr.validate_artifacts()
         assert missing == []
 
@@ -139,7 +145,9 @@ class TestValidateArtifacts:
         assert len(missing) == 1
         assert "gone" in missing[0]
 
-    def test_relative_path_resolved_against_output_dir(self, mgr: CheckpointManager, run_dir: Path) -> None:
+    def test_relative_path_resolved_against_output_dir(
+        self, mgr: CheckpointManager, run_dir: Path
+    ) -> None:
         """Relative paths are resolved relative to the output directory."""
         (run_dir / "rel.json").write_text("{}", encoding="utf-8")
         mgr.save("step_1", {"rel": "rel.json"})
@@ -155,33 +163,40 @@ class TestValidateArtifacts:
 # _should_skip helper (imported via run_case)
 # ---------------------------------------------------------------------------
 
+
 class TestShouldSkip:
     """Test the step-skip logic used during resume."""
 
     def test_no_checkpoint_skips_nothing(self) -> None:
         from scripts.run_case import _should_skip
+
         assert _should_skip("step_1_evidence", None) is False
 
     def test_completed_step_is_skipped(self) -> None:
         from scripts.run_case import _should_skip, STEP_EVIDENCE, STEP_DEBATE
+
         assert _should_skip(STEP_EVIDENCE, STEP_DEBATE) is True
 
     def test_same_step_is_skipped(self) -> None:
         from scripts.run_case import _should_skip, STEP_ISSUES
+
         assert _should_skip(STEP_ISSUES, STEP_ISSUES) is True
 
     def test_future_step_not_skipped(self) -> None:
         from scripts.run_case import _should_skip, STEP_EVIDENCE, STEP_DOCX
+
         assert _should_skip(STEP_DOCX, STEP_EVIDENCE) is False
 
     def test_unknown_step_not_skipped(self) -> None:
         from scripts.run_case import _should_skip
+
         assert _should_skip("unknown_step", "step_1_evidence") is False
 
 
 # ---------------------------------------------------------------------------
 # Resume integration (simulated — no LLM calls)
 # ---------------------------------------------------------------------------
+
 
 class TestResumeIntegration:
     """Simulate the checkpoint + resume flow without actual LLM calls."""
@@ -214,6 +229,9 @@ class TestCheckpointState:
 
     def test_default_schema_version(self) -> None:
         state = CheckpointState(
-            run_id="r", last_completed_step="s", artifact_paths={}, timestamp="t",
+            run_id="r",
+            last_completed_step="s",
+            artifact_paths={},
+            timestamp="t",
         )
         assert state.schema_version == CHECKPOINT_SCHEMA_VERSION

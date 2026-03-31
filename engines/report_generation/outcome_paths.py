@@ -13,6 +13,7 @@ Usage:
     paths = build_case_outcome_paths(decision_tree, mediation_range, gap_result)
     lines = render_outcome_paths_md_lines(paths)
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -85,7 +86,9 @@ def render_outcome_paths_md_lines(paths: CaseOutcomePaths) -> list[str]:
             lines.append("")
 
         if path.required_evidence_ids:
-            lines.append(f"**所需证据 / Required Evidence:** {', '.join(path.required_evidence_ids)}")
+            lines.append(
+                f"**所需证据 / Required Evidence:** {', '.join(path.required_evidence_ids)}"
+            )
             lines.append("")
 
         if path.risk_points:
@@ -118,21 +121,15 @@ def _build_win_path(decision_tree: Any, verdict_block_active: bool) -> OutcomePa
     paths = _get_attr(decision_tree, "paths") or []
     win_paths = [p for p in paths if _get_str(p, "party_favored") == "plaintiff"]
 
-    trigger_conditions = [
-        cond for p in win_paths
-        if (cond := _get_str(p, "trigger_condition"))
-    ]
-    required_evidence_ids = list({
-        eid
-        for p in win_paths
-        for eid in (_get_attr(p, "key_evidence_ids") or [])
-    })
+    trigger_conditions = [cond for p in win_paths if (cond := _get_str(p, "trigger_condition"))]
+    required_evidence_ids = list(
+        {eid for p in win_paths for eid in (_get_attr(p, "key_evidence_ids") or [])}
+    )
 
     risk_points: list[str] = []
     if not verdict_block_active:
         risk_points = [
-            rationale for p in win_paths
-            if (rationale := _get_str(p, "probability_rationale"))
+            rationale for p in win_paths if (rationale := _get_str(p, "probability_rationale"))
         ]
 
     if not trigger_conditions:
@@ -160,21 +157,15 @@ def _build_lose_path(decision_tree: Any, verdict_block_active: bool) -> OutcomeP
     paths = _get_attr(decision_tree, "paths") or []
     lose_paths = [p for p in paths if _get_str(p, "party_favored") == "defendant"]
 
-    trigger_conditions = [
-        cond for p in lose_paths
-        if (cond := _get_str(p, "trigger_condition"))
-    ]
-    required_evidence_ids = list({
-        eid
-        for p in lose_paths
-        for eid in (_get_attr(p, "counter_evidence_ids") or [])
-    })
+    trigger_conditions = [cond for p in lose_paths if (cond := _get_str(p, "trigger_condition"))]
+    required_evidence_ids = list(
+        {eid for p in lose_paths for eid in (_get_attr(p, "counter_evidence_ids") or [])}
+    )
 
     risk_points: list[str] = []
     if not verdict_block_active:
         risk_points = [
-            rationale for p in lose_paths
-            if (rationale := _get_str(p, "probability_rationale"))
+            rationale for p in lose_paths if (rationale := _get_str(p, "probability_rationale"))
         ]
 
     if not trigger_conditions:
@@ -235,14 +226,8 @@ def _build_supplement_path(gap_result: Any) -> OutcomePath:
     sorted_items = sorted(ranked_items, key=lambda x: getattr(x, "roi_rank", 999))
     top3 = sorted_items[:3]
 
-    key_actions = [
-        desc for item in top3
-        if (desc := _get_str(item, "gap_description"))
-    ]
-    required_evidence_ids = [
-        gap_id for item in top3
-        if (gap_id := _get_str(item, "gap_id"))
-    ]
+    key_actions = [desc for item in top3 if (desc := _get_str(item, "gap_description"))]
+    required_evidence_ids = [gap_id for item in top3 if (gap_id := _get_str(item, "gap_id"))]
 
     return OutcomePath(
         path_type=OutcomePathType.SUPPLEMENT,

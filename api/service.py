@@ -13,6 +13,7 @@ Service layer — bridges FastAPI endpoints and the existing adversarial engine.
   GET  /analysis (SSE) → record._progress_queue 驱动的事件流
   GET  /report         → 返回 outputs/<ts>/report.docx 字节
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -62,6 +63,7 @@ _WORKSPACE_BASE: Optional[Path] = _PROJECT_ROOT / "workspaces" / "api"
 # ---------------------------------------------------------------------------
 # CaseRecord — 单案件运行时状态
 # ---------------------------------------------------------------------------
+
 
 class CaseRecord:
     """单案件的运行时状态容器。线程/任务安全性由 asyncio 单线程保证。"""
@@ -115,9 +117,7 @@ class CaseRecord:
         # 实时跟踪
         while True:
             try:
-                msg = await asyncio.wait_for(
-                    self._progress_queue.get(), timeout=30.0
-                )
+                msg = await asyncio.wait_for(self._progress_queue.get(), timeout=30.0)
             except asyncio.TimeoutError:
                 yield "__ping__"
                 continue
@@ -129,6 +129,7 @@ class CaseRecord:
 # ---------------------------------------------------------------------------
 # CaseStore — 全局案件注册表
 # ---------------------------------------------------------------------------
+
 
 class CaseStore:
     def __init__(self) -> None:
@@ -163,6 +164,7 @@ store = CaseStore()
 # ---------------------------------------------------------------------------
 # Unit 6: workspace persistence helpers
 # ---------------------------------------------------------------------------
+
 
 def _record_to_meta(record: "CaseRecord") -> dict:
     """Serialize durable CaseRecord fields for workspace persistence."""
@@ -201,6 +203,7 @@ def _load_case_from_workspace(case_id: str) -> Optional["CaseRecord"]:
         record: CaseRecord = CaseRecord.__new__(CaseRecord)
         # Initialize asyncio-dependent fields that can't be serialized
         import asyncio as _asyncio
+
         record.case_id = meta["case_id"]
         record.status = CaseStatus(meta["status"])
         record.info = meta["info"]
@@ -225,12 +228,16 @@ def _load_case_from_workspace(case_id: str) -> Optional["CaseRecord"]:
 # 材料转换
 # ---------------------------------------------------------------------------
 
+
 def build_raw_materials(mats: list[dict]) -> list[RawMaterial]:
     return [
         RawMaterial(
             source_id=m["source_id"],
             text=m["text"].strip(),
-            metadata={"document_type": m.get("doc_type", "general"), "submitter": m.get("role", "")},
+            metadata={
+                "document_type": m.get("doc_type", "general"),
+                "submitter": m.get("role", ""),
+            },
         )
         for m in mats
         if m.get("text", "").strip()
@@ -249,6 +256,7 @@ def defenses_to_dicts(defenses: list[dict], case_id: str, defendant_id: str) -> 
 # 提取任务（Step 2）
 # ---------------------------------------------------------------------------
 
+
 async def run_extraction(record: CaseRecord) -> None:
     """异步后台任务：索引证据 + 提取争点。"""
     record.status = CaseStatus.extracting
@@ -262,7 +270,9 @@ async def run_extraction(record: CaseRecord) -> None:
         case_slug = f"api{case_id[-8:]}"
 
         claude = ClaudeCLIClient(timeout=600.0)
-        indexer = EvidenceIndexer(llm_client=claude, case_type=case_type, model=model, max_retries=2)
+        indexer = EvidenceIndexer(
+            llm_client=claude, case_type=case_type, model=model, max_retries=2
+        )
 
         # 索引原告证据
         p_mats = build_raw_materials(record.materials["plaintiff"])
@@ -281,14 +291,18 @@ async def run_extraction(record: CaseRecord) -> None:
         record.log(f"[提取] 合计证据 {len(all_ev)} 条")
 
         # 提取争点
-        extractor = IssueExtractor(llm_client=claude, case_type=case_type, model=model, max_retries=2)
+        extractor = IssueExtractor(
+            llm_client=claude, case_type=case_type, model=model, max_retries=2
+        )
         ev_dicts = [e.model_dump() for e in all_ev]
         claims = claims_to_dicts(info.get("claims", []), case_id, p_id)
         defenses = defenses_to_dicts(info.get("defenses", []), case_id, d_id)
 
         record.log(f"[提取] 正在提取争点（{len(claims)} 项诉请，{len(defenses)} 项抗辩）…")
         record.issue_tree = await extractor.extract(claims, defenses, ev_dicts, case_id, case_slug)
-        record.log(f"[提取] 争点 {len(record.issue_tree.issues)} 个，举证责任 {len(record.issue_tree.burdens)} 项")
+        record.log(
+            f"[提取] 争点 {len(record.issue_tree.issues)} 个，举证责任 {len(record.issue_tree.burdens)} 项"
+        )
 
         # 序列化供前端展示
         record.extraction_data = {
@@ -309,6 +323,7 @@ async def run_extraction(record: CaseRecord) -> None:
 # ---------------------------------------------------------------------------
 # 三轮对抗辩论（内部辅助，适配自 scripts/run_case.py）
 # ---------------------------------------------------------------------------
+
 
 async def _run_rounds(
     record: CaseRecord,
@@ -357,7 +372,13 @@ async def _run_rounds(
     record.log("[辩论] 第二轮：证据审查…")
     sid2 = f"state-r2-{uuid.uuid4().hex[:8]}"
     ev_out, new_conf = await ev_mgr.analyze(
-        issue_tree, evidence_index, [p1], [d1], run_id, sid2, 2,
+        issue_tree,
+        evidence_index,
+        [p1],
+        [d1],
+        run_id,
+        sid2,
+        2,
     )
     ev_out = ev_out.model_copy(update={"case_id": case_id})
     conflicts += new_conf
@@ -381,13 +402,21 @@ async def _run_rounds(
     d_best = RoundEngine._extract_best_arguments(d1, d3)
     unresolved = RoundEngine._compute_unresolved_issues(issue_tree, conflicts)
     missing = RoundEngine._build_missing_evidence_report(
-        issue_tree, p_ev, d_ev, plaintiff_id, defendant_id,
+        issue_tree,
+        p_ev,
+        d_ev,
+        plaintiff_id,
+        defendant_id,
     )
 
     result = AdversarialResult(
-        case_id=case_id, run_id=run_id, rounds=rounds,
-        plaintiff_best_arguments=p_best, defendant_best_defenses=d_best,
-        unresolved_issues=unresolved, evidence_conflicts=conflicts,
+        case_id=case_id,
+        run_id=run_id,
+        rounds=rounds,
+        plaintiff_best_arguments=p_best,
+        defendant_best_defenses=d_best,
+        unresolved_issues=unresolved,
+        evidence_conflicts=conflicts,
         missing_evidence_report=missing,
     )
 
@@ -400,6 +429,7 @@ async def _run_rounds(
 # ---------------------------------------------------------------------------
 # 分析任务（Step 4）
 # ---------------------------------------------------------------------------
+
 
 async def run_analysis(record: CaseRecord) -> None:
     """异步后台任务：三轮对抗辩论 + LLM 总结 + 生成 DOCX 报告。"""
@@ -421,8 +451,13 @@ async def run_analysis(record: CaseRecord) -> None:
         # 将辩论中引用的证据提升至 admitted_for_discussion
         record.log("[分析] 启动三轮对抗辩论…")
         result = await _run_rounds(
-            record, record.issue_tree, record.ev_index,
-            claude, config, p_id, d_id,
+            record,
+            record.issue_tree,
+            record.ev_index,
+            claude,
+            config,
+            p_id,
+            d_id,
         )
 
         # ── Unit 4: route evidence promotion through EvidenceStateMachine ──
@@ -466,8 +501,16 @@ async def run_analysis(record: CaseRecord) -> None:
         record.analysis_data = {
             "run_id": analysis_run_id,  # Unit 5: stable id for Scenario API
             "overall_assessment": summary.overall_assessment if summary else None,
-            "plaintiff_args": [a.model_dump(mode="json") for a in summary.plaintiff_strongest_arguments] if summary else [],
-            "defendant_defenses": [d.model_dump(mode="json") for d in summary.defendant_strongest_defenses] if summary else [],
+            "plaintiff_args": [
+                a.model_dump(mode="json") for a in summary.plaintiff_strongest_arguments
+            ]
+            if summary
+            else [],
+            "defendant_defenses": [
+                d.model_dump(mode="json") for d in summary.defendant_strongest_defenses
+            ]
+            if summary
+            else [],
             "unresolved_issues": list(result.unresolved_issues),
             "evidence_conflicts": [c.model_dump(mode="json") for c in result.evidence_conflicts],
             "rounds": [
@@ -492,6 +535,7 @@ async def run_analysis(record: CaseRecord) -> None:
         record.log("[分析] 生成 Word 报告…")
         try:
             from engines.report_generation.docx_generator import generate_docx_report
+
             ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
             out_dir = _PROJECT_ROOT / "outputs" / ts
             out_dir.mkdir(parents=True, exist_ok=True)
@@ -548,6 +592,7 @@ async def run_analysis(record: CaseRecord) -> None:
 # ---------------------------------------------------------------------------
 # ScenarioService — 封装 ScenarioSimulator 的 Web 服务层
 # ---------------------------------------------------------------------------
+
 
 class ScenarioService:
     """封装 ScenarioSimulator 调用，管理场景结果的存储和查询。"""
@@ -609,6 +654,7 @@ scenario_service = ScenarioService(_PROJECT_ROOT / "outputs")
 # 产物访问（供 API 端点调用）
 # ---------------------------------------------------------------------------
 
+
 def list_artifacts(record: CaseRecord) -> list[str]:
     """返回该 run 所有已就绪的产物文件名。"""
     return list(record.artifacts.keys())
@@ -622,6 +668,7 @@ def get_artifact(record: CaseRecord, name: str) -> Optional[Any]:
 # ---------------------------------------------------------------------------
 # Markdown 报告生成
 # ---------------------------------------------------------------------------
+
 
 def _generate_markdown_report(record: CaseRecord) -> str:
     """从 analysis_data 和 case info 生成 Markdown 格式报告。"""

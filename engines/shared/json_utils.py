@@ -115,7 +115,7 @@ def _extract_json_object(text: str) -> dict:
         if open_braces > 0 or open_brackets > 0:
             # Trim trailing incomplete tokens (partial strings, keys)
             # Find last comma or colon, truncate after it, then close
-            for trim_pat in (r',\s*"[^"]*$', r',\s*$', r':\s*"[^"]*$', r':\s*$'):
+            for trim_pat in (r',\s*"[^"]*$', r",\s*$", r':\s*"[^"]*$', r":\s*$"):
                 trimmed = re.sub(trim_pat, "", fragment)
                 if trimmed != fragment:
                     fragment = trimmed
@@ -129,15 +129,15 @@ def _extract_json_object(text: str) -> dict:
                         "截断恢复成功但 JSON 数据可能不完整 / "
                         "Truncation recovery succeeded but JSON data may be incomplete: "
                         "open_braces=%d, open_brackets=%d, text_len=%d",
-                        open_braces, open_brackets, len(text),
+                        open_braces,
+                        open_brackets,
+                        len(text),
                     )
                     return result
             except json.JSONDecodeError:
                 pass
 
-    raise ValueError(
-        f"无法从 LLM 响应中解析 JSON 对象 / Cannot parse JSON object: {text[:200]}"
-    )
+    raise ValueError(f"无法从 LLM 响应中解析 JSON 对象 / Cannot parse JSON object: {text[:200]}")
 
 
 def _extract_json_array(text: str) -> list[dict]:

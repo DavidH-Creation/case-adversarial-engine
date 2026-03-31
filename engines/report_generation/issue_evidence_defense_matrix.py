@@ -16,6 +16,7 @@ Usage:
     matrix = build_issue_evidence_defense_matrix(issue_tree, evidence_index, defense_chain)
     md = render_matrix_markdown(matrix)
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -89,15 +90,17 @@ def build_issue_evidence_defense_matrix(
         defense_ids = defense_by_issue.get(issue_id, [])
         has_unrebutted = len(ev_ids) > 0 and len(defense_ids) == 0
 
-        rows.append(MatrixRow(
-            issue_id=issue_id,
-            issue_label=issue_label,
-            issue_impact=impact,
-            evidence_ids=ev_ids,
-            defense_ids=defense_ids,
-            evidence_count=len(ev_ids),
-            has_unrebutted_evidence=has_unrebutted,
-        ))
+        rows.append(
+            MatrixRow(
+                issue_id=issue_id,
+                issue_label=issue_label,
+                issue_impact=impact,
+                evidence_ids=ev_ids,
+                defense_ids=defense_ids,
+                evidence_count=len(ev_ids),
+                has_unrebutted_evidence=has_unrebutted,
+            )
+        )
 
     # Sort by impact descending: high(0) > medium(1) > low(2) > unknown(99)
     rows.sort(key=lambda r: _IMPACT_ORDER.get(r.issue_impact, 99))

@@ -4,6 +4,7 @@ LLM prompt templates for labor dispute case type defense chain optimization.
 
 指导 LLM 为原告方（劳动者）生成针对每个争点的最优防御策略链。
 """
+
 from __future__ import annotations
 
 from engines.shared.few_shot_examples import load_few_shot_text

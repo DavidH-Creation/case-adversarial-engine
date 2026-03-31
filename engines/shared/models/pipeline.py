@@ -29,6 +29,7 @@ from engines.shared.models.core import (
 
 class MaterialRef(BaseModel):
     """材料索引引用。"""
+
     index_name: str = Field(default="material_index")
     object_type: str
     object_id: str = Field(..., min_length=1)
@@ -37,6 +38,7 @@ class MaterialRef(BaseModel):
 
 class ArtifactRef(BaseModel):
     """产物索引引用。"""
+
     index_name: str = Field(default="artifact_index")
     object_type: str
     object_id: str = Field(..., min_length=1)
@@ -45,6 +47,7 @@ class ArtifactRef(BaseModel):
 
 class InputSnapshot(BaseModel):
     """运行输入快照。"""
+
     material_refs: list[MaterialRef] = Field(default_factory=list)
     artifact_refs: list[ArtifactRef] = Field(default_factory=list)
 
@@ -56,6 +59,7 @@ class InputSnapshot(BaseModel):
 
 class ExtractionMetadata(BaseModel):
     """提取过程元信息，prompt_profile 持久化于此以支持重放。"""
+
     model_used: str = Field(default="")
     temperature: float = Field(default=0.0)
     timestamp: str = Field(
@@ -70,6 +74,7 @@ class Run(BaseModel):
     """执行快照，对应 schemas/procedure/run.schema.json。
     output_refs 接受 material_ref | artifact_ref（per B7 schema fix）。
     """
+
     run_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     workspace_id: str = Field(..., min_length=1)
@@ -89,6 +94,7 @@ class Run(BaseModel):
 
 class JobError(BaseModel):
     """长任务结构化错误。对应 schemas/indexing.schema.json#/$defs/job_error。"""
+
     code: str = Field(..., min_length=1)
     message: str = Field(..., min_length=1)
     details: Optional[dict[str, Any]] = None
@@ -105,6 +111,7 @@ class Job(BaseModel):
     - failed:    progress < 1, result_ref=null, error≠null
     - cancelled: progress < 1, result_ref=null, error=null
     """
+
     job_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     workspace_id: str = Field(..., min_length=1)
@@ -174,6 +181,7 @@ class Job(BaseModel):
 
 class LoanTransaction(BaseModel):
     """放款流水记录。每笔放款对应一条。"""
+
     tx_id: str = Field(..., min_length=1, description="流水唯一标识")
     date: str = Field(..., min_length=1, description="放款日期，格式 YYYY-MM-DD")
     amount: Decimal = Field(..., gt=0, description="放款金额，必须大于零")
@@ -185,6 +193,7 @@ class LoanTransaction(BaseModel):
 
 class RepaymentTransaction(BaseModel):
     """还款流水记录。每笔还款对应一条，必须唯一归因。"""
+
     tx_id: str = Field(..., min_length=1, description="流水唯一标识")
     date: str = Field(..., min_length=1, description="还款日期，格式 YYYY-MM-DD")
     amount: Decimal = Field(..., gt=0, description="还款金额，必须大于零")
@@ -197,6 +206,7 @@ class RepaymentTransaction(BaseModel):
 
 class DisputedAmountAttribution(BaseModel):
     """争议款项归因记录。记录原被告对同一笔款项的不同立场。"""
+
     item_id: str = Field(..., min_length=1, description="争议条目唯一标识")
     amount: Decimal = Field(..., gt=0, description="争议金额")
     dispute_description: str = Field(..., min_length=1, description="争议说明")
@@ -207,6 +217,7 @@ class DisputedAmountAttribution(BaseModel):
 
 class ClaimCalculationEntry(BaseModel):
     """诉请计算表中的单行记录。"""
+
     claim_id: str = Field(..., min_length=1, description="关联 Claim.claim_id")
     claim_type: ClaimType
     claimed_amount: Decimal = Field(..., ge=0, description="诉请金额（由调用方提供）")
@@ -221,6 +232,7 @@ class ClaimCalculationEntry(BaseModel):
 
 class AmountConflict(BaseModel):
     """金额口径冲突记录。每个未解释冲突对应一条。"""
+
     conflict_id: str = Field(..., min_length=1, description="冲突唯一标识")
     conflict_description: str = Field(..., min_length=1, description="冲突描述")
     amount_a: Decimal = Field(..., description="第一种口径的金额")
@@ -232,6 +244,7 @@ class AmountConflict(BaseModel):
 
 class AmountConsistencyCheck(BaseModel):
     """五条硬校验规则的聚合结果。"""
+
     principal_base_unique: bool = Field(
         ..., description="本金基数是否唯一确定：无未解决的本金口径冲突"
     )
@@ -249,10 +262,11 @@ class AmountConsistencyCheck(BaseModel):
     )
     unresolved_conflicts: list[AmountConflict] = Field(
         default_factory=list,
-        description="未解释的金额口径冲突列表；非空时触发 verdict_block_active"
+        description="未解释的金额口径冲突列表；非空时触发 verdict_block_active",
     )
     verdict_block_active: bool = Field(
-        ..., description="系统是否因未解释冲突阻断稳定裁判判断；硬规则：unresolved_conflicts 非空时必须为 True"
+        ...,
+        description="系统是否因未解释冲突阻断稳定裁判判断；硬规则：unresolved_conflicts 非空时必须为 True",
     )
     claim_delivery_ratio_normal: bool = Field(
         default=True,
@@ -263,9 +277,7 @@ class AmountConsistencyCheck(BaseModel):
     def _enforce_verdict_block_rule(self) -> "AmountConsistencyCheck":
         """硬规则：unresolved_conflicts 非空时 verdict_block_active 必须为 True。"""
         if self.unresolved_conflicts and not self.verdict_block_active:
-            raise ValueError(
-                "verdict_block_active 必须为 True 当 unresolved_conflicts 非空"
-            )
+            raise ValueError("verdict_block_active 必须为 True 当 unresolved_conflicts 非空")
         return self
 
 
@@ -275,32 +287,32 @@ class InterestRecalculation(BaseModel):
     注：interest_amount 字段为单期概念金额（principal × rate），用于对比利率切换
     前后的差额比例。如需精算利息金额，下游应结合实际借贷期限重新计算。
     """
+
     original_rate: Decimal = Field(..., description="原合同约定利率")
     effective_rate: Decimal = Field(..., description="重算后适用利率")
     rate_basis: str = Field(..., min_length=1, description="利率依据（如 LPR、LPR*4）")
     contract_validity: ContractValidity
-    original_interest_amount: Decimal = Field(..., description="单期概念利息 = principal × original_rate")
-    recalculated_interest_amount: Decimal = Field(..., description="单期概念利息 = principal × effective_rate")
+    original_interest_amount: Decimal = Field(
+        ..., description="单期概念利息 = principal × original_rate"
+    )
+    recalculated_interest_amount: Decimal = Field(
+        ..., description="单期概念利息 = principal × effective_rate"
+    )
     delta: Decimal = Field(..., description="利息差额 = original - recalculated（同期比较）")
 
 
 class AmountCalculationReport(BaseModel):
     """金额/诉请一致性硬校验报告。P0.2 产物，纳入 CaseWorkspace.artifact_index。"""
+
     report_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
-    loan_transactions: list[LoanTransaction] = Field(
-        ..., description="放款流水表"
-    )
-    repayment_transactions: list[RepaymentTransaction] = Field(
-        ..., description="还款流水表"
-    )
+    loan_transactions: list[LoanTransaction] = Field(..., description="放款流水表")
+    repayment_transactions: list[RepaymentTransaction] = Field(..., description="还款流水表")
     disputed_amount_attributions: list[DisputedAmountAttribution] = Field(
         default_factory=list, description="争议款项归因表"
     )
-    claim_calculation_table: list[ClaimCalculationEntry] = Field(
-        ..., description="诉请计算表"
-    )
+    claim_calculation_table: list[ClaimCalculationEntry] = Field(..., description="诉请计算表")
     consistency_check_result: AmountConsistencyCheck = Field(
         ..., description="一致性校验结果（五条硬规则）"
     )
@@ -319,6 +331,7 @@ class AmountCalculationReport(BaseModel):
 
 class ConfidenceInterval(BaseModel):
     """置信度区间。仅在 verdict_block_active=False 时允许填写。"""
+
     lower: float = Field(..., ge=0.0, le=1.0, description="置信度区间下界 [0,1]")
     upper: float = Field(..., ge=0.0, le=1.0, description="置信度区间上界 [0,1]")
 
@@ -331,6 +344,7 @@ class ConfidenceInterval(BaseModel):
 
 class PathRankingItem(BaseModel):
     """路径概率排序条目。DecisionPathTree.path_ranking 列表元素。"""
+
     path_id: str = Field(..., min_length=1, description="路径 ID")
     probability: float = Field(..., ge=0.0, le=1.0, description="路径触发概率")
     party_favored: str = Field(..., description="对哪方有利：plaintiff / defendant / neutral")
@@ -341,9 +355,12 @@ class PathRankingItem(BaseModel):
 
 class DecisionPath(BaseModel):
     """单条裁判路径。"""
+
     path_id: str = Field(..., min_length=1)
     trigger_condition: str = Field(..., min_length=1, description="触发本路径的关键条件描述")
-    trigger_issue_ids: list[str] = Field(default_factory=list, description="触发条件关联的争点 ID 列表")
+    trigger_issue_ids: list[str] = Field(
+        default_factory=list, description="触发条件关联的争点 ID 列表"
+    )
     key_evidence_ids: list[str] = Field(
         default_factory=list,
         description="本路径依赖的关键证据 ID 列表（仅含支持本路径结论的证据）",
@@ -371,7 +388,9 @@ class DecisionPath(BaseModel):
     )
     # v1.6: 概率评分
     probability: float = Field(
-        default=0.5, ge=0.0, le=1.0,
+        default=0.5,
+        ge=0.0,
+        le=1.0,
         description="路径触发概率（0-1），基于证据支撑度、阻断条件可满足性及法律先例对齐度",
     )
     probability_rationale: str = Field(
@@ -385,6 +404,7 @@ class DecisionPath(BaseModel):
 
 class BlockingCondition(BaseModel):
     """阻断稳定判断的条件。"""
+
     condition_id: str = Field(..., min_length=1)
     condition_type: BlockingConditionType
     description: str = Field(..., min_length=1)
@@ -397,10 +417,13 @@ class DecisionPathTree(BaseModel):
     替代 AdversarialSummary.overall_assessment 的段落式综合评估。
     overall_assessment 的汇总填充（各路径 possible_outcome 摘要）由调用方负责，不在本模块实现。
     """
+
     tree_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
-    paths: list[DecisionPath] = Field(default_factory=list, description="裁判路径列表（建议 3-6 条）")
+    paths: list[DecisionPath] = Field(
+        default_factory=list, description="裁判路径列表（建议 3-6 条）"
+    )
     blocking_conditions: list[BlockingCondition] = Field(
         default_factory=list, description="当前阻断稳定判断的条件列表"
     )
@@ -408,9 +431,7 @@ class DecisionPathTree(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
     # v1.6: 路径概率比较结果
-    most_likely_path: Optional[str] = Field(
-        default=None, description="概率最高的路径 ID"
-    )
+    most_likely_path: Optional[str] = Field(default=None, description="概率最高的路径 ID")
     plaintiff_best_path: Optional[str] = Field(
         default=None, description="对原告最有利的路径 ID（plaintiff_favored 路径中概率最高）"
     )
@@ -429,6 +450,7 @@ class DecisionPathTree(BaseModel):
 
 class AttackNode(BaseModel):
     """单个攻击节点。OptimalAttackChain.top_attacks 列表元素（规则层保证恰好 3 个）。"""
+
     attack_node_id: str = Field(..., min_length=1, description="攻击节点唯一标识")
     target_issue_id: str = Field(..., min_length=1, description="攻击目标争点 ID")
     attack_description: str = Field(..., min_length=1, description="攻击论点描述")
@@ -437,15 +459,14 @@ class AttackNode(BaseModel):
         ..., min_length=1, description="支撑此攻击点的证据 ID 列表（不得为空）"
     )
     counter_measure: str = Field(default="", description="我方对此攻击点的反制动作")
-    adversary_pivot_strategy: str = Field(
-        default="", description="对方补证后我方策略切换说明"
-    )
+    adversary_pivot_strategy: str = Field(default="", description="对方补证后我方策略切换说明")
 
 
 class OptimalAttackChain(BaseModel):
     """某一方的最优攻击顺序与反制准备。P0.4 产物，纳入 CaseWorkspace.artifact_index。
     为原告和被告各生成一份。
     """
+
     chain_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)

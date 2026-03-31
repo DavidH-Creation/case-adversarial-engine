@@ -7,6 +7,7 @@ Unit tests for DefenseChainOptimizer.
 - 分层测试：空输入 → 正常流程 → 证据校验 → 优先级排序 → LLM 失败降级
 - 覆盖所有合约保证
 """
+
 from __future__ import annotations
 
 import json
@@ -118,11 +119,14 @@ def _mock_response(
     confidence: float = 0.8,
     strategic_summary: str = "整体防御策略摘要",
 ) -> str:
-    return json.dumps({
-        "defense_points": defense_points,
-        "confidence_score": confidence,
-        "strategic_summary": strategic_summary,
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "defense_points": defense_points,
+            "confidence_score": confidence,
+            "strategic_summary": strategic_summary,
+        },
+        ensure_ascii=False,
+    )
 
 
 def _make_point_dict(
@@ -192,10 +196,12 @@ class TestHappyPath:
     @pytest.mark.asyncio
     async def test_multiple_valid_points_all_preserved(self):
         issues = [_make_issue("ISS-A"), _make_issue("ISS-B")]
-        response = _mock_response([
-            _make_point_dict("ISS-A", priority=1),
-            _make_point_dict("ISS-B", priority=2),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-A", priority=1),
+                _make_point_dict("ISS-B", priority=2),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 
@@ -276,9 +282,11 @@ class TestEvidenceIDValidation:
     @pytest.mark.asyncio
     async def test_invalid_evidence_id_filtered_point_kept(self):
         issues = [_make_issue("ISS-001")]
-        response = _mock_response([
-            _make_point_dict("ISS-001", evidence_ids=["EV-001", "EV-GHOST"]),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-001", evidence_ids=["EV-001", "EV-GHOST"]),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 
@@ -289,9 +297,11 @@ class TestEvidenceIDValidation:
     async def test_all_evidence_ids_invalid_point_still_kept(self):
         """所有证据 ID 无效时论点仍保留（evidence_ids 被清空但论点不丢弃）。"""
         issues = [_make_issue("ISS-001")]
-        response = _mock_response([
-            _make_point_dict("ISS-001", evidence_ids=["EV-GHOST-1", "EV-GHOST-2"]),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-001", evidence_ids=["EV-GHOST-1", "EV-GHOST-2"]),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 
@@ -302,10 +312,12 @@ class TestEvidenceIDValidation:
     async def test_evidence_support_aggregated_and_deduplicated(self):
         """evidence_support 汇总所有论点的证据 ID 并去重。"""
         issues = [_make_issue("ISS-A"), _make_issue("ISS-B")]
-        response = _mock_response([
-            _make_point_dict("ISS-A", evidence_ids=["EV-001", "EV-002"], priority=1),
-            _make_point_dict("ISS-B", evidence_ids=["EV-001"], priority=2),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-A", evidence_ids=["EV-001", "EV-002"], priority=1),
+                _make_point_dict("ISS-B", evidence_ids=["EV-001"], priority=2),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 
@@ -323,9 +335,11 @@ class TestStrategyArgumentValidation:
     @pytest.mark.asyncio
     async def test_empty_strategy_marks_unevaluated(self):
         issues = [_make_issue("ISS-001")]
-        response = _mock_response([
-            _make_point_dict("ISS-001", strategy="", argument="有论证"),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-001", strategy="", argument="有论证"),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 
@@ -335,9 +349,11 @@ class TestStrategyArgumentValidation:
     @pytest.mark.asyncio
     async def test_empty_argument_marks_unevaluated(self):
         issues = [_make_issue("ISS-001")]
-        response = _mock_response([
-            _make_point_dict("ISS-001", strategy="有策略", argument=""),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-001", strategy="有策略", argument=""),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 
@@ -356,11 +372,13 @@ class TestPriorityOrdering:
     @pytest.mark.asyncio
     async def test_priority_renumbered_consecutively(self):
         issues = [_make_issue("ISS-A"), _make_issue("ISS-B"), _make_issue("ISS-C")]
-        response = _mock_response([
-            _make_point_dict("ISS-B", priority=5),
-            _make_point_dict("ISS-A", priority=2),
-            _make_point_dict("ISS-C", priority=10),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-B", priority=5),
+                _make_point_dict("ISS-A", priority=2),
+                _make_point_dict("ISS-C", priority=10),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 
@@ -371,10 +389,12 @@ class TestPriorityOrdering:
     async def test_priority_sorting_preserves_relative_order(self):
         """较小 priority 值的论点排在前面。"""
         issues = [_make_issue("ISS-A"), _make_issue("ISS-B")]
-        response = _mock_response([
-            _make_point_dict("ISS-B", priority=10),
-            _make_point_dict("ISS-A", priority=1),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-B", priority=10),
+                _make_point_dict("ISS-A", priority=1),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 
@@ -394,10 +414,12 @@ class TestTargetIssuesMapping:
     @pytest.mark.asyncio
     async def test_target_issues_match_defense_points(self):
         issues = [_make_issue("ISS-A"), _make_issue("ISS-B")]
-        response = _mock_response([
-            _make_point_dict("ISS-A", priority=1),
-            _make_point_dict("ISS-B", priority=2),
-        ])
+        response = _mock_response(
+            [
+                _make_point_dict("ISS-A", priority=1),
+                _make_point_dict("ISS-B", priority=2),
+            ]
+        )
         optimizer = DefenseChainOptimizer(llm_client=MockLLMClient(response))
         result = await optimizer.optimize(_make_input(issues))
 

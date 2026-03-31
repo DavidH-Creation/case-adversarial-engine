@@ -7,6 +7,7 @@ docx_generator 冒烟测试 / Smoke tests for docx_generator.generate_docx_repor
 - 传入最小空数据集（all-empty dicts）仍能完成
 - 传入完整数据集（含 parties/summary/rounds/exec_summary 等）仍能完成
 """
+
 from __future__ import annotations
 
 import tempfile

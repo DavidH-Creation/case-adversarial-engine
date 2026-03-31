@@ -10,6 +10,7 @@ Integration tests for report enhancement sections in _write_md and generate_docx
 - 对方策略预警：defendant_strongest_defenses + attack_chain → 预警 section
 - DOCX smoke: 新参数传入后不抛异常
 """
+
 from __future__ import annotations
 
 import tempfile
@@ -23,6 +24,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_result(*, with_summary: bool = True, with_defenses: bool = True):
     """Create a minimal AdversarialResult-like object for _write_md."""
@@ -55,32 +57,37 @@ def _make_result(*, with_summary: bool = True, with_defenses: bool = True):
 
 def _make_ranked_issues():
     """Create ranked issues with varying risk profiles."""
-    return SimpleNamespace(issues=[
-        SimpleNamespace(
-            issue_id="issue-001", title="借贷关系成立",
-            issue_type=SimpleNamespace(value="factual"),
-            outcome_impact=SimpleNamespace(value="high"),
-            opponent_attack_strength=SimpleNamespace(value="strong"),
-            proponent_evidence_strength=SimpleNamespace(value="medium"),
-            recommended_action=SimpleNamespace(value="supplement_evidence"),
-        ),
-        SimpleNamespace(
-            issue_id="issue-002", title="还款事实",
-            issue_type=SimpleNamespace(value="factual"),
-            outcome_impact=SimpleNamespace(value="medium"),
-            opponent_attack_strength=SimpleNamespace(value="weak"),
-            proponent_evidence_strength=SimpleNamespace(value="strong"),
-            recommended_action=SimpleNamespace(value="explain_in_trial"),
-        ),
-        SimpleNamespace(
-            issue_id="issue-003", title="利息计算",
-            issue_type=SimpleNamespace(value="legal"),
-            outcome_impact=SimpleNamespace(value="low"),
-            opponent_attack_strength=SimpleNamespace(value="medium"),
-            proponent_evidence_strength=SimpleNamespace(value="medium"),
-            recommended_action=SimpleNamespace(value="amend_claim"),
-        ),
-    ])
+    return SimpleNamespace(
+        issues=[
+            SimpleNamespace(
+                issue_id="issue-001",
+                title="借贷关系成立",
+                issue_type=SimpleNamespace(value="factual"),
+                outcome_impact=SimpleNamespace(value="high"),
+                opponent_attack_strength=SimpleNamespace(value="strong"),
+                proponent_evidence_strength=SimpleNamespace(value="medium"),
+                recommended_action=SimpleNamespace(value="supplement_evidence"),
+            ),
+            SimpleNamespace(
+                issue_id="issue-002",
+                title="还款事实",
+                issue_type=SimpleNamespace(value="factual"),
+                outcome_impact=SimpleNamespace(value="medium"),
+                opponent_attack_strength=SimpleNamespace(value="weak"),
+                proponent_evidence_strength=SimpleNamespace(value="strong"),
+                recommended_action=SimpleNamespace(value="explain_in_trial"),
+            ),
+            SimpleNamespace(
+                issue_id="issue-003",
+                title="利息计算",
+                issue_type=SimpleNamespace(value="legal"),
+                outcome_impact=SimpleNamespace(value="low"),
+                opponent_attack_strength=SimpleNamespace(value="medium"),
+                proponent_evidence_strength=SimpleNamespace(value="medium"),
+                recommended_action=SimpleNamespace(value="amend_claim"),
+            ),
+        ]
+    )
 
 
 def _make_attack_chain():
@@ -213,12 +220,14 @@ _CASE_DATA = {
 # Test: _write_md sections
 # ---------------------------------------------------------------------------
 
+
 class TestWriteMdActionPriorityList:
     """行动优先级清单 section 测试。"""
 
     def _write(self, *, exec_summary=None, action_rec=None) -> str:
         """Call _write_md and return content."""
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
         from scripts.run_case import _write_md
 
@@ -226,7 +235,10 @@ class TestWriteMdActionPriorityList:
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             _write_md(
-                out, result, SimpleNamespace(issues=[]), _CASE_DATA,
+                out,
+                result,
+                SimpleNamespace(issues=[]),
+                _CASE_DATA,
                 exec_summary=exec_summary,
                 action_rec=action_rec,
                 no_redact=True,
@@ -262,7 +274,10 @@ class TestWriteMdRiskHeatmap:
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             _write_md(
-                out, result, SimpleNamespace(issues=[]), _CASE_DATA,
+                out,
+                result,
+                SimpleNamespace(issues=[]),
+                _CASE_DATA,
                 ranked_issues=ranked_issues,
                 no_redact=True,
             )
@@ -292,7 +307,10 @@ class TestWriteMdMediationRange:
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             _write_md(
-                out, result, SimpleNamespace(issues=[]), _CASE_DATA,
+                out,
+                result,
+                SimpleNamespace(issues=[]),
+                _CASE_DATA,
                 amount_report=amount_report,
                 decision_tree=decision_tree,
                 no_redact=True,
@@ -325,7 +343,10 @@ class TestWriteMdOpponentStrategy:
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             _write_md(
-                out, result, SimpleNamespace(issues=[]), _CASE_DATA,
+                out,
+                result,
+                SimpleNamespace(issues=[]),
+                _CASE_DATA,
                 attack_chain=attack_chain,
                 no_redact=True,
             )
@@ -359,8 +380,12 @@ class TestWriteMdOpponentStrategy:
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             from scripts.run_case import _write_md
+
             _write_md(
-                out, result, SimpleNamespace(issues=[]), _CASE_DATA,
+                out,
+                result,
+                SimpleNamespace(issues=[]),
+                _CASE_DATA,
                 no_redact=True,
             )
             content = (out / "report.md").read_text(encoding="utf-8")
@@ -370,6 +395,7 @@ class TestWriteMdOpponentStrategy:
 # ---------------------------------------------------------------------------
 # Test: DOCX smoke with new parameters
 # ---------------------------------------------------------------------------
+
 
 class TestDocxSmokeEnhancements:
     """DOCX 生成器接受新参数后仍然不抛异常。"""
@@ -481,9 +507,12 @@ class TestDocxSmokeEnhancements:
             output_dir=tmp_path,
             case_data={"parties": {}, "summary": [], "model": ""},
             result={
-                "case_id": "c", "run_id": "r",
-                "rounds": [], "evidence_conflicts": [],
-                "summary": None, "missing_evidence_report": [],
+                "case_id": "c",
+                "run_id": "r",
+                "rounds": [],
+                "evidence_conflicts": [],
+                "summary": None,
+                "missing_evidence_report": [],
             },
             ranked_issues=None,
             action_rec=None,

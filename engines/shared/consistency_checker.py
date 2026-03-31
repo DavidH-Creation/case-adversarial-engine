@@ -14,6 +14,7 @@ Consistency Checker — pre-output consistency validation for v7.
 - 校验失败时返回 sections_to_regenerate 列表
 - 不修改输入数据，仅返回校验结果
 """
+
 from __future__ import annotations
 
 import logging
@@ -76,33 +77,50 @@ class ConsistencyChecker:
 
         # 1. 视角一致性
         perspective_ok = self._check_perspective_consistency(
-            report, failures, sections_to_regenerate,
+            report,
+            failures,
+            sections_to_regenerate,
         )
 
         # 2. 推荐一致性
         recommendation_ok = self._check_recommendation_consistency(
-            decision_tree, recommendation, failures, sections_to_regenerate,
+            decision_tree,
+            recommendation,
+            failures,
+            sections_to_regenerate,
         )
 
         # 3. 可采性闸门
         admissibility_ok = self._check_admissibility_gate(
-            evidence_list, issue_list, failures,
+            evidence_list,
+            issue_list,
+            failures,
         )
 
         # 4. 强论点降权
         demotion_ok = self._check_strong_argument_demotion(
-            evidence_list, issue_list, failures,
+            evidence_list,
+            issue_list,
+            failures,
         )
 
         # 5. 行动建议对齐
         action_ok = self._check_action_stance_alignment(
-            decision_tree, recommendation, failures, sections_to_regenerate,
+            decision_tree,
+            recommendation,
+            failures,
+            sections_to_regenerate,
         )
 
-        overall = all([
-            perspective_ok, recommendation_ok, admissibility_ok,
-            demotion_ok, action_ok,
-        ])
+        overall = all(
+            [
+                perspective_ok,
+                recommendation_ok,
+                admissibility_ok,
+                demotion_ok,
+                action_ok,
+            ]
+        )
 
         return ConsistencyCheckResult(
             overall_pass=overall,
@@ -144,8 +162,12 @@ class ConsistencyChecker:
                 # 检查结论中是否含有偏向性表述（简化检测：检查标题关键词）
                 body_lower = section.body.lower() if section.body else ""
                 partisan_keywords = [
-                    "建议原告", "建议被告", "原告应", "被告应",
-                    "plaintiff should", "defendant should",
+                    "建议原告",
+                    "建议被告",
+                    "原告应",
+                    "被告应",
+                    "plaintiff should",
+                    "defendant should",
                 ]
                 for kw in partisan_keywords:
                     if kw in body_lower:
@@ -191,8 +213,13 @@ class ConsistencyChecker:
         # 检查 strategic_headline 是否仍在暗示原告全额胜诉
         headline = recommendation.strategic_headline or ""
         overconfident_signals = [
-            "全额", "稳拿", "必胜", "确保获赔", "完全支持",
-            "full recovery", "certain win",
+            "全额",
+            "稳拿",
+            "必胜",
+            "确保获赔",
+            "完全支持",
+            "full recovery",
+            "certain win",
         ]
         for signal in overconfident_signals:
             if signal in headline:
@@ -243,9 +270,7 @@ class ConsistencyChecker:
             if issue.outcome_impact != OutcomeImpact.high:
                 continue
             # 该争点的所有证据是否都有可采性问题？
-            if issue.evidence_ids and all(
-                eid in problematic_eids for eid in issue.evidence_ids
-            ):
+            if issue.evidence_ids and all(eid in problematic_eids for eid in issue.evidence_ids):
                 ok = False
                 failures.append(
                     f"可采性闸门：争点 [{issue.issue_id}]「{issue.title}」"
@@ -290,9 +315,7 @@ class ConsistencyChecker:
         for issue in issue_list:
             if issue.outcome_impact != OutcomeImpact.high:
                 continue
-            if issue.evidence_ids and all(
-                eid in unstable_eids for eid in issue.evidence_ids
-            ):
+            if issue.evidence_ids and all(eid in unstable_eids for eid in issue.evidence_ids):
                 ok = False
                 failures.append(
                     f"强论点降权：争点 [{issue.issue_id}]「{issue.title}」"
@@ -338,7 +361,10 @@ class ConsistencyChecker:
             if plaintiff_plan and plaintiff_plan.strategic_recommendations:
                 for sr in plaintiff_plan.strategic_recommendations:
                     aggressive_signals = [
-                        "全额主张", "坚持全额", "加大力度", "扩大诉请",
+                        "全额主张",
+                        "坚持全额",
+                        "加大力度",
+                        "扩大诉请",
                     ]
                     for signal in aggressive_signals:
                         if signal in sr.recommendation_text:

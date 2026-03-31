@@ -45,20 +45,28 @@ def _make_all_evidence():
     """构建覆盖所有状态/域的证据集。"""
     return [
         _make_evidence(
-            "ev-priv-p", "party-plaintiff",
-            EvidenceStatus.private, AccessDomain.owner_private,
+            "ev-priv-p",
+            "party-plaintiff",
+            EvidenceStatus.private,
+            AccessDomain.owner_private,
         ),
         _make_evidence(
-            "ev-sub", "party-plaintiff",
-            EvidenceStatus.submitted, AccessDomain.shared_common,
+            "ev-sub",
+            "party-plaintiff",
+            EvidenceStatus.submitted,
+            AccessDomain.shared_common,
         ),
         _make_evidence(
-            "ev-chal", "party-plaintiff",
-            EvidenceStatus.challenged, AccessDomain.shared_common,
+            "ev-chal",
+            "party-plaintiff",
+            EvidenceStatus.challenged,
+            AccessDomain.shared_common,
         ),
         _make_evidence(
-            "ev-adm", "party-plaintiff",
-            EvidenceStatus.admitted_for_discussion, AccessDomain.admitted_record,
+            "ev-adm",
+            "party-plaintiff",
+            EvidenceStatus.admitted_for_discussion,
+            AccessDomain.admitted_record,
         ),
     ]
 

@@ -4,6 +4,7 @@ Engine-specific schemas for issue_category_classifier.
 
 共享类型从 engines.shared.models 导入；本模块只保留 LLM 中间模型和引擎 I/O wrapper。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -25,6 +26,7 @@ from engines.shared.models import (  # noqa: F401
 
 class LLMIssueCategoryItem(BaseModel):
     """LLM 对单个争点的类型分类输出（中间模型，由规则层进一步校验）。"""
+
     issue_id: str = Field(default="")
     issue_category: str = Field(
         default="",
@@ -42,6 +44,7 @@ class LLMIssueCategoryItem(BaseModel):
 
 class LLMIssueCategoryOutput(BaseModel):
     """LLM 批量分类输出（中间模型）。LLM batch classification output (intermediate model)."""
+
     classifications: list[LLMIssueCategoryItem] = Field(default_factory=list)
 
 
@@ -60,6 +63,7 @@ class IssueCategoryClassifierInput(BaseModel):
         evidence_index:             证据索引（上下文，帮助 LLM 理解争点背景）
         amount_calculation_report:  P0.2 产物（用于校验 calculation_issue 关联）
     """
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     issue_tree: IssueTree
@@ -75,6 +79,7 @@ class IssueCategoryClassificationResult(BaseModel):
     unclassified_issue_ids:     未能分类或校验失败的争点 ID（供审计）
     created_at:                 ISO-8601 时间戳
     """
+
     classified_issue_tree: IssueTree
     classification_metadata: dict[str, Any] = Field(default_factory=dict)
     unclassified_issue_ids: list[str] = Field(default_factory=list)

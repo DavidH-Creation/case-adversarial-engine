@@ -5,6 +5,7 @@ Engine-specific schemas for credibility_scorer.
 共享类型从 engines.shared.models 导入；本模块只保留：
 - CredibilityScorerInput：引擎输入 wrapper
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -30,6 +31,7 @@ class CredibilityScorerInput(BaseModel):
         evidence_list:  证据列表（用于 CRED-02、CRED-04、CRED-06）
         issue_list:     争点列表（用于 CRED-04、CRED-05）
     """
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     amount_report: AmountCalculationReport

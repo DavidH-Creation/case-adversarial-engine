@@ -106,14 +106,10 @@ class JudgeAgent:
         known_issue_ids = {iss.issue_id for iss in issue_tree.issues}
 
         # 只取 open 争点
-        open_issues = [
-            iss for iss in issue_tree.issues if iss.status == IssueStatus.open
-        ]
+        open_issues = [iss for iss in issue_tree.issues if iss.status == IssueStatus.open]
 
         if not open_issues:
-            return JudgeQuestionSet(
-                case_id=case_id, run_id=run_id, questions=[]
-            )
+            return JudgeQuestionSet(case_id=case_id, run_id=run_id, questions=[])
 
         # 调用 LLM
         questions = await self._call_llm(
@@ -160,6 +156,7 @@ class JudgeAgent:
         )
 
         from engines.shared.llm_utils import call_llm_with_retry
+
         try:
             raw = await call_llm_with_retry(
                 self._llm,
@@ -202,9 +199,7 @@ class JudgeAgent:
                 continue
 
             # 过滤幻觉 evidence_ids
-            clean_ev_ids = [
-                eid for eid in item.evidence_ids if eid in known_evidence_ids
-            ]
+            clean_ev_ids = [eid for eid in item.evidence_ids if eid in known_evidence_ids]
             if not clean_ev_ids:
                 continue
 

@@ -20,6 +20,7 @@ Admissibility Evaluator — main class for admissibility gate system.
 - LLM 失败时返回原始 EvidenceIndex（admissibility_score 保持默认 1.0），不抛异常
 - 空证据列表不调用 LLM
 """
+
 from __future__ import annotations
 
 import logging
@@ -84,7 +85,8 @@ class AdmissibilityEvaluator:
 
         # v2: enforce — only evaluate evidence that has been at least submitted
         non_private = [
-            ev.evidence_id for ev in inp.evidence_index.evidence
+            ev.evidence_id
+            for ev in inp.evidence_index.evidence
             if ev.status != EvidenceStatus.private
         ]
         if non_private:
@@ -123,14 +125,13 @@ class AdmissibilityEvaluator:
     # 私有方法
     # ------------------------------------------------------------------
 
-    async def _call_llm(
-        self, inp: AdmissibilityEvaluatorInput
-    ) -> LLMAdmissibilityOutput | None:
+    async def _call_llm(self, inp: AdmissibilityEvaluatorInput) -> LLMAdmissibilityOutput | None:
         """调用 LLM，失败时返回 None（不抛异常）。"""
         system = self._prompts["system"]
         user = self._prompts["build_user"](evidence_index=inp.evidence_index)
 
         from engines.shared.llm_utils import call_llm_with_retry
+
         try:
             raw = await call_llm_with_retry(
                 self._llm,
@@ -148,6 +149,7 @@ class AdmissibilityEvaluator:
     def _parse_llm_output(self, raw: str) -> LLMAdmissibilityOutput | None:
         """解析 LLM 输出 JSON，失败时返回 None。"""
         from engines.shared.json_utils import _extract_json_object
+
         try:
             data = _extract_json_object(raw)
             return LLMAdmissibilityOutput.model_validate(data)
@@ -180,14 +182,16 @@ class AdmissibilityEvaluator:
             except (TypeError, ValueError):
                 logger.debug(
                     "AdmissibilityEvaluator: 证据 %s score 非法: %r，跳过。",
-                    item.evidence_id, item.admissibility_score,
+                    item.evidence_id,
+                    item.admissibility_score,
                 )
                 continue
 
             if not (0.0 <= score <= 1.0):
                 logger.debug(
                     "AdmissibilityEvaluator: 证据 %s score=%.2f 越界，跳过。",
-                    item.evidence_id, score,
+                    item.evidence_id,
+                    score,
                 )
                 continue
 
@@ -196,7 +200,8 @@ class AdmissibilityEvaluator:
             if score < _SCORE_LOW_THRESHOLD and not challenges:
                 logger.debug(
                     "AdmissibilityEvaluator: 证据 %s score=%.2f 低但无 challenges，跳过。",
-                    item.evidence_id, score,
+                    item.evidence_id,
+                    score,
                 )
                 continue
 

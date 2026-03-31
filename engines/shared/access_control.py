@@ -34,29 +34,39 @@ class AccessViolationError(ValueError):
 # 各角色无条件允许访问的域（不含 owner_private 的特殊规则）
 # Domains each role may access unconditionally (excluding owner_private logic).
 _UNCONDITIONAL_DOMAINS: dict[str, frozenset[AccessDomain]] = {
-    AgentRole.plaintiff_agent.value: frozenset({
-        AccessDomain.shared_common,
-        AccessDomain.admitted_record,
-    }),
-    AgentRole.defendant_agent.value: frozenset({
-        AccessDomain.shared_common,
-        AccessDomain.admitted_record,
-    }),
-    AgentRole.judge_agent.value: frozenset({
-        AccessDomain.admitted_record,
-    }),
-    AgentRole.evidence_manager.value: frozenset({
-        AccessDomain.shared_common,
-        AccessDomain.admitted_record,
-    }),
+    AgentRole.plaintiff_agent.value: frozenset(
+        {
+            AccessDomain.shared_common,
+            AccessDomain.admitted_record,
+        }
+    ),
+    AgentRole.defendant_agent.value: frozenset(
+        {
+            AccessDomain.shared_common,
+            AccessDomain.admitted_record,
+        }
+    ),
+    AgentRole.judge_agent.value: frozenset(
+        {
+            AccessDomain.admitted_record,
+        }
+    ),
+    AgentRole.evidence_manager.value: frozenset(
+        {
+            AccessDomain.shared_common,
+            AccessDomain.admitted_record,
+        }
+    ),
 }
 
 # 允许访问自己 owner_private 的角色集合
 # Roles that may see their own party's owner_private evidence.
-_CAN_SEE_OWN_PRIVATE: frozenset[str] = frozenset({
-    AgentRole.plaintiff_agent.value,
-    AgentRole.defendant_agent.value,
-})
+_CAN_SEE_OWN_PRIVATE: frozenset[str] = frozenset(
+    {
+        AgentRole.plaintiff_agent.value,
+        AgentRole.defendant_agent.value,
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -116,8 +126,7 @@ class AccessController:
         can_see_own = role_code in _CAN_SEE_OWN_PRIVATE
 
         result = [
-            e for e in all_evidence
-            if _is_visible(e, unconditional, can_see_own, owner_party_id)
+            e for e in all_evidence if _is_visible(e, unconditional, can_see_own, owner_party_id)
         ]
 
         # v1.5: 当提供 procedure_state 时，叠加阶段级过滤
@@ -125,9 +134,9 @@ class AccessController:
             allowed_domains = set(procedure_state.readable_access_domains)
             allowed_statuses = set(procedure_state.admissible_evidence_statuses)
             result = [
-                e for e in result
-                if e.access_domain in allowed_domains
-                and e.status in allowed_statuses
+                e
+                for e in result
+                if e.access_domain in allowed_domains and e.status in allowed_statuses
             ]
 
         return result

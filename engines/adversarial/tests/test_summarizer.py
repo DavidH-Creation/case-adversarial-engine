@@ -2,6 +2,7 @@
 AdversarialSummarizer 单元测试。
 AdversarialSummarizer unit tests.
 """
+
 from __future__ import annotations
 
 import json
@@ -43,39 +44,42 @@ PLAINTIFF_ID = "party-p-001"
 DEFENDANT_ID = "party-d-001"
 NOW = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-VALID_SUMMARY_JSON = json.dumps({
-    "plaintiff_strongest_arguments": [
-        {
-            "issue_id": "issue-001",
-            "position": "原告有转账记录，证明借款已实际交付",
-            "evidence_ids": ["ev-001"],
-            "reasoning": "直接证明借贷要件，被告无有效反证",
-        }
-    ],
-    "defendant_strongest_defenses": [
-        {
-            "issue_id": "issue-001",
-            "position": "被告否认收款，质疑转账用途为还款",
-            "evidence_ids": ["ev-001"],
-            "reasoning": "动摇借贷关系成立基础",
-        }
-    ],
-    "unresolved_issues": [
-        {
-            "issue_id": "issue-001",
-            "issue_title": "借贷关系是否成立",
-            "why_unresolved": "双方证据存在正面冲突，转账备注不明确，未有定论",
-        }
-    ],
-    "missing_evidence_report": [
-        {
-            "issue_id": "issue-001",
-            "missing_for_party_id": DEFENDANT_ID,
-            "gap_description": "被告缺乏收款否认的书面证据或证人证词",
-        }
-    ],
-    "overall_assessment": "原告证据链较完整，被告抗辩薄弱，但核心争点尚未闭合，建议补充被告方反驳证据。",
-}, ensure_ascii=False)
+VALID_SUMMARY_JSON = json.dumps(
+    {
+        "plaintiff_strongest_arguments": [
+            {
+                "issue_id": "issue-001",
+                "position": "原告有转账记录，证明借款已实际交付",
+                "evidence_ids": ["ev-001"],
+                "reasoning": "直接证明借贷要件，被告无有效反证",
+            }
+        ],
+        "defendant_strongest_defenses": [
+            {
+                "issue_id": "issue-001",
+                "position": "被告否认收款，质疑转账用途为还款",
+                "evidence_ids": ["ev-001"],
+                "reasoning": "动摇借贷关系成立基础",
+            }
+        ],
+        "unresolved_issues": [
+            {
+                "issue_id": "issue-001",
+                "issue_title": "借贷关系是否成立",
+                "why_unresolved": "双方证据存在正面冲突，转账备注不明确，未有定论",
+            }
+        ],
+        "missing_evidence_report": [
+            {
+                "issue_id": "issue-001",
+                "missing_for_party_id": DEFENDANT_ID,
+                "gap_description": "被告缺乏收款否认的书面证据或证人证词",
+            }
+        ],
+        "overall_assessment": "原告证据链较完整，被告抗辩薄弱，但核心争点尚未闭合，建议补充被告方反驳证据。",
+    },
+    ensure_ascii=False,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -189,11 +193,8 @@ class FailingMockLLM:
 
 
 class TestAdversarialSummarizer:
-
     @pytest.mark.asyncio
-    async def test_summarize_returns_adversarial_summary(
-        self, minimal_result, issue_tree, config
-    ):
+    async def test_summarize_returns_adversarial_summary(self, minimal_result, issue_tree, config):
         """返回类型为 AdversarialSummary。"""
         summarizer = AdversarialSummarizer(MockLLM(), config)
         result = await summarizer.summarize(minimal_result, issue_tree)
@@ -211,9 +212,7 @@ class TestAdversarialSummarizer:
             assert isinstance(arg, StrongestArgument)
 
     @pytest.mark.asyncio
-    async def test_defendant_strongest_defenses_populated(
-        self, minimal_result, issue_tree, config
-    ):
+    async def test_defendant_strongest_defenses_populated(self, minimal_result, issue_tree, config):
         """defendant_strongest_defenses 非空。"""
         summarizer = AdversarialSummarizer(MockLLM(), config)
         summary = await summarizer.summarize(minimal_result, issue_tree)
@@ -222,9 +221,7 @@ class TestAdversarialSummarizer:
             assert isinstance(defense, StrongestArgument)
 
     @pytest.mark.asyncio
-    async def test_unresolved_issues_have_why_unresolved(
-        self, minimal_result, issue_tree, config
-    ):
+    async def test_unresolved_issues_have_why_unresolved(self, minimal_result, issue_tree, config):
         """每条 UnresolvedIssueDetail 含非空 why_unresolved。"""
         summarizer = AdversarialSummarizer(MockLLM(), config)
         summary = await summarizer.summarize(minimal_result, issue_tree)
@@ -234,9 +231,7 @@ class TestAdversarialSummarizer:
             assert len(item.why_unresolved) >= 1
 
     @pytest.mark.asyncio
-    async def test_missing_evidence_populated(
-        self, minimal_result, issue_tree, config
-    ):
+    async def test_missing_evidence_populated(self, minimal_result, issue_tree, config):
         """missing_evidence_report 非空。"""
         summarizer = AdversarialSummarizer(MockLLM(), config)
         summary = await summarizer.summarize(minimal_result, issue_tree)
@@ -245,9 +240,7 @@ class TestAdversarialSummarizer:
             assert isinstance(item, MissingEvidenceSummary)
 
     @pytest.mark.asyncio
-    async def test_overall_assessment_non_empty(
-        self, minimal_result, issue_tree, config
-    ):
+    async def test_overall_assessment_non_empty(self, minimal_result, issue_tree, config):
         """AdversarialSummarizer 路径始终提供非空 overall_assessment（fallback 保证）。
         AdversarialSummarizer always produces a non-None overall_assessment via its fallback.
         """
@@ -257,9 +250,7 @@ class TestAdversarialSummarizer:
         assert len(summary.overall_assessment) >= 1
 
     @pytest.mark.asyncio
-    async def test_evidence_ids_non_empty_in_arguments(
-        self, minimal_result, issue_tree, config
-    ):
+    async def test_evidence_ids_non_empty_in_arguments(self, minimal_result, issue_tree, config):
         """所有 StrongestArgument.evidence_ids 非空。"""
         summarizer = AdversarialSummarizer(MockLLM(), config)
         summary = await summarizer.summarize(minimal_result, issue_tree)
@@ -277,9 +268,7 @@ class TestAdversarialSummarizer:
         assert len(mock.calls) == 1
 
     @pytest.mark.asyncio
-    async def test_runtime_error_on_repeated_llm_failure(
-        self, minimal_result, issue_tree
-    ):
+    async def test_runtime_error_on_repeated_llm_failure(self, minimal_result, issue_tree):
         """超重试次数后抛出 RuntimeError。"""
         config = RoundConfig(max_retries=2)
         summarizer = AdversarialSummarizer(FailingMockLLM(), config)
@@ -293,7 +282,6 @@ class TestAdversarialSummarizer:
 
 
 class TestAdversarialSummarySchema:
-
     def test_overall_assessment_can_be_none(self):
         """overall_assessment 在 v1.2 改为 Optional，可以为 None（DecisionPathTree 存在时）。"""
         summary = AdversarialSummary(
@@ -319,6 +307,7 @@ class TestAdversarialSummarySchema:
     def test_strongest_argument_requires_evidence_ids(self):
         """evidence_ids 为必填非空列表。"""
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             StrongestArgument(
                 issue_id="issue-001",

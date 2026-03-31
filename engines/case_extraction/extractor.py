@@ -169,9 +169,7 @@ class CaseExtractor:
         for i, d_name in enumerate(raw_defendants, 1):
             if d_name == "unknown" and i == 1:
                 unknown_fields.append("parties.defendant.name")
-            defendants.append(
-                ExtractionParty(party_id=f"party-defendant-{i}", name=d_name)
-            )
+            defendants.append(ExtractionParty(party_id=f"party-defendant-{i}", name=d_name))
 
         # ── 案件类型 / Case type ───────────────────────────────────────────────
         case_type = llm_output.case_type or "unknown"
@@ -248,8 +246,10 @@ class CaseExtractor:
         case_id = f"case-{result.case_type}-{slug}"
 
         # ── 当事人 / Parties ──────────────────────────────────────────────────
-        defendant_primary = result.defendants[0] if result.defendants else ExtractionParty(
-            party_id="party-defendant-1", name="unknown"
+        defendant_primary = (
+            result.defendants[0]
+            if result.defendants
+            else ExtractionParty(party_id="party-defendant-1", name="unknown")
         )
         parties_dict: dict = {
             "plaintiff": {
@@ -307,12 +307,14 @@ class CaseExtractor:
 
         claim_entries = []
         if claims_list:
-            claim_entries.append({
-                "claim_id": claims_list[0]["claim_id"],
-                "claim_type": "principal",
-                "claimed_amount": claim_entries_amount,
-                "evidence_ids": [],
-            })
+            claim_entries.append(
+                {
+                    "claim_id": claims_list[0]["claim_id"],
+                    "claim_type": "principal",
+                    "claimed_amount": claim_entries_amount,
+                    "evidence_ids": [],
+                }
+            )
 
         structure = {
             "case_id": case_id,

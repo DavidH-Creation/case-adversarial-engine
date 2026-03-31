@@ -47,9 +47,7 @@ class LLMExtractedEvidence(BaseModel):
             "physical（物证）、expert_opinion（鉴定意见）、other（其他）"
         )
     )
-    submitter: str = Field(
-        description="提交方：plaintiff（原告）、defendant（被告）或 unknown"
-    )
+    submitter: str = Field(description="提交方：plaintiff（原告）、defendant（被告）或 unknown")
 
 
 class LLMCaseExtractionOutput(BaseModel):
@@ -63,15 +61,11 @@ class LLMCaseExtractionOutput(BaseModel):
             "real_estate（房产纠纷）；无法判断则填 unknown"
         )
     )
-    plaintiff_name: str = Field(
-        description="原告姓名；若文中无法确定则填 unknown"
-    )
+    plaintiff_name: str = Field(description="原告姓名；若文中无法确定则填 unknown")
     defendant_names: list[str] = Field(
         description="被告姓名列表（可多人）；若无法确定则填 ['unknown']"
     )
-    claims: list[LLMExtractedClaim] = Field(
-        description="诉讼请求列表；若文中无诉请则填空列表"
-    )
+    claims: list[LLMExtractedClaim] = Field(description="诉讼请求列表；若文中无诉请则填空列表")
     evidence_list: list[LLMExtractedEvidence] = Field(
         description="文中提及的证据列表；若无证据则填空列表"
     )
@@ -81,9 +75,7 @@ class LLMCaseExtractionOutput(BaseModel):
             "若有多个不一致的金额则全部列出；若无则填空列表"
         )
     )
-    case_summary: str = Field(
-        description="一两句话描述本案核心纠纷；若信息不足则填 unknown"
-    )
+    case_summary: str = Field(description="一两句话描述本案核心纠纷；若信息不足则填 unknown")
 
 
 # ---------------------------------------------------------------------------

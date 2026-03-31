@@ -9,6 +9,7 @@ Tests for engines.report_generation.risk_heatmap module.
 - Edge case: 缺失字段 → 优雅降级（使用空字符串）
 - 分类逻辑: 各种 impact × attack × evidence 组合 → 正确 RiskLevel
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -29,6 +30,7 @@ from engines.report_generation.risk_heatmap import (
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_issue(
     issue_id: str = "issue-001",
     title: str = "借贷关系成立",
@@ -43,9 +45,15 @@ def _make_issue(
         title=title,
         issue_type=SimpleNamespace(value="factual"),
         outcome_impact=SimpleNamespace(value=outcome_impact) if outcome_impact else None,
-        opponent_attack_strength=SimpleNamespace(value=opponent_attack_strength) if opponent_attack_strength else None,
-        proponent_evidence_strength=SimpleNamespace(value=proponent_evidence_strength) if proponent_evidence_strength else None,
-        recommended_action=SimpleNamespace(value=recommended_action) if recommended_action else None,
+        opponent_attack_strength=SimpleNamespace(value=opponent_attack_strength)
+        if opponent_attack_strength
+        else None,
+        proponent_evidence_strength=SimpleNamespace(value=proponent_evidence_strength)
+        if proponent_evidence_strength
+        else None,
+        recommended_action=SimpleNamespace(value=recommended_action)
+        if recommended_action
+        else None,
     )
 
 
@@ -58,8 +66,8 @@ def _make_ranked(issues: list) -> SimpleNamespace:
 # Test: build_risk_heatmap
 # ---------------------------------------------------------------------------
 
-class TestBuildRiskHeatmap:
 
+class TestBuildRiskHeatmap:
     def test_happy_path_three_issues(self) -> None:
         """3 个 issues → 3 行 HeatmapRow，每行字段正确。"""
         issues = [
@@ -116,26 +124,29 @@ class TestBuildRiskHeatmap:
 # Test: _classify_risk
 # ---------------------------------------------------------------------------
 
-class TestClassifyRisk:
 
-    @pytest.mark.parametrize("impact,attack,evidence,expected", [
-        # Unfavorable cases
-        ("high", "strong", "medium", RiskLevel.unfavorable),
-        ("high", "strong", "strong", RiskLevel.unfavorable),
-        ("medium", "strong", "weak", RiskLevel.unfavorable),
-        ("low", "strong", "weak", RiskLevel.unfavorable),
-        ("high", "medium", "weak", RiskLevel.unfavorable),
-        # Favorable cases
-        ("low", "weak", "medium", RiskLevel.favorable),
-        ("low", "weak", "weak", RiskLevel.favorable),
-        ("medium", "weak", "strong", RiskLevel.favorable),
-        ("high", "weak", "strong", RiskLevel.favorable),
-        ("medium", "weak", "medium", RiskLevel.favorable),
-        # Neutral cases
-        ("medium", "medium", "medium", RiskLevel.neutral),
-        ("high", "medium", "strong", RiskLevel.neutral),
-        ("low", "medium", "weak", RiskLevel.neutral),
-    ])
+class TestClassifyRisk:
+    @pytest.mark.parametrize(
+        "impact,attack,evidence,expected",
+        [
+            # Unfavorable cases
+            ("high", "strong", "medium", RiskLevel.unfavorable),
+            ("high", "strong", "strong", RiskLevel.unfavorable),
+            ("medium", "strong", "weak", RiskLevel.unfavorable),
+            ("low", "strong", "weak", RiskLevel.unfavorable),
+            ("high", "medium", "weak", RiskLevel.unfavorable),
+            # Favorable cases
+            ("low", "weak", "medium", RiskLevel.favorable),
+            ("low", "weak", "weak", RiskLevel.favorable),
+            ("medium", "weak", "strong", RiskLevel.favorable),
+            ("high", "weak", "strong", RiskLevel.favorable),
+            ("medium", "weak", "medium", RiskLevel.favorable),
+            # Neutral cases
+            ("medium", "medium", "medium", RiskLevel.neutral),
+            ("high", "medium", "strong", RiskLevel.neutral),
+            ("low", "medium", "weak", RiskLevel.neutral),
+        ],
+    )
     def test_classification_matrix(self, impact, attack, evidence, expected) -> None:
         assert _classify_risk(impact, attack, evidence) == expected
 
@@ -148,8 +159,8 @@ class TestClassifyRisk:
 # Test: constants
 # ---------------------------------------------------------------------------
 
-class TestConstants:
 
+class TestConstants:
     def test_emoji_mapping_complete(self) -> None:
         for level in RiskLevel:
             assert level in RISK_EMOJI

@@ -62,12 +62,14 @@ def _parse_args() -> argparse.Namespace:
         epilog=__doc__,
     )
     parser.add_argument(
-        "--input", "-i",
+        "--input",
+        "-i",
         metavar="FILE",
         help="输入文件路径（默认从 stdin 读取）/ Input file path (default: stdin)",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         metavar="FILE",
         help="输出 YAML 文件路径（默认输出到 stdout）/ Output YAML file path (default: stdout)",
     )
@@ -82,7 +84,8 @@ def _parse_args() -> argparse.Namespace:
         help="LLM 模型名称（默认 claude-sonnet-4-6）/ LLM model name",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="显示详细日志 / Show verbose logs",
     )
@@ -93,7 +96,9 @@ def _read_input(input_path: str | None) -> str:
     if input_path:
         path = Path(input_path)
         if not path.exists():
-            print(f"错误：输入文件不存在 / Error: Input file not found: {input_path}", file=sys.stderr)
+            print(
+                f"错误：输入文件不存在 / Error: Input file not found: {input_path}", file=sys.stderr
+            )
             sys.exit(1)
         return path.read_text(encoding="utf-8")
     else:
@@ -116,6 +121,7 @@ async def _run(args: argparse.Namespace) -> int:
     # 初始化 LLM 客户端 / Initialize LLM client
     try:
         from engines.shared.models import AnthropicSDKClient
+
         llm_client = AnthropicSDKClient()
     except Exception as exc:
         print(

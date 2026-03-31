@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-_JOB_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
+_JOB_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]+$")
 
 from engines.shared.models import (
     ArtifactRef,
@@ -39,11 +39,15 @@ from engines.shared.models import (
 # ---------------------------------------------------------------------------
 
 _VALID_TRANSITIONS: dict[JobStatus, frozenset[JobStatus]] = {
-    JobStatus.created:   frozenset({JobStatus.pending, JobStatus.running, JobStatus.cancelled, JobStatus.failed}),
-    JobStatus.pending:   frozenset({JobStatus.running, JobStatus.cancelled, JobStatus.failed}),
-    JobStatus.running:   frozenset({JobStatus.pending, JobStatus.completed, JobStatus.failed, JobStatus.cancelled}),
+    JobStatus.created: frozenset(
+        {JobStatus.pending, JobStatus.running, JobStatus.cancelled, JobStatus.failed}
+    ),
+    JobStatus.pending: frozenset({JobStatus.running, JobStatus.cancelled, JobStatus.failed}),
+    JobStatus.running: frozenset(
+        {JobStatus.pending, JobStatus.completed, JobStatus.failed, JobStatus.cancelled}
+    ),
     JobStatus.completed: frozenset(),
-    JobStatus.failed:    frozenset(),
+    JobStatus.failed: frozenset(),
     JobStatus.cancelled: frozenset(),
 }
 
@@ -208,9 +212,7 @@ class JobManager:
                 f"got {job.job_status.value!r}"
             )
         if progress >= 1.0:
-            raise ValueError(
-                "Use complete_job() to set progress=1.0 and record result_ref"
-            )
+            raise ValueError("Use complete_job() to set progress=1.0 and record result_ref")
         data = job.model_dump()
         data["progress"] = progress
         data["updated_at"] = self._now()

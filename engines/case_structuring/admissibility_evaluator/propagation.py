@@ -19,6 +19,7 @@ Rules-based utility: propagates evidence exclusion through the analysis chain.
 - evidence_id 不存在时返回 severity=negligible 的空报告
 - 各影响层独立计算，互不干扰
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -147,13 +148,15 @@ def _analyze_issue_impacts(
         else:
             severity = "negligible"
 
-        impacts.append(IssueImpact(
-            issue_id=issue.issue_id,
-            issue_title=issue.title,
-            loses_primary_evidence=loses_primary,
-            remaining_evidence_ids=remaining,
-            impact_severity=severity,
-        ))
+        impacts.append(
+            IssueImpact(
+                issue_id=issue.issue_id,
+                issue_title=issue.title,
+                loses_primary_evidence=loses_primary,
+                remaining_evidence_ids=remaining,
+                impact_severity=severity,
+            )
+        )
 
     return impacts
 
@@ -204,22 +207,19 @@ def _analyze_path_impacts(
         becomes_nonviable = in_gate  # gate 中的证据排除必然使路径不可行
 
         if becomes_nonviable:
-            desc = (
-                f"路径 {path.path_id} 的前提条件证据 {evidence_id} 被排除，"
-                f"路径不可行。"
-                + (f" 降级路径: {path.fallback_path_id}" if path.fallback_path_id else "")
+            desc = f"路径 {path.path_id} 的前提条件证据 {evidence_id} 被排除，路径不可行。" + (
+                f" 降级路径: {path.fallback_path_id}" if path.fallback_path_id else ""
             )
         else:
-            desc = (
-                f"路径 {path.path_id} 的关键证据 {evidence_id} 被排除，"
-                f"路径仍可行但证明力减弱。"
-            )
+            desc = f"路径 {path.path_id} 的关键证据 {evidence_id} 被排除，路径仍可行但证明力减弱。"
 
-        impacts.append(PathImpact(
-            path_id=path.path_id,
-            becomes_nonviable=becomes_nonviable,
-            impact_description=desc,
-        ))
+        impacts.append(
+            PathImpact(
+                path_id=path.path_id,
+                becomes_nonviable=becomes_nonviable,
+                impact_description=desc,
+            )
+        )
 
     return impacts
 
@@ -248,12 +248,14 @@ def _analyze_chain_impacts(
             f" {len(broken_nodes)} 个攻击节点失去证据支撑: {', '.join(broken_nodes)}。"
         )
 
-        impacts.append(ChainImpact(
-            chain_id=chain.chain_id,
-            owner_party_id=chain.owner_party_id,
-            broken_attack_node_ids=broken_nodes,
-            impact_description=desc,
-        ))
+        impacts.append(
+            ChainImpact(
+                chain_id=chain.chain_id,
+                owner_party_id=chain.owner_party_id,
+                broken_attack_node_ids=broken_nodes,
+                impact_description=desc,
+            )
+        )
 
     return impacts
 
@@ -282,9 +284,7 @@ def _compute_overall_severity(
     if nonviable_count >= 2:
         max_rank = max(max_rank, _SEVERITY_RANK["case_breaking"])
 
-    rank_to_severity: dict[int, ExclusionSeverity] = {
-        v: k for k, v in _SEVERITY_RANK.items()
-    }
+    rank_to_severity: dict[int, ExclusionSeverity] = {v: k for k, v in _SEVERITY_RANK.items()}
     return rank_to_severity[max_rank]
 
 

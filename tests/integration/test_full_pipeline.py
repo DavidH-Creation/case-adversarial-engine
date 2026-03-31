@@ -404,9 +404,7 @@ async def test_full_pipeline_happy_path(sample_materials, sample_claims, sample_
     assert len(procedure_result.procedure_states) == 8
 
     # 合约：judge_questions 阶段不能读取 owner_private
-    judge_q = next(
-        s for s in procedure_result.procedure_states if s.phase == "judge_questions"
-    )
+    judge_q = next(s for s in procedure_result.procedure_states if s.phase == "judge_questions")
     assert "owner_private" not in judge_q.readable_access_domains
 
     # 合约：output_branching 仅允许 admitted_for_discussion
@@ -486,11 +484,7 @@ async def test_full_pipeline_happy_path(sample_materials, sample_claims, sample_
     # 合约：issue_ids 非空
     assert len(turn.issue_ids) >= 1
     # 合约：evidence_ids ⊆ 报告已引用证据
-    report_evidence_ids = {
-        eid
-        for sec in report.sections
-        for eid in sec.linked_evidence_ids
-    }
+    report_evidence_ids = {eid for sec in report.sections for eid in sec.linked_evidence_ids}
     for eid in turn.evidence_ids:
         assert eid in report_evidence_ids, f"追问回答引用了报告范围外的 evidence_id: {eid}"
 
@@ -537,14 +531,10 @@ async def test_evidence_to_issue_data_compat(sample_materials, sample_claims, sa
     known_ids = {d["evidence_id"] for d in evidence_dicts}
     for issue in issue_tree.issues:
         for eid in issue.evidence_ids:
-            assert eid in known_ids, (
-                f"issue '{issue.issue_id}' 引用了未知 evidence_id: {eid}"
-            )
+            assert eid in known_ids, f"issue '{issue.issue_id}' 引用了未知 evidence_id: {eid}"
         for fp in issue.fact_propositions:
             for eid in fp.linked_evidence_ids:
-                assert eid in known_ids, (
-                    f"FactProposition 引用了未知 evidence_id: {eid}"
-                )
+                assert eid in known_ids, f"FactProposition 引用了未知 evidence_id: {eid}"
 
 
 # ---------------------------------------------------------------------------
@@ -590,12 +580,8 @@ async def test_evidence_index_construction(sample_materials, sample_claims, samp
                 assert eid in known_ids, f"结论引用了悬空 evidence_id: {eid}"
 
     # 合约：所有顶层 Issue 均被覆盖（ReportGenerator 会自动补全缺失章节）
-    root_issue_ids = {
-        i.issue_id for i in issue_tree.issues if i.parent_issue_id is None
-    }
-    covered_issue_ids = {
-        iid for sec in report.sections for iid in sec.linked_issue_ids
-    }
+    root_issue_ids = {i.issue_id for i in issue_tree.issues if i.parent_issue_id is None}
+    covered_issue_ids = {iid for sec in report.sections for iid in sec.linked_issue_ids}
     assert root_issue_ids.issubset(covered_issue_ids), (
         f"未覆盖的顶层争点: {root_issue_ids - covered_issue_ids}"
     )
@@ -607,7 +593,9 @@ async def test_evidence_index_construction(sample_materials, sample_claims, samp
 
 
 @pytest.mark.asyncio
-async def test_simulation_run_issue_id_consistency(sample_materials, sample_claims, sample_defenses):
+async def test_simulation_run_issue_id_consistency(
+    sample_materials, sample_claims, sample_defenses
+):
     """验证 ScenarioSimulator.affected_issue_ids ⊆ IssueTree.issues[*].issue_id。
     Verifies affected_issue_ids is a subset of known issue IDs from the IssueTree.
     """
@@ -645,9 +633,7 @@ async def test_simulation_run_issue_id_consistency(sample_materials, sample_clai
 
     # 合约：affected_issue_ids ⊆ IssueTree 已知 issue_id
     for iid in scenario_result.scenario.affected_issue_ids:
-        assert iid in known_issue_ids, (
-            f"affected_issue_ids 包含未知 issue_id: {iid}"
-        )
+        assert iid in known_issue_ids, f"affected_issue_ids 包含未知 issue_id: {iid}"
 
     # 合约：diff_summary 中每条 DiffEntry 的 issue_id 均在 IssueTree 中
     diff_summary = scenario_result.scenario.diff_summary
@@ -743,9 +729,7 @@ async def test_multi_turn_followup_after_report(sample_materials, sample_claims,
     )
 
     # 合约：evidence_ids ⊆ 报告已引用证据
-    report_evidence_ids = {
-        eid for sec in report.sections for eid in sec.linked_evidence_ids
-    }
+    report_evidence_ids = {eid for sec in report.sections for eid in sec.linked_evidence_ids}
     for turn in [turn_1, turn_2]:
         for eid in turn.evidence_ids:
             assert eid in report_evidence_ids, (
@@ -759,7 +743,9 @@ async def test_multi_turn_followup_after_report(sample_materials, sample_claims,
 
 
 @pytest.mark.asyncio
-async def test_procedure_planner_failure_degradation(sample_materials, sample_claims, sample_defenses):
+async def test_procedure_planner_failure_degradation(
+    sample_materials, sample_claims, sample_defenses
+):
     """验证 ProcedurePlanner LLM 持续失败时：
     - 不抛出异常（plan() 内部捕获）
     - 返回 run.status = "failed"
@@ -816,9 +802,7 @@ async def test_procedure_planner_failure_degradation(sample_materials, sample_cl
     assert "output_branching" in phases
 
     # 合约：访问控制约束在 fallback 默认配置中同样成立
-    judge_q = next(
-        s for s in procedure_result.procedure_states if s.phase == "judge_questions"
-    )
+    judge_q = next(s for s in procedure_result.procedure_states if s.phase == "judge_questions")
     assert "owner_private" not in judge_q.readable_access_domains, (
         "judge_questions 阶段即使在 fallback 配置中也不能读取 owner_private"
     )

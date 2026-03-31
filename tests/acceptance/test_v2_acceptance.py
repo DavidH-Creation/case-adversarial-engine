@@ -8,6 +8,7 @@ Tests use mock LLM (no real LLM calls) to verify:
 - Edge cases: invalid YAML, run failures, N=0 valid runs
 - run_acceptance_for_case honours skipped/passed/failed status correctly
 """
+
 from __future__ import annotations
 
 import json
@@ -54,14 +55,22 @@ _VALID_YAML_CONTENT = {
             {
                 "source_id": "src-p-001",
                 "text": "劳动合同原件。",
-                "metadata": {"document_type": "labor_contract", "submitter": "plaintiff", "status": "admitted_for_discussion"},
+                "metadata": {
+                    "document_type": "labor_contract",
+                    "submitter": "plaintiff",
+                    "status": "admitted_for_discussion",
+                },
             }
         ],
         "defendant": [
             {
                 "source_id": "src-d-001",
                 "text": "公司规章制度。",
-                "metadata": {"document_type": "company_policy", "submitter": "defendant", "status": "admitted_for_discussion"},
+                "metadata": {
+                    "document_type": "company_policy",
+                    "submitter": "defendant",
+                    "status": "admitted_for_discussion",
+                },
             }
         ],
     },
@@ -444,7 +453,9 @@ class TestRunAcceptanceForCase:
     def test_result_has_required_keys(self, tmp_path: Path) -> None:
         p = _make_yaml_file(tmp_path, _VALID_YAML_CONTENT)
         result = run_acceptance_for_case(
-            p, n_runs=1, base_output_dir=tmp_path / "runs",
+            p,
+            n_runs=1,
+            base_output_dir=tmp_path / "runs",
             pipeline_runner=self._make_runner([_make_valid_run()]),
         )
         for key in ("case_id", "yaml_path", "status", "reason", "metrics", "runs"):
@@ -453,7 +464,9 @@ class TestRunAcceptanceForCase:
     def test_case_id_matches_yaml(self, tmp_path: Path) -> None:
         p = _make_yaml_file(tmp_path, _VALID_YAML_CONTENT)
         result = run_acceptance_for_case(
-            p, n_runs=1, base_output_dir=tmp_path / "runs",
+            p,
+            n_runs=1,
+            base_output_dir=tmp_path / "runs",
             pipeline_runner=self._make_runner([_make_valid_run()]),
         )
         assert result["case_id"] == "case-test-labor-001"
@@ -537,8 +550,15 @@ class TestRunAcceptance:
             pipeline_runner=self._make_fixed_runner(),
             output_dir=tmp_path / "out",
         )
-        for key in ("generated_at", "case_type", "cases_dir", "n_runs_per_case",
-                    "summary", "thresholds", "cases"):
+        for key in (
+            "generated_at",
+            "case_type",
+            "cases_dir",
+            "n_runs_per_case",
+            "summary",
+            "thresholds",
+            "cases",
+        ):
             assert key in report, f"Missing top-level key: {key}"
 
     def test_report_summary_counts_are_consistent(self, tmp_path: Path) -> None:
@@ -627,6 +647,7 @@ class TestWriteReport:
 
     def test_report_default_path_contains_date(self, tmp_path: Path) -> None:
         import scripts.run_acceptance as ra_mod
+
         original_root = ra_mod._PROJECT_ROOT
         try:
             # Patch PROJECT_ROOT to write into tmp_path

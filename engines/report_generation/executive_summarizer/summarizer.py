@@ -15,6 +15,7 @@ Executive Summarizer — rule-based executive summary generator for P2.12.
 - top5_decisive_issues 按 outcome_impact 优先级排序（high > medium > low）
 - top3_adversary_optimal_attacks 来自 adversary_attack_chain.top_attacks，不独立生成
 """
+
 from __future__ import annotations
 
 import uuid
@@ -72,7 +73,8 @@ class ExecutiveSummarizer:
         top3_attacks = self._top3_adversary_attacks(inp.adversary_attack_chain)
         claim_text = self._current_most_stable_claim(inp.amount_calculation_report)
         strategic_summary = self._compute_strategic_summary(
-            inp.action_recommendation, inp.amount_calculation_report,
+            inp.action_recommendation,
+            inp.amount_calculation_report,
         )
         critical_gaps = self._critical_evidence_gaps(inp.evidence_gap_items)
         defense_chain_result: DefenseChainResult | None = getattr(inp, "defense_chain_result", None)
@@ -90,16 +92,21 @@ class ExecutiveSummarizer:
         # v7: 构建诉请拆分（替代原 current_most_stable_claim）
         decision_tree = getattr(inp, "decision_path_tree", None)
         claim_decomposition = self._build_claim_decomposition(
-            inp.amount_calculation_report, decision_tree,
+            inp.amount_calculation_report,
+            decision_tree,
         )
         # v7: 内部决策版本
         internal_decision = self._build_internal_decision_summary(
-            inp.issue_list, decision_tree, critical_gaps,
+            inp.issue_list,
+            decision_tree,
+            critical_gaps,
         )
         # v7: 主要风险 + 下一步最优行动
         primary_risk = self._compute_primary_risk(inp.issue_list, top3_attacks)
         next_action = self._compute_next_best_action(
-            top3_actions, critical_gaps, inp.action_recommendation,
+            top3_actions,
+            critical_gaps,
+            inp.action_recommendation,
         )
 
         defense_chain_id = defense_chain_result.chain.chain_id if defense_chain_result else None
@@ -264,9 +271,7 @@ class ExecutiveSummarizer:
         """
         # case_overview: 案件基本情况
         issue_count = len(issues)
-        high_count = sum(
-            1 for i in issues if i.outcome_impact == OutcomeImpact.high
-        )
+        high_count = sum(1 for i in issues if i.outcome_impact == OutcomeImpact.high)
         overview = (
             f"案件共有 {issue_count} 个争点，其中 {high_count} 个高影响争点。"
             f"绑定金额报告 {amount_report.report_id}。"
@@ -282,9 +287,7 @@ class ExecutiveSummarizer:
             if issue is None:
                 continue
             impact_str = issue.outcome_impact.value if issue.outcome_impact else "未评估"
-            key_findings.append(
-                f"争点「{issue.title}」影响程度：{impact_str}"
-            )
+            key_findings.append(f"争点「{issue.title}」影响程度：{impact_str}")
 
         # risk_assessment: 基于高影响争点和攻击链
         if high_count > 0:
@@ -293,10 +296,7 @@ class ExecutiveSummarizer:
                 f"对方最优攻击节点 {len(top3_attacks)} 个，需重点防御。"
             )
         else:
-            risk_assessment = (
-                f"无高影响争点，整体风险可控，"
-                f"对方攻击节点 {len(top3_attacks)} 个。"
-            )
+            risk_assessment = f"无高影响争点，整体风险可控，对方攻击节点 {len(top3_attacks)} 个。"
         if isinstance(critical_gaps, list) and critical_gaps:
             risk_assessment += f" 存在 {len(critical_gaps)} 条关键缺证，建议优先补充。"
         if defense_chain_result:
@@ -384,8 +384,7 @@ class ExecutiveSummarizer:
             expected_recovery_lower=lower,
             expected_recovery_upper=upper,
             decomposition_rationale=(
-                f"正式诉请 {formal}，系统计算保底 {fallback_total}，"
-                f"预期回收 [{lower}, {upper}]"
+                f"正式诉请 {formal}，系统计算保底 {fallback_total}，预期回收 [{lower}, {upper}]"
             ),
         )
 
@@ -423,16 +422,17 @@ class ExecutiveSummarizer:
         )
 
     def _compute_primary_risk(
-        self, issues: list[Issue], top3_attacks: list[str],
+        self,
+        issues: list[Issue],
+        top3_attacks: list[str],
     ) -> Optional[str]:
         """计算主要风险点（一句话）。"""
         high_issues = [i for i in issues if i.outcome_impact == OutcomeImpact.high]
         if not high_issues:
             return None
         worst = high_issues[0]
-        return (
-            f"高影响争点「{worst.title}」"
-            + (f"面临 {len(top3_attacks)} 个对方攻击节点" if top3_attacks else "")
+        return f"高影响争点「{worst.title}」" + (
+            f"面临 {len(top3_attacks)} 个对方攻击节点" if top3_attacks else ""
         )
 
     def _compute_next_best_action(

@@ -80,28 +80,32 @@ def redact_report(
     Redact PII from all user-facing text fields in a ReportArtifact.
     Returns a new ReportArtifact with redacted content (immutable style).
     """
+
     def _r(text: str) -> str:
         return redact_text(text, party_names=party_names)
 
     redacted_sections = []
     for sec in report.sections:
         redacted_conclusions = [
-            kc.model_copy(update={"text": _r(kc.text)})
-            for kc in sec.key_conclusions
+            kc.model_copy(update={"text": _r(kc.text)}) for kc in sec.key_conclusions
         ]
         redacted_sections.append(
-            sec.model_copy(update={
-                "title": _r(sec.title),
-                "body": _r(sec.body),
-                "key_conclusions": redacted_conclusions,
-            })
+            sec.model_copy(
+                update={
+                    "title": _r(sec.title),
+                    "body": _r(sec.body),
+                    "key_conclusions": redacted_conclusions,
+                }
+            )
         )
 
-    return report.model_copy(update={
-        "title": _r(report.title),
-        "summary": _r(report.summary),
-        "sections": redacted_sections,
-    })
+    return report.model_copy(
+        update={
+            "title": _r(report.title),
+            "summary": _r(report.summary),
+            "sections": redacted_sections,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -171,9 +175,7 @@ class ReportGenerator:
                         Raised if issues is empty or case_id mismatch.
         """
         if not issue_tree.issues:
-            raise ValueError(
-                "issue_tree.issues 不能为空 / issue_tree.issues cannot be empty"
-            )
+            raise ValueError("issue_tree.issues 不能为空 / issue_tree.issues cannot be empty")
         if issue_tree.case_id != evidence_index.case_id:
             raise ValueError(
                 f"case_id 不匹配 / case_id mismatch: "
@@ -212,9 +214,7 @@ class ReportGenerator:
 
         # 构建 prompt / Build prompt
         system_prompt = self._prompt_module.SYSTEM_PROMPT
-        issue_tree_block = self._prompt_module.format_issue_tree_block(
-            issue_tree.model_dump()
-        )
+        issue_tree_block = self._prompt_module.format_issue_tree_block(issue_tree.model_dump())
         evidence_block = self._prompt_module.format_evidence_block(
             [e.model_dump() for e in evidence_index.evidence]
         )
@@ -259,9 +259,7 @@ class ReportGenerator:
 
         Returns a new ReportArtifact with the matrix section appended.
         """
-        matrix = build_issue_evidence_defense_matrix(
-            issue_tree, evidence_index, defense_chain
-        )
+        matrix = build_issue_evidence_defense_matrix(issue_tree, evidence_index, defense_chain)
         if matrix is None:
             return report
 
@@ -305,8 +303,8 @@ class ReportGenerator:
             model=self._model,
             tool_name="generate_report",
             tool_description="根据争点树和证据索引生成结构化诊断报告（含章节、关键结论和摘要）。"
-                             "Generate a structured diagnostic report with sections, "
-                             "key conclusions, and summary from issue tree and evidence index.",
+            "Generate a structured diagnostic report with sections, "
+            "key conclusions, and summary from issue tree and evidence index.",
             tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
@@ -338,9 +336,7 @@ class ReportGenerator:
 
         # 获取所有顶层 issue_id / Collect all root issue IDs
         root_issue_ids = {
-            issue.issue_id
-            for issue in issue_tree.issues
-            if issue.parent_issue_id is None
+            issue.issue_id for issue in issue_tree.issues if issue.parent_issue_id is None
         }
 
         # ── 构建章节列表 / Build sections list ───────────────────────────────
@@ -360,8 +356,7 @@ class ReportGenerator:
             for c_idx, llm_c in enumerate(llm_sec.key_conclusions, start=1):
                 # 过滤支持证据 ID / Filter supporting evidence IDs
                 valid_supporting = [
-                    eid for eid in llm_c.supporting_evidence_ids
-                    if eid in known_evidence_ids
+                    eid for eid in llm_c.supporting_evidence_ids if eid in known_evidence_ids
                 ]
 
                 # 合约保证：至少一个支持证据 / Contract: at least one supporting evidence
@@ -372,17 +367,20 @@ class ReportGenerator:
                     first_known = min(known_evidence_ids) if known_evidence_ids else None
                     valid_supporting = [first_known] if first_known else []
 
-                conclusions.append(KeyConclusion(
-                    conclusion_id=f"concl-{report_slug}-{sec_idx:02d}-{c_idx:02d}",
-                    text=llm_c.text,
-                    statement_class=_resolve_statement_class(llm_c.statement_class),
-                    supporting_evidence_ids=valid_supporting,
-                    supporting_output_ids=[],
-                ))
+                conclusions.append(
+                    KeyConclusion(
+                        conclusion_id=f"concl-{report_slug}-{sec_idx:02d}-{c_idx:02d}",
+                        text=llm_c.text,
+                        statement_class=_resolve_statement_class(llm_c.statement_class),
+                        supporting_evidence_ids=valid_supporting,
+                        supporting_output_ids=[],
+                    )
+                )
 
             # 章节关联的争点 ID / Section linked issue IDs
             linked_issue_ids = [
-                iid for iid in llm_sec.linked_issue_ids
+                iid
+                for iid in llm_sec.linked_issue_ids
                 if any(issue.issue_id == iid for issue in issue_tree.issues)
             ]
 
@@ -393,23 +391,23 @@ class ReportGenerator:
 
             linked_output_ids = [f"run:{run_id}"] if run_id else []
 
-            sections.append(ReportSection(
-                section_id=section_id,
-                section_index=sec_idx,
-                title=llm_sec.title,
-                body=llm_sec.body,
-                linked_issue_ids=linked_issue_ids,
-                linked_output_ids=linked_output_ids,
-                linked_evidence_ids=valid_evidence_ids,
-                key_conclusions=conclusions,
-            ))
+            sections.append(
+                ReportSection(
+                    section_id=section_id,
+                    section_index=sec_idx,
+                    title=llm_sec.title,
+                    body=llm_sec.body,
+                    linked_issue_ids=linked_issue_ids,
+                    linked_output_ids=linked_output_ids,
+                    linked_evidence_ids=valid_evidence_ids,
+                    key_conclusions=conclusions,
+                )
+            )
 
         # ── 补全缺失的顶层争点章节 / Supplement missing root issue sections ──
         # 若 LLM 漏掉了某个顶层争点，自动补一章节 / Auto-add sections for missed root issues
         for root_id in sorted(root_issue_ids - covered_root_ids):
-            root_issue = next(
-                (i for i in issue_tree.issues if i.issue_id == root_id), None
-            )
+            root_issue = next((i for i in issue_tree.issues if i.issue_id == root_id), None)
             if root_issue is None:
                 continue
 
@@ -417,9 +415,7 @@ class ReportGenerator:
             section_id = f"sec-{report_slug}-{sec_idx:02d}"
 
             # 使用该争点关联的证据 / Use evidence associated with this issue
-            issue_evidence = [
-                eid for eid in root_issue.evidence_ids if eid in known_evidence_ids
-            ]
+            issue_evidence = [eid for eid in root_issue.evidence_ids if eid in known_evidence_ids]
             if not issue_evidence:
                 issue_evidence = [min(known_evidence_ids)] if known_evidence_ids else []
 
@@ -432,20 +428,22 @@ class ReportGenerator:
                 supporting_output_ids=[],
             )
 
-            sections.append(ReportSection(
-                section_id=section_id,
-                section_index=sec_idx,
-                title=root_issue.title,
-                body=(
-                    f"争点「{root_issue.title}」类型为 {root_issue.issue_type}。"
-                    f"关联证据: {', '.join(issue_evidence)}。"
-                    f"该争点包含 {len(root_issue.fact_propositions)} 条事实命题，需结合证据综合认定。"
-                ),
-                linked_issue_ids=[root_id],
-                linked_output_ids=[f"run:{run_id}"] if run_id else [],
-                linked_evidence_ids=issue_evidence,
-                key_conclusions=[default_conclusion],
-            ))
+            sections.append(
+                ReportSection(
+                    section_id=section_id,
+                    section_index=sec_idx,
+                    title=root_issue.title,
+                    body=(
+                        f"争点「{root_issue.title}」类型为 {root_issue.issue_type}。"
+                        f"关联证据: {', '.join(issue_evidence)}。"
+                        f"该争点包含 {len(root_issue.fact_propositions)} 条事实命题，需结合证据综合认定。"
+                    ),
+                    linked_issue_ids=[root_id],
+                    linked_output_ids=[f"run:{run_id}"] if run_id else [],
+                    linked_evidence_ids=issue_evidence,
+                    key_conclusions=[default_conclusion],
+                )
+            )
 
         # ── summary 截断 / Truncate summary ──────────────────────────────────
         summary = llm_output.summary
@@ -472,8 +470,8 @@ class ReportGenerator:
 # ---------------------------------------------------------------------------
 
 _DOC_TYPE_TITLE_ZH: dict[str, str] = {
-    "pleading":   "起诉状草稿",
-    "defense":    "答辩状草稿",
+    "pleading": "起诉状草稿",
+    "defense": "答辩状草稿",
     "cross_exam": "质证意见草稿",
 }
 
@@ -550,21 +548,25 @@ def append_document_draft_sections(
         # 构建 key_conclusions（证据引用）
         key_conclusions: list[KeyConclusion] = []
         if evidence_ids_cited:
-            key_conclusions.append(KeyConclusion(
-                conclusion_id=f"doc-cite-{i + 1:03d}",
-                text=f"引用证据：{', '.join(evidence_ids_cited)}",
-                supporting_evidence_ids=evidence_ids_cited,
-                statement_class=StatementClass.fact,
-            ))
+            key_conclusions.append(
+                KeyConclusion(
+                    conclusion_id=f"doc-cite-{i + 1:03d}",
+                    text=f"引用证据：{', '.join(evidence_ids_cited)}",
+                    supporting_evidence_ids=evidence_ids_cited,
+                    statement_class=StatementClass.fact,
+                )
+            )
 
-        extra_sections.append(ReportSection(
-            section_id=f"doc-sec-{i + 1:03d}",
-            section_index=base_idx + i,
-            title=title,
-            body=body,
-            linked_issue_ids=[],
-            linked_evidence_ids=evidence_ids_cited,
-            key_conclusions=key_conclusions,
-        ))
+        extra_sections.append(
+            ReportSection(
+                section_id=f"doc-sec-{i + 1:03d}",
+                section_index=base_idx + i,
+                title=title,
+                body=body,
+                linked_issue_ids=[],
+                linked_evidence_ids=evidence_ids_cited,
+                key_conclusions=key_conclusions,
+            )
+        )
 
     return report.model_copy(update={"sections": report.sections + extra_sections})

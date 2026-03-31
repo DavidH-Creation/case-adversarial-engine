@@ -4,6 +4,7 @@ LLM prompt templates for real estate sale contract dispute case type attack chai
 
 指导 LLM 为指定当事人生成恰好 3 个最优攻击节点，输出严格 JSON。
 """
+
 from __future__ import annotations
 
 from engines.shared.models import EvidenceIndex, IssueTree
@@ -115,9 +116,7 @@ def build_user_prompt(
     # 证据索引摘要
     evidence_lines = []
     for ev in evidence_index.evidence[:20]:
-        evidence_lines.append(
-            f"  - {ev.evidence_id}: {ev.title} ({ev.evidence_type.value})"
-        )
+        evidence_lines.append(f"  - {ev.evidence_id}: {ev.title} ({ev.evidence_type.value})")
     evidence_block = "【证据索引】\n" + (
         "\n".join(evidence_lines) if evidence_lines else "  （无证据）"
     )

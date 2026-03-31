@@ -155,9 +155,7 @@ def baseline_dir(tmp_path: Path) -> Path:
     (out / "evidence_index.json").write_text(
         json.dumps(_EVIDENCE_INDEX, ensure_ascii=False), encoding="utf-8"
     )
-    (out / "result.json").write_text(
-        json.dumps(_RESULT_JSON, ensure_ascii=False), encoding="utf-8"
-    )
+    (out / "result.json").write_text(json.dumps(_RESULT_JSON, ensure_ascii=False), encoding="utf-8")
     return out
 
 
@@ -232,9 +230,7 @@ class TestLoadBaseline:
         """缺少 evidence_index.json 应抛出 FileNotFoundError。"""
         d = tmp_path / "incomplete"
         d.mkdir()
-        (d / "issue_tree.json").write_text(
-            json.dumps(_ISSUE_TREE), encoding="utf-8"
-        )
+        (d / "issue_tree.json").write_text(json.dumps(_ISSUE_TREE), encoding="utf-8")
         with pytest.raises(FileNotFoundError, match="evidence_index.json"):
             load_baseline(d)
 
@@ -242,12 +238,8 @@ class TestLoadBaseline:
         """没有 result.json 时 run_id 回退为目录名。"""
         d = tmp_path / "my-run-dir"
         d.mkdir()
-        (d / "issue_tree.json").write_text(
-            json.dumps(_ISSUE_TREE), encoding="utf-8"
-        )
-        (d / "evidence_index.json").write_text(
-            json.dumps(_EVIDENCE_INDEX), encoding="utf-8"
-        )
+        (d / "issue_tree.json").write_text(json.dumps(_ISSUE_TREE), encoding="utf-8")
+        (d / "evidence_index.json").write_text(json.dumps(_EVIDENCE_INDEX), encoding="utf-8")
         _, _, run_id = load_baseline(d)
         assert run_id == "my-run-dir"
 
@@ -275,9 +267,17 @@ class TestParseChangeSet:
         """缺少 scenario_id 应抛出 ValueError。"""
         p = tmp_path / "bad.yaml"
         p.write_text(
-            yaml.dump({"changes": [{"target_object_type": "Evidence",
-                                     "target_object_id": "x",
-                                     "field_path": "y"}]}),
+            yaml.dump(
+                {
+                    "changes": [
+                        {
+                            "target_object_type": "Evidence",
+                            "target_object_id": "x",
+                            "field_path": "y",
+                        }
+                    ]
+                }
+            ),
             encoding="utf-8",
         )
         with pytest.raises(ValueError, match="scenario_id"):
@@ -297,10 +297,12 @@ class TestParseChangeSet:
         """无效的 change entry 应抛出 ValueError。"""
         p = tmp_path / "invalid.yaml"
         p.write_text(
-            yaml.dump({
-                "scenario_id": "s1",
-                "changes": [{"bad_field": "invalid"}],
-            }),
+            yaml.dump(
+                {
+                    "scenario_id": "s1",
+                    "changes": [{"bad_field": "invalid"}],
+                }
+            ),
             encoding="utf-8",
         )
         with pytest.raises(ValueError, match="changes\\[0\\]"):
@@ -321,9 +323,7 @@ class TestParseChangeSet:
 
 class TestRunWhatif:
     @pytest.mark.asyncio
-    async def test_happy_path_remove_evidence(
-        self, baseline_dir: Path, change_set_file: Path
-    ):
+    async def test_happy_path_remove_evidence(self, baseline_dir: Path, change_set_file: Path):
         """Happy path: 移除证据 → DiffSummary 显示受影响 issues。"""
         client = MockLLMClient(_MOCK_LLM_RESPONSE)
         result = await run_whatif(
@@ -342,9 +342,7 @@ class TestRunWhatif:
             assert entry.issue_id in known_ids
 
     @pytest.mark.asyncio
-    async def test_happy_path_modify_issue(
-        self, baseline_dir: Path, change_set_issue_file: Path
-    ):
+    async def test_happy_path_modify_issue(self, baseline_dir: Path, change_set_issue_file: Path):
         """Happy path: 修改争点 → DiffSummary 显示变化。"""
         mock_response = json.dumps(
             {
@@ -371,9 +369,7 @@ class TestRunWhatif:
         assert result.scenario.diff_summary[0].direction == DiffDirection.strengthen
 
     @pytest.mark.asyncio
-    async def test_output_file_created(
-        self, baseline_dir: Path, change_set_file: Path
-    ):
+    async def test_output_file_created(self, baseline_dir: Path, change_set_file: Path):
         """run_whatif 应输出 diff_summary.json 到 scenario 子目录。"""
         client = MockLLMClient(_MOCK_LLM_RESPONSE)
         result = await run_whatif(
@@ -413,9 +409,7 @@ class TestRunWhatif:
             assert entry.direction in DiffDirection
 
     @pytest.mark.asyncio
-    async def test_empty_change_set_raises(
-        self, baseline_dir: Path, tmp_path: Path
-    ):
+    async def test_empty_change_set_raises(self, baseline_dir: Path, tmp_path: Path):
         """空 change_set → 拒绝执行（parse_change_set 阶段）。"""
         p = tmp_path / "empty_cs.yaml"
         p.write_text(
@@ -431,9 +425,7 @@ class TestRunWhatif:
             )
 
     @pytest.mark.asyncio
-    async def test_nonexistent_evidence_id_handled(
-        self, baseline_dir: Path, tmp_path: Path
-    ):
+    async def test_nonexistent_evidence_id_handled(self, baseline_dir: Path, tmp_path: Path):
         """change_set 引用不存在的 evidence_id → 正常执行，affected_evidence_ids 为空。"""
         cs = {
             "scenario_id": "scenario-nonexistent-ev",
@@ -516,9 +508,7 @@ class TestRunWhatif:
         assert result.run.trigger_type == "scenario_execution"
 
     @pytest.mark.asyncio
-    async def test_scenario_ids_consistent(
-        self, baseline_dir: Path, change_set_file: Path
-    ):
+    async def test_scenario_ids_consistent(self, baseline_dir: Path, change_set_file: Path):
         """Scenario ID 和 Run.scenario_id 一致。"""
         client = MockLLMClient(_MOCK_LLM_RESPONSE)
         result = await run_whatif(
@@ -541,9 +531,7 @@ class TestRunScenarioCLI:
         """scripts/run_scenario.py 可作为模块导入（语法检查）。"""
         import importlib.util
 
-        script_path = (
-            Path(__file__).parent.parent.parent.parent / "scripts" / "run_scenario.py"
-        )
+        script_path = Path(__file__).parent.parent.parent.parent / "scripts" / "run_scenario.py"
         spec = importlib.util.spec_from_file_location("run_scenario", script_path)
         assert spec is not None, f"Cannot find {script_path}"
         mod = importlib.util.module_from_spec(spec)

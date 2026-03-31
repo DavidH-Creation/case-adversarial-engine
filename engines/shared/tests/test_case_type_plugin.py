@@ -6,6 +6,7 @@ Test scenarios (per Unit 11 spec):
 - Protocol compliance: RegistryPlugin satisfies CaseTypePlugin Protocol
 - Integration: all 6 simulation_run prompt __init__ modules export a `plugin`
 """
+
 from __future__ import annotations
 
 import pytest
@@ -20,6 +21,7 @@ from engines.shared.case_type_plugin import (
 # ---------------------------------------------------------------------------
 # UnsupportedCaseTypeError
 # ---------------------------------------------------------------------------
+
 
 class TestUnsupportedCaseTypeError:
     def test_message_contains_case_type(self):
@@ -49,6 +51,7 @@ class TestUnsupportedCaseTypeError:
 # RegistryPlugin — Protocol compliance
 # ---------------------------------------------------------------------------
 
+
 class TestRegistryPluginProtocol:
     def test_is_case_type_plugin(self):
         plugin = RegistryPlugin({})
@@ -63,6 +66,7 @@ class TestRegistryPluginProtocol:
 # ---------------------------------------------------------------------------
 # RegistryPlugin — module-based registry
 # ---------------------------------------------------------------------------
+
 
 class FakeModule:
     """Simulates a module-based PROMPT_REGISTRY entry."""
@@ -103,14 +107,17 @@ class TestRegistryPluginModuleBased:
 # RegistryPlugin — dict-based registry
 # ---------------------------------------------------------------------------
 
+
 class TestRegistryPluginDictBased:
     def setup_method(self):
-        self.plugin = RegistryPlugin({
-            "civil_loan": {
-                "system": "sys-prompt",
-                "build_user": lambda *, x: f"dict-prompt:{x}",
-            },
-        })
+        self.plugin = RegistryPlugin(
+            {
+                "civil_loan": {
+                    "system": "sys-prompt",
+                    "build_user": lambda *, x: f"dict-prompt:{x}",
+                },
+            }
+        )
 
     def test_happy_path_returns_string(self):
         result = self.plugin.get_prompt("attack_chain_optimizer", "civil_loan", {"x": "hello"})
@@ -126,31 +133,38 @@ class TestRegistryPluginDictBased:
 # Integration: all 6 simulation_run prompt modules export `plugin`
 # ---------------------------------------------------------------------------
 
+
 class TestSimulationRunPluginExports:
     """Each simulation_run sub-engine must export a `plugin: CaseTypePlugin`."""
 
     def test_action_recommender_exports_plugin(self):
         from engines.simulation_run.action_recommender.prompts import plugin
+
         assert isinstance(plugin, CaseTypePlugin)
 
     def test_attack_chain_optimizer_exports_plugin(self):
         from engines.simulation_run.attack_chain_optimizer.prompts import plugin
+
         assert isinstance(plugin, CaseTypePlugin)
 
     def test_decision_path_tree_exports_plugin(self):
         from engines.simulation_run.decision_path_tree.prompts import plugin
+
         assert isinstance(plugin, CaseTypePlugin)
 
     def test_defense_chain_exports_plugin(self):
         from engines.simulation_run.defense_chain.prompts import plugin
+
         assert isinstance(plugin, CaseTypePlugin)
 
     def test_issue_impact_ranker_exports_plugin(self):
         from engines.simulation_run.issue_impact_ranker.prompts import plugin
+
         assert isinstance(plugin, CaseTypePlugin)
 
     def test_issue_category_classifier_exports_plugin(self):
         from engines.simulation_run.issue_category_classifier.prompts import plugin
+
         assert isinstance(plugin, CaseTypePlugin)
 
     def test_all_plugins_contain_civil_loan(self):
@@ -163,9 +177,7 @@ class TestSimulationRunPluginExports:
         from engines.simulation_run.issue_category_classifier.prompts import plugin as p6
 
         for p in (p1, p2, p3, p4, p5, p6):
-            assert "civil_loan" in p._registry, (
-                f"{p!r} missing civil_loan"
-            )
+            assert "civil_loan" in p._registry, f"{p!r} missing civil_loan"
 
     def test_unsupported_case_type_from_plugin(self):
         """Unregistered case type raises UnsupportedCaseTypeError via any plugin."""

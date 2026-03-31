@@ -1,5 +1,6 @@
 # engines/shared/tests/test_models_bugfix.py
 """v1.1 bugfix 新增模型的单元测试。"""
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -47,16 +48,24 @@ class TestLitigationHistory:
 class TestPartyLitigationHistory:
     def test_party_default_no_history(self):
         p = Party(
-            party_id="p1", case_id="c1", name="A",
-            party_type="natural_person", role_code="plaintiff_agent", side="plaintiff",
+            party_id="p1",
+            case_id="c1",
+            name="A",
+            party_type="natural_person",
+            role_code="plaintiff_agent",
+            side="plaintiff",
         )
         assert p.litigation_history is None
 
     def test_party_with_history(self):
         hist = LitigationHistory(lending_case_count=5, distinct_borrower_count=5)
         p = Party(
-            party_id="p1", case_id="c1", name="A",
-            party_type="natural_person", role_code="plaintiff_agent", side="plaintiff",
+            party_id="p1",
+            case_id="c1",
+            name="A",
+            party_type="natural_person",
+            role_code="plaintiff_agent",
+            side="plaintiff",
             litigation_history=hist,
         )
         assert p.litigation_history.lending_case_count == 5

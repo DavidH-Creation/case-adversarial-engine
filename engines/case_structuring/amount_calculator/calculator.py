@@ -73,12 +73,8 @@ class AmountCalculator:
         )
 
         # 2. 执行五条硬规则
-        principal_base_unique = self._check_principal_base_unique(
-            inp.disputed_amount_attributions
-        )
-        all_attributed = self._check_all_repayments_attributed(
-            inp.repayment_transactions
-        )
+        principal_base_unique = self._check_principal_base_unique(inp.disputed_amount_attributions)
+        all_attributed = self._check_all_repayments_attributed(inp.repayment_transactions)
         text_table_consistent = self._check_text_table_consistent(claim_table)
         duplicate_claim = self._check_duplicate_interest_penalty(inp.claim_entries)
         total_reconstructable = self._check_total_reconstructable(claim_table)
@@ -89,11 +85,13 @@ class AmountCalculator:
         )
 
         # 3. 生成冲突列表
-        conflicts = list(self._generate_conflicts(
-            claim_table=claim_table,
-            disputed_attributions=inp.disputed_amount_attributions,
-            loan_transactions=inp.loan_transactions,
-        ))
+        conflicts = list(
+            self._generate_conflicts(
+                claim_table=claim_table,
+                disputed_attributions=inp.disputed_amount_attributions,
+                loan_transactions=inp.loan_transactions,
+            )
+        )
 
         # 来源 3：起诉金额/可核实交付比值异常（rule #6）
         if not claim_delivery_ratio_normal:
@@ -103,18 +101,20 @@ class AmountCalculator:
                 ratio_desc = "∞（可核实交付为零）"
             else:
                 ratio_desc = f"{total_claimed / delivered:.2f}"
-            conflicts.append(AmountConflict(
-                conflict_id=f"conflict-{len(conflicts) + 1:03d}",
-                conflict_description=(
-                    f"【虚假诉讼预警】起诉总额 {total_claimed} / 可核实交付 {delivered}"
-                    f" = {ratio_desc}，超出预警阈值 {self._thresholds.false_litigation_ratio}"
-                ),
-                amount_a=total_claimed,
-                amount_b=delivered,
-                source_a_evidence_id="",
-                source_b_evidence_id="",
-                resolution_note="",
-            ))
+            conflicts.append(
+                AmountConflict(
+                    conflict_id=f"conflict-{len(conflicts) + 1:03d}",
+                    conflict_description=(
+                        f"【虚假诉讼预警】起诉总额 {total_claimed} / 可核实交付 {delivered}"
+                        f" = {ratio_desc}，超出预警阈值 {self._thresholds.false_litigation_ratio}"
+                    ),
+                    amount_a=total_claimed,
+                    amount_b=delivered,
+                    source_a_evidence_id="",
+                    source_b_evidence_id="",
+                    resolution_note="",
+                )
+            )
 
         # 规则 #7：合同无效/争议时利息重算（传入 conflicts 以记录缺失警告）
         interest_recalc = self._recalculate_interest(inp, principal_base, conflicts)
@@ -191,14 +191,16 @@ class AmountCalculator:
                     "需结合合同利率/违约金条款"
                 )
 
-            entries.append(ClaimCalculationEntry(
-                claim_id=descriptor.claim_id,
-                claim_type=descriptor.claim_type,
-                claimed_amount=descriptor.claimed_amount,
-                calculated_amount=calc_amt,
-                delta=delta,
-                delta_explanation=explanation,
-            ))
+            entries.append(
+                ClaimCalculationEntry(
+                    claim_id=descriptor.claim_id,
+                    claim_type=descriptor.claim_type,
+                    claimed_amount=descriptor.claimed_amount,
+                    calculated_amount=calc_amt,
+                    delta=delta,
+                    delta_explanation=explanation,
+                )
+            )
 
         return entries
 
@@ -236,17 +238,14 @@ class AmountCalculator:
         表示本金基数存在未解决的口径分歧，无法唯一确定。
         """
         return not any(
-            d.resolution_status == DisputeResolutionStatus.unresolved
-            for d in disputed_attributions
+            d.resolution_status == DisputeResolutionStatus.unresolved for d in disputed_attributions
         )
 
     # ------------------------------------------------------------------
     # 硬规则 2：每笔还款唯一归因 / all_repayments_attributed
     # ------------------------------------------------------------------
 
-    def _check_all_repayments_attributed(
-        self, repayments: list[RepaymentTransaction]
-    ) -> bool:
+    def _check_all_repayments_attributed(self, repayments: list[RepaymentTransaction]) -> bool:
         """所有还款均已归因（attributed_to 非 None）时返回 True。"""
         return all(r.attributed_to is not None for r in repayments)
 
@@ -254,18 +253,12 @@ class AmountCalculator:
     # 硬规则 3：文本与表格金额一致性 / text_table_consistent
     # ------------------------------------------------------------------
 
-    def _check_text_table_consistent(
-        self, claim_table: list[ClaimCalculationEntry]
-    ) -> bool:
+    def _check_text_table_consistent(self, claim_table: list[ClaimCalculationEntry]) -> bool:
         """
         所有可复算诉请（calculated_amount 非 None）的 delta 均为零时返回 True。
         无法计算的诉请（delta = None）不参与本项校验。
         """
-        return all(
-            entry.delta == Decimal("0")
-            for entry in claim_table
-            if entry.delta is not None
-        )
+        return all(entry.delta == Decimal("0") for entry in claim_table if entry.delta is not None)
 
     # ------------------------------------------------------------------
     # 硬规则 4：利息/违约金重复请求 / duplicate_interest_penalty
@@ -275,21 +268,15 @@ class AmountCalculator:
         """
         同一类型（interest 或 penalty）出现超过一条诉请时返回 True。
         """
-        interest_count = sum(
-            1 for c in claim_entries if c.claim_type == ClaimType.interest
-        )
-        penalty_count = sum(
-            1 for c in claim_entries if c.claim_type == ClaimType.penalty
-        )
+        interest_count = sum(1 for c in claim_entries if c.claim_type == ClaimType.interest)
+        penalty_count = sum(1 for c in claim_entries if c.claim_type == ClaimType.penalty)
         return interest_count > 1 or penalty_count > 1
 
     # ------------------------------------------------------------------
     # 硬规则 5：诉请总额可复算 / claim_total_reconstructable
     # ------------------------------------------------------------------
 
-    def _check_total_reconstructable(
-        self, claim_table: list[ClaimCalculationEntry]
-    ) -> bool:
+    def _check_total_reconstructable(self, claim_table: list[ClaimCalculationEntry]) -> bool:
         """
         所有可复算诉请（delta 非 None）的 delta 均为零时返回 True。
 
@@ -343,18 +330,20 @@ class AmountCalculator:
                 missing.append("contractual_interest_rate")
             if inp.lpr_rate is None:
                 missing.append("lpr_rate")
-            conflicts.append(AmountConflict(
-                conflict_id=f"conflict-{len(conflicts) + 1:03d}",
-                conflict_description=(
-                    f"【利息重算缺失】合同效力为 {inp.contract_validity.value}，"
-                    f"但缺少 {', '.join(missing)}，无法执行利息重算"
-                ),
-                amount_a=Decimal("0"),
-                amount_b=Decimal("0"),
-                source_a_evidence_id="",
-                source_b_evidence_id="",
-                resolution_note="",
-            ))
+            conflicts.append(
+                AmountConflict(
+                    conflict_id=f"conflict-{len(conflicts) + 1:03d}",
+                    conflict_description=(
+                        f"【利息重算缺失】合同效力为 {inp.contract_validity.value}，"
+                        f"但缺少 {', '.join(missing)}，无法执行利息重算"
+                    ),
+                    amount_a=Decimal("0"),
+                    amount_b=Decimal("0"),
+                    source_a_evidence_id="",
+                    source_b_evidence_id="",
+                    resolution_note="",
+                )
+            )
             return None
 
         original_rate = inp.contractual_interest_rate
@@ -408,9 +397,7 @@ class AmountCalculator:
             if entry.delta is not None and entry.delta != Decimal("0"):
                 conflict_index += 1
                 # 从放款流水取第一条 evidence_id 作为计算依据来源
-                source_b = (
-                    loan_transactions[0].evidence_id if loan_transactions else ""
-                )
+                source_b = loan_transactions[0].evidence_id if loan_transactions else ""
                 yield AmountConflict(
                     conflict_id=f"conflict-{conflict_index:03d}",
                     conflict_description=(

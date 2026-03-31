@@ -12,6 +12,7 @@ Round structure (fixed 3 rounds):
   Round 2 (evidence): EvidenceManager organizes evidence and flags conflicts
   Round 3 (rebuttal): Plaintiff rebuts defendant, defendant rebuts plaintiff
 """
+
 from __future__ import annotations
 
 import uuid
@@ -225,8 +226,11 @@ class RoundEngine:
             defendant_best = self._extract_best_arguments(d_claim, d_rebuttal)
             unresolved_issues = self._compute_unresolved_issues(issue_tree, evidence_conflicts)
             missing_ev_report = self._build_missing_evidence_report(
-                issue_tree, plaintiff_evidence, defendant_evidence,
-                plaintiff_party_id, defendant_party_id,
+                issue_tree,
+                plaintiff_evidence,
+                defendant_evidence,
+                plaintiff_party_id,
+                defendant_party_id,
             )
 
             result = AdversarialResult(
@@ -282,11 +286,13 @@ class RoundEngine:
                 continue
             # 每个 issue 生成一条 Argument
             for issue_id in output.issue_ids:
-                best.append(Argument(
-                    issue_id=issue_id,
-                    position=output.body[:500] if output.body else output.title,
-                    supporting_evidence_ids=output.evidence_citations[:5],
-                ))
+                best.append(
+                    Argument(
+                        issue_id=issue_id,
+                        position=output.body[:500] if output.body else output.title,
+                        supporting_evidence_ids=output.evidence_citations[:5],
+                    )
+                )
         return best
 
     @staticmethod
@@ -331,15 +337,19 @@ class RoundEngine:
             d_has = bool(issue_ev_ids & d_ev_ids)
 
             if not p_has:
-                report.append(MissingEvidenceReport(
-                    issue_id=issue.issue_id,
-                    missing_for_party_id=plaintiff_party_id,
-                    description=f"争点「{issue.title}」原告方缺乏直接证据支撑",
-                ))
+                report.append(
+                    MissingEvidenceReport(
+                        issue_id=issue.issue_id,
+                        missing_for_party_id=plaintiff_party_id,
+                        description=f"争点「{issue.title}」原告方缺乏直接证据支撑",
+                    )
+                )
             if not d_has:
-                report.append(MissingEvidenceReport(
-                    issue_id=issue.issue_id,
-                    missing_for_party_id=defendant_party_id,
-                    description=f"争点「{issue.title}」被告方缺乏直接证据支撑",
-                ))
+                report.append(
+                    MissingEvidenceReport(
+                        issue_id=issue.issue_id,
+                        missing_for_party_id=defendant_party_id,
+                        description=f"争点「{issue.title}」被告方缺乏直接证据支撑",
+                    )
+                )
         return report

@@ -8,6 +8,7 @@ Loader for few-shot examples used in LLM prompts.
 - 通过 <example> 标签注入 system prompt
 - 控制 token：每个 example 文件不超过 ~800 tokens
 """
+
 from __future__ import annotations
 
 import json
@@ -51,7 +52,7 @@ def load_few_shot_text(module_name: str) -> str:
         expected_output = ex.get("expected_output", {})
         output_json = json.dumps(expected_output, ensure_ascii=False, indent=2)
         parts.append(
-            f"<example index=\"{idx}\">\n"
+            f'<example index="{idx}">\n'
             f"输入摘要：{input_summary}\n"
             f"期望输出：\n{output_json}\n"
             f"</example>"

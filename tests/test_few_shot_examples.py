@@ -8,6 +8,7 @@ Unit tests for few-shot example loading and injection into prompts.
 - 验证各关键模块的 system prompt 包含 few-shot examples
 - 验证 few-shot examples 的 JSON 结构与 tool_use schema 一致
 """
+
 from __future__ import annotations
 
 import json
@@ -53,9 +54,7 @@ class TestLoadFewShotText:
         """JSON 格式错误时返回空字符串。"""
         bad_file = tmp_path / "bad_module.json"
         bad_file.write_text("{invalid json", encoding="utf-8")
-        with patch(
-            "engines.shared.few_shot_examples._EXAMPLES_DIR", tmp_path
-        ):
+        with patch("engines.shared.few_shot_examples._EXAMPLES_DIR", tmp_path):
             text = load_few_shot_text("bad_module")
             assert text == ""
 
@@ -89,8 +88,11 @@ class TestPlaintiffAgentFewShot:
                 return "{}"
 
         config = RoundConfig(
-            num_rounds=1, model="test", temperature=0.0,
-            max_tokens_per_output=100, max_retries=1,
+            num_rounds=1,
+            model="test",
+            temperature=0.0,
+            max_tokens_per_output=100,
+            max_retries=1,
         )
         agent = PlaintiffAgent(llm_client=_FakeLLM(), party_id="p1", config=config)
         prompt = agent._build_system_prompt()
@@ -110,8 +112,11 @@ class TestDefendantAgentFewShot:
                 return "{}"
 
         config = RoundConfig(
-            num_rounds=1, model="test", temperature=0.0,
-            max_tokens_per_output=100, max_retries=1,
+            num_rounds=1,
+            model="test",
+            temperature=0.0,
+            max_tokens_per_output=100,
+            max_retries=1,
         )
         agent = DefendantAgent(llm_client=_FakeLLM(), party_id="d1", config=config)
         prompt = agent._build_system_prompt()
@@ -126,6 +131,7 @@ class TestIssueImpactRankerFewShot:
         from engines.simulation_run.issue_impact_ranker.prompts.civil_loan import (
             SYSTEM_PROMPT,
         )
+
         assert "<example" in SYSTEM_PROMPT
         assert "importance_score" in SYSTEM_PROMPT
         assert "swing_score" in SYSTEM_PROMPT
@@ -141,6 +147,7 @@ class TestDefenseChainFewShot:
         from engines.simulation_run.defense_chain.prompts.civil_loan import (
             SYSTEM_PROMPT,
         )
+
         assert "<example" in SYSTEM_PROMPT
         assert "defense_strategy" in SYSTEM_PROMPT
         assert "confidence_score" in SYSTEM_PROMPT
@@ -158,12 +165,15 @@ class TestFewShotTokenBudget:
     每个 example 文件的 system prompt 注入量应控制在 2000 tokens 以内。
     """
 
-    @pytest.mark.parametrize("module_name", [
-        "adversarial_plaintiff",
-        "adversarial_defendant",
-        "issue_impact_ranker",
-        "defense_chain",
-    ])
+    @pytest.mark.parametrize(
+        "module_name",
+        [
+            "adversarial_plaintiff",
+            "adversarial_defendant",
+            "issue_impact_ranker",
+            "defense_chain",
+        ],
+    )
     def test_few_shot_text_within_token_budget(self, module_name):
         text = load_few_shot_text(module_name)
         # 粗估：字符数 * 1.5 作为 token 上限
@@ -202,9 +212,7 @@ class TestExampleSchemaConsistency:
     def test_ranker_example_has_required_fields(self):
         """排序器 example 包含 LLMIssueEvaluationOutput 所需的核心字段。"""
         examples_dir = Path(__file__).parent.parent / "engines" / "shared" / "few_shot_examples"
-        data = json.loads(
-            (examples_dir / "issue_impact_ranker.json").read_text(encoding="utf-8")
-        )
+        data = json.loads((examples_dir / "issue_impact_ranker.json").read_text(encoding="utf-8"))
         for ex in data:
             evals = ex["expected_output"]["evaluations"]
             for ev in evals:
@@ -219,9 +227,7 @@ class TestExampleSchemaConsistency:
     def test_defense_chain_example_has_required_fields(self):
         """防御链 example 包含 LLMDefenseChainOutput 所需的核心字段。"""
         examples_dir = Path(__file__).parent.parent / "engines" / "shared" / "few_shot_examples"
-        data = json.loads(
-            (examples_dir / "defense_chain.json").read_text(encoding="utf-8")
-        )
+        data = json.loads((examples_dir / "defense_chain.json").read_text(encoding="utf-8"))
         for ex in data:
             output = ex["expected_output"]
             assert "defense_points" in output

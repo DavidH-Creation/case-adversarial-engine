@@ -2,6 +2,7 @@
 API 请求/响应模型 — 基于现有 Pydantic 模型，独立于引擎内部结构。
 API request/response models — independent from internal engine schemas.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -24,6 +25,7 @@ class CaseStatus(str, Enum):
 # ---------------------------------------------------------------------------
 # POST /api/cases/
 # ---------------------------------------------------------------------------
+
 
 class PartyInfo(BaseModel):
     party_id: str = Field(default_factory=lambda: f"party-{uuid.uuid4().hex[:8]}")
@@ -61,6 +63,7 @@ class CreateCaseResponse(BaseModel):
 # GET /api/cases/{case_id}
 # ---------------------------------------------------------------------------
 
+
 class CaseInfoResponse(BaseModel):
     case_id: str
     status: CaseStatus
@@ -75,6 +78,7 @@ class CaseInfoResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # POST /api/cases/{case_id}/materials
 # ---------------------------------------------------------------------------
+
 
 class AddMaterialRequest(BaseModel):
     source_id: str = Field(default_factory=lambda: f"src-{uuid.uuid4().hex[:8]}")
@@ -94,6 +98,7 @@ class AddMaterialResponse(BaseModel):
 # GET /api/cases/{case_id}/extraction
 # ---------------------------------------------------------------------------
 
+
 class ExtractionResponse(BaseModel):
     status: CaseStatus
     evidence: list[dict[str, Any]] = Field(default_factory=list)
@@ -104,6 +109,7 @@ class ExtractionResponse(BaseModel):
 # POST /api/cases/{case_id}/confirm
 # ---------------------------------------------------------------------------
 
+
 class ConfirmRequest(BaseModel):
     issues: list[dict[str, Any]] = Field(default_factory=list)
     evidence: list[dict[str, Any]] = Field(default_factory=list)
@@ -112,6 +118,7 @@ class ConfirmRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # GET /api/cases/{case_id}/analysis  (SSE)
 # ---------------------------------------------------------------------------
+
 
 class AnalysisResponse(BaseModel):
     status: CaseStatus
@@ -128,6 +135,7 @@ class AnalysisResponse(BaseModel):
 # POST /api/scenarios/run
 # GET  /api/scenarios/{scenario_id}
 # ---------------------------------------------------------------------------
+
 
 class ChangeItemRequest(BaseModel):
     target_object_type: str

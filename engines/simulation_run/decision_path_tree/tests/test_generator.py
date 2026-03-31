@@ -7,6 +7,7 @@ Unit tests for DecisionPathTreeGenerator.
 - 分层测试：规则层逻辑 → 完整 generate() 流程
 - 覆盖所有合约保证（见 spec P0.3 约束）
 """
+
 from __future__ import annotations
 
 import copy
@@ -226,15 +227,18 @@ def _llm_response(
     evidence_ids: list[str] | None = None,
     blocking_conditions: list[dict] | None = None,
 ) -> str:
-    return json.dumps({
-        "paths": _make_paths_json(
-            path_count,
-            with_confidence=with_confidence,
-            issue_ids=issue_ids,
-            evidence_ids=evidence_ids,
-        ),
-        "blocking_conditions": blocking_conditions or [],
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "paths": _make_paths_json(
+                path_count,
+                with_confidence=with_confidence,
+                issue_ids=issue_ids,
+                evidence_ids=evidence_ids,
+            ),
+            "blocking_conditions": blocking_conditions or [],
+        },
+        ensure_ascii=False,
+    )
 
 
 def _make_generator(response: str, *, fail: bool = False) -> DecisionPathTreeGenerator:
@@ -322,18 +326,22 @@ class TestIDValidation:
     @pytest.mark.asyncio
     async def test_unknown_evidence_ids_filtered_from_paths(self):
         """paths.key_evidence_ids 中不在证据索引的 ID 被过滤。"""
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-A",
-                "trigger_condition": "触发条件",
-                "trigger_issue_ids": ["issue-001"],
-                "key_evidence_ids": ["ev-001", "ev-UNKNOWN"],
-                "possible_outcome": "结果描述",
-                "confidence_interval": None,
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "触发条件",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001", "ev-UNKNOWN"],
+                        "possible_outcome": "结果描述",
+                        "confidence_interval": None,
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         inp = _make_input(evidence_ids=["ev-001"])
         result = await _make_generator(response).generate(inp)
 
@@ -344,18 +352,22 @@ class TestIDValidation:
     @pytest.mark.asyncio
     async def test_unknown_issue_ids_filtered_from_trigger(self):
         """trigger_issue_ids 中不在争点树的 ID 被过滤。"""
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-A",
-                "trigger_condition": "触发条件",
-                "trigger_issue_ids": ["issue-001", "issue-UNKNOWN"],
-                "key_evidence_ids": ["ev-001"],
-                "possible_outcome": "结果描述",
-                "confidence_interval": None,
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "触发条件",
+                        "trigger_issue_ids": ["issue-001", "issue-UNKNOWN"],
+                        "key_evidence_ids": ["ev-001"],
+                        "possible_outcome": "结果描述",
+                        "confidence_interval": None,
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         inp = _make_input(issue_ids=["issue-001"], evidence_ids=["ev-001"])
         result = await _make_generator(response).generate(inp)
 
@@ -366,17 +378,24 @@ class TestIDValidation:
     @pytest.mark.asyncio
     async def test_unknown_ids_filtered_from_blocking_conditions(self):
         """blocking_conditions 中的非法 issue_id 和 evidence_id 被过滤。"""
-        response = json.dumps({
-            "paths": _make_paths_json(3, issue_ids=["issue-001"], evidence_ids=["ev-001"]),
-            "blocking_conditions": [{
-                "condition_id": "bc-001",
-                "condition_type": "amount_conflict",
-                "description": "本金口径冲突",
-                "linked_issue_ids": ["issue-001", "issue-GHOST"],
-                "linked_evidence_ids": ["ev-001", "ev-GHOST"],
-            }],
-        })
-        inp = _make_input(issue_ids=["issue-001", "issue-002", "issue-003"], evidence_ids=["ev-001", "ev-002", "ev-003"])
+        response = json.dumps(
+            {
+                "paths": _make_paths_json(3, issue_ids=["issue-001"], evidence_ids=["ev-001"]),
+                "blocking_conditions": [
+                    {
+                        "condition_id": "bc-001",
+                        "condition_type": "amount_conflict",
+                        "description": "本金口径冲突",
+                        "linked_issue_ids": ["issue-001", "issue-GHOST"],
+                        "linked_evidence_ids": ["ev-001", "ev-GHOST"],
+                    }
+                ],
+            }
+        )
+        inp = _make_input(
+            issue_ids=["issue-001", "issue-002", "issue-003"],
+            evidence_ids=["ev-001", "ev-002", "ev-003"],
+        )
         result = await _make_generator(response).generate(inp)
 
         assert len(result.blocking_conditions) == 1
@@ -389,26 +408,31 @@ class TestIDValidation:
     @pytest.mark.asyncio
     async def test_invalid_blocking_condition_type_is_skipped(self):
         """blocking_conditions 中 condition_type 不合法的条目被丢弃。"""
-        response = json.dumps({
-            "paths": _make_paths_json(3, issue_ids=["issue-001"], evidence_ids=["ev-001"]),
-            "blocking_conditions": [
-                {
-                    "condition_id": "bc-valid",
-                    "condition_type": "evidence_gap",
-                    "description": "缺少关键证据",
-                    "linked_issue_ids": [],
-                    "linked_evidence_ids": [],
-                },
-                {
-                    "condition_id": "bc-invalid",
-                    "condition_type": "NONEXISTENT_TYPE",
-                    "description": "非法枚举类型",
-                    "linked_issue_ids": [],
-                    "linked_evidence_ids": [],
-                },
-            ],
-        })
-        inp = _make_input(issue_ids=["issue-001", "issue-002", "issue-003"], evidence_ids=["ev-001", "ev-002", "ev-003"])
+        response = json.dumps(
+            {
+                "paths": _make_paths_json(3, issue_ids=["issue-001"], evidence_ids=["ev-001"]),
+                "blocking_conditions": [
+                    {
+                        "condition_id": "bc-valid",
+                        "condition_type": "evidence_gap",
+                        "description": "缺少关键证据",
+                        "linked_issue_ids": [],
+                        "linked_evidence_ids": [],
+                    },
+                    {
+                        "condition_id": "bc-invalid",
+                        "condition_type": "NONEXISTENT_TYPE",
+                        "description": "非法枚举类型",
+                        "linked_issue_ids": [],
+                        "linked_evidence_ids": [],
+                    },
+                ],
+            }
+        )
+        inp = _make_input(
+            issue_ids=["issue-001", "issue-002", "issue-003"],
+            evidence_ids=["ev-001", "ev-002", "ev-003"],
+        )
         result = await _make_generator(response).generate(inp)
 
         assert len(result.blocking_conditions) == 1
@@ -456,18 +480,22 @@ class TestV15StrictAdmittedOnly:
     @pytest.mark.asyncio
     async def test_non_admitted_evidence_id_filtered_from_known_ids(self):
         """非 admitted 证据的 ID 在规则层过滤中也被排除。"""
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-A",
-                "trigger_condition": "触发条件",
-                "trigger_issue_ids": [],
-                "key_evidence_ids": ["ev-admitted", "ev-submitted"],
-                "possible_outcome": "结果描述",
-                "confidence_interval": None,
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "触发条件",
+                        "trigger_issue_ids": [],
+                        "key_evidence_ids": ["ev-admitted", "ev-submitted"],
+                        "possible_outcome": "结果描述",
+                        "confidence_interval": None,
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         mixed_index = EvidenceIndex(
             case_id="case-001",
             evidence=[
@@ -505,10 +533,12 @@ class TestAutoInjectBlockingConditions:
             resolution_note="",
         )
         # LLM 没有生成任何 blocking_condition
-        response = json.dumps({
-            "paths": _make_paths_json(3, issue_ids=["issue-001"], evidence_ids=["ev-001"]),
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": _make_paths_json(3, issue_ids=["issue-001"], evidence_ids=["ev-001"]),
+                "blocking_conditions": [],
+            }
+        )
         inp = _make_input(
             evidence_ids=["ev-001", "ev-002", "ev-003"],
             verdict_block_active=True,
@@ -517,7 +547,8 @@ class TestAutoInjectBlockingConditions:
         result = await _make_generator(response).generate(inp)
 
         amount_conflicts = [
-            bc for bc in result.blocking_conditions
+            bc
+            for bc in result.blocking_conditions
             if bc.condition_type == BlockingConditionType.amount_conflict
         ]
         assert len(amount_conflicts) == 1
@@ -538,16 +569,20 @@ class TestAutoInjectBlockingConditions:
             resolution_note="",
         )
         # LLM 生成了一条，但 condition_id 与自动注入的不同
-        response = json.dumps({
-            "paths": _make_paths_json(3, issue_ids=["issue-001"], evidence_ids=["ev-001"]),
-            "blocking_conditions": [{
-                "condition_id": "bc-llm-001",  # 不以 "bc-auto-" 开头，不冲突
-                "condition_type": "amount_conflict",
-                "description": "LLM 发现的本金冲突",
-                "linked_issue_ids": [],
-                "linked_evidence_ids": ["ev-001"],
-            }],
-        })
+        response = json.dumps(
+            {
+                "paths": _make_paths_json(3, issue_ids=["issue-001"], evidence_ids=["ev-001"]),
+                "blocking_conditions": [
+                    {
+                        "condition_id": "bc-llm-001",  # 不以 "bc-auto-" 开头，不冲突
+                        "condition_type": "amount_conflict",
+                        "description": "LLM 发现的本金冲突",
+                        "linked_issue_ids": [],
+                        "linked_evidence_ids": ["ev-001"],
+                    }
+                ],
+            }
+        )
         inp = _make_input(
             evidence_ids=["ev-001", "ev-002", "ev-003"],
             verdict_block_active=True,
@@ -557,7 +592,8 @@ class TestAutoInjectBlockingConditions:
 
         # LLM 1 条 + 自动注入 1 条 = 2 条
         amount_conflicts = [
-            bc for bc in result.blocking_conditions
+            bc
+            for bc in result.blocking_conditions
             if bc.condition_type == BlockingConditionType.amount_conflict
         ]
         assert len(amount_conflicts) == 2
@@ -593,18 +629,25 @@ class TestConfidenceIntervalValidation:
     @pytest.mark.asyncio
     async def test_invalid_confidence_lower_gt_upper_gets_fallback(self):
         """lower > upper 时无效 CI 被替换为宽区间 fallback (0.1, 0.9)。"""
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-A",
-                "trigger_condition": "触发条件",
-                "trigger_issue_ids": ["issue-001"],
-                "key_evidence_ids": ["ev-001"],
-                "possible_outcome": "结果描述",
-                "confidence_interval": {"lower": 0.8, "upper": 0.2},  # invalid: lower > upper
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "触发条件",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001"],
+                        "possible_outcome": "结果描述",
+                        "confidence_interval": {
+                            "lower": 0.8,
+                            "upper": 0.2,
+                        },  # invalid: lower > upper
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         result = await _make_generator(response).generate(_make_input(verdict_block_active=False))
 
         ci = result.paths[0].confidence_interval
@@ -615,18 +658,22 @@ class TestConfidenceIntervalValidation:
     @pytest.mark.asyncio
     async def test_valid_confidence_interval_preserved(self):
         """有效的置信度区间（lower <= upper）被保留。"""
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-A",
-                "trigger_condition": "触发条件",
-                "trigger_issue_ids": ["issue-001"],
-                "key_evidence_ids": ["ev-001"],
-                "possible_outcome": "结果描述",
-                "confidence_interval": {"lower": 0.3, "upper": 0.7},
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "触发条件",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001"],
+                        "possible_outcome": "结果描述",
+                        "confidence_interval": {"lower": 0.3, "upper": 0.7},
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         result = await _make_generator(response).generate(_make_input(verdict_block_active=False))
 
         ci = result.paths[0].confidence_interval
@@ -670,19 +717,23 @@ class TestEvidencePolarity:
     @pytest.mark.asyncio
     async def test_counter_evidence_ids_populated_and_filtered(self):
         """LLM 返回 counter_evidence_ids → 过滤非法 ID 后保留在结果中。"""
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-A",
-                "trigger_condition": "法院认定借贷关系成立",
-                "trigger_issue_ids": ["issue-001"],
-                "key_evidence_ids": ["ev-001"],
-                "counter_evidence_ids": ["ev-002", "ev-UNKNOWN"],
-                "possible_outcome": "支持原告",
-                "confidence_interval": {"lower": 0.3, "upper": 0.6},
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "法院认定借贷关系成立",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001"],
+                        "counter_evidence_ids": ["ev-002", "ev-UNKNOWN"],
+                        "possible_outcome": "支持原告",
+                        "confidence_interval": {"lower": 0.3, "upper": 0.6},
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         inp = _make_input(evidence_ids=["ev-001", "ev-002", "ev-003"])
         result = await _make_generator(response).generate(inp)
 
@@ -695,19 +746,23 @@ class TestEvidencePolarity:
     @pytest.mark.asyncio
     async def test_overlap_between_key_and_counter_removed(self):
         """同一证据不得同时出现在 key_evidence_ids 和 counter_evidence_ids 中。"""
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-A",
-                "trigger_condition": "法院认定借贷关系成立",
-                "trigger_issue_ids": ["issue-001"],
-                "key_evidence_ids": ["ev-001", "ev-002"],
-                "counter_evidence_ids": ["ev-002", "ev-003"],  # ev-002 重叠
-                "possible_outcome": "支持原告",
-                "confidence_interval": {"lower": 0.3, "upper": 0.6},
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "法院认定借贷关系成立",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001", "ev-002"],
+                        "counter_evidence_ids": ["ev-002", "ev-003"],  # ev-002 重叠
+                        "possible_outcome": "支持原告",
+                        "confidence_interval": {"lower": 0.3, "upper": 0.6},
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         inp = _make_input(evidence_ids=["ev-001", "ev-002", "ev-003"])
         result = await _make_generator(response).generate(inp)
 
@@ -731,19 +786,23 @@ class TestEvidencePolarity:
     @pytest.mark.asyncio
     async def test_counter_evidence_alias_normalization(self):
         """LLM 使用别名 'counter_evidence' → 归一化为 counter_evidence_ids。"""
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-A",
-                "trigger_condition": "法院认定借贷关系成立",
-                "trigger_issue_ids": ["issue-001"],
-                "key_evidence_ids": ["ev-001"],
-                "counter_evidence": ["ev-002"],  # alias, not counter_evidence_ids
-                "possible_outcome": "支持原告",
-                "confidence_interval": {"lower": 0.3, "upper": 0.6},
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "法院认定借贷关系成立",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001"],
+                        "counter_evidence": ["ev-002"],  # alias, not counter_evidence_ids
+                        "possible_outcome": "支持原告",
+                        "confidence_interval": {"lower": 0.3, "upper": 0.6},
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         inp = _make_input(evidence_ids=["ev-001", "ev-002", "ev-003"])
         result = await _make_generator(response).generate(inp)
 
@@ -757,19 +816,25 @@ class TestEvidencePolarity:
         # listed in key_evidence_ids. With proper prompting, LLM should put it in
         # counter_evidence_ids instead. Here we test that if LLM correctly separates them,
         # the generator preserves the separation.
-        response = json.dumps({
-            "paths": [{
-                "path_id": "path-D",
-                "trigger_condition": "法院认定三方当面达成借款合意",
-                "trigger_issue_ids": ["issue-001"],
-                "key_evidence_ids": ["ev-001", "ev-002"],        # supporting evidence
-                "counter_evidence_ids": ["ev-defendant-006"],    # ev-defendant-006: 小陈已离场，反驳三方面谈
-                "possible_outcome": "部分支持原告，连带责任",
-                "confidence_interval": {"lower": 0.1, "upper": 0.25},
-                "path_notes": "",
-            }],
-            "blocking_conditions": [],
-        })
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-D",
+                        "trigger_condition": "法院认定三方当面达成借款合意",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001", "ev-002"],  # supporting evidence
+                        "counter_evidence_ids": [
+                            "ev-defendant-006"
+                        ],  # ev-defendant-006: 小陈已离场，反驳三方面谈
+                        "possible_outcome": "部分支持原告，连带责任",
+                        "confidence_interval": {"lower": 0.1, "upper": 0.25},
+                        "path_notes": "",
+                    }
+                ],
+                "blocking_conditions": [],
+            }
+        )
         inp = _make_input(
             evidence_ids=["ev-001", "ev-002", "ev-defendant-006"],
         )
@@ -791,28 +856,32 @@ class TestPathProbabilityRanking:
         """构造带有概率字段的 LLM 响应 JSON。"""
         paths = []
         for i, spec in enumerate(paths_spec):
-            paths.append({
-                "path_id": spec.get("path_id", f"path-{chr(65 + i)}"),
-                "trigger_condition": spec.get("trigger_condition", f"触发条件 {i + 1}"),
-                "trigger_issue_ids": spec.get("trigger_issue_ids", ["issue-001"]),
-                "key_evidence_ids": spec.get("key_evidence_ids", ["ev-001"]),
-                "possible_outcome": spec.get("possible_outcome", f"裁判结果 {i + 1}"),
-                "confidence_interval": {"lower": 0.2, "upper": 0.6},
-                "path_notes": "",
-                "probability": spec.get("probability", 0.5),
-                "probability_rationale": spec.get("probability_rationale", "测试依据"),
-                "party_favored": spec.get("party_favored", "neutral"),
-            })
+            paths.append(
+                {
+                    "path_id": spec.get("path_id", f"path-{chr(65 + i)}"),
+                    "trigger_condition": spec.get("trigger_condition", f"触发条件 {i + 1}"),
+                    "trigger_issue_ids": spec.get("trigger_issue_ids", ["issue-001"]),
+                    "key_evidence_ids": spec.get("key_evidence_ids", ["ev-001"]),
+                    "possible_outcome": spec.get("possible_outcome", f"裁判结果 {i + 1}"),
+                    "confidence_interval": {"lower": 0.2, "upper": 0.6},
+                    "path_notes": "",
+                    "probability": spec.get("probability", 0.5),
+                    "probability_rationale": spec.get("probability_rationale", "测试依据"),
+                    "party_favored": spec.get("party_favored", "neutral"),
+                }
+            )
         return json.dumps({"paths": paths, "blocking_conditions": []}, ensure_ascii=False)
 
     @pytest.mark.asyncio
     async def test_most_likely_path_is_highest_probability(self):
         """most_likely_path 应指向概率最高的路径。"""
-        response = self._llm_response_with_probabilities([
-            {"path_id": "path-A", "probability": 0.3, "party_favored": "plaintiff"},
-            {"path_id": "path-B", "probability": 0.6, "party_favored": "defendant"},
-            {"path_id": "path-C", "probability": 0.1, "party_favored": "neutral"},
-        ])
+        response = self._llm_response_with_probabilities(
+            [
+                {"path_id": "path-A", "probability": 0.3, "party_favored": "plaintiff"},
+                {"path_id": "path-B", "probability": 0.6, "party_favored": "defendant"},
+                {"path_id": "path-C", "probability": 0.1, "party_favored": "neutral"},
+            ]
+        )
         result = await _make_generator(response).generate(_make_input())
 
         assert result.most_likely_path == "path-B"
@@ -820,11 +889,13 @@ class TestPathProbabilityRanking:
     @pytest.mark.asyncio
     async def test_plaintiff_best_path_is_highest_probability_plaintiff_path(self):
         """plaintiff_best_path 应是 plaintiff 路径中概率最高的。"""
-        response = self._llm_response_with_probabilities([
-            {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
-            {"path_id": "path-B", "probability": 0.7, "party_favored": "defendant"},
-            {"path_id": "path-C", "probability": 0.55, "party_favored": "plaintiff"},
-        ])
+        response = self._llm_response_with_probabilities(
+            [
+                {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
+                {"path_id": "path-B", "probability": 0.7, "party_favored": "defendant"},
+                {"path_id": "path-C", "probability": 0.55, "party_favored": "plaintiff"},
+            ]
+        )
         result = await _make_generator(response).generate(_make_input())
 
         assert result.plaintiff_best_path == "path-C"
@@ -832,11 +903,13 @@ class TestPathProbabilityRanking:
     @pytest.mark.asyncio
     async def test_defendant_best_path_is_highest_probability_defendant_path(self):
         """defendant_best_path 应是 defendant 路径中概率最高的。"""
-        response = self._llm_response_with_probabilities([
-            {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
-            {"path_id": "path-B", "probability": 0.5, "party_favored": "defendant"},
-            {"path_id": "path-C", "probability": 0.3, "party_favored": "defendant"},
-        ])
+        response = self._llm_response_with_probabilities(
+            [
+                {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
+                {"path_id": "path-B", "probability": 0.5, "party_favored": "defendant"},
+                {"path_id": "path-C", "probability": 0.3, "party_favored": "defendant"},
+            ]
+        )
         result = await _make_generator(response).generate(_make_input())
 
         assert result.defendant_best_path == "path-B"
@@ -844,11 +917,13 @@ class TestPathProbabilityRanking:
     @pytest.mark.asyncio
     async def test_path_ranking_sorted_by_probability_descending(self):
         """path_ranking 按概率降序排列。"""
-        response = self._llm_response_with_probabilities([
-            {"path_id": "path-A", "probability": 0.2, "party_favored": "plaintiff"},
-            {"path_id": "path-B", "probability": 0.7, "party_favored": "defendant"},
-            {"path_id": "path-C", "probability": 0.5, "party_favored": "neutral"},
-        ])
+        response = self._llm_response_with_probabilities(
+            [
+                {"path_id": "path-A", "probability": 0.2, "party_favored": "plaintiff"},
+                {"path_id": "path-B", "probability": 0.7, "party_favored": "defendant"},
+                {"path_id": "path-C", "probability": 0.5, "party_favored": "neutral"},
+            ]
+        )
         result = await _make_generator(response).generate(_make_input())
 
         assert len(result.path_ranking) == 3
@@ -859,10 +934,12 @@ class TestPathProbabilityRanking:
     @pytest.mark.asyncio
     async def test_path_ranking_contains_correct_party_favored(self):
         """path_ranking 条目的 party_favored 与路径一致。"""
-        response = self._llm_response_with_probabilities([
-            {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
-            {"path_id": "path-B", "probability": 0.6, "party_favored": "defendant"},
-        ])
+        response = self._llm_response_with_probabilities(
+            [
+                {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
+                {"path_id": "path-B", "probability": 0.6, "party_favored": "defendant"},
+            ]
+        )
         result = await _make_generator(response).generate(_make_input())
 
         by_id = {r.path_id: r for r in result.path_ranking}
@@ -872,10 +949,12 @@ class TestPathProbabilityRanking:
     @pytest.mark.asyncio
     async def test_plaintiff_best_path_none_when_no_plaintiff_paths(self):
         """没有 plaintiff 路径时 plaintiff_best_path 为 None。"""
-        response = self._llm_response_with_probabilities([
-            {"path_id": "path-A", "probability": 0.6, "party_favored": "defendant"},
-            {"path_id": "path-B", "probability": 0.4, "party_favored": "neutral"},
-        ])
+        response = self._llm_response_with_probabilities(
+            [
+                {"path_id": "path-A", "probability": 0.6, "party_favored": "defendant"},
+                {"path_id": "path-B", "probability": 0.4, "party_favored": "neutral"},
+            ]
+        )
         result = await _make_generator(response).generate(_make_input())
 
         assert result.plaintiff_best_path is None
@@ -883,14 +962,16 @@ class TestPathProbabilityRanking:
     @pytest.mark.asyncio
     async def test_path_probability_rationale_preserved(self):
         """probability_rationale 字段被保留到 DecisionPath。"""
-        response = self._llm_response_with_probabilities([
-            {
-                "path_id": "path-A",
-                "probability": 0.6,
-                "party_favored": "plaintiff",
-                "probability_rationale": "直接转账凭证支撑，主体认定清晰",
-            },
-        ])
+        response = self._llm_response_with_probabilities(
+            [
+                {
+                    "path_id": "path-A",
+                    "probability": 0.6,
+                    "party_favored": "plaintiff",
+                    "probability_rationale": "直接转账凭证支撑，主体认定清晰",
+                },
+            ]
+        )
         result = await _make_generator(response).generate(_make_input())
 
         assert len(result.paths) == 1
@@ -899,47 +980,50 @@ class TestPathProbabilityRanking:
     @pytest.mark.asyncio
     async def test_party_favored_normalised_to_known_values(self):
         """party_favored 归一化：'原告' → 'plaintiff', '被告' → 'defendant', 其他 → 'neutral'。"""
-        response = json.dumps({
-            "paths": [
-                {
-                    "path_id": "path-A",
-                    "trigger_condition": "触发",
-                    "trigger_issue_ids": ["issue-001"],
-                    "key_evidence_ids": ["ev-001"],
-                    "possible_outcome": "结果",
-                    "confidence_interval": {"lower": 0.2, "upper": 0.6},
-                    "path_notes": "",
-                    "probability": 0.5,
-                    "probability_rationale": "",
-                    "party_favored": "原告",
-                },
-                {
-                    "path_id": "path-B",
-                    "trigger_condition": "触发",
-                    "trigger_issue_ids": ["issue-001"],
-                    "key_evidence_ids": ["ev-001"],
-                    "possible_outcome": "结果",
-                    "confidence_interval": {"lower": 0.2, "upper": 0.6},
-                    "path_notes": "",
-                    "probability": 0.3,
-                    "probability_rationale": "",
-                    "party_favored": "被告",
-                },
-                {
-                    "path_id": "path-C",
-                    "trigger_condition": "触发",
-                    "trigger_issue_ids": ["issue-001"],
-                    "key_evidence_ids": ["ev-001"],
-                    "possible_outcome": "结果",
-                    "confidence_interval": {"lower": 0.2, "upper": 0.6},
-                    "path_notes": "",
-                    "probability": 0.2,
-                    "probability_rationale": "",
-                    "party_favored": "unknown_value",
-                },
-            ],
-            "blocking_conditions": [],
-        }, ensure_ascii=False)
+        response = json.dumps(
+            {
+                "paths": [
+                    {
+                        "path_id": "path-A",
+                        "trigger_condition": "触发",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001"],
+                        "possible_outcome": "结果",
+                        "confidence_interval": {"lower": 0.2, "upper": 0.6},
+                        "path_notes": "",
+                        "probability": 0.5,
+                        "probability_rationale": "",
+                        "party_favored": "原告",
+                    },
+                    {
+                        "path_id": "path-B",
+                        "trigger_condition": "触发",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001"],
+                        "possible_outcome": "结果",
+                        "confidence_interval": {"lower": 0.2, "upper": 0.6},
+                        "path_notes": "",
+                        "probability": 0.3,
+                        "probability_rationale": "",
+                        "party_favored": "被告",
+                    },
+                    {
+                        "path_id": "path-C",
+                        "trigger_condition": "触发",
+                        "trigger_issue_ids": ["issue-001"],
+                        "key_evidence_ids": ["ev-001"],
+                        "possible_outcome": "结果",
+                        "confidence_interval": {"lower": 0.2, "upper": 0.6},
+                        "path_notes": "",
+                        "probability": 0.2,
+                        "probability_rationale": "",
+                        "party_favored": "unknown_value",
+                    },
+                ],
+                "blocking_conditions": [],
+            },
+            ensure_ascii=False,
+        )
         result = await _make_generator(response).generate(_make_input())
 
         by_id = {p.path_id: p for p in result.paths}
@@ -961,6 +1045,7 @@ class TestPathProbabilityRanking:
     async def test_compute_path_ranking_static_method_directly(self):
         """直接测试 _compute_path_ranking 静态方法。"""
         from engines.shared.models import DecisionPath, ConfidenceInterval
+
         paths = [
             DecisionPath(
                 path_id="p1",
@@ -1001,10 +1086,24 @@ class TestOpusStyleNormalization:
                 "outcome_type": "全额支持",
                 "narrative": "法院认定小陈系实际借款人，判令返还全部本金200000元及资金占用利息。",
                 "branch_sequence": [
-                    {"step": 1, "issue_id": "issue-001", "evidence": ["ev-001", "ev-002"], "reasoning": "借贷合意成立"},
-                    {"step": 2, "issue_id": "issue-002", "evidence": ["ev-003"], "reasoning": "款项交付确认"},
+                    {
+                        "step": 1,
+                        "issue_id": "issue-001",
+                        "evidence": ["ev-001", "ev-002"],
+                        "reasoning": "借贷合意成立",
+                    },
+                    {
+                        "step": 2,
+                        "issue_id": "issue-002",
+                        "evidence": ["ev-003"],
+                        "reasoning": "款项交付确认",
+                    },
                 ],
-                "judgment_projection": {"principal": 200000, "interest": True, "costs_borne_by": "defendant"},
+                "judgment_projection": {
+                    "principal": 200000,
+                    "interest": True,
+                    "costs_borne_by": "defendant",
+                },
                 "trigger_condition": "全额支持——小陈系实际借款人，返还本金20万元并赔偿资金占用损失",
             },
             {
@@ -1013,7 +1112,12 @@ class TestOpusStyleNormalization:
                 "outcome_type": "驳回全部诉请",
                 "narrative": "法院认定实际借款人为老庄，小陈仅为代收款人。",
                 "branch_sequence": [
-                    {"step": 1, "issue_id": "issue-002", "evidence": ["ev-002"], "reasoning": "主体不适格"},
+                    {
+                        "step": 1,
+                        "issue_id": "issue-002",
+                        "evidence": ["ev-002"],
+                        "reasoning": "主体不适格",
+                    },
                 ],
                 "judgment_projection": {"principal": 0},
                 "trigger_condition": "驳回全部诉请——实际借款人系老庄，小陈仅为代收款人",

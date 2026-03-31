@@ -15,7 +15,10 @@
       "Bash(python -m pytest tests/integration/test_pretrial_pipeline.py -v --tb=short)",
       "Bash(python -m pytest engines/document_assistance/ -x -q)",
       "Bash(python -c \"from engines.document_assistance.engine import DocumentAssistanceEngine; from engines.document_assistance.schemas import DocumentAssistanceInput, DocumentGenerationError; from engines.document_assistance.prompts import PROMPT_REGISTRY; print\\(''Imports OK''\\); print\\(f''PROMPT_REGISTRY entries: {len\\(PROMPT_REGISTRY\\)}''\\)\")",
-      "Bash(python -c \"from engines.report_generation.generator import append_document_draft_sections; from engines.report_generation.docx_generator import generate_docx_report; print\\(''Integrations OK''\\)\")"
+      "Bash(python -c \"from engines.report_generation.generator import append_document_draft_sections; from engines.report_generation.docx_generator import generate_docx_report; print\\(''Integrations OK''\\)\")",
+      "Bash(python -m pytest api/tests/test_analysis_endpoints.py::TestIterProgressReplay -v)",
+      "Bash(python -m pytest api/tests/test_analysis_endpoints.py -v)",
+      "Bash(python -m pytest --co -q)"
     ]
   }
 }

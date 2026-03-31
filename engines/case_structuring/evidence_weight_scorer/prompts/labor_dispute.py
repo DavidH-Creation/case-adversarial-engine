@@ -4,6 +4,7 @@ LLM prompt templates for labor dispute case type evidence weight scoring.
 
 指导 LLM 为每份证据生成四维权重评分，输出严格 JSON。
 """
+
 from __future__ import annotations
 
 from engines.shared.models import EvidenceIndex
@@ -92,9 +93,7 @@ def build_user_prompt(*, evidence_index: EvidenceIndex) -> str:
             line += f" | 已有备注: {ev.admissibility_notes}"
         lines.append(line)
 
-    evidence_block = "【待评分证据列表】\n" + (
-        "\n".join(lines) if lines else "  （无证据）"
-    )
+    evidence_block = "【待评分证据列表】\n" + ("\n".join(lines) if lines else "  （无证据）")
 
     return f"""\
 {evidence_block}

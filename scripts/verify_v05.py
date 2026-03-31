@@ -21,9 +21,9 @@ ROOT = Path(__file__).parent.parent
 # 颜色输出 / ANSI color output
 # ---------------------------------------------------------------------------
 _GREEN = "\033[32m"
-_RED   = "\033[31m"
+_RED = "\033[31m"
 _RESET = "\033[0m"
-_BOLD  = "\033[1m"
+_BOLD = "\033[1m"
 
 
 def _pass(msg: str) -> str:
@@ -37,6 +37,7 @@ def _fail(msg: str) -> str:
 # ---------------------------------------------------------------------------
 # 个别检查 / Individual checks
 # ---------------------------------------------------------------------------
+
 
 def check_core_docs_exist() -> list[tuple[bool, str]]:
     """6 个核心文档全部存在。"""
@@ -178,6 +179,7 @@ def check_acceptance_json_parseable() -> list[tuple[bool, str]]:
 # 主程序 / Main
 # ---------------------------------------------------------------------------
 
+
 def run_all_checks() -> int:
     """Run all checks and print results. Returns exit code (0=pass, 1=fail)."""
     check_groups = [
@@ -204,7 +206,7 @@ def run_all_checks() -> int:
         print()
 
     passed = sum(1 for ok, _ in all_results if ok)
-    total  = len(all_results)
+    total = len(all_results)
     failed = total - passed
 
     if failed == 0:

@@ -24,9 +24,7 @@ import pytest
 # Fixture 路径 / Fixture paths
 # ---------------------------------------------------------------------------
 
-_FIXTURES_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent / "benchmarks" / "fixtures"
-)
+_FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "benchmarks" / "fixtures"
 _OUTPUT_FIXTURE = _FIXTURES_DIR / "interaction_turn_example.json"
 
 
@@ -60,14 +58,19 @@ class TestInteractionTurnContractFixtures:
     def test_turns_have_required_top_level_keys(self):
         """每个 turn 必须包含所有必填顶层字段。"""
         required = {
-            "turn_id", "case_id", "report_id", "run_id",
-            "question", "answer", "issue_ids", "evidence_ids", "statement_class",
+            "turn_id",
+            "case_id",
+            "report_id",
+            "run_id",
+            "question",
+            "answer",
+            "issue_ids",
+            "evidence_ids",
+            "statement_class",
         }
         for turn in self.turns:
             missing = required - set(turn.keys())
-            assert not missing, (
-                f"Turn {turn.get('turn_id', '?')} missing fields: {missing}"
-            )
+            assert not missing, f"Turn {turn.get('turn_id', '?')} missing fields: {missing}"
 
     # ── 问答内容校验 / Q&A content validation ────────────────────────────────
 
@@ -91,9 +94,7 @@ class TestInteractionTurnContractFixtures:
         """issue_ids 不能为空，每轮追问必须绑定至少一个争点。"""
         for turn in self.turns:
             issue_ids = turn.get("issue_ids", [])
-            assert len(issue_ids) > 0, (
-                f"Turn {turn.get('turn_id', '?')} has empty issue_ids"
-            )
+            assert len(issue_ids) > 0, f"Turn {turn.get('turn_id', '?')} has empty issue_ids"
 
     def test_issue_ids_are_strings(self):
         """issue_ids 中每个元素必须为非空字符串。"""
@@ -128,8 +129,7 @@ class TestInteractionTurnContractFixtures:
         for turn in self.turns:
             sc = turn.get("statement_class")
             assert sc in valid, (
-                f"Turn {turn.get('turn_id', '?')} "
-                f"has invalid statement_class: {sc!r}"
+                f"Turn {turn.get('turn_id', '?')} has invalid statement_class: {sc!r}"
             )
 
     # ── ID 一致性校验 / ID consistency validation ─────────────────────────────
@@ -137,13 +137,9 @@ class TestInteractionTurnContractFixtures:
     def test_turn_ids_unique(self):
         """turn_id 在所有轮次中唯一。"""
         ids = [t.get("turn_id") for t in self.turns]
-        assert len(ids) == len(set(ids)), (
-            f"存在重复的 turn_id: {ids}"
-        )
+        assert len(ids) == len(set(ids)), f"存在重复的 turn_id: {ids}"
 
     def test_same_case_id_across_turns(self):
         """同一 fixture 内所有 turn 应属于同一 case_id。"""
         case_ids = {t.get("case_id") for t in self.turns}
-        assert len(case_ids) == 1, (
-            f"Multiple case_ids found in fixture: {case_ids}"
-        )
+        assert len(case_ids) == 1, f"Multiple case_ids found in fixture: {case_ids}"

@@ -39,6 +39,7 @@ class ExtractionMetadata(BaseModel):
     """争点抽取过程元信息（含业务统计字段）。
     Issue extraction metadata with domain-specific statistics.
     """
+
     total_claims_processed: int = 0
     total_defenses_processed: int = 0
     total_evidence_referenced: int = 0
@@ -55,6 +56,7 @@ class ExtractionMetadata(BaseModel):
 
 class LLMFactProposition(BaseModel):
     """LLM 返回的事实命题（尚未分配ID）。"""
+
     text: str = ""
     status: str = "unverified"
     linked_evidence_ids: list[str] = Field(default_factory=list)
@@ -62,6 +64,7 @@ class LLMFactProposition(BaseModel):
 
 class LLMIssueItem(BaseModel):
     """LLM 返回的单个争点（使用临时ID引用）。"""
+
     tmp_id: str = Field(default="", description="临时ID，供本次输出内部引用")
     title: str = ""
     issue_type: str = "factual"
@@ -74,6 +77,7 @@ class LLMIssueItem(BaseModel):
 
 class LLMBurdenItem(BaseModel):
     """LLM 返回的举证责任（引用临时争点ID）。"""
+
     issue_tmp_id: str = ""
     burden_party_id: str = ""
     description: str = ""
@@ -83,12 +87,14 @@ class LLMBurdenItem(BaseModel):
 
 class LLMClaimMapping(BaseModel):
     """LLM 返回的诉请→临时争点ID映射。"""
+
     claim_id: str = ""
     issue_tmp_ids: list[str] = Field(default_factory=list)
 
 
 class LLMDefenseMapping(BaseModel):
     """LLM 返回的抗辩→临时争点ID映射。"""
+
     defense_id: str = ""
     issue_tmp_ids: list[str] = Field(default_factory=list)
 
@@ -97,6 +103,7 @@ class LLMExtractionOutput(BaseModel):
     """LLM 提取的完整结构化输出。
     临时ID由 IssueExtractor._build_issue_tree 替换为正式ID。
     """
+
     issues: list[LLMIssueItem] = Field(default_factory=list)
     burdens: list[LLMBurdenItem] = Field(default_factory=list)
     claim_issue_mapping: list[LLMClaimMapping] = Field(default_factory=list)

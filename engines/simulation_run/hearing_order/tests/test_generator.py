@@ -6,6 +6,7 @@ Unit tests for HearingOrderGenerator.
 - 纯规则层，无 LLM 依赖
 - 覆盖：空输入、阶段分组、拓扑顺序、时间估算、原告优先、环路节点处理
 """
+
 from __future__ import annotations
 
 import uuid

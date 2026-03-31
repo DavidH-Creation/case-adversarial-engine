@@ -98,7 +98,12 @@ class TokenTracker:
         per_module: dict[str, dict[str, Any]] = {}
         for r in self._records:
             if r.module not in per_module:
-                per_module[r.module] = {"input_tokens": 0, "output_tokens": 0, "calls": 0, "errors": 0}
+                per_module[r.module] = {
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "calls": 0,
+                    "errors": 0,
+                }
             m = per_module[r.module]
             m["calls"] += 1
             if r.input_tokens is not None:

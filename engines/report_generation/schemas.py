@@ -51,6 +51,7 @@ class MatrixRow(BaseModel):
     """矩阵单行：一个争点及其关联证据和抗辩点。
     Matrix row: one issue with associated evidence IDs and defense point IDs.
     """
+
     issue_id: str
     issue_label: str
     issue_impact: str = ""  # high / medium / low / ""
@@ -67,6 +68,7 @@ class IssueEvidenceDefenseMatrix(BaseModel):
     rows 按 issue_impact 降序排列（high > medium > low）。
     Rows sorted by issue_impact descending (high > medium > low).
     """
+
     rows: list[MatrixRow] = Field(default_factory=list)
     total_issues: int = 0
     issues_with_evidence: int = 0
@@ -79,6 +81,7 @@ class IssueEvidenceDefenseMatrix(BaseModel):
 
 class OutcomePathType(str, Enum):
     """结构化输出路径类型 / Outcome path type."""
+
     WIN = "WIN"
     LOSE = "LOSE"
     MEDIATION = "MEDIATION"
@@ -89,6 +92,7 @@ class OutcomePath(BaseModel):
     """单条结构化输出路径。
     Structured outcome path (pure aggregation, no LLM).
     """
+
     path_type: OutcomePathType
     trigger_conditions: list[str] = Field(default_factory=list)
     key_actions: list[str] = Field(default_factory=list)
@@ -101,6 +105,7 @@ class CaseOutcomePaths(BaseModel):
     """四路径结构化输出聚合。
     Aggregated 4-path outcome structure for a case.
     """
+
     win_path: OutcomePath
     lose_path: OutcomePath
     mediation_path: OutcomePath
@@ -114,6 +119,7 @@ class CaseOutcomePaths(BaseModel):
 
 class LLMConclusionItem(BaseModel):
     """LLM 返回的单条关键结论（尚未分配 ID）。"""
+
     text: str
     statement_class: str  # "fact" / "inference" / "assumption"
     supporting_evidence_ids: list[str] = Field(default_factory=list)
@@ -121,6 +127,7 @@ class LLMConclusionItem(BaseModel):
 
 class LLMSectionItem(BaseModel):
     """LLM 返回的单个章节（尚未分配 ID）。"""
+
     title: str
     body: str
     linked_issue_ids: list[str] = Field(default_factory=list)
@@ -130,6 +137,7 @@ class LLMSectionItem(BaseModel):
 
 class LLMReportOutput(BaseModel):
     """LLM 返回的完整报告结构（尚未规范化）。"""
+
     title: str
     summary: str
     sections: list[LLMSectionItem]

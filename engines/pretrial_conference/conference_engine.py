@@ -58,10 +58,16 @@ class PretrialConferenceEngine:
     ) -> None:
         self._sm = EvidenceStateMachine()
         self._cross_exam = CrossExaminationEngine(
-            llm_client, model=model, temperature=temperature, max_retries=max_retries,
+            llm_client,
+            model=model,
+            temperature=temperature,
+            max_retries=max_retries,
         )
         self._judge = JudgeAgent(
-            llm_client, model=model, temperature=temperature, max_retries=max_retries,
+            llm_client,
+            model=model,
+            temperature=temperature,
+            max_retries=max_retries,
         )
 
     async def run(
@@ -100,11 +106,15 @@ class PretrialConferenceEngine:
         current_index = evidence_index
         if plaintiff_evidence_ids:
             current_index = self._sm.bulk_submit(
-                current_index, plaintiff_party_id, plaintiff_evidence_ids,
+                current_index,
+                plaintiff_party_id,
+                plaintiff_evidence_ids,
             )
         if defendant_evidence_ids:
             current_index = self._sm.bulk_submit(
-                current_index, defendant_party_id, defendant_evidence_ids,
+                current_index,
+                defendant_party_id,
+                defendant_evidence_ids,
             )
 
         # ------------------------------------------------------------------
@@ -121,13 +131,16 @@ class PretrialConferenceEngine:
         # Stage 3: 法官发问 (基于 admitted 证据)
         # ------------------------------------------------------------------
         admitted_evidence = [
-            ev for ev in current_index.evidence
+            ev
+            for ev in current_index.evidence
             if ev.status == EvidenceStatus.admitted_for_discussion
         ]
 
         if not admitted_evidence:
             judge_qs = JudgeQuestionSet(
-                case_id=case_id, run_id=run_id, questions=[],
+                case_id=case_id,
+                run_id=run_id,
+                questions=[],
             )
         else:
             judge_qs = await self._judge.generate_questions(

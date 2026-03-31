@@ -7,6 +7,7 @@ Unit tests for IssueImpactRanker.
 - 分层测试：排序规则 → 校验规则 → 完整 rank() 流程
 - 覆盖所有合约保证（见 spec P0.1 约束表）
 """
+
 from __future__ import annotations
 
 import copy
@@ -183,13 +184,15 @@ def _eval_entry(
         "outcome_impact": outcome_impact,
         "impact_targets": kwargs.get("impact_targets", ["principal"]),
         "proponent_evidence_strength": kwargs.get("proponent_evidence_strength", "medium"),
-        "proponent_evidence_ids": ["ev-001"] if proponent_evidence_ids is None else proponent_evidence_ids,
+        "proponent_evidence_ids": ["ev-001"]
+        if proponent_evidence_ids is None
+        else proponent_evidence_ids,
         "opponent_attack_strength": kwargs.get("opponent_attack_strength", "medium"),
-        "opponent_attack_evidence_ids": ["ev-002"] if opponent_attack_evidence_ids is None else opponent_attack_evidence_ids,
+        "opponent_attack_evidence_ids": ["ev-002"]
+        if opponent_attack_evidence_ids is None
+        else opponent_attack_evidence_ids,
         "recommended_action": kwargs.get("recommended_action", "supplement_evidence"),
-        "recommended_action_basis": kwargs.get(
-            "recommended_action_basis", "基于证据 ev-001 评估"
-        ),
+        "recommended_action_basis": kwargs.get("recommended_action_basis", "基于证据 ev-001 评估"),
         "recommended_action_evidence_ids": ["ev-001"],
     }
 
@@ -298,21 +301,27 @@ class TestSortIssues:
             _make_issue("i-mid-swing", composite_score=50.0, swing_score=50),
         ]
         sorted_issues = self._ranker()._sort_issues(issues)
-        assert [i.issue_id for i in sorted_issues] == [
-            "i-high-swing", "i-mid-swing", "i-low-swing"
-        ]
+        assert [i.issue_id for i in sorted_issues] == ["i-high-swing", "i-mid-swing", "i-low-swing"]
 
     def test_evidence_strength_gap_tiebreaker(self):
         """When composite_score and swing_score are equal, abs(evidence_strength_gap) DESC breaks the tie."""
         issues = [
-            _make_issue("i-small-gap", composite_score=50.0, swing_score=50, evidence_strength_gap=10),
-            _make_issue("i-large-gap-neg", composite_score=50.0, swing_score=50, evidence_strength_gap=-80),
-            _make_issue("i-mid-gap", composite_score=50.0, swing_score=50, evidence_strength_gap=40),
+            _make_issue(
+                "i-small-gap", composite_score=50.0, swing_score=50, evidence_strength_gap=10
+            ),
+            _make_issue(
+                "i-large-gap-neg", composite_score=50.0, swing_score=50, evidence_strength_gap=-80
+            ),
+            _make_issue(
+                "i-mid-gap", composite_score=50.0, swing_score=50, evidence_strength_gap=40
+            ),
         ]
         sorted_issues = self._ranker()._sort_issues(issues)
         # |−80| = 80 > |40| = 40 > |10| = 10
         assert [i.issue_id for i in sorted_issues] == [
-            "i-large-gap-neg", "i-mid-gap", "i-small-gap"
+            "i-large-gap-neg",
+            "i-mid-gap",
+            "i-small-gap",
         ]
 
     def test_id_order_not_used_as_tiebreaker(self):
@@ -638,7 +647,10 @@ class TestOpusStyleNormalization:
                 "issue_id": "issue-002",
                 "dimensions": {
                     "D01_verdict_impact_weight": {"score": 50, "rationale": "派生争点"},
-                    "D02_factual_determination_difficulty": {"score": 40, "rationale": "事实较明确"},
+                    "D02_factual_determination_difficulty": {
+                        "score": 40,
+                        "rationale": "事实较明确",
+                    },
                     "D03_evidence_chain_completeness": {"score": 30, "rationale": "证据薄弱"},
                     "D04_related_issue_dependency": {"score": 1, "rationale": "依赖争点001"},
                     "D05_risk_exposure": {"score": 20, "rationale": "低可信度影响"},

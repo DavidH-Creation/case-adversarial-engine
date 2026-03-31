@@ -50,6 +50,7 @@ PHASE_ORDER: list[str] = [
 
 class PartyInfo(BaseModel):
     """当事人简要信息（仅用于程序设置阶段）。"""
+
     party_id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     role_code: str = Field(..., min_length=1)
@@ -58,6 +59,7 @@ class PartyInfo(BaseModel):
 
 class ProcedureSetupInput(BaseModel):
     """程序设置引擎输入合约。"""
+
     workspace_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     case_type: str = Field(..., min_length=1)
@@ -71,6 +73,7 @@ class ProcedureSetupInput(BaseModel):
 
 class ProcedureState(BaseModel):
     """程序状态对象，matching docs/03_case_object_model.md."""
+
     state_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     phase: str  # ProcedurePhase 枚举值
@@ -87,6 +90,7 @@ class ProcedureState(BaseModel):
 
 class ProcedureConfig(BaseModel):
     """程序配置（记录程序级参数，供下游引用）。"""
+
     case_type: str
     total_phases: int
     evidence_submission_deadline_days: int
@@ -97,6 +101,7 @@ class ProcedureConfig(BaseModel):
 
 class TimelineEvent(BaseModel):
     """时间线事件。"""
+
     event_id: str = Field(..., min_length=1)
     event_type: str = Field(..., min_length=1)
     phase: str
@@ -107,6 +112,7 @@ class TimelineEvent(BaseModel):
 
 class ProcedureSetupResult(BaseModel):
     """程序设置结果。"""
+
     procedure_states: list[ProcedureState]
     procedure_config: ProcedureConfig
     timeline_events: list[TimelineEvent]
@@ -120,6 +126,7 @@ class ProcedureSetupResult(BaseModel):
 
 class LLMProcedureState(BaseModel):
     """LLM 返回的单个程序状态（尚未规范化）。"""
+
     phase: str
     allowed_role_codes: list[str] = Field(default_factory=list)
     readable_access_domains: list[str] = Field(default_factory=list)
@@ -131,6 +138,7 @@ class LLMProcedureState(BaseModel):
 
 class LLMProcedureConfig(BaseModel):
     """LLM 返回的程序配置（尚未规范化）。"""
+
     evidence_submission_deadline_days: int = 15
     evidence_challenge_window_days: int = 10
     max_rounds_per_phase: int = 3
@@ -139,6 +147,7 @@ class LLMProcedureConfig(BaseModel):
 
 class LLMTimelineEvent(BaseModel):
     """LLM 返回的时间线事件（尚未规范化）。"""
+
     event_type: str
     phase: str
     description: str
@@ -148,6 +157,7 @@ class LLMTimelineEvent(BaseModel):
 
 class LLMProcedureOutput(BaseModel):
     """LLM 返回的完整程序设置输出（尚未规范化）。"""
+
     procedure_config: LLMProcedureConfig
     procedure_states: list[LLMProcedureState]
     timeline_events: list[LLMTimelineEvent] = Field(default_factory=list)

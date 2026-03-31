@@ -86,19 +86,11 @@ class CrossExaminationEngine:
         case_id = evidence_index.case_id
 
         # 构建已知 ID 集合
-        known_evidence_ids: set[str] = {
-            ev.evidence_id for ev in evidence_index.evidence
-        }
-        known_issue_ids: set[str] = {
-            iss.issue_id for iss in issue_tree.issues
-        }
+        known_evidence_ids: set[str] = {ev.evidence_id for ev in evidence_index.evidence}
+        known_issue_ids: set[str] = {iss.issue_id for iss in issue_tree.issues}
 
         # 只取 submitted 证据
-        submitted = [
-            ev
-            for ev in evidence_index.evidence
-            if ev.status == EvidenceStatus.submitted
-        ]
+        submitted = [ev for ev in evidence_index.evidence if ev.status == EvidenceStatus.submitted]
 
         if not submitted:
             return (
@@ -107,12 +99,8 @@ class CrossExaminationEngine:
             )
 
         # 按 owner 分组
-        plaintiff_ev = [
-            ev for ev in submitted if ev.owner_party_id == plaintiff_party_id
-        ]
-        defendant_ev = [
-            ev for ev in submitted if ev.owner_party_id == defendant_party_id
-        ]
+        plaintiff_ev = [ev for ev in submitted if ev.owner_party_id == plaintiff_party_id]
+        defendant_ev = [ev for ev in submitted if ev.owner_party_id == defendant_party_id]
 
         all_opinions: list[CrossExaminationOpinion] = []
 
@@ -234,9 +222,7 @@ class CrossExaminationEngine:
                 continue
 
             # 过滤幻觉 issue_ids
-            clean_issue_ids = [
-                iid for iid in item.issue_ids if iid in known_issue_ids
-            ]
+            clean_issue_ids = [iid for iid in item.issue_ids if iid in known_issue_ids]
             if not clean_issue_ids:
                 continue
 
@@ -279,8 +265,7 @@ class CrossExaminationEngine:
 
             # 规则：任一维度 challenged → challenged；全部 accepted → admitted
             has_challenged = any(
-                op.verdict == CrossExaminationVerdict.challenged
-                for op in ev_opinions
+                op.verdict == CrossExaminationVerdict.challenged for op in ev_opinions
             )
 
             if has_challenged:

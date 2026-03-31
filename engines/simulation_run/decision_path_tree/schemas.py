@@ -4,6 +4,7 @@ Engine-specific schemas for decision_path_tree.
 
 共享类型从 engines.shared.models 导入；本模块只保留 LLM 中间模型和引擎 I/O wrapper。
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -25,12 +26,14 @@ from engines.shared.models import (  # noqa: F401
 
 class LLMConfidenceInterval(BaseModel):
     """LLM 输出的置信度区间（中间模型，规则层可能清空）。"""
+
     lower: float = Field(default=0.0)
     upper: float = Field(default=0.0)
 
 
 class LLMDecisionPathItem(BaseModel):
     """LLM 输出的单条裁判路径（中间模型，由规则层进一步校验）。"""
+
     path_id: str = Field(default="")
     trigger_condition: str = Field(default="")
     trigger_issue_ids: list[str] = Field(default_factory=list)
@@ -51,6 +54,7 @@ class LLMDecisionPathItem(BaseModel):
 
 class LLMBlockingConditionItem(BaseModel):
     """LLM 输出的阻断条件（中间模型）。"""
+
     condition_id: str = Field(default="")
     condition_type: str = Field(default="")
     description: str = Field(default="")
@@ -60,6 +64,7 @@ class LLMBlockingConditionItem(BaseModel):
 
 class LLMDecisionPathTreeOutput(BaseModel):
     """LLM 批量输出（中间模型）。"""
+
     paths: list[LLMDecisionPathItem] = Field(default_factory=list)
     blocking_conditions: list[LLMBlockingConditionItem] = Field(default_factory=list)
 
@@ -79,6 +84,7 @@ class DecisionPathTreeInput(BaseModel):
         evidence_index:             完整证据索引（生成器内部会按 v1.2 过渡规则过滤）
         amount_calculation_report:  P0.2 产物（含 verdict_block_active 和 unresolved_conflicts）
     """
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     ranked_issue_tree: IssueTree

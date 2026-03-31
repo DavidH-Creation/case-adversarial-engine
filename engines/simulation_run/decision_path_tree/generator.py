@@ -23,6 +23,7 @@ Decision Path Tree Generator — main class for P0.3.
 - unresolved_conflicts 非空时自动注入 amount_conflict BlockingCondition（条件 ID 不重复）
 - LLM 失败时返回空 DecisionPathTree（case_id/run_id 保留），不抛异常
 """
+
 from __future__ import annotations
 
 import logging
@@ -59,19 +60,41 @@ import re
 _TOOL_SCHEMA: dict = LLMDecisionPathTreeOutput.model_json_schema()
 
 _MAX_PATHS = 6
-_VALID_RESULT_SCOPES = frozenset({
-    "principal", "interest", "penalty", "liability_allocation",
-    "credibility", "attorney_fee", "costs",
-})
+_VALID_RESULT_SCOPES = frozenset(
+    {
+        "principal",
+        "interest",
+        "penalty",
+        "liability_allocation",
+        "credibility",
+        "attorney_fee",
+        "costs",
+    }
+)
 
 logger = logging.getLogger(__name__)
 
 # 标题片段提取：去掉虚词后按中文连续字符切割，保留 ≥4 字片段
-_TITLE_STOP_WORDS = frozenset({
-    "是否", "被告", "原告", "之间", "认定", "的", "与", "及", "其",
-    "身份", "事实", "行为", "效力", "损失", "承担",
-})
-_CJK_RUN = re.compile(r'[\u4e00-\u9fff]{4,}')
+_TITLE_STOP_WORDS = frozenset(
+    {
+        "是否",
+        "被告",
+        "原告",
+        "之间",
+        "认定",
+        "的",
+        "与",
+        "及",
+        "其",
+        "身份",
+        "事实",
+        "行为",
+        "效力",
+        "损失",
+        "承担",
+    }
+)
+_CJK_RUN = re.compile(r"[\u4e00-\u9fff]{4,}")
 _MIN_MATCH_LEN = 4
 
 
@@ -97,15 +120,18 @@ def _segment_matches(segments: list[str], text: str) -> bool:
         # 滑窗：用 ≥4 字子串匹配（覆盖 LLM 改写导致的局部匹配）
         if len(seg) > _MIN_MATCH_LEN:
             for start in range(len(seg) - _MIN_MATCH_LEN + 1):
-                sub = seg[start:start + _MIN_MATCH_LEN]
+                sub = seg[start : start + _MIN_MATCH_LEN]
                 if sub in text:
                     return True
     return False
 
+
 # v1.5: 只有 admitted_for_discussion 状态的证据进入裁判路径树
-_ADMITTED_STATUSES: frozenset[EvidenceStatus] = frozenset({
-    EvidenceStatus.admitted_for_discussion,
-})
+_ADMITTED_STATUSES: frozenset[EvidenceStatus] = frozenset(
+    {
+        EvidenceStatus.admitted_for_discussion,
+    }
+)
 
 
 class DecisionPathTreeGenerator:
@@ -147,7 +173,8 @@ class DecisionPathTreeGenerator:
         """
         # v2: enforce — admitted evidence must have valid state machine status
         admitted_ids = [
-            ev.evidence_id for ev in inp.evidence_index.evidence
+            ev.evidence_id
+            for ev in inp.evidence_index.evidence
             if ev.status == EvidenceStatus.admitted_for_discussion
         ]
         if admitted_ids:
@@ -161,8 +188,7 @@ class DecisionPathTreeGenerator:
 
         # 只取 admitted_for_discussion 状态的证据
         admitted_evidences = [
-            ev for ev in inp.evidence_index.evidence
-            if ev.status in _ADMITTED_STATUSES
+            ev for ev in inp.evidence_index.evidence if ev.status in _ADMITTED_STATUSES
         ]
         admitted_index = EvidenceIndex(
             case_id=inp.evidence_index.case_id,
@@ -170,9 +196,7 @@ class DecisionPathTreeGenerator:
         )
 
         # 构建已知 ID 集合（规则层过滤用）
-        known_issue_ids: set[str] = {
-            issue.issue_id for issue in inp.ranked_issue_tree.issues
-        }
+        known_issue_ids: set[str] = {issue.issue_id for issue in inp.ranked_issue_tree.issues}
         known_evidence_ids: set[str] = {ev.evidence_id for ev in admitted_evidences}
 
         # 调用 LLM（传入过滤后的证据索引）
@@ -236,7 +260,7 @@ class DecisionPathTreeGenerator:
                 model=self._model,
                 tool_name="generate_decision_paths",
                 tool_description="生成裁判路径树，包含 3-6 条裁判路径和阻断条件。"
-                                 "Generate a decision path tree with 3-6 paths and blocking conditions.",
+                "Generate a decision path tree with 3-6 paths and blocking conditions.",
                 tool_schema=_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_retries=self._max_retries,
@@ -265,7 +289,14 @@ class DecisionPathTreeGenerator:
 
             # --- trigger_condition ---
             if "trigger_condition" not in p:
-                for alias in ("trigger", "path_label", "path_name", "condition", "core_logic", "路径条件"):
+                for alias in (
+                    "trigger",
+                    "path_label",
+                    "path_name",
+                    "condition",
+                    "core_logic",
+                    "路径条件",
+                ):
                     if alias in p:
                         p["trigger_condition"] = p.pop(alias)
                         break
@@ -281,9 +312,16 @@ class DecisionPathTreeGenerator:
                 p["possible_outcome"] = "；".join(parts) if parts else str(val)
 
             if "possible_outcome" not in p:
-                for alias in ("outcome", "outcome_detail", "outcome_summary",
-                              "final_ruling", "narrative", "judgment_projection",
-                              "outcome_type", "裁判结果"):
+                for alias in (
+                    "outcome",
+                    "outcome_detail",
+                    "outcome_summary",
+                    "final_ruling",
+                    "narrative",
+                    "judgment_projection",
+                    "outcome_type",
+                    "裁判结果",
+                ):
                     if alias in p:
                         val = p.pop(alias)
                         if isinstance(val, dict):
@@ -305,9 +343,13 @@ class DecisionPathTreeGenerator:
                         break
                 if tier_key:
                     tier_map = {
-                        "高": (0.65, 0.85), "较高": (0.55, 0.75),
-                        "中": (0.35, 0.55), "中等": (0.35, 0.55),
-                        "中低": (0.2, 0.4), "较低": (0.1, 0.3), "低": (0.05, 0.2),
+                        "高": (0.65, 0.85),
+                        "较高": (0.55, 0.75),
+                        "中": (0.35, 0.55),
+                        "中等": (0.35, 0.55),
+                        "中低": (0.2, 0.4),
+                        "较低": (0.1, 0.3),
+                        "低": (0.05, 0.2),
                     }
                     tier = p.pop(tier_key, "")
                     if tier in tier_map:
@@ -317,19 +359,26 @@ class DecisionPathTreeGenerator:
             # --- Extract trigger_issue_ids from direct list fields or chain structures ---
             if "trigger_issue_ids" not in p or not p["trigger_issue_ids"]:
                 # Layer 1: direct list aliases (LLM often puts issue IDs as a flat list)
-                for alias in ("pivotal_issues", "key_issues", "relevant_issues",
-                              "core_issues", "related_issue_ids"):
+                for alias in (
+                    "pivotal_issues",
+                    "key_issues",
+                    "relevant_issues",
+                    "core_issues",
+                    "related_issue_ids",
+                ):
                     if alias in p and isinstance(p[alias], list):
-                        p["trigger_issue_ids"] = [
-                            x for x in p.pop(alias) if isinstance(x, str)
-                        ]
+                        p["trigger_issue_ids"] = [x for x in p.pop(alias) if isinstance(x, str)]
                         break
 
             if "key_evidence_ids" not in p or not p["key_evidence_ids"]:
                 # Layer 1: direct list aliases for evidence
-                for alias in ("key_evidence_relied", "evidence_relied",
-                              "key_evidence", "supporting_evidence",
-                              "relied_evidence"):
+                for alias in (
+                    "key_evidence_relied",
+                    "evidence_relied",
+                    "key_evidence",
+                    "supporting_evidence",
+                    "relied_evidence",
+                ):
                     if alias in p and isinstance(p[alias], list):
                         ids = []
                         for x in p.pop(alias):
@@ -344,9 +393,14 @@ class DecisionPathTreeGenerator:
 
             # --- counter_evidence_ids aliases ---
             if "counter_evidence_ids" not in p or not p["counter_evidence_ids"]:
-                for alias in ("counter_evidence", "contradicting_evidence",
-                              "opposing_evidence", "blocking_evidence",
-                              "rebuttal_evidence", "adverse_evidence"):
+                for alias in (
+                    "counter_evidence",
+                    "contradicting_evidence",
+                    "opposing_evidence",
+                    "blocking_evidence",
+                    "rebuttal_evidence",
+                    "adverse_evidence",
+                ):
                     if alias in p and isinstance(p[alias], list):
                         ids = []
                         for x in p.pop(alias):
@@ -374,8 +428,13 @@ class DecisionPathTreeGenerator:
                     seen: set[str] = set()
                     for node in chain:
                         if isinstance(node, dict):
-                            for iid_key in ("issue_refs", "issue_id", "issue",
-                                            "target_issue", "issues"):
+                            for iid_key in (
+                                "issue_refs",
+                                "issue_id",
+                                "issue",
+                                "target_issue",
+                                "issues",
+                            ):
                                 val = node.get(iid_key)
                                 if isinstance(val, str) and val and val not in seen:
                                     issue_ids.append(val)
@@ -392,8 +451,12 @@ class DecisionPathTreeGenerator:
                     seen_ev: set[str] = set()
                     for node in chain:
                         if isinstance(node, dict):
-                            for eid_key in ("key_evidence", "evidence", "evidence_ids",
-                                            "supporting_evidence"):
+                            for eid_key in (
+                                "key_evidence",
+                                "evidence",
+                                "evidence_ids",
+                                "supporting_evidence",
+                            ):
                                 val = node.get(eid_key)
                                 if isinstance(val, str) and val and val not in seen_ev:
                                     ev_ids.append(val)
@@ -426,8 +489,10 @@ class DecisionPathTreeGenerator:
             # --- v1.5: admissibility_gate aliases ---
             if "admissibility_gate" not in p:
                 for alias in (
-                    "admission_prerequisites", "evidence_prerequisites",
-                    "证据前提", "admissibility_prerequisites",
+                    "admission_prerequisites",
+                    "evidence_prerequisites",
+                    "证据前提",
+                    "admissibility_prerequisites",
                 ):
                     if alias in p:
                         p["admissibility_gate"] = p.pop(alias)
@@ -460,24 +525,41 @@ class DecisionPathTreeGenerator:
 
             # --- v1.6: probability_rationale aliases ---
             if "probability_rationale" not in p:
-                for alias in ("probability_reason", "rationale", "probability_basis",
-                              "概率依据", "probability_explanation"):
+                for alias in (
+                    "probability_reason",
+                    "rationale",
+                    "probability_basis",
+                    "概率依据",
+                    "probability_explanation",
+                ):
                     if alias in p:
                         p["probability_rationale"] = str(p.pop(alias))
                         break
 
             # --- v1.6: party_favored aliases ---
             if "party_favored" not in p:
-                for alias in ("favored_party", "favorable_to", "beneficiary",
-                              "有利方", "party_benefit"):
+                for alias in (
+                    "favored_party",
+                    "favorable_to",
+                    "beneficiary",
+                    "有利方",
+                    "party_benefit",
+                ):
                     if alias in p:
                         p["party_favored"] = str(p.pop(alias))
                         break
 
             # --- Layer 2: pattern-based fallback for possible_outcome ---
             if "possible_outcome" not in p:
-                _OUTCOME_PATS = ("outcome", "result", "ruling", "judgment",
-                                 "narrative", "projection", "verdict")
+                _OUTCOME_PATS = (
+                    "outcome",
+                    "result",
+                    "ruling",
+                    "judgment",
+                    "narrative",
+                    "projection",
+                    "verdict",
+                )
                 for key in list(p.keys()):
                     if any(pat in key.lower() for pat in _OUTCOME_PATS):
                         val = p[key]
@@ -492,8 +574,7 @@ class DecisionPathTreeGenerator:
 
             # --- Layer 2: pattern-based fallback for trigger_condition ---
             if "trigger_condition" not in p:
-                _TRIGGER_PATS = ("trigger", "condition", "prerequisite",
-                                 "premise", "前提")
+                _TRIGGER_PATS = ("trigger", "condition", "prerequisite", "premise", "前提")
                 for key in list(p.keys()):
                     if any(pat in key.lower() for pat in _TRIGGER_PATS):
                         val = p[key]
@@ -506,21 +587,28 @@ class DecisionPathTreeGenerator:
     def _parse_llm_output(self, data: dict) -> LLMDecisionPathTreeOutput | None:
         """规范化 LLM 输出 dict，失败时返回 None。"""
         try:
-            logger.info("JSON 顶层键: %s, paths 数: %s",
-                        list(data.keys()),
-                        len(data.get("paths", data.get("decision_paths", []))))
+            logger.info(
+                "JSON 顶层键: %s, paths 数: %s",
+                list(data.keys()),
+                len(data.get("paths", data.get("decision_paths", []))),
+            )
             data = self._normalize_llm_json(data)
             # 诊断：记录 paths 第一项的键
             paths_raw = data.get("paths", [])
             if paths_raw and isinstance(paths_raw[0], dict):
                 logger.info("Path[0] 键: %s", list(paths_raw[0].keys()))
-                logger.debug("Path[0] path_id=%r, trigger_condition=%r, possible_outcome=%r",
-                             paths_raw[0].get("path_id", ""),
-                             str(paths_raw[0].get("trigger_condition", ""))[:50],
-                             str(paths_raw[0].get("possible_outcome", ""))[:50])
+                logger.debug(
+                    "Path[0] path_id=%r, trigger_condition=%r, possible_outcome=%r",
+                    paths_raw[0].get("path_id", ""),
+                    str(paths_raw[0].get("trigger_condition", ""))[:50],
+                    str(paths_raw[0].get("possible_outcome", ""))[:50],
+                )
             result = LLMDecisionPathTreeOutput.model_validate(data)
-            logger.info("解析成功: %d paths, %d blocking",
-                        len(result.paths), len(result.blocking_conditions))
+            logger.info(
+                "解析成功: %d paths, %d blocking",
+                len(result.paths),
+                len(result.blocking_conditions),
+            )
             return result
         except Exception:  # noqa: BLE001
             logger.warning("Decision tree LLM 解析失败", exc_info=True)
@@ -623,7 +711,9 @@ class DecisionPathTreeGenerator:
             # Layer 3: derive possible_outcome from trigger_condition if empty
             if not item.possible_outcome and item.trigger_condition:
                 item = item.model_copy(update={"possible_outcome": item.trigger_condition})
-                logger.info("Path %s: derived possible_outcome from trigger_condition", item.path_id)
+                logger.info(
+                    "Path %s: derived possible_outcome from trigger_condition", item.path_id
+                )
 
             if not item.path_id or not item.trigger_condition or not item.possible_outcome:
                 logger.warning(
@@ -638,7 +728,8 @@ class DecisionPathTreeGenerator:
             clean_evidence_ids = [e for e in item.key_evidence_ids if e in known_evidence_ids]
             # counter_evidence_ids: filter to known IDs, then remove any overlap with key_evidence_ids
             clean_counter_ids = [
-                e for e in item.counter_evidence_ids
+                e
+                for e in item.counter_evidence_ids
                 if e in known_evidence_ids and e not in set(clean_evidence_ids)
             ]
 
@@ -654,19 +745,29 @@ class DecisionPathTreeGenerator:
                     # 过滤为已知 ID
                     clean_issue_ids = [i for i in clean_issue_ids if i in known_issue_ids]
                     if clean_issue_ids:
-                        logger.info("Path %s: inferred %d trigger_issue_ids from text: %s",
-                                    item.path_id, len(clean_issue_ids), clean_issue_ids[:3])
+                        logger.info(
+                            "Path %s: inferred %d trigger_issue_ids from text: %s",
+                            item.path_id,
+                            len(clean_issue_ids),
+                            clean_issue_ids[:3],
+                        )
 
             # 推断层：从推断出的 issue_ids 通过 canonical linkage 派生 evidence_ids
             if not clean_evidence_ids and clean_issue_ids and issues:
                 clean_evidence_ids = self._derive_evidence_ids_from_issues(
-                    clean_issue_ids, issues, evidence_index,
+                    clean_issue_ids,
+                    issues,
+                    evidence_index,
                 )
                 # 过滤为已知 evidence ID
                 clean_evidence_ids = [e for e in clean_evidence_ids if e in known_evidence_ids]
                 if clean_evidence_ids:
-                    logger.info("Path %s: derived %d key_evidence_ids from issues: %s",
-                                item.path_id, len(clean_evidence_ids), clean_evidence_ids[:3])
+                    logger.info(
+                        "Path %s: derived %d key_evidence_ids from issues: %s",
+                        item.path_id,
+                        len(clean_evidence_ids),
+                        clean_evidence_ids[:3],
+                    )
 
             # 空字段警告
             if not clean_issue_ids:
@@ -717,22 +818,24 @@ class DecisionPathTreeGenerator:
             else:
                 party_favored = "neutral"
 
-            result.append(DecisionPath(
-                path_id=item.path_id,
-                trigger_condition=item.trigger_condition,
-                trigger_issue_ids=clean_issue_ids,
-                key_evidence_ids=clean_evidence_ids,
-                counter_evidence_ids=clean_counter_ids,
-                possible_outcome=item.possible_outcome,
-                confidence_interval=ci,
-                path_notes=item.path_notes,
-                admissibility_gate=clean_gate,
-                result_scope=clean_scope,
-                fallback_path_id=fallback,
-                probability=probability,
-                probability_rationale=item.probability_rationale,
-                party_favored=party_favored,
-            ))
+            result.append(
+                DecisionPath(
+                    path_id=item.path_id,
+                    trigger_condition=item.trigger_condition,
+                    trigger_issue_ids=clean_issue_ids,
+                    key_evidence_ids=clean_evidence_ids,
+                    counter_evidence_ids=clean_counter_ids,
+                    possible_outcome=item.possible_outcome,
+                    confidence_interval=ci,
+                    path_notes=item.path_notes,
+                    admissibility_gate=clean_gate,
+                    result_scope=clean_scope,
+                    fallback_path_id=fallback,
+                    probability=probability,
+                    probability_rationale=item.probability_rationale,
+                    party_favored=party_favored,
+                )
+            )
 
         return result
 
@@ -759,13 +862,15 @@ class DecisionPathTreeGenerator:
             clean_issue_ids = [i for i in item.linked_issue_ids if i in known_issue_ids]
             clean_evidence_ids = [e for e in item.linked_evidence_ids if e in known_evidence_ids]
 
-            result.append(BlockingCondition(
-                condition_id=item.condition_id,
-                condition_type=ctype,
-                description=item.description,
-                linked_issue_ids=clean_issue_ids,
-                linked_evidence_ids=clean_evidence_ids,
-            ))
+            result.append(
+                BlockingCondition(
+                    condition_id=item.condition_id,
+                    condition_type=ctype,
+                    description=item.description,
+                    linked_issue_ids=clean_issue_ids,
+                    linked_evidence_ids=clean_evidence_ids,
+                )
+            )
             seen_condition_ids.add(item.condition_id)
 
         # 自动注入 unresolved_conflicts → amount_conflict（去重：auto_id 固定格式 bc-auto-<conflict_id>）
@@ -775,20 +880,23 @@ class DecisionPathTreeGenerator:
                 continue
 
             ev_ids = [
-                ev_id for ev_id in (
+                ev_id
+                for ev_id in (
                     conflict.source_a_evidence_id,
                     conflict.source_b_evidence_id,
                 )
                 if ev_id and ev_id in known_evidence_ids
             ]
 
-            result.append(BlockingCondition(
-                condition_id=auto_id,
-                condition_type=BlockingConditionType.amount_conflict,
-                description=conflict.conflict_description,
-                linked_issue_ids=[],
-                linked_evidence_ids=ev_ids,
-            ))
+            result.append(
+                BlockingCondition(
+                    condition_id=auto_id,
+                    condition_type=BlockingConditionType.amount_conflict,
+                    description=conflict.conflict_description,
+                    linked_issue_ids=[],
+                    linked_evidence_ids=ev_ids,
+                )
+            )
 
         return result
 

@@ -143,9 +143,7 @@ class ScenarioSimulator:
                         Empty issues, case_id mismatch, or empty change_set (baseline not executed).
         """
         if not issue_tree.issues:
-            raise ValueError(
-                "issue_tree.issues 不能为空 / issue_tree.issues cannot be empty"
-            )
+            raise ValueError("issue_tree.issues 不能为空 / issue_tree.issues cannot be empty")
         if issue_tree.case_id != evidence_index.case_id:
             raise ValueError(
                 f"case_id 不匹配 / case_id mismatch: "
@@ -196,9 +194,7 @@ class ScenarioSimulator:
         try:
             # 构建 prompt / Build prompt
             system_prompt = self._prompt_module.SYSTEM_PROMPT
-            issue_tree_block = self._prompt_module.format_issue_tree_block(
-                issue_tree.model_dump()
-            )
+            issue_tree_block = self._prompt_module.format_issue_tree_block(issue_tree.model_dump())
             evidence_block = self._prompt_module.format_evidence_block(
                 [e.model_dump() for e in evidence_index.evidence]
             )
@@ -235,7 +231,8 @@ class ScenarioSimulator:
                 "场景推演失败，返回 failed ScenarioResult / "
                 "Scenario simulation failed, returning failed ScenarioResult: "
                 "scenario_id=%s, case_id=%s",
-                scenario_input.scenario_id, case_id,
+                scenario_input.scenario_id,
+                case_id,
             )
             failed_scenario = Scenario(
                 scenario_id=scenario_input.scenario_id,
@@ -270,8 +267,8 @@ class ScenarioSimulator:
             model=self._model,
             tool_name="simulate_scenario",
             tool_description="根据变更集推演场景对争点树的影响，生成结构化差异摘要。"
-                             "Simulate the impact of a change set on the issue tree, "
-                             "generating a structured diff summary.",
+            "Simulate the impact of a change set on the issue tree, "
+            "generating a structured diff summary.",
             tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
@@ -304,8 +301,7 @@ class ScenarioSimulator:
         change_set_evidence_ids: list[str] = [
             c.target_object_id
             for c in scenario_input.change_set
-            if c.target_object_type.value == "Evidence"
-            and c.target_object_id in known_evidence_ids
+            if c.target_object_type.value == "Evidence" and c.target_object_id in known_evidence_ids
         ]
 
         # 规范化 diff_entries / Normalize diff entries
@@ -317,24 +313,28 @@ class ScenarioSimulator:
             impact = llm_entry.impact_description.strip() or (
                 f"变更影响了争点 {llm_entry.issue_id} / Change affected issue {llm_entry.issue_id}"
             )
-            diff_entries.append(DiffEntry(
-                issue_id=llm_entry.issue_id,
-                impact_description=impact,
-                direction=_resolve_direction(llm_entry.direction),
-            ))
+            diff_entries.append(
+                DiffEntry(
+                    issue_id=llm_entry.issue_id,
+                    impact_description=impact,
+                    direction=_resolve_direction(llm_entry.direction),
+                )
+            )
 
         # 若 LLM 无有效输出，对所有争点补充保底条目
         # If LLM returns no valid entries, add fallback entries for all issues
         if not diff_entries:
             for issue in issue_tree.issues:
-                diff_entries.append(DiffEntry(
-                    issue_id=issue.issue_id,
-                    impact_description=(
-                        f"变更集对争点「{issue.title}」的影响待分析。"
-                        f"/ Impact of change_set on issue '{issue.title}' requires analysis."
-                    ),
-                    direction=DiffDirection.neutral,
-                ))
+                diff_entries.append(
+                    DiffEntry(
+                        issue_id=issue.issue_id,
+                        impact_description=(
+                            f"变更集对争点「{issue.title}」的影响待分析。"
+                            f"/ Impact of change_set on issue '{issue.title}' requires analysis."
+                        ),
+                        direction=DiffDirection.neutral,
+                    )
+                )
 
         # 计算 affected_issue_ids（去重）/ Compute affected_issue_ids (deduplicated)
         affected_issue_ids: list[str] = list(dict.fromkeys(e.issue_id for e in diff_entries))
@@ -426,26 +426,18 @@ def load_baseline(baseline_dir: str | Path) -> tuple[IssueTree, EvidenceIndex, s
     """
     base = Path(baseline_dir)
     if not base.is_dir():
-        raise FileNotFoundError(
-            f"Baseline 目录不存在 / Baseline directory not found: {base}"
-        )
+        raise FileNotFoundError(f"Baseline 目录不存在 / Baseline directory not found: {base}")
 
     it_path = base / "issue_tree.json"
     if not it_path.exists():
-        raise FileNotFoundError(
-            f"缺少 issue_tree.json / Missing issue_tree.json in {base}"
-        )
+        raise FileNotFoundError(f"缺少 issue_tree.json / Missing issue_tree.json in {base}")
 
     ei_path = base / "evidence_index.json"
     if not ei_path.exists():
-        raise FileNotFoundError(
-            f"缺少 evidence_index.json / Missing evidence_index.json in {base}"
-        )
+        raise FileNotFoundError(f"缺少 evidence_index.json / Missing evidence_index.json in {base}")
 
     issue_tree = IssueTree.model_validate_json(it_path.read_text(encoding="utf-8"))
-    evidence_index = EvidenceIndex.model_validate_json(
-        ei_path.read_text(encoding="utf-8")
-    )
+    evidence_index = EvidenceIndex.model_validate_json(ei_path.read_text(encoding="utf-8"))
 
     # 从 result.json 获取 run_id（如果存在），否则用目录名
     # Get run_id from result.json if available, otherwise use directory name
@@ -485,15 +477,11 @@ def parse_change_set(change_set_path: str | Path) -> tuple[str, list[ChangeItem]
     """
     cs_path = Path(change_set_path)
     if not cs_path.exists():
-        raise FileNotFoundError(
-            f"change_set 文件不存在 / change_set file not found: {cs_path}"
-        )
+        raise FileNotFoundError(f"change_set 文件不存在 / change_set file not found: {cs_path}")
 
     data = yaml.safe_load(cs_path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
-        raise ValueError(
-            "change_set YAML 必须是字典 / change_set YAML must be a mapping"
-        )
+        raise ValueError("change_set YAML 必须是字典 / change_set YAML must be a mapping")
 
     scenario_id = data.get("scenario_id")
     if not scenario_id:
@@ -583,11 +571,7 @@ async def run_whatif(
     out_dir = base / f"scenario_{scenario_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
     diff_path = out_dir / "diff_summary.json"
-    diff_path.write_text(
-        result.model_dump_json(indent=2), encoding="utf-8"
-    )
-    logger.info(
-        "What-if 结果已保存 / What-if result saved: %s", diff_path
-    )
+    diff_path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
+    logger.info("What-if 结果已保存 / What-if result saved: %s", diff_path)
 
     return result

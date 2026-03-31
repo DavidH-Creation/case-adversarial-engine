@@ -25,6 +25,7 @@ from engines.shared.models import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_issue(issue_id="issue-001"):
     return Issue(
         issue_id=issue_id,
@@ -60,31 +61,35 @@ def _cross_exam_response(*evidence_ids):
     opinions = []
     for eid in evidence_ids:
         for d in ("authenticity", "relevance", "legality", "probative_value"):
-            opinions.append({
-                "evidence_id": eid,
-                "issue_ids": ["issue-001"],
-                "dimension": d,
-                "verdict": "accepted",
-                "reasoning": f"{d} ok",
-            })
+            opinions.append(
+                {
+                    "evidence_id": eid,
+                    "issue_ids": ["issue-001"],
+                    "dimension": d,
+                    "verdict": "accepted",
+                    "reasoning": f"{d} ok",
+                }
+            )
     return json.dumps({"opinions": opinions})
 
 
 def _judge_response():
     """构建法官追问 LLM 响应。"""
-    return json.dumps({
-        "questions": [
-            {
-                "question_id": "jq-001",
-                "issue_id": "issue-001",
-                "evidence_ids": ["ev-p1"],
-                "question_text": "请原告说明借款用途",
-                "target_party_id": "party-plaintiff",
-                "question_type": "clarification",
-                "priority": 1,
-            },
-        ]
-    })
+    return json.dumps(
+        {
+            "questions": [
+                {
+                    "question_id": "jq-001",
+                    "issue_id": "issue-001",
+                    "evidence_ids": ["ev-p1"],
+                    "question_text": "请原告说明借款用途",
+                    "target_party_id": "party-plaintiff",
+                    "question_type": "clarification",
+                    "priority": 1,
+                },
+            ]
+        }
+    )
 
 
 def _make_engine_with_mock():
@@ -97,9 +102,9 @@ def _make_engine_with_mock():
     """
     mock_llm = AsyncMock()
     mock_llm.create_message.side_effect = [
-        _cross_exam_response("ev-p1"),      # cross-exam: plaintiff evidence
-        _cross_exam_response("ev-d1"),      # cross-exam: defendant evidence
-        _judge_response(),                   # judge questions
+        _cross_exam_response("ev-p1"),  # cross-exam: plaintiff evidence
+        _cross_exam_response("ev-d1"),  # cross-exam: defendant evidence
+        _judge_response(),  # judge questions
     ]
     engine = PretrialConferenceEngine(
         llm_client=mock_llm,
@@ -212,7 +217,8 @@ class TestEvidenceSubmission:
         result = await engine.run(
             issue_tree=_make_issue_tree(),
             evidence_index=EvidenceIndex(
-                case_id="case-001", evidence=[ev_p, ev_stay],
+                case_id="case-001",
+                evidence=[ev_p, ev_stay],
             ),
             plaintiff_party_id="party-plaintiff",
             defendant_party_id="party-defendant",
@@ -221,10 +227,7 @@ class TestEvidenceSubmission:
         )
 
         # ev-p2 should still be private in final index
-        ev2 = next(
-            e for e in result.final_evidence_index.evidence
-            if e.evidence_id == "ev-p2"
-        )
+        ev2 = next(e for e in result.final_evidence_index.evidence if e.evidence_id == "ev-p2")
         assert ev2.status == EvidenceStatus.private
 
 

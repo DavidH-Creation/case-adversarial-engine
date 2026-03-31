@@ -2,6 +2,7 @@
 PartyAgent 单元测试 — 使用 mock LLMClient，不调用真实 API。
 PartyAgent unit tests — uses mock LLMClient, no real API calls.
 """
+
 from __future__ import annotations
 
 import json
@@ -47,7 +48,8 @@ def _make_llm_response(
         "issue_ids": issue_ids or ["issue-001"],
         "evidence_citations": evidence_citations or ["ev-001"],
         "risk_flags": [],
-        "arguments": arguments or [
+        "arguments": arguments
+        or [
             {
                 "issue_id": "issue-001",
                 "position": "借款关系成立，原告已实际交付借款。",
@@ -174,9 +176,7 @@ class TestPlaintiffAgent:
         assert mock_llm.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_generate_rebuttal_calls_llm(
-        self, config, issue_tree, plaintiff_evidence
-    ):
+    async def test_generate_rebuttal_calls_llm(self, config, issue_tree, plaintiff_evidence):
         from engines.shared.models import AgentOutput, ProcedurePhase, StatementClass
         from datetime import datetime, timezone
 
@@ -257,9 +257,7 @@ class TestPlaintiffAgent:
             )
 
     @pytest.mark.asyncio
-    async def test_rejects_hallucinated_evidence_id(
-        self, config, issue_tree, plaintiff_evidence
-    ):
+    async def test_rejects_hallucinated_evidence_id(self, config, issue_tree, plaintiff_evidence):
         """引用不在可见证据中的 ID 应触发重试，重试耗尽后抛 RuntimeError。"""
         response = _make_llm_response(evidence_citations=["ev-999"])  # ev-999 不存在
         mock_llm = MockLLMClient(response=response)
@@ -277,9 +275,7 @@ class TestPlaintiffAgent:
         assert mock_llm.call_count == config.max_retries
 
     @pytest.mark.asyncio
-    async def test_retry_on_bad_citations_succeeds(
-        self, config, issue_tree, plaintiff_evidence
-    ):
+    async def test_retry_on_bad_citations_succeeds(self, config, issue_tree, plaintiff_evidence):
         """首次返回幻觉证据 ID，第二次返回合法 ID → 成功，共调用 2 次 LLM。"""
         call_count = 0
 
@@ -308,15 +304,18 @@ class TestPlaintiffAgent:
         self, config, issue_tree, plaintiff_evidence
     ):
         """顶层 issue_ids 和 arguments 均为空时应 RuntimeError（禁止 unknown-issue fallback）。"""
-        response = json.dumps({
-            "title": "no issues",
-            "body": "body",
-            "case_id": CASE_ID,
-            "issue_ids": [],
-            "evidence_citations": ["ev-001"],
-            "risk_flags": [],
-            "arguments": [],
-        }, ensure_ascii=False)
+        response = json.dumps(
+            {
+                "title": "no issues",
+                "body": "body",
+                "case_id": CASE_ID,
+                "issue_ids": [],
+                "evidence_citations": ["ev-001"],
+                "risk_flags": [],
+                "arguments": [],
+            },
+            ensure_ascii=False,
+        )
         mock_llm = MockLLMClient(response=response)
         agent = PlaintiffAgent(mock_llm, PLAINTIFF_ID, config)
 
@@ -358,25 +357,26 @@ class TestDefendantAgent:
         assert output.owner_party_id == DEFENDANT_ID
 
     @pytest.mark.asyncio
-    async def test_evidence_citations_from_arguments(
-        self, config, issue_tree, defendant_evidence
-    ):
+    async def test_evidence_citations_from_arguments(self, config, issue_tree, defendant_evidence):
         """当顶层 evidence_citations 为空时，应从 arguments 中聚合。"""
-        response = json.dumps({
-            "title": "被告抗辩",
-            "body": "已偿还全部借款。",
-            "case_id": CASE_ID,
-            "issue_ids": [],          # 空 — 应从 arguments 聚合
-            "evidence_citations": [],  # 空 — 应从 arguments 聚合
-            "risk_flags": [],
-            "arguments": [
-                {
-                    "issue_id": "issue-002",
-                    "position": "已还款3万元，有收条为证。",
-                    "supporting_evidence_ids": ["ev-003"],
-                }
-            ],
-        }, ensure_ascii=False)
+        response = json.dumps(
+            {
+                "title": "被告抗辩",
+                "body": "已偿还全部借款。",
+                "case_id": CASE_ID,
+                "issue_ids": [],  # 空 — 应从 arguments 聚合
+                "evidence_citations": [],  # 空 — 应从 arguments 聚合
+                "risk_flags": [],
+                "arguments": [
+                    {
+                        "issue_id": "issue-002",
+                        "position": "已还款3万元，有收条为证。",
+                        "supporting_evidence_ids": ["ev-003"],
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
 
         mock_llm = MockLLMClient(response=response)
         agent = DefendantAgent(mock_llm, DEFENDANT_ID, config)
@@ -401,22 +401,27 @@ class TestDefendantAgent:
 
 class TestEvidenceManagerAgent:
     def _make_ev_manager_response(self) -> str:
-        return json.dumps({
-            "title": "证据整理摘要",
-            "body": "双方在借款金额上存在冲突。",
-            "case_id": CASE_ID,
-            "issue_ids": ["issue-001"],
-            "evidence_citations": ["ev-001", "ev-003"],
-            "risk_flags": [{"flag_id": "rf-001", "description": "证据冲突", "impact_objects": ["win_rate"]}],
-            "conflicts": [
-                {
-                    "issue_id": "issue-001",
-                    "plaintiff_evidence_ids": ["ev-001", "ev-002"],
-                    "defendant_evidence_ids": ["ev-003"],
-                    "conflict_description": "原告借条与被告收条金额不一致",
-                }
-            ],
-        }, ensure_ascii=False)
+        return json.dumps(
+            {
+                "title": "证据整理摘要",
+                "body": "双方在借款金额上存在冲突。",
+                "case_id": CASE_ID,
+                "issue_ids": ["issue-001"],
+                "evidence_citations": ["ev-001", "ev-003"],
+                "risk_flags": [
+                    {"flag_id": "rf-001", "description": "证据冲突", "impact_objects": ["win_rate"]}
+                ],
+                "conflicts": [
+                    {
+                        "issue_id": "issue-001",
+                        "plaintiff_evidence_ids": ["ev-001", "ev-002"],
+                        "defendant_evidence_ids": ["ev-003"],
+                        "conflict_description": "原告借条与被告收条金额不一致",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
 
     @pytest.mark.asyncio
     async def test_analyze_returns_output_and_conflicts(
@@ -449,14 +454,17 @@ class TestEvidenceManagerAgent:
     async def test_empty_conflicts_when_no_conflict_in_response(
         self, config, issue_tree, plaintiff_evidence, defendant_evidence
     ):
-        response = json.dumps({
-            "title": "无冲突",
-            "body": "无冲突",
-            "issue_ids": ["issue-001"],
-            "evidence_citations": ["ev-001"],
-            "risk_flags": [],
-            "conflicts": [],
-        }, ensure_ascii=False)
+        response = json.dumps(
+            {
+                "title": "无冲突",
+                "body": "无冲突",
+                "issue_ids": ["issue-001"],
+                "evidence_citations": ["ev-001"],
+                "risk_flags": [],
+                "conflicts": [],
+            },
+            ensure_ascii=False,
+        )
 
         evidence_index = EvidenceIndex(
             case_id=CASE_ID,
@@ -481,14 +489,17 @@ class TestEvidenceManagerAgent:
         self, config, issue_tree, plaintiff_evidence, defendant_evidence
     ):
         """EvidenceManager 返回空 evidence_citations 应触发重试后抛 RuntimeError。"""
-        response = json.dumps({
-            "title": "无引用",
-            "body": "body",
-            "issue_ids": ["issue-001"],
-            "evidence_citations": [],
-            "risk_flags": [],
-            "conflicts": [],
-        }, ensure_ascii=False)
+        response = json.dumps(
+            {
+                "title": "无引用",
+                "body": "body",
+                "issue_ids": ["issue-001"],
+                "evidence_citations": [],
+                "risk_flags": [],
+                "conflicts": [],
+            },
+            ensure_ascii=False,
+        )
         evidence_index = EvidenceIndex(
             case_id=CASE_ID,
             evidence=plaintiff_evidence + defendant_evidence,

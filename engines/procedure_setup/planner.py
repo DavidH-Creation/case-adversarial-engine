@@ -45,7 +45,6 @@ from .schemas import (
 _TOOL_SCHEMA: dict = LLMProcedureOutput.model_json_schema()
 
 
-
 # ---------------------------------------------------------------------------
 # 工具函数 / Utility functions
 # ---------------------------------------------------------------------------
@@ -139,7 +138,10 @@ _DEFAULT_PHASE_CONFIG: dict[str, dict] = {
     },
     "evidence_challenge": {
         "allowed_role_codes": [
-            "plaintiff_agent", "defendant_agent", "evidence_manager", "judge_agent"
+            "plaintiff_agent",
+            "defendant_agent",
+            "evidence_manager",
+            "judge_agent",
         ],
         "readable_access_domains": ["shared_common", "admitted_record"],
         "writable_object_types": ["Evidence", "AgentOutput"],
@@ -241,9 +243,7 @@ class ProcedurePlanner:
                         Empty issues or case_id mismatch.
         """
         if not issue_tree.issues:
-            raise ValueError(
-                "issue_tree.issues 不能为空 / issue_tree.issues cannot be empty"
-            )
+            raise ValueError("issue_tree.issues 不能为空 / issue_tree.issues cannot be empty")
         if setup_input.case_id != issue_tree.case_id:
             raise ValueError(
                 f"case_id 不匹配 / case_id mismatch: "
@@ -287,9 +287,7 @@ class ProcedurePlanner:
             parties_block = self._prompt_module.format_parties_block(
                 [p.model_dump() for p in setup_input.parties]
             )
-            issue_tree_block = self._prompt_module.format_issue_tree_block(
-                issue_tree.model_dump()
-            )
+            issue_tree_block = self._prompt_module.format_issue_tree_block(issue_tree.model_dump())
             user_prompt = self._prompt_module.SETUP_PROMPT.format(
                 case_id=case_id,
                 case_type=setup_input.case_type,
@@ -332,8 +330,8 @@ class ProcedurePlanner:
             model=self._model,
             tool_name="setup_procedure",
             tool_description="根据案件类型、当事人和争点树生成结构化程序状态序列、配置和时间线事件。"
-                             "Generate structured procedure states, config, and timeline events "
-                             "from case type, parties, and issue tree.",
+            "Generate structured procedure states, config, and timeline events "
+            "from case type, parties, and issue tree.",
             tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
@@ -372,12 +370,8 @@ class ProcedurePlanner:
             if ls is not None:
                 # 使用 LLM 输出，强制执行访问控制约束
                 # Use LLM output, enforcing access control constraints
-                readable_domains = _sanitize_access_domains(
-                    ls.readable_access_domains, phase
-                )
-                ev_statuses = _sanitize_evidence_statuses(
-                    ls.admissible_evidence_statuses, phase
-                )
+                readable_domains = _sanitize_access_domains(ls.readable_access_domains, phase)
+                ev_statuses = _sanitize_evidence_statuses(ls.admissible_evidence_statuses, phase)
                 state = ProcedureState(
                     state_id=_make_state_id(case_id, phase),
                     case_id=case_id,
@@ -427,9 +421,7 @@ class ProcedurePlanner:
         )
 
         # 构建时间线事件 / Build timeline events
-        timeline_events = self._build_timeline_events(
-            llm_output.timeline_events, case_id
-        )
+        timeline_events = self._build_timeline_events(llm_output.timeline_events, case_id)
 
         # 构建可追溯的输入快照 / Build traceable input snapshot
         input_snapshot = self._build_input_snapshot(issue_tree)
@@ -488,14 +480,16 @@ class ProcedurePlanner:
             count = event_counter.get(phase, 0) + 1
             event_counter[phase] = count
             event_id = f"tevt-{case_id}-{phase}-{count:03d}"
-            events.append(TimelineEvent(
-                event_id=event_id,
-                event_type=llm_ev.event_type,
-                phase=phase,
-                description=llm_ev.description,
-                relative_day=max(0, llm_ev.relative_day),
-                is_mandatory=llm_ev.is_mandatory,
-            ))
+            events.append(
+                TimelineEvent(
+                    event_id=event_id,
+                    event_type=llm_ev.event_type,
+                    phase=phase,
+                    description=llm_ev.description,
+                    relative_day=max(0, llm_ev.relative_day),
+                    is_mandatory=llm_ev.is_mandatory,
+                )
+            )
 
         # 若无有效事件，补充默认时间线 / Add fallback if no valid events
         if not events:
@@ -564,8 +558,10 @@ class ProcedurePlanner:
                 phase=phase,
                 round_index=idx,
                 **{
-                    k: _sanitize_access_domains(v, phase) if k == "readable_access_domains"
-                    else _sanitize_evidence_statuses(v, phase) if k == "admissible_evidence_statuses"
+                    k: _sanitize_access_domains(v, phase)
+                    if k == "readable_access_domains"
+                    else _sanitize_evidence_statuses(v, phase)
+                    if k == "admissible_evidence_statuses"
                     else v
                     for k, v in _DEFAULT_PHASE_CONFIG.get(phase, {}).items()
                 },

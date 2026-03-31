@@ -2,6 +2,7 @@
 P1.8 数据模型单元测试 — ClaimAmendmentSuggestion / ClaimAbandonSuggestion /
 TrialExplanationPriority / ActionRecommendation
 """
+
 from __future__ import annotations
 
 import pytest
@@ -18,6 +19,7 @@ from engines.shared.models import (
 # ---------------------------------------------------------------------------
 # ClaimAmendmentSuggestion
 # ---------------------------------------------------------------------------
+
 
 class TestClaimAmendmentSuggestion:
     def test_valid_minimal(self):
@@ -87,6 +89,7 @@ class TestClaimAmendmentSuggestion:
 # ClaimAbandonSuggestion
 # ---------------------------------------------------------------------------
 
+
 class TestClaimAbandonSuggestion:
     def test_valid_minimal(self):
         obj = ClaimAbandonSuggestion(
@@ -130,6 +133,7 @@ class TestClaimAbandonSuggestion:
 # TrialExplanationPriority
 # ---------------------------------------------------------------------------
 
+
 class TestTrialExplanationPriority:
     def test_valid_minimal(self):
         obj = TrialExplanationPriority(
@@ -159,6 +163,7 @@ class TestTrialExplanationPriority:
 # ---------------------------------------------------------------------------
 # ActionRecommendation
 # ---------------------------------------------------------------------------
+
 
 class TestActionRecommendation:
     def _make_valid(self, **kwargs):

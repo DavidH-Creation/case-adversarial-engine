@@ -27,6 +27,7 @@ Attack Chain Optimizer — main class for P0.4.
   明确要求此过滤，且攻击链生成需考虑当事人掌握的全量证据（含 private 证据用于攻防策略规划）。
   与 P0.3 的 DecisionPathTree 生成（需要 admitted_record 证据限制）不同，攻击链是策略层分析。
 """
+
 from __future__ import annotations
 
 import logging
@@ -100,7 +101,8 @@ class AttackChainOptimizer:
         # Attack chain uses full evidence for strategy, but evidence should have
         # passed through pretrial submission at minimum.
         submitted_ids = [
-            ev.evidence_id for ev in inp.evidence_index.evidence
+            ev.evidence_id
+            for ev in inp.evidence_index.evidence
             if ev.status != EvidenceStatus.private
         ]
         if submitted_ids:
@@ -111,12 +113,8 @@ class AttackChainOptimizer:
             )
 
         # 构建已知 ID 集合（规则层过滤用）
-        known_issue_ids: set[str] = {
-            issue.issue_id for issue in inp.issue_tree.issues
-        }
-        known_evidence_ids: set[str] = {
-            ev.evidence_id for ev in inp.evidence_index.evidence
-        }
+        known_issue_ids: set[str] = {issue.issue_id for issue in inp.issue_tree.issues}
+        known_evidence_ids: set[str] = {ev.evidence_id for ev in inp.evidence_index.evidence}
 
         # 调用 LLM
         llm_output = await self._call_llm(inp)
@@ -147,9 +145,7 @@ class AttackChainOptimizer:
     # 私有方法
     # ------------------------------------------------------------------
 
-    async def _call_llm(
-        self, inp: AttackChainOptimizerInput
-    ) -> LLMAttackChainOutput | None:
+    async def _call_llm(self, inp: AttackChainOptimizerInput) -> LLMAttackChainOutput | None:
         """调用 LLM（结构化输出），失败时返回 None（不抛异常）。"""
         system = self._prompts["system"]
         user = self._prompts["build_user"](
@@ -166,7 +162,7 @@ class AttackChainOptimizer:
                 model=self._model,
                 tool_name="optimize_attack_chain",
                 tool_description="生成恰好 3 个最优攻击节点，形成最强攻击链。"
-                                 "Generate exactly 3 optimal attack nodes forming the strongest attack chain.",
+                "Generate exactly 3 optimal attack nodes forming the strongest attack chain.",
                 tool_schema=_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_retries=self._max_retries,
@@ -245,11 +241,23 @@ class AttackChainOptimizer:
                         node["attack_description"] = label
                 # Layer 2: pattern-based fallback
                 if not node.get("attack_description"):
-                    _DESC_SKIP = {"attack_node_id", "target_issue_id",
-                                  "supporting_evidence_ids", "success_conditions",
-                                  "counter_measure", "adversary_pivot_strategy"}
-                    _DESC_PATS = ("description", "argument", "logic",
-                                  "reasoning", "strategy", "label", "summary")
+                    _DESC_SKIP = {
+                        "attack_node_id",
+                        "target_issue_id",
+                        "supporting_evidence_ids",
+                        "success_conditions",
+                        "counter_measure",
+                        "adversary_pivot_strategy",
+                    }
+                    _DESC_PATS = (
+                        "description",
+                        "argument",
+                        "logic",
+                        "reasoning",
+                        "strategy",
+                        "label",
+                        "summary",
+                    )
                     for key in list(node.keys()):
                         if key in _DESC_SKIP:
                             continue
@@ -261,9 +269,15 @@ class AttackChainOptimizer:
 
             # supporting_evidence_ids: may be nested objects [{evidence_id: ..., usage: ...}]
             if not node.get("supporting_evidence_ids"):
-                for alias in ("evidence_support", "evidence_ids", "evidence",
-                              "evidence_to_leverage", "evidence_to_attack",
-                              "supporting_evidence", "key_evidence"):
+                for alias in (
+                    "evidence_support",
+                    "evidence_ids",
+                    "evidence",
+                    "evidence_to_leverage",
+                    "evidence_to_attack",
+                    "supporting_evidence",
+                    "key_evidence",
+                ):
                     if alias in node:
                         val = node.pop(alias)
                         if isinstance(val, list):
@@ -292,10 +306,15 @@ class AttackChainOptimizer:
 
             # success_conditions aliases
             if not node.get("success_conditions"):
-                for alias in ("expected_outcome", "success_condition",
-                              "expected_impact", "success_criterion",
-                              "winning_condition", "expected_effect",
-                              "success_criteria"):
+                for alias in (
+                    "expected_outcome",
+                    "success_condition",
+                    "expected_impact",
+                    "success_criterion",
+                    "winning_condition",
+                    "expected_effect",
+                    "success_criteria",
+                ):
                     if alias in node:
                         node["success_conditions"] = node.pop(alias)
                         break
@@ -309,8 +328,12 @@ class AttackChainOptimizer:
 
             # adversary_pivot_strategy aliases
             if not node.get("adversary_pivot_strategy"):
-                for alias in ("pivot_strategy", "response_strategy",
-                              "fallback_strategy", "next_strategy"):
+                for alias in (
+                    "pivot_strategy",
+                    "response_strategy",
+                    "fallback_strategy",
+                    "next_strategy",
+                ):
                     if alias in node:
                         node["adversary_pivot_strategy"] = node.pop(alias)
                         break
@@ -322,29 +345,36 @@ class AttackChainOptimizer:
                     val = node.get(src)
                     if isinstance(val, str) and len(val) > 10:
                         node["success_conditions"] = node.pop(src)
-                        logger.info("Synthesized success_conditions from %s for %s",
-                                    src, node.get("attack_node_id", "?"))
+                        logger.info(
+                            "Synthesized success_conditions from %s for %s",
+                            src,
+                            node.get("attack_node_id", "?"),
+                        )
                         break
 
             # adversary_pivot_strategy ← counter_to_opponent_evidence / counter_to_plaintiff_evidence
             if not node.get("adversary_pivot_strategy"):
-                for src in ("counter_to_opponent_evidence",
-                            "counter_to_plaintiff_evidence"):
+                for src in ("counter_to_opponent_evidence", "counter_to_plaintiff_evidence"):
                     val = node.get(src)
                     if isinstance(val, dict):
                         # {evidence_id: reasoning} → flatten to string
-                        parts = [f"{k}: {v}" for k, v in val.items()
-                                 if isinstance(v, str) and v]
+                        parts = [f"{k}: {v}" for k, v in val.items() if isinstance(v, str) and v]
                         if parts:
                             node["adversary_pivot_strategy"] = "；".join(parts)
                             node.pop(src, None)
-                            logger.info("Synthesized adversary_pivot_strategy from %s (dict) for %s",
-                                        src, node.get("attack_node_id", "?"))
+                            logger.info(
+                                "Synthesized adversary_pivot_strategy from %s (dict) for %s",
+                                src,
+                                node.get("attack_node_id", "?"),
+                            )
                             break
                     elif isinstance(val, str) and len(val) > 10:
                         node["adversary_pivot_strategy"] = node.pop(src)
-                        logger.info("Synthesized adversary_pivot_strategy from %s for %s",
-                                    src, node.get("attack_node_id", "?"))
+                        logger.info(
+                            "Synthesized adversary_pivot_strategy from %s for %s",
+                            src,
+                            node.get("attack_node_id", "?"),
+                        )
                         break
 
         return data
@@ -399,30 +429,38 @@ class AttackChainOptimizer:
                 logger.warning("Attack node %s 跳过: empty attack_description", item.attack_node_id)
                 continue
             if not item.target_issue_id or item.target_issue_id not in known_issue_ids:
-                logger.warning("Attack node %s 跳过: target_issue_id=%r not in known(%d)",
-                               item.attack_node_id, item.target_issue_id, len(known_issue_ids))
+                logger.warning(
+                    "Attack node %s 跳过: target_issue_id=%r not in known(%d)",
+                    item.attack_node_id,
+                    item.target_issue_id,
+                    len(known_issue_ids),
+                )
                 continue
 
             # 过滤 supporting_evidence_ids 中的非法 ID
             clean_evidence_ids = [
-                eid for eid in item.supporting_evidence_ids
-                if eid in known_evidence_ids
+                eid for eid in item.supporting_evidence_ids if eid in known_evidence_ids
             ]
             # 零容忍：过滤后为空则丢弃节点
             if not clean_evidence_ids:
-                logger.warning("Attack node %s 跳过: supporting_evidence_ids 过滤后为空（原始: %s）",
-                               item.attack_node_id, item.supporting_evidence_ids[:3])
+                logger.warning(
+                    "Attack node %s 跳过: supporting_evidence_ids 过滤后为空（原始: %s）",
+                    item.attack_node_id,
+                    item.supporting_evidence_ids[:3],
+                )
                 continue
 
-            result.append(AttackNode(
-                attack_node_id=item.attack_node_id,
-                target_issue_id=item.target_issue_id,
-                attack_description=item.attack_description,
-                success_conditions=item.success_conditions,
-                supporting_evidence_ids=clean_evidence_ids,
-                counter_measure=item.counter_measure,
-                adversary_pivot_strategy=item.adversary_pivot_strategy,
-            ))
+            result.append(
+                AttackNode(
+                    attack_node_id=item.attack_node_id,
+                    target_issue_id=item.target_issue_id,
+                    attack_description=item.attack_description,
+                    success_conditions=item.success_conditions,
+                    supporting_evidence_ids=clean_evidence_ids,
+                    counter_measure=item.counter_measure,
+                    adversary_pivot_strategy=item.adversary_pivot_strategy,
+                )
+            )
             seen_node_ids.add(item.attack_node_id)
 
         return result

@@ -1,5 +1,6 @@
 # engines/shared/tests/test_rule_config.py
 """RuleThresholds 单元测试。"""
+
 from decimal import Decimal
 import pytest
 from engines.shared.rule_config import RuleThresholds

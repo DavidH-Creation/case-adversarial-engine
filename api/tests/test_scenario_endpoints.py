@@ -7,6 +7,7 @@ Test scenarios (per spec):
 - Edge case: run_id 不存在 → 404 + 包含 run_id 的明确错误消息
 - Error path: change_set 格式非法（缺必填字段）→ 422 + Pydantic validation error
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -77,6 +78,7 @@ client = TestClient(app)
 # Happy path: POST /api/scenarios/run
 # ---------------------------------------------------------------------------
 
+
 def test_run_scenario_happy_path_returns_200_and_diff():
     """有效 change_set → 200 + ScenarioDiff JSON，diff_entries 非空。"""
     with patch.object(
@@ -106,6 +108,7 @@ def test_run_scenario_happy_path_returns_200_and_diff():
 # ---------------------------------------------------------------------------
 # GET /api/scenarios/{scenario_id}
 # ---------------------------------------------------------------------------
+
 
 def test_get_scenario_found_returns_200():
     """GET /scenarios/{scenario_id} — scenario 存在 → 200 + ScenarioDiff。"""
@@ -138,6 +141,7 @@ def test_get_scenario_not_found_returns_404():
 # Edge case: run_id 不存在 → 404 + 包含 run_id 的明确错误消息
 # ---------------------------------------------------------------------------
 
+
 def test_run_scenario_run_id_not_found_returns_404_with_run_id():
     """run_id 不存在 → 404 + 响应 detail 包含 run_id。"""
     with patch.object(
@@ -158,6 +162,7 @@ def test_run_scenario_run_id_not_found_returns_404_with_run_id():
 # ---------------------------------------------------------------------------
 # Error path: change_set 格式非法 → 422 + Pydantic validation error
 # ---------------------------------------------------------------------------
+
 
 def test_run_scenario_invalid_change_set_missing_required_fields_returns_422():
     """change_set 缺必填字段（target_object_type, field_path）→ 422。"""

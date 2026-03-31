@@ -61,6 +61,7 @@ from engines.shared.workspace_manager import WorkspaceManager
 # 工具函数 / Utilities
 # ---------------------------------------------------------------------------
 
+
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -130,6 +131,7 @@ def _make_issue(iid: str = "issue-001") -> Issue:
 
 def _make_burden(bid: str = "burden-001") -> Burden:
     from engines.shared.models import Burden
+
     return Burden(
         burden_id=bid,
         case_id=CASE_ID,
@@ -605,9 +607,7 @@ def test_save_scenario_result_file_path(tmp_path: Path) -> None:
     mgr = _mgr(tmp_path)
     mgr.init_workspace("civil")
     mgr.save_scenario_result(_make_scenario("scenario-001"))
-    assert (
-        tmp_path / CASE_ID / "artifacts" / "scenarios" / "scenario_scenario-001.json"
-    ).exists()
+    assert (tmp_path / CASE_ID / "artifacts" / "scenarios" / "scenario_scenario-001.json").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -894,6 +894,7 @@ class TestSaveLoadExecutiveSummary:
 
     def _make_summary(self, case_id: str = CASE_ID) -> "ExecutiveSummaryArtifact":
         from engines.shared.models import ExecutiveSummaryArtifact
+
         return ExecutiveSummaryArtifact(
             summary_id="SUM-001",
             case_id=case_id,
@@ -944,6 +945,7 @@ class TestSaveLoadExecutiveSummary:
         path = tmp_path / CASE_ID / "artifacts" / "executive_summary.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         import json as _json
+
         path.write_text(_json.dumps(summary.model_dump()), encoding="utf-8")
         with pytest.raises(ValueError, match="case_id mismatch"):
             mgr.load_executive_summary()

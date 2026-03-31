@@ -56,12 +56,24 @@ from engines.shared.access_control import AccessController
 from engines.shared.checkpoint import CheckpointManager
 from engines.shared.cli_adapter import CLINotFoundError, ClaudeCLIClient, CodexCLIClient
 from engines.shared.model_selector import ModelSelector
-from engines.shared.logging_config import get_token_tracker, reset_token_tracker, setup_pipeline_logging
+from engines.shared.logging_config import (
+    get_token_tracker,
+    reset_token_tracker,
+    setup_pipeline_logging,
+)
 from engines.shared.models import (
-    AgentRole, ClaimType, DisputedAmountAttribution,
-    EvidenceGapItem, EvidenceIndex, EvidenceStatus,
-    LoanTransaction, OutcomeImpactSize, PracticallyObtainable,
-    RawMaterial, RepaymentAttribution, RepaymentTransaction,
+    AgentRole,
+    ClaimType,
+    DisputedAmountAttribution,
+    EvidenceGapItem,
+    EvidenceIndex,
+    EvidenceStatus,
+    LoanTransaction,
+    OutcomeImpactSize,
+    PracticallyObtainable,
+    RawMaterial,
+    RepaymentAttribution,
+    RepaymentTransaction,
     SupplementCost,
 )
 from engines.report_generation.docx_generator import generate_docx_report
@@ -69,16 +81,29 @@ from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_EMOJ
 from engines.report_generation.mediation_range import compute_mediation_range
 
 # Post-debate modules
-from engines.case_structuring.amount_calculator import AmountCalculator, AmountCalculatorInput, AmountClaimDescriptor
+from engines.case_structuring.amount_calculator import (
+    AmountCalculator,
+    AmountCalculatorInput,
+    AmountClaimDescriptor,
+)
 from engines.simulation_run.issue_impact_ranker.ranker import IssueImpactRanker
 from engines.simulation_run.issue_impact_ranker.schemas import IssueImpactRankerInput
-from engines.simulation_run.decision_path_tree import DecisionPathTreeGenerator, DecisionPathTreeInput
-from engines.simulation_run.attack_chain_optimizer import AttackChainOptimizer, AttackChainOptimizerInput
+from engines.simulation_run.decision_path_tree import (
+    DecisionPathTreeGenerator,
+    DecisionPathTreeInput,
+)
+from engines.simulation_run.attack_chain_optimizer import (
+    AttackChainOptimizer,
+    AttackChainOptimizerInput,
+)
 from engines.simulation_run.action_recommender import ActionRecommender
 from engines.simulation_run.action_recommender.schemas import ActionRecommenderInput
 from engines.report_generation.executive_summarizer import ExecutiveSummarizer
 from engines.report_generation.executive_summarizer.schemas import ExecutiveSummarizerInput
-from engines.case_structuring.admissibility_evaluator import AdmissibilityEvaluator, AdmissibilityEvaluatorInput
+from engines.case_structuring.admissibility_evaluator import (
+    AdmissibilityEvaluator,
+    AdmissibilityEvaluatorInput,
+)
 from engines.simulation_run.issue_dependency_graph import IssueDependencyGraphGenerator
 from engines.simulation_run.issue_dependency_graph.schemas import IssueDependencyGraphInput
 from engines.simulation_run.hearing_order import HearingOrderGenerator, HearingOrderInput
@@ -118,7 +143,16 @@ STEP_DOCX = "step_5_docx"
 STEP_DOCUMENTS = "step_5_5_documents"
 
 # Ordered list for resume logic
-STEP_ORDER = [STEP_EVIDENCE, STEP_ISSUES, STEP_DEBATE, STEP_PRETRIAL, STEP_POST_DEBATE, STEP_OUTPUTS, STEP_DOCX, STEP_DOCUMENTS]
+STEP_ORDER = [
+    STEP_EVIDENCE,
+    STEP_ISSUES,
+    STEP_DEBATE,
+    STEP_PRETRIAL,
+    STEP_POST_DEBATE,
+    STEP_OUTPUTS,
+    STEP_DOCX,
+    STEP_DOCUMENTS,
+]
 
 
 def _should_skip(step: str, last_completed: str | None) -> bool:
@@ -136,6 +170,7 @@ def _should_skip(step: str, last_completed: str | None) -> bool:
 # ---------------------------------------------------------------------------
 # YAML -> typed objects
 # ---------------------------------------------------------------------------
+
 
 def _load_case(path: Path) -> dict[str, Any]:
     """Load and validate a YAML case file."""
@@ -163,22 +198,18 @@ def _build_materials(raw_list: list[dict]) -> list[RawMaterial]:
 
 def _build_claims(claim_list: list[dict], case_id: str, plaintiff_id: str) -> list[dict]:
     """Add case_id and owner_party_id to claim dicts."""
-    return [
-        {**c, "case_id": case_id, "owner_party_id": plaintiff_id}
-        for c in claim_list
-    ]
+    return [{**c, "case_id": case_id, "owner_party_id": plaintiff_id} for c in claim_list]
 
 
 def _build_defenses(defense_list: list[dict], case_id: str, defendant_id: str) -> list[dict]:
     """Add case_id and owner_party_id to defense dicts."""
-    return [
-        {**d, "case_id": case_id, "owner_party_id": defendant_id}
-        for d in defense_list
-    ]
+    return [{**d, "case_id": case_id, "owner_party_id": defendant_id} for d in defense_list]
 
 
 def _build_financials(
-    fin: dict[str, Any], case_id: str, run_id: str,
+    fin: dict[str, Any],
+    case_id: str,
+    run_id: str,
 ) -> AmountCalculatorInput | None:
     """Convert YAML financials section to AmountCalculatorInput. Returns None if no financials."""
     if not fin:
@@ -186,13 +217,15 @@ def _build_financials(
 
     loans = []
     for tx in fin.get("loans", []):
-        loans.append(LoanTransaction(
-            tx_id=tx["tx_id"],
-            date=tx["date"],
-            amount=Decimal(str(tx["amount"])),
-            evidence_id=tx["evidence_id"],
-            principal_base_contribution=tx.get("principal_base_contribution", True),
-        ))
+        loans.append(
+            LoanTransaction(
+                tx_id=tx["tx_id"],
+                date=tx["date"],
+                amount=Decimal(str(tx["amount"])),
+                evidence_id=tx["evidence_id"],
+                principal_base_contribution=tx.get("principal_base_contribution", True),
+            )
+        )
 
     if not loans:
         return None  # AmountCalculator requires at least 1 loan
@@ -200,33 +233,39 @@ def _build_financials(
     repayments = []
     for tx in fin.get("repayments", []):
         attr = tx.get("attributed_to")
-        repayments.append(RepaymentTransaction(
-            tx_id=tx["tx_id"],
-            date=tx["date"],
-            amount=Decimal(str(tx["amount"])),
-            evidence_id=tx["evidence_id"],
-            attributed_to=RepaymentAttribution(attr) if attr else None,
-            attribution_basis=tx.get("attribution_basis", ""),
-        ))
+        repayments.append(
+            RepaymentTransaction(
+                tx_id=tx["tx_id"],
+                date=tx["date"],
+                amount=Decimal(str(tx["amount"])),
+                evidence_id=tx["evidence_id"],
+                attributed_to=RepaymentAttribution(attr) if attr else None,
+                attribution_basis=tx.get("attribution_basis", ""),
+            )
+        )
 
     disputed = []
     for d in fin.get("disputed", []):
-        disputed.append(DisputedAmountAttribution(
-            item_id=d["item_id"],
-            amount=Decimal(str(d["amount"])),
-            dispute_description=d["dispute_description"],
-            plaintiff_attribution=d.get("plaintiff_attribution", ""),
-            defendant_attribution=d.get("defendant_attribution", ""),
-        ))
+        disputed.append(
+            DisputedAmountAttribution(
+                item_id=d["item_id"],
+                amount=Decimal(str(d["amount"])),
+                dispute_description=d["dispute_description"],
+                plaintiff_attribution=d.get("plaintiff_attribution", ""),
+                defendant_attribution=d.get("defendant_attribution", ""),
+            )
+        )
 
     claim_entries = []
     for ce in fin.get("claim_entries", []):
-        claim_entries.append(AmountClaimDescriptor(
-            claim_id=ce["claim_id"],
-            claim_type=ClaimType(ce["claim_type"]),
-            claimed_amount=Decimal(str(ce["claimed_amount"])),
-            evidence_ids=ce.get("evidence_ids", []),
-        ))
+        claim_entries.append(
+            AmountClaimDescriptor(
+                claim_id=ce["claim_id"],
+                claim_type=ClaimType(ce["claim_type"]),
+                claimed_amount=Decimal(str(ce["claimed_amount"])),
+                evidence_ids=ce.get("evidence_ids", []),
+            )
+        )
 
     if not claim_entries:
         return None
@@ -246,6 +285,7 @@ def _build_financials(
 # ---------------------------------------------------------------------------
 # Output helpers
 # ---------------------------------------------------------------------------
+
 
 def _output_dir(override: Path | None = None) -> Path:
     if override is not None:
@@ -331,9 +371,15 @@ def _write_md(
     lines += ["## Issues", ""]
     display_issues = ranked_issues.issues if ranked_issues else issue_tree.issues
     for iss in display_issues:
-        impact_tag = f" **{iss.outcome_impact.value}**" if getattr(iss, "outcome_impact", None) else ""
-        action_tag = f" [{iss.recommended_action.value}]" if getattr(iss, "recommended_action", None) else ""
-        lines.append(f"- **[{iss.issue_id}]** {iss.title} `{iss.issue_type.value}`{impact_tag}{action_tag}")
+        impact_tag = (
+            f" **{iss.outcome_impact.value}**" if getattr(iss, "outcome_impact", None) else ""
+        )
+        action_tag = (
+            f" [{iss.recommended_action.value}]" if getattr(iss, "recommended_action", None) else ""
+        )
+        lines.append(
+            f"- **[{iss.issue_id}]** {iss.title} `{iss.issue_type.value}`{impact_tag}{action_tag}"
+        )
     lines += [""]
 
     # Three-round debate
@@ -343,10 +389,13 @@ def _write_md(
         lines.append("")
         for o in rs.outputs:
             lines += [
-                f"**{o.agent_role_code}** \u2014 {o.title}", "",
-                o.body, "",
+                f"**{o.agent_role_code}** \u2014 {o.title}",
+                "",
+                o.body,
+                "",
                 f"*Evidence cited*: {', '.join(o.evidence_citations)}",
-                "---", "",
+                "---",
+                "",
             ]
 
     # Evidence conflicts
@@ -382,9 +431,13 @@ def _write_md(
         for iss in ranked_issues.issues:
             impact = iss.outcome_impact.value if iss.outcome_impact else "-"
             attack = iss.opponent_attack_strength.value if iss.opponent_attack_strength else "-"
-            ev_str = iss.proponent_evidence_strength.value if iss.proponent_evidence_strength else "-"
+            ev_str = (
+                iss.proponent_evidence_strength.value if iss.proponent_evidence_strength else "-"
+            )
             action = iss.recommended_action.value if iss.recommended_action else "-"
-            lines.append(f"| {iss.issue_id} | {iss.title[:25]} | {impact} | {attack} | {ev_str} | {action} |")
+            lines.append(
+                f"| {iss.issue_id} | {iss.title[:25]} | {impact} | {attack} | {ev_str} | {action} |"
+            )
         lines.append("")
 
     # Risk heatmap
@@ -442,7 +495,9 @@ def _write_md(
     # Attack chain
     if attack_chain:
         lines += ["## Adversary Optimal Attack Chain", ""]
-        lines.append(f"**Attacker**: {attack_chain.owner_party_id}  |  **Order**: {' -> '.join(attack_chain.recommended_order)}")
+        lines.append(
+            f"**Attacker**: {attack_chain.owner_party_id}  |  **Order**: {' -> '.join(attack_chain.recommended_order)}"
+        )
         lines.append("")
         for node in attack_chain.top_attacks:
             lines.append(f"### {node.attack_node_id}")
@@ -478,7 +533,9 @@ def _write_md(
         lines.append("### 对方最优攻击路径预警")
         lines.append("")
         for node in attack_chain.top_attacks:
-            lines.append(f"- **{node.attack_node_id}** → {node.target_issue_id}: {node.attack_description}")
+            lines.append(
+                f"- **{node.attack_node_id}** → {node.target_issue_id}: {node.attack_description}"
+            )
             if node.success_conditions:
                 lines.append(f"  - 成功条件: {node.success_conditions}")
             if node.counter_measure:
@@ -498,7 +555,9 @@ def _write_md(
         if action_rec.recommended_claim_amendments:
             lines.append("### Claim Amendments")
             for am in action_rec.recommended_claim_amendments:
-                lines.append(f"- **{am.suggestion_id}** ({am.original_claim_id}): {am.amendment_description}")
+                lines.append(
+                    f"- **{am.suggestion_id}** ({am.original_claim_id}): {am.amendment_description}"
+                )
             lines.append("")
         if action_rec.evidence_supplement_priorities:
             lines.append("### Evidence Supplement Priorities")
@@ -517,16 +576,22 @@ def _write_md(
         lines.append(f"**Top 5 decisive issues**: {', '.join(exec_summary.top5_decisive_issues)}")
         lines.append("")
         if isinstance(exec_summary.top3_immediate_actions, list):
-            lines.append(f"**Top 3 immediate actions**: {', '.join(exec_summary.top3_immediate_actions)}")
+            lines.append(
+                f"**Top 3 immediate actions**: {', '.join(exec_summary.top3_immediate_actions)}"
+            )
         else:
             lines.append(f"**Top 3 immediate actions**: {exec_summary.top3_immediate_actions}")
         lines.append("")
-        lines.append(f"**Top 3 adversary attacks**: {', '.join(exec_summary.top3_adversary_optimal_attacks)}")
+        lines.append(
+            f"**Top 3 adversary attacks**: {', '.join(exec_summary.top3_adversary_optimal_attacks)}"
+        )
         lines.append("")
         lines.append(f"**Most stable claim**: {exec_summary.current_most_stable_claim}")
         lines.append("")
         if isinstance(exec_summary.critical_evidence_gaps, list):
-            lines.append(f"**Critical evidence gaps**: {', '.join(exec_summary.critical_evidence_gaps) if exec_summary.critical_evidence_gaps else 'None'}")
+            lines.append(
+                f"**Critical evidence gaps**: {', '.join(exec_summary.critical_evidence_gaps) if exec_summary.critical_evidence_gaps else 'None'}"
+            )
         else:
             lines.append(f"**Critical evidence gaps**: {exec_summary.critical_evidence_gaps}")
         lines.append("")
@@ -541,6 +606,7 @@ def _write_md(
 # ---------------------------------------------------------------------------
 # Three-round orchestration
 # ---------------------------------------------------------------------------
+
 
 async def _run_rounds(
     issue_tree,
@@ -591,7 +657,13 @@ async def _run_rounds(
     print("\n[R2] Evidence review...")
     sid2 = f"state-r2-{uuid.uuid4().hex[:8]}"
     ev_out, new_conf = await ev_mgr.analyze(
-        issue_tree, evidence_index, [p1], [d1], run_id, sid2, 2,
+        issue_tree,
+        evidence_index,
+        [p1],
+        [d1],
+        run_id,
+        sid2,
+        2,
     )
     ev_out = ev_out.model_copy(update={"case_id": case_id})
     conflicts += new_conf
@@ -615,13 +687,21 @@ async def _run_rounds(
     d_best = RoundEngine._extract_best_arguments(d1, d3)
     unresolved = RoundEngine._compute_unresolved_issues(issue_tree, conflicts)
     missing = RoundEngine._build_missing_evidence_report(
-        issue_tree, p_ev, d_ev, plaintiff_id, defendant_id,
+        issue_tree,
+        p_ev,
+        d_ev,
+        plaintiff_id,
+        defendant_id,
     )
 
     result = AdversarialResult(
-        case_id=case_id, run_id=run_id, rounds=rounds,
-        plaintiff_best_arguments=p_best, defendant_best_defenses=d_best,
-        unresolved_issues=unresolved, evidence_conflicts=conflicts,
+        case_id=case_id,
+        run_id=run_id,
+        rounds=rounds,
+        plaintiff_best_arguments=p_best,
+        defendant_best_defenses=d_best,
+        unresolved_issues=unresolved,
+        evidence_conflicts=conflicts,
         missing_evidence_report=missing,
     )
 
@@ -655,24 +735,27 @@ def _derive_evidence_gaps(
     for idx, focus in enumerate(conference_result.cross_examination_result.focus_list):
         if focus.is_resolved:
             continue
-        gaps.append(EvidenceGapItem(
-            gap_id=f"xexam-{focus.evidence_id}-{focus.issue_id}",
-            case_id=case_id,
-            run_id=run_id,
-            related_issue_id=focus.issue_id,
-            gap_description=f"[质证争议] {focus.dispute_summary}",
-            supplement_cost=SupplementCost.medium,
-            outcome_impact_size=OutcomeImpactSize.moderate,
-            practically_obtainable=PracticallyObtainable.uncertain,
-            alternative_evidence_paths=[],
-            roi_rank=idx + 1,
-        ))
+        gaps.append(
+            EvidenceGapItem(
+                gap_id=f"xexam-{focus.evidence_id}-{focus.issue_id}",
+                case_id=case_id,
+                run_id=run_id,
+                related_issue_id=focus.issue_id,
+                gap_description=f"[质证争议] {focus.dispute_summary}",
+                supplement_cost=SupplementCost.medium,
+                outcome_impact_size=OutcomeImpactSize.moderate,
+                practically_obtainable=PracticallyObtainable.uncertain,
+                alternative_evidence_paths=[],
+                roi_rank=idx + 1,
+            )
+        )
     return gaps
 
 
 # ---------------------------------------------------------------------------
 # Post-debate analysis pipeline
 # ---------------------------------------------------------------------------
+
 
 async def _run_post_debate(
     result: AdversarialResult,
@@ -711,16 +794,21 @@ async def _run_post_debate(
     if issue_tree:
         print("  - Issue impact ranking...")
         ranker = IssueImpactRanker(
-            llm_client=llm_client, model=selector.select("issue_impact_ranker"),
-            temperature=0.0, max_retries=2,
+            llm_client=llm_client,
+            model=selector.select("issue_impact_ranker"),
+            temperature=0.0,
+            max_retries=2,
         )
-        ranking_result = await ranker.rank(IssueImpactRankerInput(
-            case_id=case_id, run_id=run_id,
-            issue_tree=issue_tree,
-            evidence_index=ev_index,
-            amount_calculation_report=amount_report,
-            proponent_party_id=p_id,
-        ))
+        ranking_result = await ranker.rank(
+            IssueImpactRankerInput(
+                case_id=case_id,
+                run_id=run_id,
+                issue_tree=issue_tree,
+                evidence_index=ev_index,
+                amount_calculation_report=amount_report,
+                proponent_party_id=p_id,
+            )
+        )
         ranked_tree = ranking_result.ranked_issue_tree
         artifacts["ranked_issues"] = ranked_tree
         meta = ranking_result.evaluation_metadata
@@ -728,7 +816,9 @@ async def _run_post_debate(
         n_total = meta.get("total_count", "?")
         failed = meta.get("failed", False)
         uneval = ranking_result.unevaluated_issue_ids
-        print(f"    {'✗ LLM FAILED' if failed else '✓'} Ranked issues: {len(ranked_tree.issues)} (evaluated: {n_eval}/{n_total}, unevaluated: {len(uneval)})")
+        print(
+            f"    {'✗ LLM FAILED' if failed else '✓'} Ranked issues: {len(ranked_tree.issues)} (evaluated: {n_eval}/{n_total}, unevaluated: {len(uneval)})"
+        )
         if uneval:
             print(f"    ⚠ Unevaluated: {uneval[:5]}{'...' if len(uneval) > 5 else ''}")
         for iss in ranked_tree.issues:
@@ -744,40 +834,62 @@ async def _run_post_debate(
     if issue_tree:
         print("  - Decision path tree + attack chain...")
         dpt_gen = DecisionPathTreeGenerator(
-            llm_client=llm_client, model=selector.select("decision_path_tree"),
-            temperature=0.0, max_retries=2,
+            llm_client=llm_client,
+            model=selector.select("decision_path_tree"),
+            temperature=0.0,
+            max_retries=2,
         )
         aco = AttackChainOptimizer(
-            llm_client=llm_client, model=selector.select("attack_chain_optimizer"),
-            temperature=0.0, max_retries=2,
+            llm_client=llm_client,
+            model=selector.select("attack_chain_optimizer"),
+            temperature=0.0,
+            max_retries=2,
         )
         decision_tree, attack_chain = await asyncio.gather(
-            dpt_gen.generate(DecisionPathTreeInput(
-                case_id=case_id, run_id=run_id,
-                ranked_issue_tree=ranked_tree,
-                evidence_index=ev_index,
-                amount_calculation_report=amount_report,
-            )),
-            aco.optimize(AttackChainOptimizerInput(
-                case_id=case_id, run_id=run_id,
-                owner_party_id=d_id,
-                issue_tree=ranked_tree,
-                evidence_index=ev_index,
-            )),
+            dpt_gen.generate(
+                DecisionPathTreeInput(
+                    case_id=case_id,
+                    run_id=run_id,
+                    ranked_issue_tree=ranked_tree,
+                    evidence_index=ev_index,
+                    amount_calculation_report=amount_report,
+                )
+            ),
+            aco.optimize(
+                AttackChainOptimizerInput(
+                    case_id=case_id,
+                    run_id=run_id,
+                    owner_party_id=d_id,
+                    issue_tree=ranked_tree,
+                    evidence_index=ev_index,
+                )
+            ),
         )
         artifacts["decision_tree"] = decision_tree
         artifacts["attack_chain"] = attack_chain
         dt_fail = "failed" in decision_tree.tree_id
         ac_fail = "failed" in attack_chain.chain_id
-        print(f"    {'✗ LLM FAILED' if dt_fail else '✓'} Decision paths: {len(decision_tree.paths)} (id={decision_tree.tree_id})")
-        print(f"    {'✗ LLM FAILED' if ac_fail else '✓'} Attack nodes: {len(attack_chain.top_attacks)} (id={attack_chain.chain_id})")
+        print(
+            f"    {'✗ LLM FAILED' if dt_fail else '✓'} Decision paths: {len(decision_tree.paths)} (id={decision_tree.tree_id})"
+        )
+        print(
+            f"    {'✗ LLM FAILED' if ac_fail else '✓'} Attack nodes: {len(attack_chain.top_attacks)} (id={attack_chain.chain_id})"
+        )
         if not dt_fail and len(decision_tree.paths) == 0:
             # LLM succeeded but rules layer filtered everything
-            admitted = sum(1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion)
-            print(f"    ⚠ Decision paths empty despite LLM success — admitted evidence: {admitted}/{len(ev_index.evidence)}")
+            admitted = sum(
+                1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion
+            )
+            print(
+                f"    ⚠ Decision paths empty despite LLM success — admitted evidence: {admitted}/{len(ev_index.evidence)}"
+            )
         if not ac_fail and len(attack_chain.top_attacks) == 0:
-            admitted = sum(1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion)
-            print(f"    ⚠ Attack chain empty despite LLM success — admitted evidence: {admitted}/{len(ev_index.evidence)}")
+            admitted = sum(
+                1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion
+            )
+            print(
+                f"    ⚠ Attack chain empty despite LLM success — admitted evidence: {admitted}/{len(ev_index.evidence)}"
+            )
     else:
         print("  - Skipping DecisionPathTree + AttackChainOptimizer: issue_tree not available")
         decision_tree = None
@@ -787,16 +899,20 @@ async def _run_post_debate(
     if attack_chain:
         print("  - Action recommendations...")
         action_rec = await ActionRecommender(
-            llm_client=llm_client, model=selector.select("action_recommender"),
-        ).recommend(ActionRecommenderInput(
-            case_id=case_id, run_id=run_id,
-            issue_list=ranked_tree.issues,
-            evidence_gap_list=evidence_gaps,
-            amount_calculation_report=amount_report,
-            proponent_party_id=p_id,
-            evidence_index=ev_index,
-            decision_path_tree=decision_tree,
-        ))
+            llm_client=llm_client,
+            model=selector.select("action_recommender"),
+        ).recommend(
+            ActionRecommenderInput(
+                case_id=case_id,
+                run_id=run_id,
+                issue_list=ranked_tree.issues,
+                evidence_gap_list=evidence_gaps,
+                amount_calculation_report=amount_report,
+                proponent_party_id=p_id,
+                evidence_index=ev_index,
+                decision_path_tree=decision_tree,
+            )
+        )
         artifacts["action_rec"] = action_rec
         print(f"    \u2713 Amendments: {len(action_rec.recommended_claim_amendments)}")
         print(f"    \u2713 Abandon: {len(action_rec.claims_to_abandon)}")
@@ -810,66 +926,94 @@ async def _run_post_debate(
 
     # P2: AdmissibilityEvaluator (async, LLM)
     print("  - Admissibility evaluation...")
-    adm_evaluator = AdmissibilityEvaluator(llm_client=llm_client, model=selector.select("admissibility_evaluator"), temperature=0.0, max_retries=2)
-    admissibility_result = await adm_evaluator.evaluate(AdmissibilityEvaluatorInput(
-        case_id=case_id, run_id=run_id,
-        evidence_index=ev_index,
-    ))
+    adm_evaluator = AdmissibilityEvaluator(
+        llm_client=llm_client,
+        model=selector.select("admissibility_evaluator"),
+        temperature=0.0,
+        max_retries=2,
+    )
+    admissibility_result = await adm_evaluator.evaluate(
+        AdmissibilityEvaluatorInput(
+            case_id=case_id,
+            run_id=run_id,
+            evidence_index=ev_index,
+        )
+    )
     artifacts["admissibility_result"] = admissibility_result
     scored = sum(1 for ev in admissibility_result.evidence if ev.admissibility_score is not None)
-    print(f"    \u2713 Admissibility scored: {scored}/{len(admissibility_result.evidence)} evidence items")
+    print(
+        f"    \u2713 Admissibility scored: {scored}/{len(admissibility_result.evidence)} evidence items"
+    )
 
     # P2: IssueDependencyGraph (sync, rule-based)
     defense_chain_result = None
     if ranked_tree:
         print("  - Issue dependency graph...")
-        dep_graph = IssueDependencyGraphGenerator().build(IssueDependencyGraphInput(
-            case_id=case_id,
-            issues=ranked_tree.issues,
-        ))
+        dep_graph = IssueDependencyGraphGenerator().build(
+            IssueDependencyGraphInput(
+                case_id=case_id,
+                issues=ranked_tree.issues,
+            )
+        )
         artifacts["dep_graph"] = dep_graph
-        print(f"    \u2713 Nodes: {len(dep_graph.nodes)}  Edges: {len(dep_graph.edges)}  Cycles: {dep_graph.has_cycles}")
+        print(
+            f"    \u2713 Nodes: {len(dep_graph.nodes)}  Edges: {len(dep_graph.edges)}  Cycles: {dep_graph.has_cycles}"
+        )
 
         # P2: HearingOrderGenerator (sync, rule-based) — depends on dep_graph
         print("  - Hearing order...")
-        hearing_order = HearingOrderGenerator().generate(HearingOrderInput(
-            case_id=case_id,
-            dependency_graph=dep_graph,
-            issues=ranked_tree.issues,
-        ))
+        hearing_order = HearingOrderGenerator().generate(
+            HearingOrderInput(
+                case_id=case_id,
+                dependency_graph=dep_graph,
+                issues=ranked_tree.issues,
+            )
+        )
         artifacts["hearing_order"] = hearing_order
-        print(f"    \u2713 Phases: {len(hearing_order.phases)}  Total duration: {hearing_order.total_estimated_duration_minutes} min")
+        print(
+            f"    \u2713 Phases: {len(hearing_order.phases)}  Total duration: {hearing_order.total_estimated_duration_minutes} min"
+        )
 
         # P2: DefenseChainOptimizer (async, LLM)
         print("  - Defense chain optimization...")
         defense_chain_result = await DefenseChainOptimizer(
-            llm_client=llm_client, model=selector.select("defense_chain"), max_retries=2,
-        ).optimize(DefenseChainInput(
-            case_id=case_id, run_id=run_id,
-            issues=ranked_tree.issues,
-            evidence_index=ev_index,
-            plaintiff_party_id=p_id,
-        ))
+            llm_client=llm_client,
+            model=selector.select("defense_chain"),
+            max_retries=2,
+        ).optimize(
+            DefenseChainInput(
+                case_id=case_id,
+                run_id=run_id,
+                issues=ranked_tree.issues,
+                evidence_index=ev_index,
+                plaintiff_party_id=p_id,
+            )
+        )
         artifacts["defense_chain"] = defense_chain_result
         chain = defense_chain_result.chain
         print(f"    \u2713 Defense points: {len(chain.defense_points)}")
     else:
-        print("  - Skipping dependency graph / hearing order / defense chain: ranked_tree not available")
+        print(
+            "  - Skipping dependency graph / hearing order / defense chain: ranked_tree not available"
+        )
 
     # P2.12: ExecutiveSummarizer (sync, rule-based)
     # Moved after defense_chain so all upstream artifacts are available.
     if attack_chain:
         print("  - Executive summary...")
-        exec_summary = ExecutiveSummarizer().summarize(ExecutiveSummarizerInput(
-            case_id=case_id, run_id=run_id,
-            issue_list=ranked_tree.issues,
-            adversary_attack_chain=attack_chain,
-            amount_calculation_report=amount_report,
-            action_recommendation=action_rec,
-            evidence_gap_items=evidence_gaps or None,
-            decision_path_tree=decision_tree,
-            defense_chain_result=defense_chain_result,
-        ))
+        exec_summary = ExecutiveSummarizer().summarize(
+            ExecutiveSummarizerInput(
+                case_id=case_id,
+                run_id=run_id,
+                issue_list=ranked_tree.issues,
+                adversary_attack_chain=attack_chain,
+                amount_calculation_report=amount_report,
+                action_recommendation=action_rec,
+                evidence_gap_items=evidence_gaps or None,
+                decision_path_tree=decision_tree,
+                defense_chain_result=defense_chain_result,
+            )
+        )
         artifacts["exec_summary"] = exec_summary
         print(f"    \u2713 Top 5 issues: {exec_summary.top5_decisive_issues}")
     else:
@@ -882,7 +1026,20 @@ async def _run_post_debate(
 # Main entry point
 # ---------------------------------------------------------------------------
 
-async def main(case_path: str, model_override: str | None = None, claude_only: bool = False, output_dir: str | None = None, no_redact: bool = False, resume: bool = False, skip_pretrial: bool = False, interactive: bool = False, question: str | None = None, model_config: str | None = None, max_tokens_per_output: int = 2000) -> None:
+
+async def main(
+    case_path: str,
+    model_override: str | None = None,
+    claude_only: bool = False,
+    output_dir: str | None = None,
+    no_redact: bool = False,
+    resume: bool = False,
+    skip_pretrial: bool = False,
+    interactive: bool = False,
+    question: str | None = None,
+    model_config: str | None = None,
+    max_tokens_per_output: int = 2000,
+) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
         print(f"[Error] Case file not found: {case_file}")
@@ -952,6 +1109,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         codex = claude
     else:
         import shutil as _sh
+
         if not _sh.which("codex"):
             print("\n[Config] codex not in PATH, all agents use Claude CLI")
             codex = claude
@@ -971,7 +1129,12 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         reporter.on_step_start(1, "Index Evidence")
         try:
             print("\n[Step 1] Indexing evidence...")
-            indexer = EvidenceIndexer(llm_client=claude, case_type=case_type, model=selector.select("evidence_indexer"), max_retries=2)
+            indexer = EvidenceIndexer(
+                llm_client=claude,
+                case_type=case_type,
+                model=selector.select("evidence_indexer"),
+                max_retries=2,
+            )
             p_materials = _build_materials(case_data["materials"]["plaintiff"])
             d_materials = _build_materials(case_data["materials"]["defendant"])
             p_ev = await indexer.index(p_materials, case_id, p_id, "plaintiff")
@@ -982,8 +1145,12 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
             ev_index = EvidenceIndex(case_id=case_id, evidence=all_ev)
             print(f"  \u2713 Total evidence: {len(all_ev)}")
             # Save evidence index artifact & checkpoint
-            (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
-            ckpt.save(STEP_EVIDENCE, {"evidence_index": str(out / "evidence_index.json")}, run_id=case_id)
+            (out / "evidence_index.json").write_text(
+                ev_index.model_dump_json(indent=2), encoding="utf-8"
+            )
+            ckpt.save(
+                STEP_EVIDENCE, {"evidence_index": str(out / "evidence_index.json")}, run_id=case_id
+            )
             reporter.on_step_complete(1, "Index Evidence")
         except Exception as _e:
             reporter.on_error(1, str(_e))
@@ -993,6 +1160,7 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     if _should_skip(STEP_ISSUES, last_completed):
         print("\n[Step 2] Skipped (checkpoint)")
         from engines.case_structuring.issue_extractor.schemas import IssueTree
+
         it_path = out / "issue_tree.json"
         issue_tree = IssueTree.model_validate_json(it_path.read_text(encoding="utf-8"))
         print(f"  \u2713 Loaded issue tree from checkpoint ({len(issue_tree.issues)} issues)")
@@ -1000,16 +1168,25 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         reporter.on_step_start(2, "Extract Issues")
         try:
             print("\n[Step 2] Extracting issues...")
-            extractor = IssueExtractor(llm_client=claude, case_type=case_type, model=selector.select("issue_extractor"), max_retries=2)
+            extractor = IssueExtractor(
+                llm_client=claude,
+                case_type=case_type,
+                model=selector.select("issue_extractor"),
+                max_retries=2,
+            )
             ev_dicts = [e.model_dump() for e in ev_index.evidence]
             claims = _build_claims(case_data["claims"], case_id, p_id)
             defenses = _build_defenses(case_data["defenses"], case_id, d_id)
             issue_tree = await extractor.extract(claims, defenses, ev_dicts, case_id, case_slug)
-            print(f"  \u2713 Issues: {len(issue_tree.issues)}  |  Burdens: {len(issue_tree.burdens)}")
+            print(
+                f"  \u2713 Issues: {len(issue_tree.issues)}  |  Burdens: {len(issue_tree.burdens)}"
+            )
             for iss in issue_tree.issues:
                 print(f"    - [{iss.issue_id}] {iss.title}")
             # Save issue tree artifact & checkpoint
-            (out / "issue_tree.json").write_text(issue_tree.model_dump_json(indent=2), encoding="utf-8")
+            (out / "issue_tree.json").write_text(
+                issue_tree.model_dump_json(indent=2), encoding="utf-8"
+            )
             ckpt.save(STEP_ISSUES, {"issue_tree": str(out / "issue_tree.json")})
             reporter.on_step_complete(2, "Extract Issues")
         except Exception as _e:
@@ -1031,17 +1208,33 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         reporter.on_step_start(3, "Adversarial Debate")
         try:
             print("\n[Step 3] Three-round adversarial debate...")
-            config = RoundConfig(model=selector.select("plaintiff_agent"), max_tokens_per_output=max_tokens_per_output, max_retries=2)
+            config = RoundConfig(
+                model=selector.select("plaintiff_agent"),
+                max_tokens_per_output=max_tokens_per_output,
+                max_retries=2,
+            )
             result = await _run_rounds(
-                issue_tree, ev_index, claude, codex, claude, config, p_id, d_id,
+                issue_tree,
+                ev_index,
+                claude,
+                codex,
+                claude,
+                config,
+                p_id,
+                d_id,
             )
             # Save debate result & checkpoint (evidence_index NOT yet promoted)
             (out / "result.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
-            (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
-            ckpt.save(STEP_DEBATE, {
-                "result": str(out / "result.json"),
-                "evidence_index": str(out / "evidence_index.json"),
-            })
+            (out / "evidence_index.json").write_text(
+                ev_index.model_dump_json(indent=2), encoding="utf-8"
+            )
+            ckpt.save(
+                STEP_DEBATE,
+                {
+                    "result": str(out / "result.json"),
+                    "evidence_index": str(out / "evidence_index.json"),
+                },
+            )
             reporter.on_step_complete(3, "Adversarial Debate")
         except Exception as _e:
             reporter.on_error(3, str(_e))
@@ -1077,20 +1270,29 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
                 promoted += 1
         print(f"  Promoted {promoted}/{len(ev_index.evidence)} evidence to admitted_for_discussion")
         conference_result = None
-        (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
+        (out / "evidence_index.json").write_text(
+            ev_index.model_dump_json(indent=2), encoding="utf-8"
+        )
         ckpt.save(STEP_PRETRIAL, {"evidence_index": str(out / "evidence_index.json")})
     else:
         print("\n[Step 3.1] Pretrial conference...")
         pretrial_engine = PretrialConferenceEngine(
-            llm_client=claude, model=selector.select("pretrial_conference"), temperature=0.0, max_retries=2,
+            llm_client=claude,
+            model=selector.select("pretrial_conference"),
+            temperature=0.0,
+            max_retries=2,
         )
         # Submit all cited evidence from both parties
-        p_cited = [eid for eid in cited_ids if any(
-            ev.evidence_id == eid and ev.owner_party_id == p_id for ev in ev_index.evidence
-        )]
-        d_cited = [eid for eid in cited_ids if any(
-            ev.evidence_id == eid and ev.owner_party_id == d_id for ev in ev_index.evidence
-        )]
+        p_cited = [
+            eid
+            for eid in cited_ids
+            if any(ev.evidence_id == eid and ev.owner_party_id == p_id for ev in ev_index.evidence)
+        ]
+        d_cited = [
+            eid
+            for eid in cited_ids
+            if any(ev.evidence_id == eid and ev.owner_party_id == d_id for ev in ev_index.evidence)
+        ]
         conference_result = await pretrial_engine.run(
             issue_tree=issue_tree,
             evidence_index=ev_index,
@@ -1100,7 +1302,9 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
             defendant_evidence_ids=d_cited,
         )
         ev_index = conference_result.final_evidence_index
-        admitted = sum(1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion)
+        admitted = sum(
+            1 for ev in ev_index.evidence if ev.status == EvidenceStatus.admitted_for_discussion
+        )
         print(f"  \u2713 Pretrial complete: {admitted}/{len(ev_index.evidence)} evidence admitted")
         print(f"    Cross-exam records: {len(conference_result.cross_examination_result.records)}")
         print(f"    Judge questions: {len(conference_result.judge_questions.questions)}")
@@ -1108,11 +1312,16 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         (out / "pretrial_conference.json").write_text(
             conference_result.model_dump_json(indent=2), encoding="utf-8"
         )
-        (out / "evidence_index.json").write_text(ev_index.model_dump_json(indent=2), encoding="utf-8")
-        ckpt.save(STEP_PRETRIAL, {
-            "pretrial_conference": str(out / "pretrial_conference.json"),
-            "evidence_index": str(out / "evidence_index.json"),
-        })
+        (out / "evidence_index.json").write_text(
+            ev_index.model_dump_json(indent=2), encoding="utf-8"
+        )
+        ckpt.save(
+            STEP_PRETRIAL,
+            {
+                "pretrial_conference": str(out / "pretrial_conference.json"),
+                "evidence_index": str(out / "evidence_index.json"),
+            },
+        )
 
     # Step 3.5: Post-debate analysis
     if _should_skip(STEP_POST_DEBATE, last_completed):
@@ -1121,20 +1330,46 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         print(f"  \u2713 Post-debate artifacts already on disk")
     else:
         print("\n[Step 3.5] Post-debate analysis...")
-        artifacts = await _run_post_debate(result, issue_tree, ev_index, claude, case_data, selector, conference_result=conference_result)
+        artifacts = await _run_post_debate(
+            result,
+            issue_tree,
+            ev_index,
+            claude,
+            case_data,
+            selector,
+            conference_result=conference_result,
+        )
         # Serialize post-debate artifacts immediately
-        for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary",
-                     "admissibility_result", "dep_graph", "hearing_order", "defense_chain"):
+        for name in (
+            "decision_tree",
+            "attack_chain",
+            "amount_report",
+            "exec_summary",
+            "admissibility_result",
+            "dep_graph",
+            "hearing_order",
+            "defense_chain",
+        ):
             obj = artifacts.get(name)
             if obj:
                 (out / f"{name}.json").write_text(obj.model_dump_json(indent=2), encoding="utf-8")
         ranked = artifacts.get("ranked_issues")
         if ranked:
-            (out / "ranked_issues.json").write_text(ranked.model_dump_json(indent=2), encoding="utf-8")
+            (out / "ranked_issues.json").write_text(
+                ranked.model_dump_json(indent=2), encoding="utf-8"
+            )
         ckpt_artifacts = {}
-        for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary",
-                     "admissibility_result", "dep_graph", "hearing_order", "defense_chain",
-                     "ranked_issues"):
+        for name in (
+            "decision_tree",
+            "attack_chain",
+            "amount_report",
+            "exec_summary",
+            "admissibility_result",
+            "dep_graph",
+            "hearing_order",
+            "defense_chain",
+            "ranked_issues",
+        ):
             ap = out / f"{name}.json"
             if ap.exists():
                 ckpt_artifacts[name] = str(ap)
@@ -1151,7 +1386,10 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
             print("\n[Step 4] Writing outputs...")
             jp = _write_json(out, result)
             mp = _write_md(
-                out, result, issue_tree, case_data,
+                out,
+                result,
+                issue_tree,
+                case_data,
                 ranked_issues=artifacts.get("ranked_issues"),
                 decision_tree=artifacts.get("decision_tree"),
                 attack_chain=artifacts.get("attack_chain"),
@@ -1220,24 +1458,26 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         )
         attack_chain_obj = artifacts.get("attack_chain") if artifacts else None
         doc_type_map = [
-            ("pleading",   "pleading_draft.json"),
-            ("defense",    "defense_statement.json"),
+            ("pleading", "pleading_draft.json"),
+            ("defense", "defense_statement.json"),
             ("cross_exam", "cross_exam_opinion.json"),
         ]
         document_drafts = {}
         ckpt_doc_artifacts: dict[str, str] = {}
         for doc_type, filename in doc_type_map:
             try:
-                draft = await doc_engine.generate(input=DocumentAssistanceInput(
-                    case_id=case_id,
-                    run_id=result.run_id,
-                    doc_type=doc_type,
-                    case_type=case_type,
-                    issue_tree=issue_tree,
-                    evidence_index=ev_index,
-                    case_data=case_data,
-                    attack_chain=attack_chain_obj,
-                ))
+                draft = await doc_engine.generate(
+                    input=DocumentAssistanceInput(
+                        case_id=case_id,
+                        run_id=result.run_id,
+                        doc_type=doc_type,
+                        case_type=case_type,
+                        issue_tree=issue_tree,
+                        evidence_index=ev_index,
+                        case_data=case_data,
+                        attack_chain=attack_chain_obj,
+                    )
+                )
                 (out / filename).write_text(draft.model_dump_json(indent=2), encoding="utf-8")
                 document_drafts[doc_type] = draft
                 print(f"  \u2713 {doc_type}: {len(draft.evidence_ids_cited)} evidence cited")
@@ -1249,21 +1489,28 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     # Step 6: Interactive followup (optional — triggered by --interactive or --question)
     if interactive or question:
         print("\n[Step 6] Interactive followup...")
-        from engines.shared.models import ReportArtifact, ReportSection, KeyConclusion, StatementClass
+        from engines.shared.models import (
+            ReportArtifact,
+            ReportSection,
+            KeyConclusion,
+            StatementClass,
+        )
 
         # Build a minimal ReportArtifact from pipeline outputs
         report_sections = []
         all_evidence_ids = [e.evidence_id for e in ev_index.evidence]
         for idx, iss in enumerate(issue_tree.issues, 1):
-            report_sections.append(ReportSection(
-                section_id=f"sec-{idx:03d}",
-                section_index=idx,
-                title=iss.title,
-                body=f"争点分析: {iss.title}",
-                linked_issue_ids=[iss.issue_id],
-                linked_evidence_ids=iss.evidence_ids or [],
-                key_conclusions=[],
-            ))
+            report_sections.append(
+                ReportSection(
+                    section_id=f"sec-{idx:03d}",
+                    section_index=idx,
+                    title=iss.title,
+                    body=f"争点分析: {iss.title}",
+                    linked_issue_ids=[iss.issue_id],
+                    linked_evidence_ids=iss.evidence_ids or [],
+                    key_conclusions=[],
+                )
+            )
         report_artifact = ReportArtifact(
             report_id=f"report-{case_id}",
             case_id=case_id,
@@ -1274,7 +1521,10 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
         )
 
         followup = FollowupResponder(
-            llm_client=claude, case_type=case_type, model=selector.select("followup_responder"), max_retries=2,
+            llm_client=claude,
+            case_type=case_type,
+            model=selector.select("followup_responder"),
+            max_retries=2,
         )
         session_mgr = SessionManager(out)
         session = session_mgr.load_or_create(case_id, report_artifact.report_id, case_id)
@@ -1331,8 +1581,17 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     print(f"  Report:      {mp}")
     if docx_path:
         print(f"  Word report: {docx_path}")
-    for name in ("pretrial_conference", "decision_tree", "attack_chain", "amount_report",
-                 "exec_summary", "admissibility_result", "dep_graph", "hearing_order", "defense_chain"):
+    for name in (
+        "pretrial_conference",
+        "decision_tree",
+        "attack_chain",
+        "amount_report",
+        "exec_summary",
+        "admissibility_result",
+        "dep_graph",
+        "hearing_order",
+        "defense_chain",
+    ):
         artifact_path = out / f"{name}.json"
         if artifact_path.exists():
             print(f"  {name}: {artifact_path}")
@@ -1355,7 +1614,9 @@ async def main(case_path: str, model_override: str | None = None, claude_only: b
     print(f"  Est. cost:    ${token_summary['total_cost_estimate']:.4f}")
     print(f"  Total calls:  {token_summary['total_calls']}")
     for mod, stats in token_summary["per_module_breakdown"].items():
-        print(f"    {mod}: {stats['calls']} calls, {stats['input_tokens']}+{stats['output_tokens']} tokens")
+        print(
+            f"    {mod}: {stats['calls']} calls, {stats['input_tokens']}+{stats['output_tokens']} tokens"
+        )
 
     print("=" * 60)
 
@@ -1367,16 +1628,46 @@ if __name__ == "__main__":
         epilog="Examples:\n  python scripts/run_case.py cases/wang_zhang_2022.yaml\n  python scripts/run_case.py cases/wang_zhang_2022.yaml --model claude-opus-4-6\n  python scripts/run_case.py cases/wang_zhang_2022.yaml --model-config config/model_tiers.yaml",
     )
     parser.add_argument("case_file", help="Path to YAML case definition file")
-    parser.add_argument("--model", default=None, help="Override LLM model for ALL tasks (default: tiered selection)")
-    parser.add_argument("--model-config", default=None, help="Path to model tier config YAML (default: config/model_tiers.yaml)")
-    parser.add_argument("--claude-only", action="store_true", help="Use Claude CLI for all agents (skip Codex)")
+    parser.add_argument(
+        "--model", default=None, help="Override LLM model for ALL tasks (default: tiered selection)"
+    )
+    parser.add_argument(
+        "--model-config",
+        default=None,
+        help="Path to model tier config YAML (default: config/model_tiers.yaml)",
+    )
+    parser.add_argument(
+        "--claude-only", action="store_true", help="Use Claude CLI for all agents (skip Codex)"
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging for engines")
-    parser.add_argument("--output-dir", default=None, help="Override output directory (default: outputs/<timestamp>)")
-    parser.add_argument("--no-redact", action="store_true", help="Disable PII redaction in reports (for debugging)")
-    parser.add_argument("--resume", action="store_true", help="Resume from checkpoint in --output-dir (requires --output-dir)")
-    parser.add_argument("--skip-pretrial", action="store_true", help="Skip pretrial conference (use legacy direct-promote behavior)")
-    parser.add_argument("--interactive", action="store_true", help="Enter interactive followup mode after pipeline completes (Step 6)")
-    parser.add_argument("--question", default=None, help="Single followup question to ask after pipeline completes (Step 6)")
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Override output directory (default: outputs/<timestamp>)",
+    )
+    parser.add_argument(
+        "--no-redact", action="store_true", help="Disable PII redaction in reports (for debugging)"
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from checkpoint in --output-dir (requires --output-dir)",
+    )
+    parser.add_argument(
+        "--skip-pretrial",
+        action="store_true",
+        help="Skip pretrial conference (use legacy direct-promote behavior)",
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Enter interactive followup mode after pipeline completes (Step 6)",
+    )
+    parser.add_argument(
+        "--question",
+        default=None,
+        help="Single followup question to ask after pipeline completes (Step 6)",
+    )
     args = parser.parse_args()
     _pipeline_cfg = _load_pipeline_config()
     # CLI flags take priority; config.yaml provides defaults for unset toggles
@@ -1396,7 +1687,21 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
     try:
-        asyncio.run(main(args.case_file, model_override=args.model, claude_only=args.claude_only, output_dir=args.output_dir, no_redact=args.no_redact, resume=args.resume, skip_pretrial=_skip_pretrial, interactive=args.interactive, question=args.question, model_config=args.model_config, max_tokens_per_output=_max_tokens))
+        asyncio.run(
+            main(
+                args.case_file,
+                model_override=args.model,
+                claude_only=args.claude_only,
+                output_dir=args.output_dir,
+                no_redact=args.no_redact,
+                resume=args.resume,
+                skip_pretrial=_skip_pretrial,
+                interactive=args.interactive,
+                question=args.question,
+                model_config=args.model_config,
+                max_tokens_per_output=_max_tokens,
+            )
+        )
     except CLINotFoundError as e:
         print(f"\n[Error] CLI not available: {e}")
         sys.exit(1)

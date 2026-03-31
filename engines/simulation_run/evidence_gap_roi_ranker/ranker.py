@@ -16,6 +16,7 @@ Evidence Gap ROI Ranker — main class for P1.7 evidence gap ROI ranking.
 - 空列表输入直接返回空结果
 - 同一优先组内排序稳定（Python sorted() 保证）
 """
+
 from __future__ import annotations
 
 from engines.shared.models import (
@@ -113,7 +114,10 @@ class EvidenceGapROIRanker:
             return (1, 0, 0)
 
         # 组 3：uncertain + significant
-        if obtainable == PracticallyObtainable.uncertain and impact == OutcomeImpactSize.significant:
+        if (
+            obtainable == PracticallyObtainable.uncertain
+            and impact == OutcomeImpactSize.significant
+        ):
             return (2, 0, 0)
 
         # 组 4：其余，按 impact DESC → cost ASC

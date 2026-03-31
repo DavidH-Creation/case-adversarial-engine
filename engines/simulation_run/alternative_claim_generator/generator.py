@@ -19,6 +19,7 @@ Alternative Claim Generator — rule-based auto-generation engine for P2.11.
 - 每个 original_claim_id 恰好输出一条建议（去重聚合）
 - 无相关争点时，条件3触发的 claim 不生成建议（无法满足 instability_issue_ids 非空约束）
 """
+
 from __future__ import annotations
 
 import uuid
@@ -83,7 +84,9 @@ class AlternativeClaimGenerator:
 
         self._apply_condition_1(inp.issue_list, accumulators)
         self._apply_condition_2(inp.issue_list, accumulators)
-        self._apply_condition_3(inp.amount_report.claim_calculation_table, claim_to_issues, accumulators)
+        self._apply_condition_3(
+            inp.amount_report.claim_calculation_table, claim_to_issues, accumulators
+        )
 
         return [
             self._build_suggestion(inp, claim_id, acc)

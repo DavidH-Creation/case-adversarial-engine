@@ -140,9 +140,11 @@ def _make_full_result():
             focus_list=[focus],
         ),
         judge_questions=_make_judge_questions([_make_judge_question()]),
-        final_evidence_index=_make_evidence_index([
-            _make_admitted_evidence("ev-001"),
-        ]),
+        final_evidence_index=_make_evidence_index(
+            [
+                _make_admitted_evidence("ev-001"),
+            ]
+        ),
     )
 
 
@@ -222,12 +224,8 @@ class TestMinutesGenerator:
             result=_make_full_result(),
             issue_tree=_make_issue_tree(),
         )
-        xexam_section = next(
-            s for s in report.sections if s.title == "质证情况"
-        )
-        assert "ev-001" in xexam_section.body or "ev-001" in str(
-            xexam_section.linked_evidence_ids
-        )
+        xexam_section = next(s for s in report.sections if s.title == "质证情况")
+        assert "ev-001" in xexam_section.body or "ev-001" in str(xexam_section.linked_evidence_ids)
 
     def test_judge_section_mentions_questions(self):
         gen = MinutesGenerator()
@@ -235,9 +233,7 @@ class TestMinutesGenerator:
             result=_make_full_result(),
             issue_tree=_make_issue_tree(),
         )
-        judge_section = next(
-            s for s in report.sections if s.title == "法官追问"
-        )
+        judge_section = next(s for s in report.sections if s.title == "法官追问")
         assert "请说明借款用途" in judge_section.body
 
     def test_all_sections_have_linked_output_ids(self):
@@ -249,8 +245,7 @@ class TestMinutesGenerator:
         )
         for sec in report.sections:
             assert sec.linked_output_ids, (
-                f"section {sec.section_id!r} ({sec.title}) "
-                f"has empty linked_output_ids"
+                f"section {sec.section_id!r} ({sec.title}) has empty linked_output_ids"
             )
 
     def test_passes_report_validator(self):

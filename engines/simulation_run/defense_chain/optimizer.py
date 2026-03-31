@@ -14,6 +14,7 @@ Plaintiff Defense Chain Optimizer (P2).
 - priority 冲突时按输入顺序重新编号
 - LLM 整体失败时返回 failed 结果（空 defense_points）
 """
+
 from __future__ import annotations
 
 import logging
@@ -65,9 +66,7 @@ class DefenseChainOptimizer:
 
         if case_type not in PROMPT_REGISTRY:
             available = ", ".join(PROMPT_REGISTRY.keys()) or "(none)"
-            raise ValueError(
-                f"不支持的案由类型: '{case_type}'。可用: {available}"
-            )
+            raise ValueError(f"不支持的案由类型: '{case_type}'。可用: {available}")
         return PROMPT_REGISTRY[case_type]
 
     async def optimize(self, inp: DefenseChainInput) -> DefenseChainResult:
@@ -95,9 +94,7 @@ class DefenseChainOptimizer:
             )
 
         known_issue_ids: set[str] = {i.issue_id for i in issues}
-        known_evidence_ids: set[str] = {
-            e.evidence_id for e in inp.evidence_index.evidence
-        }
+        known_evidence_ids: set[str] = {e.evidence_id for e in inp.evidence_index.evidence}
 
         try:
             system_prompt = self._prompt_module.SYSTEM_PROMPT
@@ -124,12 +121,12 @@ class DefenseChainOptimizer:
             defense_points.sort(key=lambda p: p.priority)
             # 重新编号确保连续
             for idx, point in enumerate(defense_points, start=1):
-                object.__setattr__(point, "priority", idx) if hasattr(point, "__setattr__") else None
+                object.__setattr__(point, "priority", idx) if hasattr(
+                    point, "__setattr__"
+                ) else None
                 defense_points[idx - 1] = point.model_copy(update={"priority": idx})
 
-            evidence_support = sorted(
-                {eid for p in defense_points for eid in p.evidence_ids}
-            )
+            evidence_support = sorted({eid for p in defense_points for eid in p.evidence_ids})
 
             chain = PlaintiffDefenseChain(
                 chain_id=chain_id,
@@ -237,6 +234,7 @@ class DefenseChainOptimizer:
 
     async def _call_llm_with_retry(self, system: str, user: str) -> str:
         from engines.shared.llm_utils import call_llm_with_retry
+
         return await call_llm_with_retry(
             self._llm,
             system=system,

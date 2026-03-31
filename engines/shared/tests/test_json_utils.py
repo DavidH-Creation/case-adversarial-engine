@@ -11,6 +11,7 @@ Tests cover:
 - _extract_json_object truncation-recovery path (open_braces > 0)
 - _extract_json_array happy path
 """
+
 from __future__ import annotations
 
 import pytest
@@ -123,7 +124,7 @@ class TestExtractJsonObjectTruncation:
 
     def test_markdown_code_block_extraction(self) -> None:
         """从 markdown 代码块中提取 JSON 对象。"""
-        text = "结果如下：\n```json\n{\"status\": \"ok\"}\n```"
+        text = '结果如下：\n```json\n{"status": "ok"}\n```'
         result = _extract_json_object(text)
         assert result == {"status": "ok"}
 
@@ -148,7 +149,7 @@ class TestExtractJsonArray:
         assert result[0]["id"] == "a"
 
     def test_array_in_markdown_code_block(self) -> None:
-        text = "```json\n[{\"x\": 1}]\n```"
+        text = '```json\n[{"x": 1}]\n```'
         result = _extract_json_array(text)
         assert result == [{"x": 1}]
 

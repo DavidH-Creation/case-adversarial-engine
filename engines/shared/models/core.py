@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 class CaseType(str, Enum):
     """案件类型枚举（schema-level canonical）。"""
+
     civil = "civil"
     criminal = "criminal"
     admin = "admin"
@@ -26,6 +27,7 @@ class CaseType(str, Enum):
 
 class PromptProfile(str, Enum):
     """提示模板 key（engine-level）。NOT a CaseType value."""
+
     civil_loan = "civil_loan"
     labor_dispute = "labor_dispute"
     real_estate = "real_estate"
@@ -33,6 +35,7 @@ class PromptProfile(str, Enum):
 
 class AccessDomain(str, Enum):
     """证据可见域。"""
+
     owner_private = "owner_private"
     shared_common = "shared_common"
     admitted_record = "admitted_record"
@@ -40,6 +43,7 @@ class AccessDomain(str, Enum):
 
 class EvidenceStatus(str, Enum):
     """证据生命周期状态。"""
+
     private = "private"
     submitted = "submitted"
     challenged = "challenged"
@@ -48,6 +52,7 @@ class EvidenceStatus(str, Enum):
 
 class EvidenceType(str, Enum):
     """证据类型枚举，对应《民事诉讼法》证据种类。"""
+
     documentary = "documentary"
     physical = "physical"
     witness_statement = "witness_statement"
@@ -59,6 +64,7 @@ class EvidenceType(str, Enum):
 
 class IssueType(str, Enum):
     """争点类型。"""
+
     factual = "factual"
     legal = "legal"
     procedural = "procedural"
@@ -67,6 +73,7 @@ class IssueType(str, Enum):
 
 class IssueStatus(str, Enum):
     """争点当前状态。"""
+
     open = "open"
     resolved = "resolved"
     deferred = "deferred"
@@ -74,6 +81,7 @@ class IssueStatus(str, Enum):
 
 class PropositionStatus(str, Enum):
     """事实命题核实状态。"""
+
     unverified = "unverified"
     supported = "supported"
     contradicted = "contradicted"
@@ -82,6 +90,7 @@ class PropositionStatus(str, Enum):
 
 class BurdenStatus(str, Enum):
     """举证责任完成状态。"""
+
     met = "met"
     partially_met = "partially_met"
     not_met = "not_met"
@@ -90,6 +99,7 @@ class BurdenStatus(str, Enum):
 
 class StatementClass(str, Enum):
     """结论陈述分类。"""
+
     fact = "fact"
     inference = "inference"
     assumption = "assumption"
@@ -97,6 +107,7 @@ class StatementClass(str, Enum):
 
 class WorkflowStage(str, Enum):
     """产品工作流阶段。"""
+
     case_structuring = "case_structuring"
     procedure_setup = "procedure_setup"
     simulation_run = "simulation_run"
@@ -106,6 +117,7 @@ class WorkflowStage(str, Enum):
 
 class ProcedurePhase(str, Enum):
     """法律程序阶段。"""
+
     case_intake = "case_intake"
     element_mapping = "element_mapping"
     opening = "opening"
@@ -124,6 +136,7 @@ class ProcedureState(BaseModel):
     - evidence.access_domain 必须在 readable_access_domains 内
     - evidence.status 必须在 admissible_evidence_statuses 内
     """
+
     phase: ProcedurePhase
     readable_access_domains: list[AccessDomain]
     admissible_evidence_statuses: list[EvidenceStatus]
@@ -131,6 +144,7 @@ class ProcedureState(BaseModel):
 
 class ChangeItemObjectType(str, Enum):
     """change_item 目标对象类型枚举。"""
+
     Party = "Party"
     Claim = "Claim"
     Defense = "Defense"
@@ -144,6 +158,7 @@ class ChangeItemObjectType(str, Enum):
 
 class DiffDirection(str, Enum):
     """差异方向枚举。"""
+
     strengthen = "strengthen"
     weaken = "weaken"
     neutral = "neutral"
@@ -151,6 +166,7 @@ class DiffDirection(str, Enum):
 
 class ScenarioStatus(str, Enum):
     """场景生命周期状态。"""
+
     pending = "pending"
     running = "running"
     completed = "completed"
@@ -159,6 +175,7 @@ class ScenarioStatus(str, Enum):
 
 class JobStatus(str, Enum):
     """长任务生命周期状态。对应 schemas/indexing.schema.json#/$defs/job_status。"""
+
     created = "created"
     pending = "pending"
     running = "running"
@@ -169,6 +186,7 @@ class JobStatus(str, Enum):
 
 class RiskImpactObject(str, Enum):
     """风险影响对象维度枚举。对应 docs/03_case_object_model.md risk_impact_object。"""
+
     win_rate = "win_rate"
     supported_amount = "supported_amount"
     trial_credibility = "trial_credibility"
@@ -178,6 +196,7 @@ class RiskImpactObject(str, Enum):
 
 class AgentRole(str, Enum):
     """代理角色编码。对应 docs/03_case_object_model.md Party.role_code 和 AgentOutput.agent_role_code。"""
+
     plaintiff_agent = "plaintiff_agent"
     defendant_agent = "defendant_agent"
     judge_agent = "judge_agent"
@@ -186,6 +205,7 @@ class AgentRole(str, Enum):
 
 class RepaymentAttribution(str, Enum):
     """还款归因类型 — 每笔还款必须唯一归因到某一类。"""
+
     principal = "principal"
     interest = "interest"
     penalty = "penalty"
@@ -193,6 +213,7 @@ class RepaymentAttribution(str, Enum):
 
 class DisputeResolutionStatus(str, Enum):
     """争议解决状态。"""
+
     resolved = "resolved"
     unresolved = "unresolved"
     partially_resolved = "partially_resolved"
@@ -200,6 +221,7 @@ class DisputeResolutionStatus(str, Enum):
 
 class ClaimType(str, Enum):
     """诉请类型 — 对应 ClaimCalculationEntry.claim_type。"""
+
     principal = "principal"
     interest = "interest"
     penalty = "penalty"
@@ -209,6 +231,7 @@ class ClaimType(str, Enum):
 
 class OutcomeImpact(str, Enum):
     """争点对最终裁判结果的影响程度（P0.1）。"""
+
     high = "high"
     medium = "medium"
     low = "low"
@@ -216,6 +239,7 @@ class OutcomeImpact(str, Enum):
 
 class ImpactTarget(str, Enum):
     """争点影响的诉请对象（P0.1）。"""
+
     principal = "principal"
     interest = "interest"
     penalty = "penalty"
@@ -225,6 +249,7 @@ class ImpactTarget(str, Enum):
 
 class EvidenceStrength(str, Enum):
     """主张方证据强度（P0.1）。"""
+
     strong = "strong"
     medium = "medium"
     weak = "weak"
@@ -232,6 +257,7 @@ class EvidenceStrength(str, Enum):
 
 class AttackStrength(str, Enum):
     """反对方攻击强度（P0.1）。"""
+
     strong = "strong"
     medium = "medium"
     weak = "weak"
@@ -239,6 +265,7 @@ class AttackStrength(str, Enum):
 
 class RecommendedAction(str, Enum):
     """系统建议行动（P0.1）。"""
+
     supplement_evidence = "supplement_evidence"
     amend_claim = "amend_claim"
     abandon = "abandon"
@@ -247,6 +274,7 @@ class RecommendedAction(str, Enum):
 
 class AuthenticityRisk(str, Enum):
     """证据真实性风险（P1.5）。"""
+
     high = "high"
     medium = "medium"
     low = "low"
@@ -254,6 +282,7 @@ class AuthenticityRisk(str, Enum):
 
 class SupplementCost(str, Enum):
     """补证成本（P1.7）。"""
+
     high = "high"
     medium = "medium"
     low = "low"
@@ -261,6 +290,7 @@ class SupplementCost(str, Enum):
 
 class RelevanceScore(str, Enum):
     """证据关联性（P1.5）。"""
+
     strong = "strong"
     medium = "medium"
     weak = "weak"
@@ -268,6 +298,7 @@ class RelevanceScore(str, Enum):
 
 class ProbativeValue(str, Enum):
     """证据证明力（P1.5）。"""
+
     strong = "strong"
     medium = "medium"
     weak = "weak"
@@ -275,6 +306,7 @@ class ProbativeValue(str, Enum):
 
 class Vulnerability(str, Enum):
     """证据易受对方攻击的风险（P1.5）。"""
+
     high = "high"
     medium = "medium"
     low = "low"
@@ -282,6 +314,7 @@ class Vulnerability(str, Enum):
 
 class LegalityRisk(str, Enum):
     """证据合法性风险（v1.5 质证四维度之一）。"""
+
     high = "high"
     medium = "medium"
     low = "low"
@@ -289,6 +322,7 @@ class LegalityRisk(str, Enum):
 
 class ContractValidity(str, Enum):
     """合同效力状态 — 影响利息计算标准。"""
+
     valid = "valid"
     disputed = "disputed"
     invalid = "invalid"
@@ -296,6 +330,7 @@ class ContractValidity(str, Enum):
 
 class IssueCategory(str, Enum):
     """争点分析类型（P1.6）。与 issue_type 并列，不替代。"""
+
     fact_issue = "fact_issue"
     legal_issue = "legal_issue"
     calculation_issue = "calculation_issue"
@@ -304,6 +339,7 @@ class IssueCategory(str, Enum):
 
 class Perspective(str, Enum):
     """输出视角标注（v7）。每个 section/建议必须显式标注视角。"""
+
     neutral = "neutral"
     plaintiff = "plaintiff"
     defendant = "defendant"
@@ -311,14 +347,16 @@ class Perspective(str, Enum):
 
 class AdmissibilityStatus(str, Enum):
     """证据可采性状态（v7 可采性闸门）。"""
-    clear = "clear"            # 证据可采性无争议
-    uncertain = "uncertain"    # 可采性存疑
-    weak = "weak"              # 可采性较弱，可能被排除
-    excluded = "excluded"      # 已被排除
+
+    clear = "clear"  # 证据可采性无争议
+    uncertain = "uncertain"  # 可采性存疑
+    weak = "weak"  # 可采性较弱，可能被排除
+    excluded = "excluded"  # 已被排除
 
 
 class OutcomeImpactSize(str, Enum):
     """补证后对结果的影响大小（P1.7）。"""
+
     significant = "significant"
     moderate = "moderate"
     marginal = "marginal"
@@ -326,6 +364,7 @@ class OutcomeImpactSize(str, Enum):
 
 class PracticallyObtainable(str, Enum):
     """证据现实可取得性（P1.7）。"""
+
     yes = "yes"
     no = "no"
     uncertain = "uncertain"
@@ -333,6 +372,7 @@ class PracticallyObtainable(str, Enum):
 
 class BlockingConditionType(str, Enum):
     """阻断条件类型。"""
+
     amount_conflict = "amount_conflict"
     evidence_gap = "evidence_gap"
     procedure_unresolved = "procedure_unresolved"
@@ -345,6 +385,7 @@ class BlockingConditionType(str, Enum):
 
 class RawMaterial(BaseModel):
     """原始案件材料段落，由调用方提供。"""
+
     source_id: str = Field(..., min_length=1, description="材料唯一标识符")
     text: str = Field(..., min_length=1, description="纯文本内容")
     metadata: dict[str, Any] = Field(

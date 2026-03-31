@@ -18,6 +18,7 @@ Usage:
         amount_report=ar_dict,        # AmountCalculationReport as dict (or None)
     )
 """
+
 from __future__ import annotations
 
 import re
@@ -44,14 +45,14 @@ CLR_ORANGE = RGBColor(0xE6, 0x7E, 0x22)
 CLR_BODY = RGBColor(0x1A, 0x1A, 0x1A)
 CLR_GRAY = RGBColor(0x4A, 0x4A, 0x4A)
 
-SZ_TITLE = 279_400       # ~22pt
-SZ_SUBTITLE = 203_200    # ~16pt
-SZ_AGENT_TITLE = 152_400 # ~12pt
-SZ_SECTION_HDR = 139_700 # ~11pt
-SZ_BODY = 133_350        # ~10.5pt
-SZ_RISK = 120_650        # ~9.5pt
-SZ_EVIDENCE = 114_300    # ~9pt
-SZ_NORMAL = 127_000      # ~10pt
+SZ_TITLE = 279_400  # ~22pt
+SZ_SUBTITLE = 203_200  # ~16pt
+SZ_AGENT_TITLE = 152_400  # ~12pt
+SZ_SECTION_HDR = 139_700  # ~11pt
+SZ_BODY = 133_350  # ~10.5pt
+SZ_RISK = 120_650  # ~9.5pt
+SZ_EVIDENCE = 114_300  # ~9pt
+SZ_NORMAL = 127_000  # ~10pt
 FONT_NAME = "Arial"
 FONT_EAST_ASIA = "Microsoft YaHei"
 
@@ -76,8 +77,16 @@ _ROUND_PHASE_ZH: dict[str, str] = {
 # 内部工具函数 / Internal helpers
 # ---------------------------------------------------------------------------
 
-def _add_run(para, text: str, *, bold: bool = False, size: int | None = None,
-             color: RGBColor | None = None, italic: bool = False):
+
+def _add_run(
+    para,
+    text: str,
+    *,
+    bold: bool = False,
+    size: int | None = None,
+    color: RGBColor | None = None,
+    italic: bool = False,
+):
     """向段落追加一个格式化 run。"""
     run = para.add_run(text)
     run.font.name = FONT_NAME
@@ -98,8 +107,9 @@ def _add_run(para, text: str, *, bold: bool = False, size: int | None = None,
     return run
 
 
-def _styled(doc, text: str, *, bold: bool = False, size: int = SZ_NORMAL,
-            color: RGBColor = CLR_BODY):
+def _styled(
+    doc, text: str, *, bold: bool = False, size: int = SZ_NORMAL, color: RGBColor = CLR_BODY
+):
     """添加单 run 段落。"""
     p = doc.add_paragraph()
     _add_run(p, text, bold=bold, size=size, color=color)
@@ -151,7 +161,11 @@ def _build_issue_info(issue_tree) -> dict[str, tuple[str, str]]:
     if issue_tree is None:
         return info
     for iss in getattr(issue_tree, "issues", []):
-        itype = getattr(iss.issue_type, "value", str(iss.issue_type)) if hasattr(iss, "issue_type") else ""
+        itype = (
+            getattr(iss.issue_type, "value", str(iss.issue_type))
+            if hasattr(iss, "issue_type")
+            else ""
+        )
         info[iss.issue_id] = (iss.title, itype)
     return info
 
@@ -175,6 +189,7 @@ def _filter_uuids(items: list[str]) -> list[str]:
 # ---------------------------------------------------------------------------
 # 公共 API / Public API
 # ---------------------------------------------------------------------------
+
 
 def generate_docx_report(
     *,
@@ -270,6 +285,7 @@ def generate_docx_report(
 # 各章节渲染函数 / Section renderers
 # ---------------------------------------------------------------------------
 
+
 def _render_disclaimer(doc):
     """免责声明块（首页标题后）。"""
     _styled(doc, DISCLAIMER_DOCX_TITLE, bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
@@ -300,8 +316,7 @@ def _render_title(doc, case_data: dict, result: dict):
 
     p2 = doc.add_paragraph()
     model = case_data.get("model", "")
-    _add_run(p2, f"对抗分析报告  |  对抗引擎  |  {model}",
-             size=SZ_NORMAL, color=CLR_GRAY)
+    _add_run(p2, f"对抗分析报告  |  对抗引擎  |  {model}", size=SZ_NORMAL, color=CLR_GRAY)
     doc.add_paragraph()
 
 
@@ -386,12 +401,17 @@ def _render_debate_rounds(doc, result: dict):
                 role_label = "[证据管理]"
 
             p = doc.add_paragraph()
-            _add_run(p, f"{role_label} {title_text}",
-                     bold=True, size=SZ_AGENT_TITLE, color=_agent_color(role))
-            _styled(doc, body[:2000] + ("..." if len(body) > 2000 else ""),
-                    size=SZ_BODY, color=CLR_BODY)
-            _styled(doc, f"引用证据: {ev_cited}",
-                    size=SZ_EVIDENCE, color=CLR_GRAY)
+            _add_run(
+                p,
+                f"{role_label} {title_text}",
+                bold=True,
+                size=SZ_AGENT_TITLE,
+                color=_agent_color(role),
+            )
+            _styled(
+                doc, body[:2000] + ("..." if len(body) > 2000 else ""), size=SZ_BODY, color=CLR_BODY
+            )
+            _styled(doc, f"引用证据: {ev_cited}", size=SZ_EVIDENCE, color=CLR_GRAY)
 
             risk_flags = o.get("risk_flags", [])
             if risk_flags:
@@ -474,8 +494,13 @@ def _render_missing_evidence(doc, result: dict, party_zh: dict[str, str]):
         raw_party = m.get("missing_for_party_id", "")
         party_name = party_zh.get(raw_party, raw_party)
         p = doc.add_paragraph()
-        _add_run(p, f"[{m['issue_id']}] {party_name}: {m['description']}",
-                 bold=True, size=SZ_BODY, color=CLR_ORANGE)
+        _add_run(
+            p,
+            f"[{m['issue_id']}] {party_name}: {m['description']}",
+            bold=True,
+            size=SZ_BODY,
+            color=CLR_ORANGE,
+        )
 
 
 def _render_issue_ranking(doc, exec_summary: dict):
@@ -499,8 +524,12 @@ def _render_decision_tree(doc, decision_tree: dict):
     paths = decision_tree.get("paths", [])
     if not paths:
         doc.add_heading("裁判路径树", level=1)
-        _styled(doc, "（本次运行未生成裁判路径，可能需重新运行庭后分析流程）",
-                size=SZ_NORMAL, color=CLR_GRAY)
+        _styled(
+            doc,
+            "（本次运行未生成裁判路径，可能需重新运行庭后分析流程）",
+            size=SZ_NORMAL,
+            color=CLR_GRAY,
+        )
         return
 
     doc.add_heading(f"裁判路径树（{len(paths)}条路径）", level=1)
@@ -537,8 +566,7 @@ def _render_decision_tree(doc, decision_tree: dict):
         if pid == most_likely:
             label_suffix += "  ★ 最可能"
 
-        _styled(doc, f"路径 {pid}{label_suffix}",
-                bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+        _styled(doc, f"路径 {pid}{label_suffix}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
 
         fields = [
             ("触发条件", path.get("trigger_condition", "")),
@@ -570,8 +598,9 @@ def _render_decision_tree(doc, decision_tree: dict):
     if blocking:
         _styled(doc, "阻断条件", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
         for bc in blocking:
-            _bullet(doc, f"{bc['condition_id']}: {bc['description']}",
-                    size=SZ_NORMAL, color=CLR_BODY)
+            _bullet(
+                doc, f"{bc['condition_id']}: {bc['description']}", size=SZ_NORMAL, color=CLR_BODY
+            )
 
 
 def _render_attack_chain(doc, attack_chain: dict, party_zh: dict[str, str]):
@@ -579,8 +608,12 @@ def _render_attack_chain(doc, attack_chain: dict, party_zh: dict[str, str]):
     attacks = attack_chain.get("top_attacks", [])
     if not attacks:
         doc.add_heading("对方最优攻击链", level=1)
-        _styled(doc, "（本次运行未生成攻击链，可能需重新运���庭后分析流程）",
-                size=SZ_NORMAL, color=CLR_GRAY)
+        _styled(
+            doc,
+            "（本次运行未生成攻击链，可能需重新运���庭后分析流程）",
+            size=SZ_NORMAL,
+            color=CLR_GRAY,
+        )
         return
 
     doc.add_heading("对��最优攻击链", level=1)
@@ -623,8 +656,7 @@ def _render_action_recommendations(doc, exec_summary: dict):
 
     stable = exec_summary.get("current_most_stable_claim", "")
     _styled(doc, "最稳诉请版本：", bold=True, size=SZ_SECTION_HDR, color=CLR_GREEN)
-    _styled(doc, stable if stable else "（暂无稳定诉请版本）",
-            size=SZ_NORMAL, color=CLR_BODY)
+    _styled(doc, stable if stable else "（暂无稳定诉请版本）", size=SZ_NORMAL, color=CLR_BODY)
 
     actions = exec_summary.get("top3_immediate_actions", [])
     if actions and actions != "未启用":
@@ -668,8 +700,12 @@ def _render_executive_summary(doc, exec_summary: dict, amount_report: dict):
     n_conflicts = len(check.get("unresolved_conflicts", []))
     p = doc.add_paragraph()
     _add_run(p, "金额一致性校验：", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
-    _add_run(p, f"阻断裁判={'是' if verdict_block else '否'}，未解决冲突={n_conflicts}条",
-             size=SZ_NORMAL, color=CLR_RED if verdict_block else CLR_GREEN)
+    _add_run(
+        p,
+        f"阻断裁判={'是' if verdict_block else '否'}，未解决冲突={n_conflicts}条",
+        size=SZ_NORMAL,
+        color=CLR_RED if verdict_block else CLR_GREEN,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -843,8 +879,8 @@ def _render_opponent_strategy_warning(doc, result: dict, attack_chain: dict | No
 # ---------------------------------------------------------------------------
 
 _DOC_TYPE_ZH: dict[str, str] = {
-    "pleading":   "起诉状草稿",
-    "defense":    "答辩状草稿",
+    "pleading": "起诉状草稿",
+    "defense": "答辩状草稿",
     "cross_exam": "质证意见草稿",
 }
 

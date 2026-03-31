@@ -17,6 +17,7 @@ def _no_llm_retry_sleep(monkeypatch):
     """消除 LLM 重试退避中的真实 sleep，保持集成测试速度。
     Zero out LLM retry backoff sleep to keep integration tests fast.
     """
+
     async def _instant_sleep(_delay: float) -> None:  # noqa: RUF029
         await asyncio.sleep(0)
 
@@ -48,9 +49,7 @@ class MockLLMClient:
         self.last_user = user
         if self._fail_times > 0:
             self._fail_times -= 1
-            raise RuntimeError(
-                f"Simulated LLM failure (call {self.call_count})"
-            )
+            raise RuntimeError(f"Simulated LLM failure (call {self.call_count})")
         return self._response
 
 

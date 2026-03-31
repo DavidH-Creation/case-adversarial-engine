@@ -6,6 +6,7 @@ Unit tests for ExecutiveSummarizer dual-layer structured output (P2).
 - 纯规则层，无 LLM 依赖
 - 覆盖：structured_output 字段存在性、内容正确性、置信度指标计算、降级情况
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

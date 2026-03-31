@@ -2,6 +2,7 @@
 对抗引擎 prompt 模块注册表。
 Adversarial engine prompt module registry.
 """
+
 from . import civil_loan
 from . import labor_dispute
 from . import real_estate

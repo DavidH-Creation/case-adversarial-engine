@@ -5,6 +5,7 @@ LLM prompt templates for labor dispute case type issue category classification.
 指导 LLM 对每个争点输出四类分析标签，输出严格 JSON。
 Guides LLM to classify each issue into one of four categories and output strict JSON.
 """
+
 from __future__ import annotations
 
 from engines.shared.models import AmountCalculationReport, EvidenceIndex, IssueTree
@@ -68,12 +69,8 @@ def build_user_prompt(
     # 争点块
     issue_lines: list[str] = []
     for issue in issue_tree.issues:
-        evidence_ids_str = (
-            ", ".join(issue.evidence_ids) if issue.evidence_ids else "（无关联证据）"
-        )
-        claim_ids_str = (
-            ", ".join(issue.related_claim_ids) if issue.related_claim_ids else "（无）"
-        )
+        evidence_ids_str = ", ".join(issue.evidence_ids) if issue.evidence_ids else "（无关联证据）"
+        claim_ids_str = ", ".join(issue.related_claim_ids) if issue.related_claim_ids else "（无）"
         issue_lines.append(
             f"  issue_id: {issue.issue_id}\n"
             f"  title: {issue.title}\n"

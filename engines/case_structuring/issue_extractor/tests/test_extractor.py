@@ -690,7 +690,7 @@ LLM_RESPONSE_UNKNOWN_EVIDENCE = json.dumps(
                 "related_defense_ids": [],
                 "evidence_ids": [
                     "evidence-civil-loan-001-01",  # 已知
-                    "evidence-UNKNOWN-999",          # 未知
+                    "evidence-UNKNOWN-999",  # 未知
                 ],
                 "fact_propositions": [
                     {
@@ -698,7 +698,7 @@ LLM_RESPONSE_UNKNOWN_EVIDENCE = json.dumps(
                         "status": "supported",
                         "linked_evidence_ids": [
                             "evidence-civil-loan-001-01",  # 已知
-                            "evidence-GHOST-000",           # 未知
+                            "evidence-GHOST-000",  # 未知
                         ],
                     }
                 ],
@@ -774,6 +774,7 @@ async def test_unknown_evidence_ids_filtered_from_fact_propositions():
 # ---------------------------------------------------------------------------
 # ValidationReport 测试 / ValidationReport tests
 # ---------------------------------------------------------------------------
+
 
 def test_validate_issue_tree_report_returns_report():
     """validate_issue_tree_report 应返回 ValidationReport 对象，不抛出异常。"""

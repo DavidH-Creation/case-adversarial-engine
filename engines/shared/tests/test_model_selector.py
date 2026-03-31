@@ -20,6 +20,7 @@ from engines.shared.model_selector import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def config_dir(tmp_path: Path) -> Path:
     d = tmp_path / "config"
@@ -73,6 +74,7 @@ def custom_config(config_dir: Path) -> Path:
 # Happy path: hardcoded defaults
 # ---------------------------------------------------------------------------
 
+
 class TestDefaultSelector:
     """ModelSelector() with no arguments uses hardcoded defaults."""
 
@@ -92,7 +94,9 @@ class TestDefaultSelector:
         sel = ModelSelector()
         for tag, tier in DEFAULT_TASK_TIERS.items():
             model = sel.select(tag)
-            assert model == DEFAULT_TIER_MODELS[tier], f"{tag}: expected {DEFAULT_TIER_MODELS[tier]}, got {model}"
+            assert model == DEFAULT_TIER_MODELS[tier], (
+                f"{tag}: expected {DEFAULT_TIER_MODELS[tier]}, got {model}"
+            )
 
     def test_model_override_is_none(self):
         sel = ModelSelector()
@@ -102,6 +106,7 @@ class TestDefaultSelector:
 # ---------------------------------------------------------------------------
 # Happy path: model override (CLI --model)
 # ---------------------------------------------------------------------------
+
 
 class TestModelOverride:
     """When model_override is set, select() always returns it."""
@@ -121,6 +126,7 @@ class TestModelOverride:
 # ---------------------------------------------------------------------------
 # Happy path: YAML config loading
 # ---------------------------------------------------------------------------
+
 
 class TestFromYaml:
     """ModelSelector.from_yaml() loads config correctly."""
@@ -168,6 +174,7 @@ class TestFromYaml:
 # Edge case: config file missing
 # ---------------------------------------------------------------------------
 
+
 class TestConfigFileMissing:
     """Missing config file falls back to hardcoded defaults."""
 
@@ -184,6 +191,7 @@ class TestConfigFileMissing:
 # ---------------------------------------------------------------------------
 # Edge case: unknown task tag → fallback tier
 # ---------------------------------------------------------------------------
+
 
 class TestUnknownTaskFallback:
     """Unknown task tags fall back to fallback_tier (default: balanced)."""
@@ -207,6 +215,7 @@ class TestUnknownTaskFallback:
 # ---------------------------------------------------------------------------
 # Edge case: invalid YAML content
 # ---------------------------------------------------------------------------
+
 
 class TestInvalidConfig:
     """Malformed or invalid config files degrade gracefully."""
@@ -251,6 +260,7 @@ class TestInvalidConfig:
 # ---------------------------------------------------------------------------
 # ModelTier enum
 # ---------------------------------------------------------------------------
+
 
 class TestModelTier:
     """ModelTier enum has expected values."""

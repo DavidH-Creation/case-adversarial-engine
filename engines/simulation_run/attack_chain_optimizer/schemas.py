@@ -4,6 +4,7 @@ Engine-specific schemas for attack_chain_optimizer.
 
 共享类型从 engines.shared.models 导入；本模块只保留 LLM 中间模型和引擎 I/O wrapper。
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -22,6 +23,7 @@ from engines.shared.models import (  # noqa: F401
 
 class LLMAttackNodeItem(BaseModel):
     """LLM 输出的单个攻击节点（中间模型，由规则层进一步校验）。"""
+
     attack_node_id: str = Field(default="")
     target_issue_id: str = Field(default="")
     attack_description: str = Field(default="")
@@ -33,6 +35,7 @@ class LLMAttackNodeItem(BaseModel):
 
 class LLMAttackChainOutput(BaseModel):
     """LLM 批量输出（中间模型）。"""
+
     top_attacks: list[LLMAttackNodeItem] = Field(default_factory=list)
 
 
@@ -51,6 +54,7 @@ class AttackChainOptimizerInput(BaseModel):
         issue_tree:      P0.1 产物（issues 已按 outcome_impact 排序并富化）
         evidence_index:  完整证据索引
     """
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     owner_party_id: str = Field(..., min_length=1)

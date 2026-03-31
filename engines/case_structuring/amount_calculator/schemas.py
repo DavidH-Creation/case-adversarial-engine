@@ -47,6 +47,7 @@ class AmountClaimDescriptor(BaseModel):
         claimed_amount: 诉请金额（调用方解析自 claim_text）
         evidence_ids: 支撑该诉请的证据 ID 列表
     """
+
     claim_id: str = Field(..., min_length=1, description="对应 Claim.claim_id")
     claim_type: ClaimType
     claimed_amount: Decimal = Field(..., ge=0, description="诉请金额，由调用方提供")
@@ -66,6 +67,7 @@ class AmountCalculatorInput(BaseModel):
         repayment_transactions: 还款流水（调用方提供）
         disputed_amount_attributions: 争议款项归因表（调用方提供，可为空）
     """
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     source_material_ids: list[str] = Field(
@@ -89,10 +91,12 @@ class AmountCalculatorInput(BaseModel):
         description="合同效力状态；非 valid 时触发利息重算",
     )
     contractual_interest_rate: Decimal | None = Field(
-        default=None, ge=0,
+        default=None,
+        ge=0,
         description="合同约定年利率；None 时跳过利息重算",
     )
     lpr_rate: Decimal | None = Field(
-        default=None, gt=0,
+        default=None,
+        gt=0,
         description="当期 LPR 利率（由调用方传入）；合同无效时必需",
     )

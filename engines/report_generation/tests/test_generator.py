@@ -75,28 +75,31 @@ class MockLLMClient:
 _CASE_ID = "case-civil-loan-test-001"
 _RUN_ID = "run-civil-loan-test-001"
 
-_MOCK_LLM_RESPONSE = json.dumps({
-    "title": "民间借贷纠纷诊断报告",
-    "summary": "本案为民间借贷纠纷。借贷关系通过借条和转账记录证明成立。被告未能举证已还款。",
-    "sections": [
-        {
-            "title": "借贷关系成立",
-            "body": "借条原件与银行转账记录相互印证，借贷关系成立证据充分。",
-            "linked_issue_ids": ["issue-civil-loan-test-001-001"],
-            "linked_evidence_ids": [
-                "evidence-civil-loan-test-001-01",
-                "evidence-civil-loan-test-001-02",
-            ],
-            "key_conclusions": [
-                {
-                    "text": "借贷关系依据借条和转账记录可认定成立",
-                    "statement_class": "fact",
-                    "supporting_evidence_ids": ["evidence-civil-loan-test-001-01"],
-                }
-            ],
-        }
-    ],
-}, ensure_ascii=False)
+_MOCK_LLM_RESPONSE = json.dumps(
+    {
+        "title": "民间借贷纠纷诊断报告",
+        "summary": "本案为民间借贷纠纷。借贷关系通过借条和转账记录证明成立。被告未能举证已还款。",
+        "sections": [
+            {
+                "title": "借贷关系成立",
+                "body": "借条原件与银行转账记录相互印证，借贷关系成立证据充分。",
+                "linked_issue_ids": ["issue-civil-loan-test-001-001"],
+                "linked_evidence_ids": [
+                    "evidence-civil-loan-test-001-01",
+                    "evidence-civil-loan-test-001-02",
+                ],
+                "key_conclusions": [
+                    {
+                        "text": "借贷关系依据借条和转账记录可认定成立",
+                        "statement_class": "fact",
+                        "supporting_evidence_ids": ["evidence-civil-loan-test-001-01"],
+                    }
+                ],
+            }
+        ],
+    },
+    ensure_ascii=False,
+)
 
 _SAMPLE_ISSUE_TREE = IssueTree(
     case_id=_CASE_ID,
@@ -208,9 +211,7 @@ async def test_all_root_issues_covered():
     )
 
     root_issue_ids = {
-        issue.issue_id
-        for issue in _SAMPLE_ISSUE_TREE.issues
-        if issue.parent_issue_id is None
+        issue.issue_id for issue in _SAMPLE_ISSUE_TREE.issues if issue.parent_issue_id is None
     }
     covered = {iid for sec in report.sections for iid in sec.linked_issue_ids}
     assert root_issue_ids.issubset(covered), (
@@ -284,21 +285,28 @@ async def test_long_summary_truncated():
     Oversized summary should be truncated to ≤ 500 chars.
     """
     long_summary = "这是一段很长的摘要。" * 60  # >> 500 chars
-    response_with_long_summary = json.dumps({
-        "title": "测试报告",
-        "summary": long_summary,
-        "sections": [{
-            "title": "借贷关系成立",
-            "body": "分析内容",
-            "linked_issue_ids": ["issue-civil-loan-test-001-001"],
-            "linked_evidence_ids": ["evidence-civil-loan-test-001-01"],
-            "key_conclusions": [{
-                "text": "结论",
-                "statement_class": "fact",
-                "supporting_evidence_ids": ["evidence-civil-loan-test-001-01"],
-            }],
-        }],
-    }, ensure_ascii=False)
+    response_with_long_summary = json.dumps(
+        {
+            "title": "测试报告",
+            "summary": long_summary,
+            "sections": [
+                {
+                    "title": "借贷关系成立",
+                    "body": "分析内容",
+                    "linked_issue_ids": ["issue-civil-loan-test-001-001"],
+                    "linked_evidence_ids": ["evidence-civil-loan-test-001-01"],
+                    "key_conclusions": [
+                        {
+                            "text": "结论",
+                            "statement_class": "fact",
+                            "supporting_evidence_ids": ["evidence-civil-loan-test-001-01"],
+                        }
+                    ],
+                }
+            ],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(response_with_long_summary)
     generator = ReportGenerator(llm_client=client, case_type="civil_loan")
@@ -370,9 +378,7 @@ async def test_llm_retry_succeeds_after_failures():
     Should succeed after two LLM failures if third attempt succeeds.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=2)
-    generator = ReportGenerator(
-        llm_client=client, case_type="civil_loan", max_retries=3
-    )
+    generator = ReportGenerator(llm_client=client, case_type="civil_loan", max_retries=3)
 
     report = await generator.generate(
         issue_tree=_SAMPLE_ISSUE_TREE,
@@ -390,9 +396,7 @@ async def test_llm_retry_exhausted_raises_runtime_error():
     Exhausted retries should raise RuntimeError.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=10)
-    generator = ReportGenerator(
-        llm_client=client, case_type="civil_loan", max_retries=3
-    )
+    generator = ReportGenerator(llm_client=client, case_type="civil_loan", max_retries=3)
 
     with pytest.raises(RuntimeError, match="LLM 调用失败"):
         await generator.generate(
@@ -429,11 +433,14 @@ async def test_missing_root_issue_auto_supplemented():
     When LLM misses a root issue, the engine should auto-supplement a section.
     """
     # LLM 返回的报告不包含 issue-civil-loan-test-001-001
-    response_missing_issue = json.dumps({
-        "title": "不完整报告",
-        "summary": "部分分析。",
-        "sections": [],  # 空章节列表
-    }, ensure_ascii=False)
+    response_missing_issue = json.dumps(
+        {
+            "title": "不完整报告",
+            "summary": "部分分析。",
+            "sections": [],  # 空章节列表
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(response_missing_issue)
     generator = ReportGenerator(llm_client=client, case_type="civil_loan")
@@ -445,9 +452,7 @@ async def test_missing_root_issue_auto_supplemented():
     )
 
     # 应自动补充章节覆盖顶层争点
-    all_linked_issue_ids = {
-        iid for sec in report.sections for iid in sec.linked_issue_ids
-    }
+    all_linked_issue_ids = {iid for sec in report.sections for iid in sec.linked_issue_ids}
     assert "issue-civil-loan-test-001-001" in all_linked_issue_ids
 
 
