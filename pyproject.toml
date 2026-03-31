@@ -54,6 +54,14 @@ testpaths = [
     "tests/integration",
 ]
 
+[tool.coverage.run]
+source = ["engines"]
+omit = ["*/tests/*", "*/conftest*"]
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
