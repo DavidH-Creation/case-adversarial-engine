@@ -6,8 +6,20 @@ Shared fixtures and mock utilities for integration tests.
 from __future__ import annotations
 
 import asyncio
+import os
 
 import pytest
+
+
+def pytest_collection_modifyitems(config, items):
+    """当 LLM_MOCK != 'true' 时跳过所有集成测试（需要真实 LLM 的场景）。
+    CI 中设置 LLM_MOCK=true 以运行 mock 模式集成测试。
+    """
+    if os.getenv("LLM_MOCK") != "true":
+        skip = pytest.mark.skip(reason="Set LLM_MOCK=true to run integration tests in mock mode")
+        for item in items:
+            if "integration" in str(item.fspath):
+                item.add_marker(skip)
 
 from engines.case_structuring.evidence_indexer.schemas import RawMaterial
 
