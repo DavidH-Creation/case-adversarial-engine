@@ -4,3 +4,4 @@
 outputs/
 .claude/worktrees/
 *.log
+workspaces/

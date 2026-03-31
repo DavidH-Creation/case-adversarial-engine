@@ -537,12 +537,12 @@ class WorkspaceManager:
         return ExecutiveSummaryArtifact.model_validate(data)
 
     # ------------------------------------------------------------------
-    # Case meta persistence (API layer support)
+    # 案件元数据持久化 / Case metadata persistence
     # ------------------------------------------------------------------
 
     def save_case_meta(self, meta: dict) -> None:
         """Persist case_meta.json to workspace directory (atomic write).
-        Used by the API service layer to durably record case state.
+        持久化案件元数据（case_info、status、materials）到 case_meta.json。
         """
         path = self.workspace_dir / "case_meta.json"
         with self._lock:
