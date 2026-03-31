@@ -30,11 +30,8 @@ jobs:
       - name: ruff check
         run: ruff check .
 
-      - name: ruff format (advisory)
-        # Non-blocking until the codebase is fully formatted.
-        # Run `ruff format .` locally and commit to make this blocking.
+      - name: ruff format
         run: ruff format --check .
-        continue-on-error: true
 
   # ---------------------------------------------------------------------------
   # Unit tests — all mock tests, integration tests excluded
