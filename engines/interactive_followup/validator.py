@@ -29,9 +29,7 @@ from .schemas import InteractionTurn, StatementClass
 MAX_QUESTION_LENGTH = 2000
 
 # 匹配 <script>...</script> 和 <style>...</style> 整块内容（含标签和内容）
-_SCRIPT_STYLE_RE = re.compile(
-    r"<(script|style)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL
-)
+_SCRIPT_STYLE_RE = re.compile(r"<(script|style)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
 # 匹配剩余的 HTML 标签 / Matches remaining HTML tags
 _HTML_TAG_RE = re.compile(r"<[^>]+>", re.IGNORECASE)
 
@@ -67,9 +65,7 @@ class ValidationReport:
         """计算引用完整性得分（0.0–1.0）。
         Compute citation completeness score (0.0–1.0).
         """
-        citation_errors = [
-            e for e in self.errors if e.code == "EVIDENCE_BOUNDARY_VIOLATION"
-        ]
+        citation_errors = [e for e in self.errors if e.code == "EVIDENCE_BOUNDARY_VIOLATION"]
         if citation_errors:
             return 0.0
         return 1.0
@@ -131,40 +127,50 @@ def validate_turn(
 
     # ── 1. 必填字段校验 / Required field checks ──────────────────────────────
     if not turn.turn_id:
-        result.errors.append(ValidationResult(
-            code="MISSING_FIELD",
-            message="turn_id 不能为空 / turn_id cannot be empty",
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="MISSING_FIELD",
+                message="turn_id 不能为空 / turn_id cannot be empty",
+                location=loc,
+            )
+        )
     if not turn.question:
-        result.errors.append(ValidationResult(
-            code="MISSING_FIELD",
-            message="question 不能为空 / question cannot be empty",
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="MISSING_FIELD",
+                message="question 不能为空 / question cannot be empty",
+                location=loc,
+            )
+        )
     if not turn.answer:
-        result.errors.append(ValidationResult(
-            code="MISSING_FIELD",
-            message="answer 不能为空 / answer cannot be empty",
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="MISSING_FIELD",
+                message="answer 不能为空 / answer cannot be empty",
+                location=loc,
+            )
+        )
     if not turn.report_id:
-        result.errors.append(ValidationResult(
-            code="MISSING_FIELD",
-            message="report_id 不能为空 / report_id cannot be empty",
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="MISSING_FIELD",
+                message="report_id 不能为空 / report_id cannot be empty",
+                location=loc,
+            )
+        )
 
     # ── 2. 争点绑定校验 / Issue binding check ────────────────────────────────
     if not turn.issue_ids:
-        result.errors.append(ValidationResult(
-            code="EMPTY_ISSUE_IDS",
-            message=(
-                "issue_ids 不能为空，追问必须绑定至少一个争点 / "
-                "issue_ids must not be empty, turn must bind at least one issue"
-            ),
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="EMPTY_ISSUE_IDS",
+                message=(
+                    "issue_ids 不能为空，追问必须绑定至少一个争点 / "
+                    "issue_ids must not be empty, turn must bind at least one issue"
+                ),
+                location=loc,
+            )
+        )
 
     # ── 3. 陈述分类校验 / Statement classification check ─────────────────────
     valid_classes = {sc.value for sc in StatementClass}
@@ -174,51 +180,59 @@ def validate_turn(
         else turn.statement_class
     )
     if sc_value not in valid_classes:
-        result.errors.append(ValidationResult(
-            code="INVALID_STATEMENT_CLASS",
-            message=(
-                f"statement_class 无效: {turn.statement_class!r}，"
-                f"合法值 / Valid values: {sorted(valid_classes)}"
-            ),
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="INVALID_STATEMENT_CLASS",
+                message=(
+                    f"statement_class 无效: {turn.statement_class!r}，"
+                    f"合法值 / Valid values: {sorted(valid_classes)}"
+                ),
+                location=loc,
+            )
+        )
 
     # ── 4. 证据边界校验 / Evidence boundary check ─────────────────────────────
     if report_evidence_ids is not None:
         for eid in turn.evidence_ids:
             if eid not in report_evidence_ids:
-                result.errors.append(ValidationResult(
-                    code="EVIDENCE_BOUNDARY_VIOLATION",
-                    message=(
-                        f"evidence_id {eid!r} 不在报告已引用证据中 / "
-                        f"evidence_id {eid!r} is not in report-cited evidence"
-                    ),
-                    location=loc,
-                ))
+                result.errors.append(
+                    ValidationResult(
+                        code="EVIDENCE_BOUNDARY_VIOLATION",
+                        message=(
+                            f"evidence_id {eid!r} 不在报告已引用证据中 / "
+                            f"evidence_id {eid!r} is not in report-cited evidence"
+                        ),
+                        location=loc,
+                    )
+                )
 
         # 证据引用为空时发出警告 / Warn if no evidence cited
         if not turn.evidence_ids:
-            result.warnings.append(ValidationResult(
-                code="NO_EVIDENCE_CITED",
-                message=(
-                    "本轮追问未引用任何证据，事实性断言应有 evidence_id 支撑 / "
-                    "No evidence cited in this turn; factual claims should have evidence"
-                ),
-                location=loc,
-            ))
+            result.warnings.append(
+                ValidationResult(
+                    code="NO_EVIDENCE_CITED",
+                    message=(
+                        "本轮追问未引用任何证据，事实性断言应有 evidence_id 支撑 / "
+                        "No evidence cited in this turn; factual claims should have evidence"
+                    ),
+                    location=loc,
+                )
+            )
 
     # ── 5. 悬空争点引用校验 / Dangling issue reference check ──────────────────
     if known_issue_ids is not None:
         for iid in turn.issue_ids:
             if iid not in known_issue_ids:
-                result.errors.append(ValidationResult(
-                    code="DANGLING_ISSUE_REF",
-                    message=(
-                        f"issue_id {iid!r} 不在已知争点集合中 / "
-                        f"issue_id {iid!r} is not in known issue IDs"
-                    ),
-                    location=loc,
-                ))
+                result.errors.append(
+                    ValidationResult(
+                        code="DANGLING_ISSUE_REF",
+                        message=(
+                            f"issue_id {iid!r} 不在已知争点集合中 / "
+                            f"issue_id {iid!r} is not in known issue IDs"
+                        ),
+                        location=loc,
+                    )
+                )
 
     return result
 
@@ -268,9 +282,7 @@ def sanitize_question(question: str) -> str:
 
     # Reject empty input
     if not cleaned:
-        raise ValueError(
-            "问题不能为空 / Question cannot be empty"
-        )
+        raise ValueError("问题不能为空 / Question cannot be empty")
 
     # Remove <script>/<style> blocks (including content), then remaining tags
     cleaned = _SCRIPT_STYLE_RE.sub("", cleaned)
@@ -278,9 +290,7 @@ def sanitize_question(question: str) -> str:
 
     # Re-check after tag removal
     if not cleaned.strip():
-        raise ValueError(
-            "问题在移除 HTML 标签后为空 / Question is empty after HTML tag removal"
-        )
+        raise ValueError("问题在移除 HTML 标签后为空 / Question is empty after HTML tag removal")
     cleaned = cleaned.strip()
 
     # Truncate to max length

@@ -68,9 +68,7 @@ def _make_evidence(
         target_issue_ids=["issue-001"],
         access_domain=_DOMAIN_MAP[status],
         status=status,
-        submitted_by_party_id=(
-            owner_party_id if status != EvidenceStatus.private else None
-        ),
+        submitted_by_party_id=(owner_party_id if status != EvidenceStatus.private else None),
         challenged_by_party_ids=[],
     )
 
@@ -84,18 +82,20 @@ def _make_evidence_index(evidences=None):
 
 def _all_accepted_json(evidence_id="ev-001"):
     """LLM 返回全部 4 维度 accepted。"""
-    return json.dumps({
-        "opinions": [
-            {
-                "evidence_id": evidence_id,
-                "issue_ids": ["issue-001"],
-                "dimension": d,
-                "verdict": "accepted",
-                "reasoning": f"{d} 无异议",
-            }
-            for d in ("authenticity", "relevance", "legality", "probative_value")
-        ]
-    })
+    return json.dumps(
+        {
+            "opinions": [
+                {
+                    "evidence_id": evidence_id,
+                    "issue_ids": ["issue-001"],
+                    "dimension": d,
+                    "verdict": "accepted",
+                    "reasoning": f"{d} 无异议",
+                }
+                for d in ("authenticity", "relevance", "legality", "probative_value")
+            ]
+        }
+    )
 
 
 def _one_challenged_json(evidence_id="ev-001"):
@@ -110,13 +110,15 @@ def _one_challenged_json(evidence_id="ev-001"):
         },
     ]
     for d in ("relevance", "legality", "probative_value"):
-        opinions.append({
-            "evidence_id": evidence_id,
-            "issue_ids": ["issue-001"],
-            "dimension": d,
-            "verdict": "accepted",
-            "reasoning": f"{d} 无异议",
-        })
+        opinions.append(
+            {
+                "evidence_id": evidence_id,
+                "issue_ids": ["issue-001"],
+                "dimension": d,
+                "verdict": "accepted",
+                "reasoning": f"{d} 无异议",
+            }
+        )
     return json.dumps({"opinions": opinions})
 
 
@@ -125,9 +127,7 @@ def _make_engine(llm_response=None):
     if isinstance(llm_response, list):
         mock_llm.create_message.side_effect = llm_response
     else:
-        mock_llm.create_message.return_value = (
-            llm_response or _all_accepted_json()
-        )
+        mock_llm.create_message.return_value = llm_response or _all_accepted_json()
     engine = CrossExaminationEngine(
         llm_client=mock_llm,
         model="test-model",
@@ -216,9 +216,7 @@ class TestEvidenceFiltering:
     @pytest.mark.asyncio
     async def test_already_admitted_excluded(self):
         """已 admitted 的证据不再质证。"""
-        adm = _make_evidence(
-            "ev-adm", "party-plaintiff", EvidenceStatus.admitted_for_discussion
-        )
+        adm = _make_evidence("ev-adm", "party-plaintiff", EvidenceStatus.admitted_for_discussion)
         sub = _make_evidence("ev-sub", "party-plaintiff", EvidenceStatus.submitted)
         engine, _ = _make_engine(_all_accepted_json("ev-sub"))
 
@@ -255,9 +253,11 @@ class TestOpposingPartyExamines:
     async def test_plaintiff_evidence_examined_by_defendant(self):
         engine, _ = _make_engine()
         result, _ = await engine.run(
-            evidence_index=_make_evidence_index([
-                _make_evidence("ev-001", "party-plaintiff"),
-            ]),
+            evidence_index=_make_evidence_index(
+                [
+                    _make_evidence("ev-001", "party-plaintiff"),
+                ]
+            ),
             issue_tree=_make_issue_tree(),
             **_RUN_KWARGS,
         )
@@ -268,9 +268,11 @@ class TestOpposingPartyExamines:
     async def test_defendant_evidence_examined_by_plaintiff(self):
         engine, _ = _make_engine(_all_accepted_json("ev-def"))
         result, _ = await engine.run(
-            evidence_index=_make_evidence_index([
-                _make_evidence("ev-def", "party-defendant"),
-            ]),
+            evidence_index=_make_evidence_index(
+                [
+                    _make_evidence("ev-def", "party-defendant"),
+                ]
+            ),
             issue_tree=_make_issue_tree(),
             **_RUN_KWARGS,
         )
@@ -316,24 +318,26 @@ class TestFocusList:
 class TestRuleLayer:
     @pytest.mark.asyncio
     async def test_hallucinated_evidence_id_filtered(self):
-        response = json.dumps({
-            "opinions": [
-                {
-                    "evidence_id": "ev-FAKE",
-                    "issue_ids": ["issue-001"],
-                    "dimension": "authenticity",
-                    "verdict": "challenged",
-                    "reasoning": "伪造引用",
-                },
-                {
-                    "evidence_id": "ev-001",
-                    "issue_ids": ["issue-001"],
-                    "dimension": "authenticity",
-                    "verdict": "accepted",
-                    "reasoning": "正常引用",
-                },
-            ]
-        })
+        response = json.dumps(
+            {
+                "opinions": [
+                    {
+                        "evidence_id": "ev-FAKE",
+                        "issue_ids": ["issue-001"],
+                        "dimension": "authenticity",
+                        "verdict": "challenged",
+                        "reasoning": "伪造引用",
+                    },
+                    {
+                        "evidence_id": "ev-001",
+                        "issue_ids": ["issue-001"],
+                        "dimension": "authenticity",
+                        "verdict": "accepted",
+                        "reasoning": "正常引用",
+                    },
+                ]
+            }
+        )
         engine, _ = _make_engine(response)
         result, _ = await engine.run(
             evidence_index=_make_evidence_index(),
@@ -346,24 +350,26 @@ class TestRuleLayer:
 
     @pytest.mark.asyncio
     async def test_invalid_dimension_filtered(self):
-        response = json.dumps({
-            "opinions": [
-                {
-                    "evidence_id": "ev-001",
-                    "issue_ids": ["issue-001"],
-                    "dimension": "invalid_dim",
-                    "verdict": "accepted",
-                    "reasoning": "无效维度",
-                },
-                {
-                    "evidence_id": "ev-001",
-                    "issue_ids": ["issue-001"],
-                    "dimension": "authenticity",
-                    "verdict": "accepted",
-                    "reasoning": "有效维度",
-                },
-            ]
-        })
+        response = json.dumps(
+            {
+                "opinions": [
+                    {
+                        "evidence_id": "ev-001",
+                        "issue_ids": ["issue-001"],
+                        "dimension": "invalid_dim",
+                        "verdict": "accepted",
+                        "reasoning": "无效维度",
+                    },
+                    {
+                        "evidence_id": "ev-001",
+                        "issue_ids": ["issue-001"],
+                        "dimension": "authenticity",
+                        "verdict": "accepted",
+                        "reasoning": "有效维度",
+                    },
+                ]
+            }
+        )
         engine, _ = _make_engine(response)
         result, _ = await engine.run(
             evidence_index=_make_evidence_index(),
@@ -378,17 +384,19 @@ class TestRuleLayer:
 
     @pytest.mark.asyncio
     async def test_hallucinated_issue_ids_filtered(self):
-        response = json.dumps({
-            "opinions": [
-                {
-                    "evidence_id": "ev-001",
-                    "issue_ids": ["issue-001", "issue-FAKE"],
-                    "dimension": "authenticity",
-                    "verdict": "accepted",
-                    "reasoning": "理由",
-                },
-            ]
-        })
+        response = json.dumps(
+            {
+                "opinions": [
+                    {
+                        "evidence_id": "ev-001",
+                        "issue_ids": ["issue-001", "issue-FAKE"],
+                        "dimension": "authenticity",
+                        "verdict": "accepted",
+                        "reasoning": "理由",
+                    },
+                ]
+            }
+        )
         engine, _ = _make_engine(response)
         result, _ = await engine.run(
             evidence_index=_make_evidence_index(),
@@ -410,7 +418,10 @@ class TestLLMFailure:
         mock_llm = AsyncMock()
         mock_llm.create_message.side_effect = RuntimeError("LLM down")
         engine = CrossExaminationEngine(
-            llm_client=mock_llm, model="m", temperature=0.0, max_retries=1,
+            llm_client=mock_llm,
+            model="m",
+            temperature=0.0,
+            max_retries=1,
         )
         result, updated = await engine.run(
             evidence_index=_make_evidence_index(),
@@ -442,44 +453,46 @@ class TestMultipleEvidence:
         """ev-001 全 accepted → admitted; ev-002 有 challenged → challenged。"""
         ev1 = _make_evidence("ev-001", "party-plaintiff")
         ev2 = _make_evidence("ev-002", "party-plaintiff")
-        response = json.dumps({
-            "opinions": [
-                # ev-001: 4 个 accepted
-                *[
-                    {
-                        "evidence_id": "ev-001",
-                        "issue_ids": ["issue-001"],
-                        "dimension": d,
-                        "verdict": "accepted",
-                        "reasoning": "ok",
-                    }
-                    for d in (
-                        "authenticity",
-                        "relevance",
-                        "legality",
-                        "probative_value",
-                    )
-                ],
-                # ev-002: authenticity challenged
-                {
-                    "evidence_id": "ev-002",
-                    "issue_ids": ["issue-001"],
-                    "dimension": "authenticity",
-                    "verdict": "challenged",
-                    "reasoning": "存疑",
-                },
-                *[
+        response = json.dumps(
+            {
+                "opinions": [
+                    # ev-001: 4 个 accepted
+                    *[
+                        {
+                            "evidence_id": "ev-001",
+                            "issue_ids": ["issue-001"],
+                            "dimension": d,
+                            "verdict": "accepted",
+                            "reasoning": "ok",
+                        }
+                        for d in (
+                            "authenticity",
+                            "relevance",
+                            "legality",
+                            "probative_value",
+                        )
+                    ],
+                    # ev-002: authenticity challenged
                     {
                         "evidence_id": "ev-002",
                         "issue_ids": ["issue-001"],
-                        "dimension": d,
-                        "verdict": "accepted",
-                        "reasoning": "ok",
-                    }
-                    for d in ("relevance", "legality", "probative_value")
-                ],
-            ]
-        })
+                        "dimension": "authenticity",
+                        "verdict": "challenged",
+                        "reasoning": "存疑",
+                    },
+                    *[
+                        {
+                            "evidence_id": "ev-002",
+                            "issue_ids": ["issue-001"],
+                            "dimension": d,
+                            "verdict": "accepted",
+                            "reasoning": "ok",
+                        }
+                        for d in ("relevance", "legality", "probative_value")
+                    ],
+                ]
+            }
+        )
         engine, _ = _make_engine(response)
         result, updated = await engine.run(
             evidence_index=_make_evidence_index([ev1, ev2]),
@@ -497,24 +510,26 @@ class TestMultipleEvidence:
         """双方各有 submitted 证据，均应被对方质证。"""
         p_ev = _make_evidence("ev-p", "party-plaintiff")
         d_ev = _make_evidence("ev-d", "party-defendant")
-        response = json.dumps({
-            "opinions": [
-                {
-                    "evidence_id": eid,
-                    "issue_ids": ["issue-001"],
-                    "dimension": d,
-                    "verdict": "accepted",
-                    "reasoning": "ok",
-                }
-                for eid in ("ev-p", "ev-d")
-                for d in (
-                    "authenticity",
-                    "relevance",
-                    "legality",
-                    "probative_value",
-                )
-            ]
-        })
+        response = json.dumps(
+            {
+                "opinions": [
+                    {
+                        "evidence_id": eid,
+                        "issue_ids": ["issue-001"],
+                        "dimension": d,
+                        "verdict": "accepted",
+                        "reasoning": "ok",
+                    }
+                    for eid in ("ev-p", "ev-d")
+                    for d in (
+                        "authenticity",
+                        "relevance",
+                        "legality",
+                        "probative_value",
+                    )
+                ]
+            }
+        )
         engine, _ = _make_engine(response)
         result, _ = await engine.run(
             evidence_index=_make_evidence_index([p_ev, d_ev]),

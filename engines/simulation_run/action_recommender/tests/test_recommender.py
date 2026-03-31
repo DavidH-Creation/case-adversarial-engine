@@ -7,6 +7,7 @@ ActionRecommender 单元测试（P1.8）。
 - 边界条件：空输入、混合 recommended_action、多 claim 绑定
 - 合约保证：无 LLM 客户端时为纯规则层
 """
+
 from __future__ import annotations
 
 import pytest
@@ -33,6 +34,7 @@ from engines.simulation_run.action_recommender.schemas import ActionRecommenderI
 # ---------------------------------------------------------------------------
 # 测试辅助函数 / Test helpers
 # ---------------------------------------------------------------------------
+
 
 def make_issue(
     issue_id: str,
@@ -110,6 +112,7 @@ def make_input(
 # 基础行为 / Basic behavior
 # ---------------------------------------------------------------------------
 
+
 class TestBasicBehavior:
     @pytest.mark.asyncio
     async def test_returns_action_recommendation(self):
@@ -145,6 +148,7 @@ class TestBasicBehavior:
 # evidence_supplement_priorities（来自 P1.7 ROI 排序）
 # ---------------------------------------------------------------------------
 
+
 class TestEvidenceSupplementPriorities:
     @pytest.mark.asyncio
     async def test_gap_ids_sorted_by_roi_rank(self):
@@ -178,6 +182,7 @@ class TestEvidenceSupplementPriorities:
 # recommended_claim_amendments（来自 recommended_action = amend_claim）
 # ---------------------------------------------------------------------------
 
+
 class TestRecommendedClaimAmendments:
     @pytest.mark.asyncio
     async def test_amend_claim_issue_generates_amendment(self):
@@ -194,9 +199,7 @@ class TestRecommendedClaimAmendments:
 
     @pytest.mark.asyncio
     async def test_issue_with_multiple_claims_generates_multiple_amendments(self):
-        issues = [
-            make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1", "c2"])
-        ]
+        issues = [make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1", "c2"])]
         rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert len(rec.recommended_claim_amendments) == 2
         claim_ids = {a.original_claim_id for a in rec.recommended_claim_amendments}
@@ -216,9 +219,7 @@ class TestRecommendedClaimAmendments:
 
     @pytest.mark.asyncio
     async def test_amendment_suggestion_id_unique_per_entry(self):
-        issues = [
-            make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1", "c2"])
-        ]
+        issues = [make_issue("i1", RecommendedAction.amend_claim, related_claim_ids=["c1", "c2"])]
         rec = await ActionRecommender().recommend(make_input(issues=issues))
         ids = [a.suggestion_id for a in rec.recommended_claim_amendments]
         assert len(ids) == len(set(ids)), "suggestion_id 必须唯一"
@@ -247,12 +248,16 @@ class TestRecommendedClaimAmendments:
             )
         ]
         rec = await ActionRecommender().recommend(make_input(issues=issues))
-        assert set(rec.recommended_claim_amendments[0].amendment_reason_evidence_ids) == {"e1", "e2"}
+        assert set(rec.recommended_claim_amendments[0].amendment_reason_evidence_ids) == {
+            "e1",
+            "e2",
+        }
 
 
 # ---------------------------------------------------------------------------
 # claims_to_abandon（来自 recommended_action = abandon）
 # ---------------------------------------------------------------------------
+
 
 class TestClaimsToAbandon:
     @pytest.mark.asyncio
@@ -270,9 +275,7 @@ class TestClaimsToAbandon:
 
     @pytest.mark.asyncio
     async def test_issue_with_multiple_claims_generates_multiple_suggestions(self):
-        issues = [
-            make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1", "c2"])
-        ]
+        issues = [make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1", "c2"])]
         rec = await ActionRecommender().recommend(make_input(issues=issues))
         assert len(rec.claims_to_abandon) == 2
 
@@ -290,9 +293,7 @@ class TestClaimsToAbandon:
 
     @pytest.mark.asyncio
     async def test_abandon_suggestion_id_unique(self):
-        issues = [
-            make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1", "c2"])
-        ]
+        issues = [make_issue("i1", RecommendedAction.abandon, related_claim_ids=["c1", "c2"])]
         rec = await ActionRecommender().recommend(make_input(issues=issues))
         ids = [a.suggestion_id for a in rec.claims_to_abandon]
         assert len(ids) == len(set(ids))
@@ -307,6 +308,7 @@ class TestClaimsToAbandon:
 # ---------------------------------------------------------------------------
 # trial_explanation_priorities（来自 recommended_action = explain_in_trial）
 # ---------------------------------------------------------------------------
+
 
 class TestTrialExplanationPriorities:
     @pytest.mark.asyncio
@@ -359,6 +361,7 @@ class TestTrialExplanationPriorities:
 # 混合场景 / Mixed scenario
 # ---------------------------------------------------------------------------
 
+
 class TestMixedScenario:
     @pytest.mark.asyncio
     async def test_all_action_types_simultaneously(self):
@@ -392,6 +395,7 @@ class TestMixedScenario:
 # ---------------------------------------------------------------------------
 # 案型检测 / Dispute category detection
 # ---------------------------------------------------------------------------
+
 
 class TestDisputeCategoryDetection:
     def test_borrower_identity_detected(self):

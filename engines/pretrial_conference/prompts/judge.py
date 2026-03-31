@@ -63,9 +63,7 @@ def build_judge_user_prompt(
     for iss in issues:
         cat = f" [{iss.issue_category.value}]" if iss.issue_category else ""
         status_str = iss.status.value if iss.status else "open"
-        issue_lines.append(
-            f"- {iss.issue_id}: {iss.title}{cat} (status: {status_str})"
-        )
+        issue_lines.append(f"- {iss.issue_id}: {iss.title}{cat} (status: {status_str})")
     issue_block = "\n".join(issue_lines) if issue_lines else "（无争点）"
 
     # 已采纳证据
@@ -83,8 +81,7 @@ def build_judge_user_prompt(
         gap_lines = []
         for g in evidence_gaps:
             gap_lines.append(
-                f"- {g.gap_id}: {g.gap_description} "
-                f"(related_issue: {g.related_issue_id})"
+                f"- {g.gap_id}: {g.gap_description} (related_issue: {g.related_issue_id})"
             )
         gap_block = f"\n\n## 证据缺口\n" + "\n".join(gap_lines)
 
@@ -103,11 +100,7 @@ def build_judge_user_prompt(
     # 当事人信息
     party_block = ""
     if plaintiff_party_id or defendant_party_id:
-        party_block = (
-            f"\n\n## 当事人\n"
-            f"- 原告: {plaintiff_party_id}\n"
-            f"- 被告: {defendant_party_id}"
-        )
+        party_block = f"\n\n## 当事人\n- 原告: {plaintiff_party_id}\n- 被告: {defendant_party_id}"
 
     return f"""\
 请基于以下庭前会议材料，提出关键追问。

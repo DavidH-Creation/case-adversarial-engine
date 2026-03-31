@@ -2,6 +2,7 @@
 BasePartyAgent — 共享 LLM 调用逻辑的基类。
 BasePartyAgent — base class with shared LLM call logic.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -151,10 +152,7 @@ class BasePartyAgent:
         for attempt in range(1, self._config.max_retries + 1):
             current_prompt = user_prompt
             if _error_hint:
-                current_prompt = (
-                    f"{user_prompt}\n\n"
-                    f"[上次输出验证失败，请修正：{_error_hint}]"
-                )
+                current_prompt = f"{user_prompt}\n\n[上次输出验证失败，请修正：{_error_hint}]"
 
             try:
                 raw = await self._llm.create_message(
@@ -259,14 +257,17 @@ class BasePartyAgent:
         own_weaknesses: list[str] = data.get("own_weaknesses", [])
         risk_flags: list[dict] = data.get("risk_flags", [])
         for idx, weakness in enumerate(own_weaknesses, start=1):
-            risk_flags.append({
-                "flag_id": f"own-weakness-{idx:03d}",
-                "description": weakness,
-                "impact_objects": ["win_rate", "trial_credibility"],
-                "impact_objects_scored": False,
-            })
+            risk_flags.append(
+                {
+                    "flag_id": f"own-weakness-{idx:03d}",
+                    "description": weakness,
+                    "impact_objects": ["win_rate", "trial_credibility"],
+                    "impact_objects_scored": False,
+                }
+            )
 
         import uuid
+
         output_id = f"output-{self._role.value}-r{round_index}-{uuid.uuid4().hex[:8]}"
 
         return AgentOutput(
@@ -300,8 +301,7 @@ class BasePartyAgent:
         hallucinated = [eid for eid in output.evidence_citations if eid not in visible_ids]
         if hallucinated:
             raise AgentOutputValidationError(
-                f"引用了不在可见证据中的 ID: {hallucinated}。"
-                f"可见证据 ID: {sorted(visible_ids)}"
+                f"引用了不在可见证据中的 ID: {hallucinated}。可见证据 ID: {sorted(visible_ids)}"
             )
 
     # ------------------------------------------------------------------
@@ -315,9 +315,7 @@ class BasePartyAgent:
         """
         lines = [f"案件争点列表 (case_id={issue_tree.case_id}):"]
         for issue in issue_tree.issues:
-            lines.append(
-                f"  - [{issue.issue_id}] {issue.title} ({issue.issue_type.value})"
-            )
+            lines.append(f"  - [{issue.issue_id}] {issue.title} ({issue.issue_type.value})")
         return "\n".join(lines)
 
     @staticmethod
@@ -329,9 +327,7 @@ class BasePartyAgent:
             return "  （无可见证据）"
         lines = []
         for ev in evidence:
-            lines.append(
-                f"  - [{ev.evidence_id}] {ev.title}: {ev.summary}"
-            )
+            lines.append(f"  - [{ev.evidence_id}] {ev.title}: {ev.summary}")
         return "\n".join(lines)
 
     @staticmethod

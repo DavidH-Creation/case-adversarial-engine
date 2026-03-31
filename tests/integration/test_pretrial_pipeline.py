@@ -84,39 +84,45 @@ D_ID = "party-defendant-001"
 # ---------------------------------------------------------------------------
 
 # Cross-examination response: admits ev-p-001 and challenges ev-d-001
-_CROSS_EXAM_RESPONSE = json.dumps({
-    "opinions": [
-        {
-            "evidence_id": "ev-p-001",
-            "issue_ids": ["issue-001"],
-            "dimension": "authenticity",
-            "verdict": "accepted",
-            "reasoning": "Original document verified",
-        },
-        {
-            "evidence_id": "ev-d-001",
-            "issue_ids": ["issue-001"],
-            "dimension": "relevance",
-            "verdict": "challenged",
-            "reasoning": "Relevance to core dispute is questionable",
-        },
-    ],
-}, ensure_ascii=False)
+_CROSS_EXAM_RESPONSE = json.dumps(
+    {
+        "opinions": [
+            {
+                "evidence_id": "ev-p-001",
+                "issue_ids": ["issue-001"],
+                "dimension": "authenticity",
+                "verdict": "accepted",
+                "reasoning": "Original document verified",
+            },
+            {
+                "evidence_id": "ev-d-001",
+                "issue_ids": ["issue-001"],
+                "dimension": "relevance",
+                "verdict": "challenged",
+                "reasoning": "Relevance to core dispute is questionable",
+            },
+        ],
+    },
+    ensure_ascii=False,
+)
 
 # Judge questions response
-_JUDGE_QUESTIONS_RESPONSE = json.dumps({
-    "questions": [
-        {
-            "question_id": "q-001",
-            "issue_id": "issue-001",
-            "evidence_ids": ["ev-p-001"],
-            "question_text": "Please clarify the loan disbursement date",
-            "target_party_id": P_ID,
-            "question_type": "clarification",
-            "priority": 8,
-        },
-    ],
-}, ensure_ascii=False)
+_JUDGE_QUESTIONS_RESPONSE = json.dumps(
+    {
+        "questions": [
+            {
+                "question_id": "q-001",
+                "issue_id": "issue-001",
+                "evidence_ids": ["ev-p-001"],
+                "question_text": "Please clarify the loan disbursement date",
+                "target_party_id": P_ID,
+                "question_type": "clarification",
+                "priority": 8,
+            },
+        ],
+    },
+    ensure_ascii=False,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -132,24 +138,31 @@ async def test_pretrial_happy_path():
     ev_index = _make_evidence_index(ev_p, ev_d)
 
     # SequentialMock: first call = cross-exam, second call = judge questions
-    mock_client = SequentialMockLLMClient([
-        _CROSS_EXAM_RESPONSE,
-        _JUDGE_QUESTIONS_RESPONSE,
-    ])
+    mock_client = SequentialMockLLMClient(
+        [
+            _CROSS_EXAM_RESPONSE,
+            _JUDGE_QUESTIONS_RESPONSE,
+        ]
+    )
 
     engine = PretrialConferenceEngine(
-        llm_client=mock_client, model="test-model", temperature=0.0, max_retries=0,
+        llm_client=mock_client,
+        model="test-model",
+        temperature=0.0,
+        max_retries=0,
     )
 
     issue_tree = IssueTree(
         case_id=CASE_ID,
-        issues=[Issue(
-            issue_id="issue-001",
-            case_id=CASE_ID,
-            title="Loan agreement validity",
-            issue_type=IssueType.factual,
-            evidence_ids=["ev-p-001", "ev-d-001"],
-        )],
+        issues=[
+            Issue(
+                issue_id="issue-001",
+                case_id=CASE_ID,
+                title="Loan agreement validity",
+                issue_type=IssueType.factual,
+                evidence_ids=["ev-p-001", "ev-d-001"],
+            )
+        ],
         burdens=[],
     )
 
@@ -214,17 +227,24 @@ async def test_pretrial_no_evidence_admitted():
     ev_index = _make_evidence_index(ev_p)
 
     # No LLM calls expected since no evidence submitted → cross-exam has nothing to do
-    mock_client = SequentialMockLLMClient([
-        json.dumps({"opinions": []}),
-        json.dumps({"questions": []}),
-    ])
+    mock_client = SequentialMockLLMClient(
+        [
+            json.dumps({"opinions": []}),
+            json.dumps({"questions": []}),
+        ]
+    )
 
     engine = PretrialConferenceEngine(
-        llm_client=mock_client, model="test-model", temperature=0.0, max_retries=0,
+        llm_client=mock_client,
+        model="test-model",
+        temperature=0.0,
+        max_retries=0,
     )
 
     issue_tree = IssueTree(
-        case_id=CASE_ID, issues=[], burdens=[],
+        case_id=CASE_ID,
+        issues=[],
+        burdens=[],
     )
 
     result = await engine.run(
@@ -259,11 +279,16 @@ async def test_pretrial_llm_failure_graceful():
     mock_client = MockLLMClient(response="", fail_times=10)
 
     engine = PretrialConferenceEngine(
-        llm_client=mock_client, model="test-model", temperature=0.0, max_retries=0,
+        llm_client=mock_client,
+        model="test-model",
+        temperature=0.0,
+        max_retries=0,
     )
 
     issue_tree = IssueTree(
-        case_id=CASE_ID, issues=[], burdens=[],
+        case_id=CASE_ID,
+        issues=[],
+        burdens=[],
     )
 
     # Should NOT raise
@@ -316,14 +341,16 @@ def test_enforce_minimum_status_filtered():
 
     # Only check ev-002 → should pass even though ev-001 is private
     sm.enforce_minimum_status(
-        ev_index, EvidenceStatus.admitted_for_discussion,
+        ev_index,
+        EvidenceStatus.admitted_for_discussion,
         evidence_ids=["ev-002"],
     )
 
     # Check ev-001 → should fail
     with pytest.raises(EvidenceStatusViolation):
         sm.enforce_minimum_status(
-            ev_index, EvidenceStatus.admitted_for_discussion,
+            ev_index,
+            EvidenceStatus.admitted_for_discussion,
             evidence_ids=["ev-001"],
         )
 

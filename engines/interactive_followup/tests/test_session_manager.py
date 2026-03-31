@@ -31,7 +31,9 @@ _REPORT_ID = "report-session-test-001"
 _RUN_ID = "run-session-test-001"
 
 
-def _make_turn(turn_id: str, question: str = "测试问题", answer: str = "测试回答") -> InteractionTurn:
+def _make_turn(
+    turn_id: str, question: str = "测试问题", answer: str = "测试回答"
+) -> InteractionTurn:
     """创建测试用 InteractionTurn / Create test InteractionTurn."""
     return InteractionTurn(
         turn_id=turn_id,
@@ -184,7 +186,9 @@ class TestSessionManagerAppendTurn:
         session = mgr.create(_CASE_ID, _REPORT_ID, _RUN_ID)
 
         for i in range(5):
-            turn = _make_turn(f"turn-test-{i+1:02d}", question=f"问题{i+1}", answer=f"回答{i+1}")
+            turn = _make_turn(
+                f"turn-test-{i + 1:02d}", question=f"问题{i + 1}", answer=f"回答{i + 1}"
+            )
             session = mgr.append_turn(session, turn)
 
         assert session.turn_count == 5

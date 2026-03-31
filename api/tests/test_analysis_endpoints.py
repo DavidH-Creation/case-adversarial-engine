@@ -7,6 +7,7 @@ Tests for:
 
 Units 4, 5, 6: evidence lifecycle, baseline emission, workspace persistence
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -76,6 +77,7 @@ def clear_store():
 # GET /api/cases/{case_id}/artifacts
 # ---------------------------------------------------------------------------
 
+
 class TestListArtifacts:
     def test_happy_path_returns_artifact_names(self):
         """run_id 存在 + artifacts 已填充 → 200 + 文件名列表"""
@@ -110,6 +112,7 @@ class TestListArtifacts:
 # ---------------------------------------------------------------------------
 # GET /api/cases/{case_id}/artifacts/{artifact_name}
 # ---------------------------------------------------------------------------
+
 
 class TestGetArtifact:
     def test_happy_path_returns_artifact_json(self):
@@ -156,6 +159,7 @@ class TestGetArtifact:
 # GET /api/cases/{case_id}/report/markdown
 # ---------------------------------------------------------------------------
 
+
 class TestGetMarkdownReport:
     def test_happy_path_returns_markdown_content(self):
         """run_id 存在 + 报告已生成 → 200 + Markdown 文本"""
@@ -194,6 +198,7 @@ class TestGetMarkdownReport:
 # Unit 4: evidence lifecycle via EvidenceStateMachine
 # ---------------------------------------------------------------------------
 
+
 def _make_fake_adversarial_result(case_id: str, run_id: str, cited_ids: list[str]):
     """Build a minimal AdversarialResult with the given cited evidence IDs."""
     from engines.adversarial.schemas import AdversarialResult, RoundState, RoundPhase
@@ -229,6 +234,7 @@ def _make_fake_adversarial_result(case_id: str, run_id: str, cited_ids: list[str
 def _make_ev(evidence_id: str, case_id: str, owner_party_id: str):
     """Build a minimal private Evidence object."""
     from engines.shared.models import Evidence, EvidenceStatus, AccessDomain
+
     return Evidence(
         evidence_id=evidence_id,
         case_id=case_id,
@@ -251,6 +257,7 @@ class TestUnit4EvidenceStateMachine:
         store._cases.clear()
         # Disable workspace writes during unit tests
         import api.service as svc
+
         self._orig_base = svc._WORKSPACE_BASE
         svc._WORKSPACE_BASE = None
         yield
@@ -343,6 +350,7 @@ class TestUnit4EvidenceStateMachine:
 # Unit 5: canonical baseline artifacts + stable run_id
 # ---------------------------------------------------------------------------
 
+
 class TestUnit5BaselineEmission:
     """Unit 5: analysis must write baseline artifacts and expose stable run_id."""
 
@@ -350,6 +358,7 @@ class TestUnit5BaselineEmission:
     def _setup(self):
         store._cases.clear()
         import api.service as svc
+
         self._orig_base = svc._WORKSPACE_BASE
         svc._WORKSPACE_BASE = None
         yield
@@ -430,6 +439,7 @@ class TestUnit5BaselineEmission:
 # Unit 6: workspace-backed persistence
 # ---------------------------------------------------------------------------
 
+
 class TestUnit6WorkspacePersistence:
     """Unit 6: CaseStore must persist durable state and support restart recovery."""
 
@@ -437,6 +447,7 @@ class TestUnit6WorkspacePersistence:
     def _setup(self, tmp_path):
         store._cases.clear()
         import api.service as svc
+
         self._orig_base = svc._WORKSPACE_BASE
         svc._WORKSPACE_BASE = tmp_path / "workspaces" / "api"
         self._tmp = tmp_path
@@ -447,6 +458,7 @@ class TestUnit6WorkspacePersistence:
     def test_create_initializes_workspace(self):
         """CaseStore.create() must initialize a workspace directory."""
         import api.service as svc
+
         record = store.create(_CASE_INFO)
         ws_dir = svc._WORKSPACE_BASE / record.case_id
         assert ws_dir.is_dir(), "workspace dir must exist after create"
@@ -514,3 +526,80 @@ class TestUnit6WorkspacePersistence:
         """load_from_workspace must return None for a case_id that was never created."""
         result = store.load_from_workspace("case-does-not-exist")
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# CaseStore TTL eviction
+# ---------------------------------------------------------------------------
+
+
+class TestCaseStoreTTL:
+    def test_case_store_evicts_expired_entries(self):
+        """TTL 过期后，evict_expired 应删除该 case，get 应返回 None。"""
+        import time
+
+        from api.service import CaseStore
+
+        ttl_store = CaseStore(ttl_seconds=0.1)
+        record = ttl_store.create(_CASE_INFO)
+        case_id = record.case_id
+        assert ttl_store.get(case_id) is not None
+
+        time.sleep(0.2)
+        ttl_store.evict_expired()
+        assert ttl_store.get(case_id) is None
+
+    def test_case_store_get_evicts_lazily_on_access(self):
+        """get() 访问时如果条目已过期应直接返回 None（懒驱逐）。"""
+        import time
+
+        from api.service import CaseStore
+
+        ttl_store = CaseStore(ttl_seconds=0.1)
+        record = ttl_store.create(_CASE_INFO)
+        case_id = record.case_id
+
+        time.sleep(0.2)
+        result = ttl_store.get(case_id)
+        assert result is None
+
+    def test_case_store_non_expired_entry_survives(self):
+        """未过期的条目不应被清除。"""
+        from api.service import CaseStore
+
+        ttl_store = CaseStore(ttl_seconds=3600)
+        record = ttl_store.create(_CASE_INFO)
+        case_id = record.case_id
+
+        ttl_store.evict_expired()
+        assert ttl_store.get(case_id) is not None
+
+
+# ---------------------------------------------------------------------------
+# iter_progress — SSE 重连历史回放
+# ---------------------------------------------------------------------------
+
+
+class TestIterProgressReplay:
+    @pytest.mark.asyncio
+    async def test_iter_progress_replays_history_after_completion(self):
+        """已完成的 case，SSE 重连应先回放 progress 历史，再发送完成事件，不能直接返回空。"""
+        record = store.create(_CASE_INFO)
+        record.status = CaseStatus.analyzed
+        record.progress = ["step1", "step2", "done"]
+
+        events = [e async for e in record.iter_progress()]
+        assert len(events) >= 3, f"期望 ≥3 个事件，实际得到 {events}"
+        assert "step1" in events[0]
+        assert "done" in events[-1]
+
+    @pytest.mark.asyncio
+    async def test_iter_progress_replays_history_after_failed(self):
+        """失败的 case，重连也应回放已有历史。"""
+        record = store.create(_CASE_INFO)
+        record.status = CaseStatus.failed
+        record.progress = ["init", "error: timeout"]
+
+        events = [e async for e in record.iter_progress()]
+        assert len(events) >= 2
+        assert "init" in events[0]

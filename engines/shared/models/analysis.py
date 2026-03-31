@@ -50,6 +50,7 @@ from engines.shared.models.core import (
 
 class Evidence(BaseModel):
     """结构化证据对象。Tier 1 字段对应 evidence.schema.json。"""
+
     evidence_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     owner_party_id: str = Field(..., min_length=1)
@@ -64,7 +65,9 @@ class Evidence(BaseModel):
     submitted_by_party_id: Optional[str] = None
     challenged_by_party_ids: list[str] = Field(default_factory=list)
     admissibility_notes: Optional[str] = None
-    admissibility_risk: Optional[str] = None  # P1 新增：可采性风险说明（如来源争议、取证程序瑕疵等）
+    admissibility_risk: Optional[str] = (
+        None  # P1 新增：可采性风险说明（如来源争议、取证程序瑕疵等）
+    )
     # P1.5: 证据权重评分扩展字段（向后兼容，全部 Optional）
     authenticity_risk: Optional[AuthenticityRisk] = None
     relevance_score: Optional[RelevanceScore] = None
@@ -76,7 +79,9 @@ class Evidence(BaseModel):
     is_copy_only: bool = Field(default=False, description="关键证据仅有复印件无原件（CRED-02）")
     # 可采性门控扩展字段（向后兼容，全部有默认值）
     admissibility_score: float = Field(
-        default=1.0, ge=0.0, le=1.0,
+        default=1.0,
+        ge=0.0,
+        le=1.0,
         description="证据可采性评分 (1.0=完全可采, 0.0=被排除；由 AdmissibilityEvaluator 填充)",
     )
     admissibility_challenges: list[str] = Field(
@@ -101,27 +106,36 @@ class Evidence(BaseModel):
         description="攻击/反驳该证据的其他证据 evidence_id 列表",
     )
     stability_score: Optional[float] = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="证据稳定性 (0-1)：即使被质证也不容易崩的程度。区别于 probative_value(冲击力)。"
-                    "stability_score 优先于 probative_value 参与排序。",
+        "stability_score 优先于 probative_value 参与排序。",
     )
     support_strength: Optional[float] = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="证据支撑强度 (0-1)：表面直观说服力。",
     )
     counter_evidence_strength: Optional[float] = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="对立证据强度 (0-1)：反驳该证据的力度。",
     )
     dispute_ratio: Optional[float] = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="争议比 (0-1)：counter_evidence_strength / (support_strength + counter_evidence_strength)。"
-                    "高值表明该证据被强反证、排序时应自动降权。",
+        "高值表明该证据被强反证、排序时应自动降权。",
     )
 
 
 class FactProposition(BaseModel):
     """事实命题 — 连接证据与争点的桥梁。"""
+
     proposition_id: str = Field(..., min_length=1)
     text: str = Field(..., min_length=1)
     status: PropositionStatus = PropositionStatus.unverified
@@ -130,6 +144,7 @@ class FactProposition(BaseModel):
 
 class Issue(BaseModel):
     """争点对象。Tier 1 对应 issue.schema.json；Tier 2 为 docs/03 前瞻字段（Optional）。"""
+
     issue_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     title: str = Field(..., min_length=1)
@@ -160,7 +175,9 @@ class Issue(BaseModel):
         default=None, ge=0, le=100, description="争点结论翻转对结果的摆幅 (0-100)"
     )
     evidence_strength_gap: Optional[int] = Field(
-        default=None, ge=-100, le=100,
+        default=None,
+        ge=-100,
+        le=100,
         description="主张方证据强度减去反对方攻击强度 (-100 to +100)",
     )
     dependency_depth: Optional[int] = Field(
@@ -185,6 +202,7 @@ class Issue(BaseModel):
 
 class Burden(BaseModel):
     """举证责任对象。canonical 字段名使用 burden_party_id（docs/03）。"""
+
     burden_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     issue_id: str = Field(..., min_length=1)
@@ -202,6 +220,7 @@ class Burden(BaseModel):
 
 class Claim(BaseModel):
     """诉请对象。"""
+
     claim_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     owner_party_id: str = Field(..., min_length=1)
@@ -217,6 +236,7 @@ class Claim(BaseModel):
 
 class Defense(BaseModel):
     """抗辩对象。"""
+
     defense_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     owner_party_id: str = Field(..., min_length=1)
@@ -231,6 +251,7 @@ class Defense(BaseModel):
 
 class LitigationHistory(BaseModel):
     """当事人近期放贷诉讼统计 — 职业放贷人检测输入。"""
+
     lending_case_count: int = Field(default=0, ge=0, description="近期放贷诉讼数")
     distinct_borrower_count: int = Field(default=0, ge=0, description="不同借款人数")
     total_lending_amount: Decimal = Field(default=Decimal("0"), ge=0, description="累计放贷金额")
@@ -240,6 +261,7 @@ class LitigationHistory(BaseModel):
 
 class Party(BaseModel):
     """案件参与主体。"""
+
     party_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
@@ -260,18 +282,21 @@ class Party(BaseModel):
 
 class ClaimIssueMapping(BaseModel):
     """诉请到争点的映射。"""
+
     claim_id: str = Field(..., min_length=1)
     issue_ids: list[str] = Field(..., min_length=1)
 
 
 class DefenseIssueMapping(BaseModel):
     """抗辩到争点的映射。"""
+
     defense_id: str = Field(..., min_length=1)
     issue_ids: list[str] = Field(..., min_length=1)
 
 
 class EvidenceIndex(BaseModel):
     """证据索引工作格式（非磁盘 artifact envelope）。"""
+
     case_id: str = Field(..., min_length=1)
     evidence: list[Evidence]
     extraction_metadata: Optional[dict[str, Any]] = None
@@ -279,6 +304,7 @@ class EvidenceIndex(BaseModel):
 
 class IssueTree(BaseModel):
     """争点树产物，对应 schemas/case/issue_tree.schema.json。"""
+
     case_id: str = Field(..., min_length=1)
     run_id: Optional[str] = None
     job_id: Optional[str] = None
@@ -296,26 +322,24 @@ class IssueTree(BaseModel):
 
 class KeyConclusion(BaseModel):
     """报告章节关键结论。"""
+
     conclusion_id: str = Field(..., min_length=1)
     text: str = Field(..., min_length=1)
     statement_class: StatementClass
-    supporting_evidence_ids: list[str] = Field(
-        ..., description="至少一条支持该结论的证据 ID"
-    )
+    supporting_evidence_ids: list[str] = Field(..., description="至少一条支持该结论的证据 ID")
     supporting_output_ids: list[str] = Field(default_factory=list)
 
 
 class ReportSection(BaseModel):
     """报告章节。v7 起每个 section 必须标注视角、置信度和依赖。"""
+
     section_id: str = Field(..., min_length=1)
     section_index: int = Field(..., ge=1)
     title: str = Field(..., min_length=1)
     body: str = Field(..., min_length=1)
     linked_issue_ids: list[str] = Field(default_factory=list)
     linked_output_ids: list[str] = Field(default_factory=list)
-    linked_evidence_ids: list[str] = Field(
-        ..., description="章节引用的证据 ID 列表"
-    )
+    linked_evidence_ids: list[str] = Field(..., description="章节引用的证据 ID 列表")
     key_conclusions: list[KeyConclusion] = Field(default_factory=list)
     # v7: section 顶部元数据
     perspective: Perspective = Field(
@@ -323,7 +347,9 @@ class ReportSection(BaseModel):
         description="本 section 的视角：neutral=中立评估, plaintiff=原告策略, defendant=被告策略",
     )
     confidence: Optional[float] = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="本 section 结论置信度 (0-1)",
     )
     section_depends_on: list[str] = Field(
@@ -334,6 +360,7 @@ class ReportSection(BaseModel):
 
 class ReportArtifact(BaseModel):
     """诊断报告产物。"""
+
     report_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
@@ -349,6 +376,7 @@ class ReportArtifact(BaseModel):
 
 class InteractionTurn(BaseModel):
     """单次追问记录。"""
+
     turn_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     report_id: str = Field(..., min_length=1)
@@ -377,6 +405,7 @@ class RiskFlag(BaseModel):
     - impact_objects:        impact_objects_scored=True 时必须非空
     - impact_objects_scored: False 表示过渡期自动升级的旧数据
     """
+
     flag_id: str = Field(..., min_length=1)
     description: str = Field(..., min_length=1)
     impact_objects: list[RiskImpactObject] = Field(default_factory=list)
@@ -400,6 +429,7 @@ class AgentOutput(BaseModel):
     - evidence_citations: 非空（所有关键结论必须引用具体证据 ID）
     - round_index:        >= 0
     """
+
     output_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
@@ -434,6 +464,7 @@ class EvidenceGapItem(BaseModel):
 
     roi_rank 由规则层（EvidenceGapROIRanker）自动计算，调用方不得手动赋值。
     """
+
     gap_id: str = Field(..., min_length=1, description="缺证项唯一标识")
     case_id: str = Field(..., min_length=1, description="案件 ID")
     run_id: str = Field(..., min_length=1, description="运行快照 ID")
@@ -464,10 +495,13 @@ class ClaimAmendmentSuggestion(BaseModel):
         amendment_reason_issue_id:      修改依据绑定争点 ID（零容忍空值）
         amendment_reason_evidence_ids:  修改依据关联证据 ID 列表（可为空列表）
     """
+
     suggestion_id: str = Field(..., min_length=1)
     original_claim_id: str = Field(..., min_length=1)
     amendment_description: str = Field(..., min_length=1, description="简要修改方向")
-    amendment_reason_issue_id: str = Field(..., min_length=1, description="修改依据争点 ID（零容忍空值）")
+    amendment_reason_issue_id: str = Field(
+        ..., min_length=1, description="修改依据争点 ID（零容忍空值）"
+    )
     amendment_reason_evidence_ids: list[str] = Field(
         default_factory=list, description="修改依据关联证据 ID 列表"
     )
@@ -482,10 +516,13 @@ class ClaimAbandonSuggestion(BaseModel):
         abandon_reason:          放弃理由（非空）
         abandon_reason_issue_id: 放弃依据争点 ID（零容忍空值）
     """
+
     suggestion_id: str = Field(..., min_length=1)
     claim_id: str = Field(..., min_length=1)
     abandon_reason: str = Field(..., min_length=1, description="放弃理由（零容忍空值）")
-    abandon_reason_issue_id: str = Field(..., min_length=1, description="放弃依据争点 ID（零容忍空值）")
+    abandon_reason_issue_id: str = Field(
+        ..., min_length=1, description="放弃依据争点 ID（零容忍空值）"
+    )
 
 
 class TrialExplanationPriority(BaseModel):
@@ -496,6 +533,7 @@ class TrialExplanationPriority(BaseModel):
         issue_id:         绑定争点 ID（零容忍空值）
         explanation_text: 需解释的事项描述（非空）
     """
+
     priority_id: str = Field(..., min_length=1)
     issue_id: str = Field(..., min_length=1, description="绑定争点 ID（零容忍空值）")
     explanation_text: str = Field(..., min_length=1, description="庭审解释事项说明")
@@ -503,6 +541,7 @@ class TrialExplanationPriority(BaseModel):
 
 class StrategicRecommendation(BaseModel):
     """案型适配的策略性建议（P1.8 v2）。由 LLM 策略层生成。"""
+
     recommendation_text: str = Field(..., min_length=1, description="策略建议文本")
     target_party: str = Field(
         ..., min_length=1, description="建议针对的当事方类型：plaintiff / defendant"
@@ -514,6 +553,7 @@ class StrategicRecommendation(BaseModel):
 
 class PartyActionPlan(BaseModel):
     """单方行动计划（P1.8 v2）。聚合规则层结构行动和 LLM 策略建议。"""
+
     party_type: str = Field(..., min_length=1, description="plaintiff / defendant")
     structural_actions: list[str] = Field(
         default_factory=list, description="来自规则层的行动 ID 列表"
@@ -538,6 +578,7 @@ class ActionRecommendation(BaseModel):
         claims_to_abandon:              建议放弃诉请条目列表（ClaimAbandonSuggestion[]）
         created_at:                     ISO-8601 时间戳（自动生成）
     """
+
     recommendation_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
@@ -569,6 +610,7 @@ class ActionRecommendation(BaseModel):
 
 class CredibilityDeduction(BaseModel):
     """单条可信度扣分项。由规则层生成，不允许 LLM 修改。"""
+
     deduction_id: str = Field(..., min_length=1, description="扣分项唯一 ID")
     rule_id: str = Field(..., min_length=1, description="触发规则编号，如 CRED-01")
     rule_description: str = Field(..., min_length=1, description="规则描述")
@@ -587,6 +629,7 @@ class CredibilityScorecard(BaseModel):
     base_score 固定为 100，final_score = base_score + sum(d.deduction_points)。
     final_score < 60 时，report_engine 须在报告显著位置标注可信度警告。
     """
+
     scorecard_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
@@ -642,6 +685,7 @@ class AlternativeClaimSuggestion(BaseModel):
         supporting_evidence_ids:  支持替代主张的证据 ID 列表
         created_at:               ISO-8601 时间戳（自动生成）
     """
+
     suggestion_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
@@ -682,18 +726,13 @@ class ClaimDecomposition(BaseModel):
     - fallback_anchor <= formal_claim（路径树显示仅部分支持时自动下调）
     - expected_recovery_range.lower <= expected_recovery_range.upper
     """
-    formal_claim: Decimal = Field(
-        ..., ge=0, description="正式诉请金额（原告实际起诉数额）"
-    )
+
+    formal_claim: Decimal = Field(..., ge=0, description="正式诉请金额（原告实际起诉数额）")
     fallback_anchor: Decimal = Field(
         ..., ge=0, description="保底锚点：最有把握获得支持的金额（不高于 formal_claim）"
     )
-    expected_recovery_lower: Decimal = Field(
-        ..., ge=0, description="预期回收区间下界"
-    )
-    expected_recovery_upper: Decimal = Field(
-        ..., ge=0, description="预期回收区间上界"
-    )
+    expected_recovery_lower: Decimal = Field(..., ge=0, description="预期回收区间下界")
+    expected_recovery_upper: Decimal = Field(..., ge=0, description="预期回收区间上界")
     decomposition_rationale: str = Field(
         default="", description="拆分依据说明（路径树哪条路径支持哪部分金额）"
     )
@@ -723,21 +762,18 @@ class InternalDecisionSummary(BaseModel):
 
     包含：最可能输赢方向、最现实可回收金额、最先该补哪条证据。
     """
+
     most_likely_winner: str = Field(
         ..., description="最可能胜诉方：plaintiff / defendant / uncertain"
     )
-    most_likely_winner_rationale: str = Field(
-        default="", description="判断依据"
-    )
+    most_likely_winner_rationale: str = Field(default="", description="判断依据")
     realistic_recovery_amount: Optional[Decimal] = Field(
         default=None, ge=0, description="最现实可回收金额"
     )
     priority_evidence_to_supplement: Optional[str] = Field(
         default=None, description="最先应补强的证据 gap_id"
     )
-    priority_supplement_rationale: str = Field(
-        default="", description="补证优先理由"
-    )
+    priority_supplement_rationale: str = Field(default="", description="补证优先理由")
 
 
 # ---------------------------------------------------------------------------
@@ -755,9 +791,8 @@ class ConsistencyCheckResult(BaseModel):
     4. strong_argument_demoted:   强论点降权（被强反证的证据已降权）
     5. action_stance_aligned:     行动建议对齐（建议方向与整体态势匹配）
     """
-    overall_pass: bool = Field(
-        ..., description="全部校验通过为 True"
-    )
+
+    overall_pass: bool = Field(..., description="全部校验通过为 True")
     perspective_consistent: bool = Field(default=True)
     recommendation_consistent: bool = Field(default=True)
     admissibility_gate_passed: bool = Field(default=True)
@@ -781,15 +816,14 @@ class ConfidenceMetrics(BaseModel):
         evidence_completeness:  证据完整度（0.0-1.0）
         legal_clarity:          法律适用清晰度（0.0-1.0）
     """
+
     overall_confidence: float = Field(
         ge=0.0, le=1.0, description="整体置信度（基于证据充分性和法律依据清晰度）"
     )
     evidence_completeness: float = Field(
         ge=0.0, le=1.0, description="证据完整度（已有证据覆盖争点的比例）"
     )
-    legal_clarity: float = Field(
-        ge=0.0, le=1.0, description="法律适用清晰度（适用法条明确程度）"
-    )
+    legal_clarity: float = Field(ge=0.0, le=1.0, description="法律适用清晰度（适用法条明确程度）")
 
 
 class ExecutiveSummaryStructuredOutput(BaseModel):
@@ -804,10 +838,9 @@ class ExecutiveSummaryStructuredOutput(BaseModel):
         recommended_actions:    建议行动列表（具体可执行，按优先级排序）
         confidence_metrics:     置信度指标
     """
+
     case_overview: str = Field(..., min_length=1, description="案件概述文本")
-    key_findings: list[str] = Field(
-        default_factory=list, description="关键发现列表（每条一句话）"
-    )
+    key_findings: list[str] = Field(default_factory=list, description="关键发现列表（每条一句话）")
     risk_assessment: str = Field(default="", description="风险评估摘要")
     recommended_actions: list[str] = Field(
         default_factory=list, description="建议行动列表（按优先级排序）"
@@ -843,11 +876,14 @@ class ExecutiveSummaryArtifact(BaseModel):
         critical_evidence_gaps:          Top3 关键缺证 gap_id 列表（按 roi_rank 排序），或 "未启用"
         created_at:                      ISO-8601 时间戳（自动生成）
     """
+
     summary_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     top5_decisive_issues: list[str] = Field(
-        ..., max_length=5, description="Top5 决定性争点 issue_id 列表（按 outcome_impact 排序，最多 5 条）"
+        ...,
+        max_length=5,
+        description="Top5 决定性争点 issue_id 列表（按 outcome_impact 排序，最多 5 条）",
     )
     top3_immediate_actions: Union[list[str], str] = Field(
         ...,
@@ -893,10 +929,12 @@ class ExecutiveSummaryArtifact(BaseModel):
     )
     # v7: 最终建议区固定输出字段（修订清单三）
     primary_risk: Optional[str] = Field(
-        default=None, description="当前案件主要风险点（一句话）",
+        default=None,
+        description="当前案件主要风险点（一句话）",
     )
     next_best_action: Optional[str] = Field(
-        default=None, description="下一步最优行动建议（一句话）",
+        default=None,
+        description="下一步最优行动建议（一句话）",
     )
     # v7: 内部决策版本（修订清单二-3）
     internal_decision_summary: Optional[InternalDecisionSummary] = Field(

@@ -73,7 +73,9 @@ class CrossExaminationOpinionItem(BaseModel):
     """
 
     evidence_id: str = Field(description="被质证的证据 ID / Evidence ID being examined")
-    opinion_text: str = Field(description="针对该证据的质证意见（一条，简明具体）/ Opinion on this evidence")
+    opinion_text: str = Field(
+        description="针对该证据的质证意见（一条，简明具体）/ Opinion on this evidence"
+    )
 
 
 class CrossExaminationOpinion(BaseModel):

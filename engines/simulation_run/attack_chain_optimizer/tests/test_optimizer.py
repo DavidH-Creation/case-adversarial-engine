@@ -7,6 +7,7 @@ Unit tests for AttackChainOptimizer.
 - 分层测试：规则层逻辑 → 完整 optimize() 流程
 - 覆盖所有合约保证（见 spec P0.4 约束）
 """
+
 from __future__ import annotations
 
 import copy
@@ -139,15 +140,17 @@ def _make_attack_nodes_json(
     eids = evidence_ids or ["ev-001"]
     nodes = []
     for i in range(count):
-        nodes.append({
-            "attack_node_id": f"atk-00{i + 1}",
-            "target_issue_id": iids[i % len(iids)],
-            "attack_description": f"攻击论点描述 {i + 1}",
-            "success_conditions": f"攻击成功条件 {i + 1}",
-            "supporting_evidence_ids": eids,
-            "counter_measure": f"反制动作 {i + 1}",
-            "adversary_pivot_strategy": f"策略切换说明 {i + 1}",
-        })
+        nodes.append(
+            {
+                "attack_node_id": f"atk-00{i + 1}",
+                "target_issue_id": iids[i % len(iids)],
+                "attack_description": f"攻击论点描述 {i + 1}",
+                "success_conditions": f"攻击成功条件 {i + 1}",
+                "supporting_evidence_ids": eids,
+                "counter_measure": f"反制动作 {i + 1}",
+                "adversary_pivot_strategy": f"策略切换说明 {i + 1}",
+            }
+        )
     return nodes
 
 
@@ -157,9 +160,14 @@ def _llm_response(
     issue_ids: list[str] | None = None,
     evidence_ids: list[str] | None = None,
 ) -> str:
-    return json.dumps({
-        "top_attacks": _make_attack_nodes_json(count, issue_ids=issue_ids, evidence_ids=evidence_ids),
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "top_attacks": _make_attack_nodes_json(
+                count, issue_ids=issue_ids, evidence_ids=evidence_ids
+            ),
+        },
+        ensure_ascii=False,
+    )
 
 
 def _make_optimizer(response: str, *, fail: bool = False) -> AttackChainOptimizer:
@@ -251,28 +259,30 @@ class TestTargetIssueIDValidation:
     @pytest.mark.asyncio
     async def test_node_with_unknown_target_issue_id_filtered(self):
         """target_issue_id 引用了未知争点的节点被过滤。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "atk-001",
-                    "target_issue_id": "issue-001",  # 有效
-                    "attack_description": "有效攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-                {
-                    "attack_node_id": "atk-002",
-                    "target_issue_id": "issue-GHOST",  # 未知争点
-                    "attack_description": "无效攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "atk-001",
+                        "target_issue_id": "issue-001",  # 有效
+                        "attack_description": "有效攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                    {
+                        "attack_node_id": "atk-002",
+                        "target_issue_id": "issue-GHOST",  # 未知争点
+                        "attack_description": "无效攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         inp = _make_input(issue_ids=["issue-001", "issue-002", "issue-003"])
         result = await _make_optimizer(response).optimize(inp)
 
@@ -282,19 +292,21 @@ class TestTargetIssueIDValidation:
     @pytest.mark.asyncio
     async def test_node_with_empty_target_issue_id_filtered(self):
         """target_issue_id 为空字符串的节点被过滤。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "atk-001",
-                    "target_issue_id": "",  # 空值
-                    "attack_description": "攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "atk-001",
+                        "target_issue_id": "",  # 空值
+                        "attack_description": "攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         result = await _make_optimizer(response).optimize(_make_input())
 
         assert len(result.top_attacks) == 0
@@ -311,19 +323,21 @@ class TestSupportingEvidenceIDValidation:
     @pytest.mark.asyncio
     async def test_unknown_evidence_ids_filtered_from_node(self):
         """supporting_evidence_ids 中未知证据 ID 被过滤，节点保留（仍有有效 ID）。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "atk-001",
-                    "target_issue_id": "issue-001",
-                    "attack_description": "攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-001", "ev-GHOST"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "atk-001",
+                        "target_issue_id": "issue-001",
+                        "attack_description": "攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-001", "ev-GHOST"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         inp = _make_input(evidence_ids=["ev-001", "ev-002"])
         result = await _make_optimizer(response).optimize(inp)
 
@@ -334,19 +348,21 @@ class TestSupportingEvidenceIDValidation:
     @pytest.mark.asyncio
     async def test_node_with_all_invalid_evidence_ids_filtered(self):
         """supporting_evidence_ids 全部无效（过滤后为空）的节点被丢弃——零容忍。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "atk-001",
-                    "target_issue_id": "issue-001",
-                    "attack_description": "攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-GHOST-1", "ev-GHOST-2"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "atk-001",
+                        "target_issue_id": "issue-001",
+                        "attack_description": "攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-GHOST-1", "ev-GHOST-2"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         result = await _make_optimizer(response).optimize(_make_input(evidence_ids=["ev-001"]))
 
         assert len(result.top_attacks) == 0
@@ -354,19 +370,21 @@ class TestSupportingEvidenceIDValidation:
     @pytest.mark.asyncio
     async def test_node_with_empty_evidence_ids_filtered(self):
         """supporting_evidence_ids 为空列表的节点被丢弃——零容忍。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "atk-001",
-                    "target_issue_id": "issue-001",
-                    "attack_description": "攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": [],  # 空列表
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "atk-001",
+                        "target_issue_id": "issue-001",
+                        "attack_description": "攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": [],  # 空列表
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         result = await _make_optimizer(response).optimize(_make_input())
 
         assert len(result.top_attacks) == 0
@@ -383,28 +401,30 @@ class TestAttackNodeIDValidation:
     @pytest.mark.asyncio
     async def test_node_with_empty_attack_node_id_filtered(self):
         """attack_node_id 为空字符串的节点被过滤。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "",  # 空 ID
-                    "target_issue_id": "issue-001",
-                    "attack_description": "攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-                {
-                    "attack_node_id": "atk-002",
-                    "target_issue_id": "issue-001",
-                    "attack_description": "有效攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "",  # 空 ID
+                        "target_issue_id": "issue-001",
+                        "attack_description": "攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                    {
+                        "attack_node_id": "atk-002",
+                        "target_issue_id": "issue-001",
+                        "attack_description": "有效攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         result = await _make_optimizer(response).optimize(_make_input())
 
         assert len(result.top_attacks) == 1
@@ -422,37 +442,39 @@ class TestAttackNodeIDDeduplication:
     @pytest.mark.asyncio
     async def test_duplicate_attack_node_id_filtered(self):
         """两个 attack_node_id 相同的节点只保留第一个。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "atk-001",  # 第一次出现，保留
-                    "target_issue_id": "issue-001",
-                    "attack_description": "第一个攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-                {
-                    "attack_node_id": "atk-001",  # 重复 ID，丢弃
-                    "target_issue_id": "issue-002",
-                    "attack_description": "重复 ID 的攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-002"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-                {
-                    "attack_node_id": "atk-002",  # 有效节点
-                    "target_issue_id": "issue-002",
-                    "attack_description": "第三个攻击",
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-002"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "atk-001",  # 第一次出现，保留
+                        "target_issue_id": "issue-001",
+                        "attack_description": "第一个攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                    {
+                        "attack_node_id": "atk-001",  # 重复 ID，丢弃
+                        "target_issue_id": "issue-002",
+                        "attack_description": "重复 ID 的攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-002"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                    {
+                        "attack_node_id": "atk-002",  # 有效节点
+                        "target_issue_id": "issue-002",
+                        "attack_description": "第三个攻击",
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-002"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         inp = _make_input(
             issue_ids=["issue-001", "issue-002", "issue-003"],
             evidence_ids=["ev-001", "ev-002"],
@@ -468,37 +490,39 @@ class TestAttackNodeIDDeduplication:
     @pytest.mark.asyncio
     async def test_duplicate_ids_dont_fill_up_to_3(self):
         """重复 ID 被去重后剩余节点不足 3 个时按实际返回。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "atk-dup",
-                    "target_issue_id": "issue-001",
-                    "attack_description": "攻击 1",
-                    "success_conditions": "条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-                {
-                    "attack_node_id": "atk-dup",  # 重复，丢弃
-                    "target_issue_id": "issue-002",
-                    "attack_description": "攻击 2",
-                    "success_conditions": "条件",
-                    "supporting_evidence_ids": ["ev-002"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-                {
-                    "attack_node_id": "atk-dup",  # 重复，丢弃
-                    "target_issue_id": "issue-003",
-                    "attack_description": "攻击 3",
-                    "success_conditions": "条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "atk-dup",
+                        "target_issue_id": "issue-001",
+                        "attack_description": "攻击 1",
+                        "success_conditions": "条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                    {
+                        "attack_node_id": "atk-dup",  # 重复，丢弃
+                        "target_issue_id": "issue-002",
+                        "attack_description": "攻击 2",
+                        "success_conditions": "条件",
+                        "supporting_evidence_ids": ["ev-002"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                    {
+                        "attack_node_id": "atk-dup",  # 重复，丢弃
+                        "target_issue_id": "issue-003",
+                        "attack_description": "攻击 3",
+                        "success_conditions": "条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         result = await _make_optimizer(response).optimize(_make_input())
 
         # 只有第一个保留
@@ -512,19 +536,21 @@ class TestAttackDescriptionValidation:
     @pytest.mark.asyncio
     async def test_node_with_empty_attack_description_filtered(self):
         """attack_description 为空字符串的节点被过滤。"""
-        response = json.dumps({
-            "top_attacks": [
-                {
-                    "attack_node_id": "atk-001",
-                    "target_issue_id": "issue-001",
-                    "attack_description": "",  # 空描述
-                    "success_conditions": "成功条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {
+                        "attack_node_id": "atk-001",
+                        "target_issue_id": "issue-001",
+                        "attack_description": "",  # 空描述
+                        "success_conditions": "成功条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                ],
+            }
+        )
         result = await _make_optimizer(response).optimize(_make_input())
 
         assert len(result.top_attacks) == 0
@@ -673,55 +699,57 @@ class TestMixedValidInvalidNodes:
     @pytest.mark.asyncio
     async def test_mixed_nodes_only_valid_ones_kept(self):
         """同时包含有效和无效节点时，只保留有效节点（最多 3 个）。"""
-        response = json.dumps({
-            "top_attacks": [
-                {  # 有效节点 1
-                    "attack_node_id": "atk-001",
-                    "target_issue_id": "issue-001",
-                    "attack_description": "有效攻击 1",
-                    "success_conditions": "条件 1",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制 1",
-                    "adversary_pivot_strategy": "切换 1",
-                },
-                {  # 无效：未知 target_issue_id
-                    "attack_node_id": "atk-002",
-                    "target_issue_id": "issue-GHOST",
-                    "attack_description": "无效攻击",
-                    "success_conditions": "条件",
-                    "supporting_evidence_ids": ["ev-001"],
-                    "counter_measure": "反制",
-                    "adversary_pivot_strategy": "切换",
-                },
-                {  # 有效节点 2
-                    "attack_node_id": "atk-003",
-                    "target_issue_id": "issue-002",
-                    "attack_description": "有效攻击 3",
-                    "success_conditions": "条件 3",
-                    "supporting_evidence_ids": ["ev-002"],
-                    "counter_measure": "反制 3",
-                    "adversary_pivot_strategy": "切换 3",
-                },
-                {  # 无效：空 supporting_evidence_ids
-                    "attack_node_id": "atk-004",
-                    "target_issue_id": "issue-003",
-                    "attack_description": "无效攻击 4",
-                    "success_conditions": "条件 4",
-                    "supporting_evidence_ids": [],
-                    "counter_measure": "反制 4",
-                    "adversary_pivot_strategy": "切换 4",
-                },
-                {  # 有效节点 3
-                    "attack_node_id": "atk-005",
-                    "target_issue_id": "issue-003",
-                    "attack_description": "有效攻击 5",
-                    "success_conditions": "条件 5",
-                    "supporting_evidence_ids": ["ev-001", "ev-002"],
-                    "counter_measure": "反制 5",
-                    "adversary_pivot_strategy": "切换 5",
-                },
-            ],
-        })
+        response = json.dumps(
+            {
+                "top_attacks": [
+                    {  # 有效节点 1
+                        "attack_node_id": "atk-001",
+                        "target_issue_id": "issue-001",
+                        "attack_description": "有效攻击 1",
+                        "success_conditions": "条件 1",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制 1",
+                        "adversary_pivot_strategy": "切换 1",
+                    },
+                    {  # 无效：未知 target_issue_id
+                        "attack_node_id": "atk-002",
+                        "target_issue_id": "issue-GHOST",
+                        "attack_description": "无效攻击",
+                        "success_conditions": "条件",
+                        "supporting_evidence_ids": ["ev-001"],
+                        "counter_measure": "反制",
+                        "adversary_pivot_strategy": "切换",
+                    },
+                    {  # 有效节点 2
+                        "attack_node_id": "atk-003",
+                        "target_issue_id": "issue-002",
+                        "attack_description": "有效攻击 3",
+                        "success_conditions": "条件 3",
+                        "supporting_evidence_ids": ["ev-002"],
+                        "counter_measure": "反制 3",
+                        "adversary_pivot_strategy": "切换 3",
+                    },
+                    {  # 无效：空 supporting_evidence_ids
+                        "attack_node_id": "atk-004",
+                        "target_issue_id": "issue-003",
+                        "attack_description": "无效攻击 4",
+                        "success_conditions": "条件 4",
+                        "supporting_evidence_ids": [],
+                        "counter_measure": "反制 4",
+                        "adversary_pivot_strategy": "切换 4",
+                    },
+                    {  # 有效节点 3
+                        "attack_node_id": "atk-005",
+                        "target_issue_id": "issue-003",
+                        "attack_description": "有效攻击 5",
+                        "success_conditions": "条件 5",
+                        "supporting_evidence_ids": ["ev-001", "ev-002"],
+                        "counter_measure": "反制 5",
+                        "adversary_pivot_strategy": "切换 5",
+                    },
+                ],
+            }
+        )
         inp = _make_input(
             issue_ids=["issue-001", "issue-002", "issue-003"],
             evidence_ids=["ev-001", "ev-002"],
@@ -757,7 +785,9 @@ class TestOpusStyleNormalization:
                 "attack_label": "实际借款人身份错位攻击",
                 "attack_type": "factual_challenge",
                 "core_logic": "真正借款人为老庄而非小陈，证据表明款项系老庄经营所需",
-                "counter_to_plaintiff_evidence": {"ev-plaintiff-001": "转账仅证明资金流向，不证明借贷合意"},
+                "counter_to_plaintiff_evidence": {
+                    "ev-plaintiff-001": "转账仅证明资金流向，不证明借贷合意"
+                },
                 "legal_basis": "民间借贷司法解释第十七条",
                 "target_issue_id": "issue-001",
                 "supporting_evidence_ids": ["ev-001", "ev-002"],
@@ -819,6 +849,8 @@ class TestOpusStyleNormalization:
         opt = _make_optimizer(response)
         result = await opt.optimize(inp)
         assert isinstance(result, OptimalAttackChain)
-        assert len(result.top_attacks) >= 1, f"Expected non-empty attacks, got {len(result.top_attacks)}"
+        assert len(result.top_attacks) >= 1, (
+            f"Expected non-empty attacks, got {len(result.top_attacks)}"
+        )
         for node in result.top_attacks:
             assert node.attack_description, f"Node {node.attack_node_id} missing attack_description"

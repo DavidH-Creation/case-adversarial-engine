@@ -9,6 +9,7 @@ Usage:
     result = compute_mediation_range(amount_report, decision_tree)
     # result: MediationRange or None
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,14 +20,15 @@ from typing import Any
 @dataclass
 class MediationRange:
     """调解区间计算结果。"""
-    total_claimed: Decimal        # 诉请总额
-    total_verified: Decimal       # 可核实总额
-    min_amount: Decimal           # 最低可能（基于最不利路径）
-    max_amount: Decimal           # 最高可能（基于最有利路径）
-    suggested_amount: Decimal     # 建议调解点
-    confidence_lower: float       # 综合置信度下界
-    confidence_upper: float       # 综合置信度上界
-    rationale: str                # 计算依据说明
+
+    total_claimed: Decimal  # 诉请总额
+    total_verified: Decimal  # 可核实总额
+    min_amount: Decimal  # 最低可能（基于最不利路径）
+    max_amount: Decimal  # 最高可能（基于最有利路径）
+    suggested_amount: Decimal  # 建议调解点
+    confidence_lower: float  # 综合置信度下界
+    confidence_upper: float  # 综合置信度上界
+    rationale: str  # 计算依据说明
 
 
 def compute_mediation_range(

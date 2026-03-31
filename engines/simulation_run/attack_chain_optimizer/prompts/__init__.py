@@ -1,4 +1,5 @@
 """Prompt registry for attack_chain_optimizer."""
+
 from .civil_loan import SYSTEM_PROMPT as _cl_sys, build_user_prompt as _cl_build
 from .labor_dispute import SYSTEM_PROMPT as _ld_sys, build_user_prompt as _ld_build
 from .real_estate import SYSTEM_PROMPT as _re_sys, build_user_prompt as _re_build

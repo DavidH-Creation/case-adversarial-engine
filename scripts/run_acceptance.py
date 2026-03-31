@@ -12,6 +12,7 @@ Usage:
     python scripts/run_acceptance.py --case_type real_estate --cases_dir cases/ --runs 3
     python scripts/run_acceptance.py --case_type labor_dispute --runs 1 --output-dir outputs/acceptance/
 """
+
 from __future__ import annotations
 
 import argparse
@@ -43,8 +44,13 @@ import yaml
 # ---------------------------------------------------------------------------
 
 REQUIRED_YAML_KEYS = [
-    "case_id", "case_slug", "case_type",
-    "parties", "materials", "claims", "defenses",
+    "case_id",
+    "case_slug",
+    "case_type",
+    "parties",
+    "materials",
+    "claims",
+    "defenses",
 ]
 
 METRIC_THRESHOLDS = {
@@ -233,6 +239,7 @@ def extract_run_artifacts(output_dir: Path) -> dict:
             if ar_path.exists():
                 try:
                     from engines.case_structuring.amount_calculator import AmountCalculationReport
+
                     ar_data = json.loads(ar_path.read_text(encoding="utf-8"))
                     amount_report = AmountCalculationReport.model_validate(ar_data)
                 except Exception:
@@ -295,7 +302,8 @@ def _default_pipeline_runner(
         sys.executable,
         str(_PROJECT_ROOT / "scripts" / "run_case.py"),
         str(yaml_path),
-        "--output-dir", str(output_dir),
+        "--output-dir",
+        str(output_dir),
         "--skip-pretrial",
     ]
     try:

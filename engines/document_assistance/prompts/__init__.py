@@ -60,15 +60,15 @@ from .real_estate_cross_exam import (
 
 # (doc_type, case_type) → (system_prompt, build_user_prompt)
 PROMPT_REGISTRY: dict[tuple[str, str], tuple[str, Callable]] = {
-    ("pleading",   "civil_loan"):     (_CL_PL_SYS, _CL_PL_BUILD),
-    ("defense",    "civil_loan"):     (_CL_DF_SYS, _CL_DF_BUILD),
-    ("cross_exam", "civil_loan"):     (_CL_XE_SYS, _CL_XE_BUILD),
-    ("pleading",   "labor_dispute"):  (_LD_PL_SYS, _LD_PL_BUILD),
-    ("defense",    "labor_dispute"):  (_LD_DF_SYS, _LD_DF_BUILD),
-    ("cross_exam", "labor_dispute"):  (_LD_XE_SYS, _LD_XE_BUILD),
-    ("pleading",   "real_estate"):    (_RE_PL_SYS, _RE_PL_BUILD),
-    ("defense",    "real_estate"):    (_RE_DF_SYS, _RE_DF_BUILD),
-    ("cross_exam", "real_estate"):    (_RE_XE_SYS, _RE_XE_BUILD),
+    ("pleading", "civil_loan"): (_CL_PL_SYS, _CL_PL_BUILD),
+    ("defense", "civil_loan"): (_CL_DF_SYS, _CL_DF_BUILD),
+    ("cross_exam", "civil_loan"): (_CL_XE_SYS, _CL_XE_BUILD),
+    ("pleading", "labor_dispute"): (_LD_PL_SYS, _LD_PL_BUILD),
+    ("defense", "labor_dispute"): (_LD_DF_SYS, _LD_DF_BUILD),
+    ("cross_exam", "labor_dispute"): (_LD_XE_SYS, _LD_XE_BUILD),
+    ("pleading", "real_estate"): (_RE_PL_SYS, _RE_PL_BUILD),
+    ("defense", "real_estate"): (_RE_DF_SYS, _RE_DF_BUILD),
+    ("cross_exam", "real_estate"): (_RE_XE_SYS, _RE_XE_BUILD),
 }
 
 __all__ = ["PROMPT_REGISTRY"]

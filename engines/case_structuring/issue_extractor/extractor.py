@@ -38,7 +38,6 @@ from .schemas import (
 _TOOL_SCHEMA: dict = LLMExtractionOutput.model_json_schema()
 
 
-
 # ---------------------------------------------------------------------------
 # 解析工具函数 / Parsing utilities
 # ---------------------------------------------------------------------------
@@ -231,8 +230,8 @@ class IssueExtractor:
             model=self._model,
             tool_name="extract_issues",
             tool_description="从案件诉请、抗辩和证据中提取结构化争点树、举证责任和映射关系。"
-                             "Extract a structured issue tree, burdens, and mappings "
-                             "from legal claims, defenses, and evidence.",
+            "Extract a structured issue tree, burdens, and mappings "
+            "from legal claims, defenses, and evidence.",
             tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
@@ -262,9 +261,7 @@ class IssueExtractor:
 
         # 预计算已知 evidence_id 集合，用于校验 issue 中的引用
         # Pre-compute known evidence IDs for reference validation in issues
-        known_ev_ids: set[str] = {
-            e["evidence_id"] for e in evidence if "evidence_id" in e
-        }
+        known_ev_ids: set[str] = {e["evidence_id"] for e in evidence if "evidence_id" in e}
 
         # ── 1. 建立 tmp_id → proper_id 映射 ──────────────────────────────────
         # Build tmp_id → proper_id mapping
@@ -301,54 +298,58 @@ class IssueExtractor:
 
             # 校验 evidence_ids：仅保留输入中已知的 evidence_id
             # Validate evidence_ids: keep only IDs present in input evidence
-            validated_evidence_ids = [
-                eid for eid in item.evidence_ids if eid in known_ev_ids
-            ]
+            validated_evidence_ids = [eid for eid in item.evidence_ids if eid in known_ev_ids]
 
             # 构建事实命题（分配正式 proposition_id）
             # Build fact propositions with assigned proposition_ids
             fact_props: list[FactProposition] = []
             for fp_idx, fp in enumerate(item.fact_propositions, 1):
-                fact_props.append(FactProposition(
-                    proposition_id=f"fp-{case_slug}-{issue_idx:03d}-{fp_idx:02d}",
-                    text=fp.text,
-                    status=_resolve_proposition_status(fp.status),
-                    # 同样只保留已知 evidence_id / Also filter linked_evidence_ids
-                    linked_evidence_ids=[
-                        eid for eid in fp.linked_evidence_ids if eid in known_ev_ids
-                    ],
-                ))
+                fact_props.append(
+                    FactProposition(
+                        proposition_id=f"fp-{case_slug}-{issue_idx:03d}-{fp_idx:02d}",
+                        text=fp.text,
+                        status=_resolve_proposition_status(fp.status),
+                        # 同样只保留已知 evidence_id / Also filter linked_evidence_ids
+                        linked_evidence_ids=[
+                            eid for eid in fp.linked_evidence_ids if eid in known_ev_ids
+                        ],
+                    )
+                )
 
-            issues.append(Issue(
-                issue_id=issue_id,
-                case_id=case_id,
-                title=item.title,
-                issue_type=_resolve_issue_type(item.issue_type),
-                parent_issue_id=parent_id,
-                related_claim_ids=item.related_claim_ids,
-                related_defense_ids=item.related_defense_ids,
-                evidence_ids=validated_evidence_ids,
-                burden_ids=burden_ids,
-                fact_propositions=fact_props,
-                status=IssueStatus.open,
-                created_at=now,
-            ))
+            issues.append(
+                Issue(
+                    issue_id=issue_id,
+                    case_id=case_id,
+                    title=item.title,
+                    issue_type=_resolve_issue_type(item.issue_type),
+                    parent_issue_id=parent_id,
+                    related_claim_ids=item.related_claim_ids,
+                    related_defense_ids=item.related_defense_ids,
+                    evidence_ids=validated_evidence_ids,
+                    burden_ids=burden_ids,
+                    fact_propositions=fact_props,
+                    status=IssueStatus.open,
+                    created_at=now,
+                )
+            )
 
         # ── 4. 构建 Burden 列表 ───────────────────────────────────────────────
         # Build Burden list
         burdens: list[Burden] = []
         for b_idx, b in enumerate(llm_output.burdens, 1):
             issue_id = tmp_to_proper.get(b.issue_tmp_id or "", "")
-            burdens.append(Burden(
-                burden_id=f"burden-{case_slug}-{b_idx:03d}",
-                case_id=case_id,
-                issue_id=issue_id,
-                burden_party_id=b.burden_party_id or "unknown",
-                description=b.description,
-                proof_standard=b.proof_standard,
-                legal_basis=b.legal_basis,
-                status=BurdenStatus.not_met,
-            ))
+            burdens.append(
+                Burden(
+                    burden_id=f"burden-{case_slug}-{b_idx:03d}",
+                    case_id=case_id,
+                    issue_id=issue_id,
+                    burden_party_id=b.burden_party_id or "unknown",
+                    description=b.description,
+                    proof_standard=b.proof_standard,
+                    legal_basis=b.legal_basis,
+                    status=BurdenStatus.not_met,
+                )
+            )
 
         # ── 4b. 根争点 burden 兜底 / Root issue burden fallback ───────────────
         # 若某个根争点（无 parent）没有 burden，自动生成默认 burden 并更新 issue
@@ -359,19 +360,21 @@ class IssueExtractor:
             if issue.parent_issue_id is None and not issue.burden_ids:
                 b_idx_offset += 1
                 fb_bid = f"burden-{case_slug}-{b_idx_offset:03d}"
-                burdens.append(Burden(
-                    burden_id=fb_bid,
-                    case_id=case_id,
-                    issue_id=issue.issue_id,
-                    burden_party_id="unknown",
-                    description=(
-                        f"举证责任待分配（{issue.title}）"
-                        f"/ Burden of proof pending assignment ({issue.title})"
-                    ),
-                    proof_standard="",
-                    legal_basis="",
-                    status=BurdenStatus.not_met,
-                ))
+                burdens.append(
+                    Burden(
+                        burden_id=fb_bid,
+                        case_id=case_id,
+                        issue_id=issue.issue_id,
+                        burden_party_id="unknown",
+                        description=(
+                            f"举证责任待分配（{issue.title}）"
+                            f"/ Burden of proof pending assignment ({issue.title})"
+                        ),
+                        proof_standard="",
+                        legal_basis="",
+                        status=BurdenStatus.not_met,
+                    )
+                )
                 updated_issues.append(issue.model_copy(update={"burden_ids": [fb_bid]}))
             else:
                 updated_issues.append(issue)
@@ -393,7 +396,9 @@ class IssueExtractor:
         for c in claims:
             cid = c.get("claim_id", "")
             if cid and cid not in mapped_claims and fallback_issue_id:
-                claim_mappings.append(ClaimIssueMapping(claim_id=cid, issue_ids=[fallback_issue_id]))
+                claim_mappings.append(
+                    ClaimIssueMapping(claim_id=cid, issue_ids=[fallback_issue_id])
+                )
 
         # ── 6. 构建 DefenseIssueMapping ──────────────────────────────────────
         # Build defense-to-issue mappings; enforce complete coverage
@@ -402,7 +407,9 @@ class IssueExtractor:
         for m in llm_output.defense_issue_mapping:
             resolved = [tmp_to_proper.get(tid, tid) for tid in m.issue_tmp_ids if tid]
             if m.defense_id and resolved:
-                defense_mappings.append(DefenseIssueMapping(defense_id=m.defense_id, issue_ids=resolved))
+                defense_mappings.append(
+                    DefenseIssueMapping(defense_id=m.defense_id, issue_ids=resolved)
+                )
                 mapped_defenses.add(m.defense_id)
 
         # 强制兜底：未映射的 Defense 映射到第一个 Issue
@@ -410,7 +417,9 @@ class IssueExtractor:
         for d in defenses:
             did = d.get("defense_id", "")
             if did and did not in mapped_defenses and fallback_issue_id:
-                defense_mappings.append(DefenseIssueMapping(defense_id=did, issue_ids=[fallback_issue_id]))
+                defense_mappings.append(
+                    DefenseIssueMapping(defense_id=did, issue_ids=[fallback_issue_id])
+                )
 
         # ── 7. 组装 IssueTree ─────────────────────────────────────────────────
         return IssueTree(

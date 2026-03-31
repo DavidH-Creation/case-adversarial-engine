@@ -12,6 +12,7 @@ Strategy:
 - The scenario step reads baseline artifacts that analysis actually wrote to disk,
   verifying the create → extract → analyze → scenario chain is real end-to-end.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -53,6 +54,7 @@ _MATERIAL_PAYLOAD = {
 def _make_fake_evidence(case_id: str, party_id: str, ev_id: str):
     """Build a minimal Evidence object."""
     from engines.shared.models import Evidence, EvidenceStatus, AccessDomain
+
     return Evidence(
         evidence_id=ev_id,
         case_id=case_id,
@@ -70,6 +72,7 @@ def _make_fake_evidence(case_id: str, party_id: str, ev_id: str):
 def _make_fake_issue_tree(case_id: str):
     """Build a minimal IssueTree."""
     from engines.shared.models import IssueTree, Issue, Burden
+
     issue = Issue(
         issue_id="issue-e2e-001",
         case_id=case_id,
@@ -90,6 +93,7 @@ def _make_fake_adversarial_result(case_id: str, run_id: str, cited_id: str):
     """Build a minimal AdversarialResult citing one evidence."""
     from engines.adversarial.schemas import AdversarialResult, RoundState, RoundPhase
     from engines.shared.models import AgentOutput
+
     output = AgentOutput(
         output_id="out-e2e-001",
         case_id=case_id,
@@ -155,6 +159,7 @@ def _make_fake_scenario_result(scenario_id: str, case_id: str, baseline_run_id: 
 # ---------------------------------------------------------------------------
 # End-to-end test
 # ---------------------------------------------------------------------------
+
 
 class TestEndToEndFlow:
     """Full create → extract → analyze → scenario API chain."""
@@ -239,17 +244,14 @@ class TestEndToEndFlow:
 
         # ── Step 7: Verify evidence lifecycle via EvidenceStateMachine ───
         from engines.shared.models import EvidenceStatus, AccessDomain
-        promoted = next(
-            (e for e in rec.ev_index.evidence if e.evidence_id == "ev-e2e-001"), None
-        )
+
+        promoted = next((e for e in rec.ev_index.evidence if e.evidence_id == "ev-e2e-001"), None)
         assert promoted is not None
         assert promoted.status == EvidenceStatus.admitted_for_discussion
         assert promoted.access_domain == AccessDomain.admitted_record
 
         # ── Step 8: Run scenario via API using the analysis run_id ───────
-        fake_scenario = _make_fake_scenario_result(
-            "scenario-e2e-001", case_id, analysis_run_id
-        )
+        fake_scenario = _make_fake_scenario_result("scenario-e2e-001", case_id, analysis_run_id)
 
         with patch.object(
             svc_module.scenario_service,

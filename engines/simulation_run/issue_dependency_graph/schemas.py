@@ -4,6 +4,7 @@ Engine-specific schemas for issue_dependency_graph.
 
 共享类型从 engines.shared.models 导入；本模块只保留引擎 I/O wrapper。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -20,6 +21,7 @@ from engines.shared.models import Issue  # noqa: F401
 
 class IssueDependencyNode(BaseModel):
     """依赖图中的单个争点节点。"""
+
     issue_id: str = Field(..., min_length=1)
     depends_on: list[str] = Field(
         default_factory=list,
@@ -29,6 +31,7 @@ class IssueDependencyNode(BaseModel):
 
 class IssueDependencyEdge(BaseModel):
     """依赖关系有向边：from_issue_id → to_issue_id 表示 from 依赖 to。"""
+
     from_issue_id: str = Field(..., min_length=1, description="依赖方争点 ID")
     to_issue_id: str = Field(..., min_length=1, description="被依赖方争点 ID")
 
@@ -45,6 +48,7 @@ class IssueDependencyGraphInput(BaseModel):
         case_id:    案件 ID
         issues:     争点列表（需含 depends_on 字段，由另一任务添加）
     """
+
     case_id: str = Field(..., min_length=1)
     issues: list[Issue] = Field(default_factory=list)
 
@@ -69,6 +73,7 @@ class IssueDependencyGraph(BaseModel):
         metadata:           构建元信息（issue 数量、边数等）
         created_at:         ISO-8601 时间戳
     """
+
     graph_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     nodes: list[IssueDependencyNode]

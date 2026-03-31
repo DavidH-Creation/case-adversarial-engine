@@ -26,18 +26,28 @@ import pytest
 # Fixture 路径 / Fixture paths
 # ---------------------------------------------------------------------------
 
-_FIXTURES_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent / "benchmarks" / "fixtures"
-)
+_FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "benchmarks" / "fixtures"
 _PROCEDURE_FIXTURE = _FIXTURES_DIR / "procedure_states_example.json"
 
 _VALID_PHASES = {
-    "case_intake", "element_mapping", "opening", "evidence_submission",
-    "evidence_challenge", "judge_questions", "rebuttal", "output_branching",
+    "case_intake",
+    "element_mapping",
+    "opening",
+    "evidence_submission",
+    "evidence_challenge",
+    "judge_questions",
+    "rebuttal",
+    "output_branching",
 }
 _PHASE_ORDER = [
-    "case_intake", "element_mapping", "opening", "evidence_submission",
-    "evidence_challenge", "judge_questions", "rebuttal", "output_branching",
+    "case_intake",
+    "element_mapping",
+    "opening",
+    "evidence_submission",
+    "evidence_challenge",
+    "judge_questions",
+    "rebuttal",
+    "output_branching",
 ]
 
 
@@ -65,9 +75,7 @@ class TestProcedureContractFixtures:
         self.events: list[dict] = data.get("TimelineEvent", [])
         self.runs: list[dict] = data.get("Run", [])
         # 建立 phase → state 映射 / Build phase → state map
-        self.phase_map: dict[str, dict] = {
-            s["phase"]: s for s in self.states
-        }
+        self.phase_map: dict[str, dict] = {s["phase"]: s for s in self.states}
         # 找到 procedure_setup Run / Find the procedure_setup Run
         self.setup_run = next(
             (r for r in self.runs if r.get("trigger_type") == "procedure_setup"),
@@ -90,19 +98,24 @@ class TestProcedureContractFixtures:
 
     def test_fixture_has_run(self):
         """Fixture 必须包含 trigger_type='procedure_setup' 的 Run。"""
-        assert self.setup_run is not None, (
-            "No Run with trigger_type='procedure_setup' in fixture"
-        )
+        assert self.setup_run is not None, "No Run with trigger_type='procedure_setup' in fixture"
 
     # ── ProcedureState 必填字段 / Required fields ─────────────────────────────
 
     def test_states_have_required_fields(self):
         """每个 ProcedureState 必须包含所有必填字段。"""
         required = {
-            "state_id", "case_id", "phase", "round_index",
-            "allowed_role_codes", "readable_access_domains",
-            "writable_object_types", "admissible_evidence_statuses",
-            "open_issue_ids", "entry_conditions", "exit_conditions",
+            "state_id",
+            "case_id",
+            "phase",
+            "round_index",
+            "allowed_role_codes",
+            "readable_access_domains",
+            "writable_object_types",
+            "admissible_evidence_statuses",
+            "open_issue_ids",
+            "entry_conditions",
+            "exit_conditions",
             "next_state_ids",
         }
         for state in self.states:
@@ -129,9 +142,7 @@ class TestProcedureContractFixtures:
 
     def test_state_count_is_eight(self):
         """程序状态序列必须恰好包含八个状态（一阶段一个）。"""
-        assert len(self.states) == 8, (
-            f"Expected 8 procedure states, got {len(self.states)}"
-        )
+        assert len(self.states) == 8, f"Expected 8 procedure states, got {len(self.states)}"
 
     # ── 访问控制约束 / Access control constraints ──────────────────────────────
 
@@ -195,16 +206,15 @@ class TestProcedureContractFixtures:
         sorted_states = sorted(self.states, key=lambda s: s.get("round_index", -1))
         indices = [s.get("round_index") for s in sorted_states]
         for i, (a, b) in enumerate(zip(indices, indices[1:])):
-            assert a < b, (
-                f"round_index not strictly increasing at position {i}: {a} >= {b}"
-            )
+            assert a < b, f"round_index not strictly increasing at position {i}: {a} >= {b}"
 
     # ── ProcedureConfig 合约 / ProcedureConfig contract ────────────────────────
 
     def test_config_has_required_fields(self):
         """ProcedureConfig 必须包含所有必填字段。"""
         required = {
-            "case_type", "total_phases",
+            "case_type",
+            "total_phases",
             "evidence_submission_deadline_days",
             "evidence_challenge_window_days",
             "max_rounds_per_phase",
@@ -229,14 +239,16 @@ class TestProcedureContractFixtures:
     def test_timeline_events_have_required_fields(self):
         """每个 TimelineEvent 必须包含所有必填字段。"""
         required = {
-            "event_id", "event_type", "phase",
-            "description", "relative_day", "is_mandatory",
+            "event_id",
+            "event_type",
+            "phase",
+            "description",
+            "relative_day",
+            "is_mandatory",
         }
         for ev in self.events:
             missing = required - set(ev.keys())
-            assert not missing, (
-                f"TimelineEvent {ev.get('event_id', '?')} missing fields: {missing}"
-            )
+            assert not missing, f"TimelineEvent {ev.get('event_id', '?')} missing fields: {missing}"
 
     def test_timeline_events_have_valid_phase(self):
         """每个 TimelineEvent.phase 必须来自合法枚举值。"""
@@ -267,9 +279,16 @@ class TestProcedureContractFixtures:
         """procedure_setup Run 必须包含所有必填字段。"""
         assert self.setup_run is not None
         required = {
-            "run_id", "case_id", "workspace_id", "scenario_id",
-            "trigger_type", "input_snapshot", "output_refs",
-            "started_at", "finished_at", "status",
+            "run_id",
+            "case_id",
+            "workspace_id",
+            "scenario_id",
+            "trigger_type",
+            "input_snapshot",
+            "output_refs",
+            "started_at",
+            "finished_at",
+            "status",
         }
         missing = required - set(self.setup_run.keys())
         assert not missing, f"procedure_setup Run missing fields: {missing}"

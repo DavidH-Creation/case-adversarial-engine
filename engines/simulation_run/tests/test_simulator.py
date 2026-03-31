@@ -87,19 +87,22 @@ _SCENARIO_ID = "scenario-test-evidence-downgrade-001"
 _BASELINE_RUN_ID = "run-baseline-test-001"
 _WORKSPACE_ID = "workspace-test-001"
 
-_MOCK_LLM_RESPONSE = json.dumps({
-    "summary": "借条证据降级对借贷关系争点产生削弱影响。",
-    "diff_entries": [
-        {
-            "issue_id": "issue-civil-loan-test-001-001",
-            "impact_description": (
-                "借条由原件变为复印件（原件遗失），真实性待核实，"
-                "削弱了原告证明借贷关系成立的核心证据效力。"
-            ),
-            "direction": "weaken",
-        }
-    ],
-}, ensure_ascii=False)
+_MOCK_LLM_RESPONSE = json.dumps(
+    {
+        "summary": "借条证据降级对借贷关系争点产生削弱影响。",
+        "diff_entries": [
+            {
+                "issue_id": "issue-civil-loan-test-001-001",
+                "impact_description": (
+                    "借条由原件变为复印件（原件遗失），真实性待核实，"
+                    "削弱了原告证明借贷关系成立的核心证据效力。"
+                ),
+                "direction": "weaken",
+            }
+        ],
+    },
+    ensure_ascii=False,
+)
 
 _SAMPLE_ISSUE_TREE = IssueTree(
     case_id=_CASE_ID,
@@ -459,21 +462,24 @@ async def test_invalid_issue_id_filtered():
     """LLM 返回非法 issue_id 时应被过滤。
     Unknown issue_ids returned by LLM should be filtered out.
     """
-    response_with_invalid_id = json.dumps({
-        "summary": "",
-        "diff_entries": [
-            {
-                "issue_id": "UNKNOWN-ISSUE-ID-XYZ",
-                "impact_description": "这是一个不存在的争点",
-                "direction": "weaken",
-            },
-            {
-                "issue_id": "issue-civil-loan-test-001-001",
-                "impact_description": "借条证据削弱了借贷关系证明。",
-                "direction": "weaken",
-            },
-        ],
-    }, ensure_ascii=False)
+    response_with_invalid_id = json.dumps(
+        {
+            "summary": "",
+            "diff_entries": [
+                {
+                    "issue_id": "UNKNOWN-ISSUE-ID-XYZ",
+                    "impact_description": "这是一个不存在的争点",
+                    "direction": "weaken",
+                },
+                {
+                    "issue_id": "issue-civil-loan-test-001-001",
+                    "impact_description": "借条证据削弱了借贷关系证明。",
+                    "direction": "weaken",
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(response_with_invalid_id)
     simulator = ScenarioSimulator(llm_client=client, case_type="civil_loan")
@@ -497,10 +503,13 @@ async def test_empty_diff_entries_triggers_fallback():
     """LLM 返回空 diff_entries 时应触发保底条目（覆盖所有争点）。
     Empty diff_entries from LLM should trigger fallback covering all issues.
     """
-    empty_response = json.dumps({
-        "summary": "",
-        "diff_entries": [],
-    }, ensure_ascii=False)
+    empty_response = json.dumps(
+        {
+            "summary": "",
+            "diff_entries": [],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(empty_response)
     simulator = ScenarioSimulator(llm_client=client, case_type="civil_loan")
@@ -525,9 +534,7 @@ async def test_llm_retry_succeeds_after_failures():
     Should succeed after two LLM failures if third attempt succeeds.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=2)
-    simulator = ScenarioSimulator(
-        llm_client=client, case_type="civil_loan", max_retries=3
-    )
+    simulator = ScenarioSimulator(llm_client=client, case_type="civil_loan", max_retries=3)
 
     result = await simulator.simulate(
         scenario_input=_SAMPLE_SCENARIO_INPUT,
@@ -546,9 +553,7 @@ async def test_llm_retry_exhausted_returns_failed_result():
     Exhausted retries should return a ScenarioResult with status='failed', not raise.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=10)
-    simulator = ScenarioSimulator(
-        llm_client=client, case_type="civil_loan", max_retries=3
-    )
+    simulator = ScenarioSimulator(llm_client=client, case_type="civil_loan", max_retries=3)
 
     result = await simulator.simulate(
         scenario_input=_SAMPLE_SCENARIO_INPUT,
@@ -570,9 +575,7 @@ async def test_failed_result_preserves_ids():
     Failed result should preserve scenario_id, case_id, run_id.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=10)
-    simulator = ScenarioSimulator(
-        llm_client=client, case_type="civil_loan", max_retries=1
-    )
+    simulator = ScenarioSimulator(llm_client=client, case_type="civil_loan", max_retries=1)
 
     result = await simulator.simulate(
         scenario_input=_SAMPLE_SCENARIO_INPUT,
@@ -595,9 +598,7 @@ async def test_parse_failure_returns_failed_result():
     Unparseable LLM response should return ScenarioResult with status='failed'.
     """
     client = MockLLMClient("这不是合法的JSON，无法解析")
-    simulator = ScenarioSimulator(
-        llm_client=client, case_type="civil_loan", max_retries=1
-    )
+    simulator = ScenarioSimulator(llm_client=client, case_type="civil_loan", max_retries=1)
 
     result = await simulator.simulate(
         scenario_input=_SAMPLE_SCENARIO_INPUT,

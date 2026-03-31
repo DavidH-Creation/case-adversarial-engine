@@ -3,6 +3,7 @@ engines/report_generation/executive_summarizer/tests/test_summarizer.py
 
 ExecutiveSummarizer 单元测试（P2.12）。
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -267,9 +268,7 @@ class TestTop5DecisiveIssues:
         for i, issue_id in enumerate(ids):
             if issue_id in high_ids:
                 for prev in ids[:i]:
-                    assert prev in high_ids, (
-                        f"{prev} (non-high) appeared before high {issue_id}"
-                    )
+                    assert prev in high_ids, f"{prev} (non-high) appeared before high {issue_id}"
 
     def test_returns_exactly_five_when_six_available(self):
         inp = _make_full_input()
@@ -499,10 +498,12 @@ class TestCurrentMostStableClaim:
     def test_strategic_headline_non_amount_category_no_amount_note(self):
         """借款人主体争议案型：strategic_summary 不附加金额附注；current_most_stable_claim 保持金额语义。"""
         rec = _make_action_recommendation()
-        rec = rec.model_copy(update={
-            "strategic_headline": "本案核心为借款人主体之争",
-            "case_dispute_category": "borrower_identity",
-        })
+        rec = rec.model_copy(
+            update={
+                "strategic_headline": "本案核心为借款人主体之争",
+                "case_dispute_category": "borrower_identity",
+            }
+        )
         inp = _make_full_input(action_recommendation=rec)
         result = self.summarizer.summarize(inp)
         # strategic_summary 包含策略标题，不含金额附注
@@ -515,10 +516,12 @@ class TestCurrentMostStableClaim:
     def test_strategic_headline_amount_dispute_includes_amount_note(self):
         """金额争议案型：strategic_summary 附加金额附注。"""
         rec = _make_action_recommendation()
-        rec = rec.model_copy(update={
-            "strategic_headline": "本金计算存在实质分歧",
-            "case_dispute_category": "amount_dispute",
-        })
+        rec = rec.model_copy(
+            update={
+                "strategic_headline": "本金计算存在实质分歧",
+                "case_dispute_category": "amount_dispute",
+            }
+        )
         inp = _make_full_input(action_recommendation=rec)
         result = self.summarizer.summarize(inp)
         # strategic_summary 包含策略标题和金额附注
@@ -571,7 +574,10 @@ class TestStrategicSummary:
         result = self.summarizer.summarize(inp)
         # current_most_stable_claim 应该是金额相关的，不包含"核心策略"
         assert "核心策略" not in result.current_most_stable_claim
-        assert "principal" in result.current_most_stable_claim or "RPT-001" in result.current_most_stable_claim
+        assert (
+            "principal" in result.current_most_stable_claim
+            or "RPT-001" in result.current_most_stable_claim
+        )
 
 
 # ---------------------------------------------------------------------------

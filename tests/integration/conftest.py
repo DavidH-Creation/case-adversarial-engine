@@ -6,8 +6,20 @@ Shared fixtures and mock utilities for integration tests.
 from __future__ import annotations
 
 import asyncio
+import os
 
 import pytest
+
+
+def pytest_collection_modifyitems(config, items):
+    """当 LLM_MOCK != 'true' 时跳过所有集成测试（需要真实 LLM 的场景）。
+    CI 中设置 LLM_MOCK=true 以运行 mock 模式集成测试。
+    """
+    if os.getenv("LLM_MOCK") != "true":
+        skip = pytest.mark.skip(reason="Set LLM_MOCK=true to run integration tests in mock mode")
+        for item in items:
+            if "integration" in str(item.fspath):
+                item.add_marker(skip)
 
 from engines.case_structuring.evidence_indexer.schemas import RawMaterial
 
@@ -17,6 +29,7 @@ def _no_llm_retry_sleep(monkeypatch):
     """消除 LLM 重试退避中的真实 sleep，保持集成测试速度。
     Zero out LLM retry backoff sleep to keep integration tests fast.
     """
+
     async def _instant_sleep(_delay: float) -> None:  # noqa: RUF029
         await asyncio.sleep(0)
 
@@ -48,9 +61,7 @@ class MockLLMClient:
         self.last_user = user
         if self._fail_times > 0:
             self._fail_times -= 1
-            raise RuntimeError(
-                f"Simulated LLM failure (call {self.call_count})"
-            )
+            raise RuntimeError(f"Simulated LLM failure (call {self.call_count})")
         return self._response
 
 

@@ -4,6 +4,7 @@ LLM prompt templates for real estate sale contract dispute case type action reco
 
 指导 LLM 基于案型生成 party-specific 策略建议，输出严格 JSON。
 """
+
 from __future__ import annotations
 
 from engines.shared.models import EvidenceIndex, Issue
@@ -111,19 +112,10 @@ def build_user_prompt(
             if issue.composite_score is not None
             else "未评分"
         )
-        impact = (
-            issue.outcome_impact.value
-            if issue.outcome_impact
-            else "未评估"
-        )
-        action = (
-            issue.recommended_action.value
-            if issue.recommended_action
-            else "无"
-        )
+        impact = issue.outcome_impact.value if issue.outcome_impact else "未评估"
+        action = issue.recommended_action.value if issue.recommended_action else "无"
         issue_lines.append(
-            f"  - {issue.issue_id}: {issue.title} "
-            f"[{impact}, {score}, action={action}]"
+            f"  - {issue.issue_id}: {issue.title} [{impact}, {score}, action={action}]"
         )
     issues_block = "\n".join(issue_lines) if issue_lines else "（无争点）"
 

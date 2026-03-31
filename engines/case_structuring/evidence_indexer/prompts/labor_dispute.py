@@ -72,21 +72,11 @@ def format_materials_block(materials) -> str:
     blocks = []
     for m in materials:
         safe_source_id = (
-            m.source_id
-            .replace("&", "&amp;")
+            m.source_id.replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
             .replace('"', "&quot;")
         )
-        safe_text = (
-            m.text
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-        )
-        blocks.append(
-            f"<material source_id=\"{safe_source_id}\">\n"
-            f"{safe_text}\n"
-            f"</material>"
-        )
+        safe_text = m.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        blocks.append(f'<material source_id="{safe_source_id}">\n{safe_text}\n</material>')
     return "\n\n".join(blocks)

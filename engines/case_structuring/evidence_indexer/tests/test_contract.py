@@ -22,7 +22,9 @@ import pytest
 # Fixture 路径
 # ---------------------------------------------------------------------------
 
-_FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "benchmarks" / "fixtures"
+_FIXTURES_DIR = (
+    Path(__file__).resolve().parent.parent.parent.parent.parent / "benchmarks" / "fixtures"
+)
 _INPUT_FIXTURE = _FIXTURES_DIR / "evidence_indexer_input.json"
 _OUTPUT_FIXTURE = _FIXTURES_DIR / "evidence_indexer_output.json"
 
@@ -38,6 +40,7 @@ def _load_fixture(path: Path) -> dict:
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestContractFixtures:
     """基于 gold fixtures 的合同校验。"""
@@ -81,9 +84,7 @@ class TestContractFixtures:
         """每条 Evidence 的 target_fact_ids 不能为空。"""
         for e in self.evidences:
             facts = e.get("target_fact_ids", [])
-            assert len(facts) >= 1, (
-                f"Evidence {e['evidence_id']} has empty target_fact_ids"
-            )
+            assert len(facts) >= 1, f"Evidence {e['evidence_id']} has empty target_fact_ids"
 
     def test_all_evidence_submitted_by_null(self):
         """初始 submitted_by_party_id 必须为 null。"""
@@ -116,8 +117,13 @@ class TestContractFixtures:
     def test_evidence_type_valid(self):
         """evidence_type 必须为合法枚举值。"""
         valid_types = {
-            "documentary", "physical", "witness_statement",
-            "electronic_data", "expert_opinion", "audio_visual", "other",
+            "documentary",
+            "physical",
+            "witness_statement",
+            "electronic_data",
+            "expert_opinion",
+            "audio_visual",
+            "other",
         }
         for e in self.evidences:
             assert e["evidence_type"] in valid_types, (
@@ -127,13 +133,21 @@ class TestContractFixtures:
     def test_required_fields_present(self):
         """输出 fixture 中每条 Evidence 应包含所有必填字段。"""
         required = {
-            "evidence_id", "case_id", "owner_party_id", "title", "source",
-            "summary", "evidence_type", "target_fact_ids", "target_issue_ids",
-            "access_domain", "status", "submitted_by_party_id",
-            "challenged_by_party_ids", "admissibility_notes",
+            "evidence_id",
+            "case_id",
+            "owner_party_id",
+            "title",
+            "source",
+            "summary",
+            "evidence_type",
+            "target_fact_ids",
+            "target_issue_ids",
+            "access_domain",
+            "status",
+            "submitted_by_party_id",
+            "challenged_by_party_ids",
+            "admissibility_notes",
         }
         for e in self.evidences:
             missing = required - set(e.keys())
-            assert not missing, (
-                f"Evidence {e.get('evidence_id', '?')} missing fields: {missing}"
-            )
+            assert not missing, f"Evidence {e.get('evidence_id', '?')} missing fields: {missing}"

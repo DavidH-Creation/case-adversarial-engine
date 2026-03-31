@@ -17,6 +17,7 @@ Issue Impact Ranker — main class for P0.1 issue impact ranking.
 - LLM 整体失败返回 failed 结果（原始顺序，全部争点进 unevaluated），不抛异常
 - 空争点树不调用 LLM，直接返回
 """
+
 from __future__ import annotations
 
 import logging
@@ -103,9 +104,7 @@ class IssueImpactRanker:
 
         if case_type not in PROMPT_REGISTRY:
             available = ", ".join(PROMPT_REGISTRY.keys()) or "(none)"
-            raise ValueError(
-                f"不支持的案由类型: '{case_type}'。可用: {available}"
-            )
+            raise ValueError(f"不支持的案由类型: '{case_type}'。可用: {available}")
         return PROMPT_REGISTRY[case_type]
 
     async def rank(self, inp: IssueImpactRankerInput) -> IssueImpactRankingResult:
@@ -130,18 +129,17 @@ class IssueImpactRanker:
             )
 
         known_issue_ids: set[str] = {i.issue_id for i in issues}
-        known_evidence_ids: set[str] = {
-            e.evidence_id for e in inp.evidence_index.evidence
-        }
+        known_evidence_ids: set[str] = {e.evidence_id for e in inp.evidence_index.evidence}
 
         # 将争点分批，每批最多 _BATCH_SIZE 条，避免 LLM 因输入过长而返回非法 schema
         batches = [
-            issues[i : i + self._BATCH_SIZE]
-            for i in range(0, len(issues), self._BATCH_SIZE)
+            issues[i : i + self._BATCH_SIZE] for i in range(0, len(issues), self._BATCH_SIZE)
         ]
         logger.info(
             "批量评估：%d 条争点分为 %d 批（每批最多 %d 条）",
-            len(issues), len(batches), self._BATCH_SIZE,
+            len(issues),
+            len(batches),
+            self._BATCH_SIZE,
         )
 
         system_prompt = self._prompt_module.SYSTEM_PROMPT
@@ -164,7 +162,9 @@ class IssueImpactRanker:
 
                 logger.info(
                     "批次 %d/%d JSON 解析成功，顶层键: %s",
-                    batch_idx + 1, len(batches), list(raw_dict.keys()),
+                    batch_idx + 1,
+                    len(batches),
+                    list(raw_dict.keys()),
                 )
                 raw_dict = self._normalize_evaluation_keys(raw_dict)
 
@@ -176,7 +176,8 @@ class IssueImpactRanker:
                     if raw_dict["evaluations"]:
                         logger.debug(
                             "批次 %d/%d 首条评估项键: %s",
-                            batch_idx + 1, len(batches),
+                            batch_idx + 1,
+                            len(batches),
                             list(raw_dict["evaluations"][0].keys()),
                         )
                     for ev_item in raw_dict["evaluations"]:
@@ -186,7 +187,9 @@ class IssueImpactRanker:
                 batch_output = LLMIssueEvaluationOutput.model_validate(raw_dict)
                 logger.info(
                     "批次 %d/%d 评估条目数: %d",
-                    batch_idx + 1, len(batches), len(batch_output.evaluations),
+                    batch_idx + 1,
+                    len(batches),
+                    len(batch_output.evaluations),
                 )
                 all_evaluations.extend(batch_output.evaluations)
 
@@ -195,7 +198,9 @@ class IssueImpactRanker:
                 batch_ids = [i.issue_id for i in batch_issues]
                 logger.warning(
                     "批次 %d/%d 调用或解析失败（争点: %s）",
-                    batch_idx + 1, len(batches), batch_ids,
+                    batch_idx + 1,
+                    len(batches),
+                    batch_ids,
                     exc_info=True,
                 )
 
@@ -213,7 +218,9 @@ class IssueImpactRanker:
             sample = all_evaluations[0]
             logger.info(
                 "首条评估: issue_id=%s, outcome_impact=%s, importance=%d",
-                sample.issue_id, sample.outcome_impact, sample.importance_score,
+                sample.issue_id,
+                sample.outcome_impact,
+                sample.importance_score,
             )
         logger.info(
             "共收集评估条目: %d（%d 批成功，%d 批失败）",
@@ -271,8 +278,12 @@ class IssueImpactRanker:
     # ------------------------------------------------------------------
 
     _EVALUATIONS_ALIASES = (
-        "issue_assessments", "assessments", "issues", "issue_evaluations",
-        "争点评估", "评估结果",
+        "issue_assessments",
+        "assessments",
+        "issues",
+        "issue_evaluations",
+        "争点评估",
+        "评估结果",
     )
 
     @classmethod
@@ -312,9 +323,12 @@ class IssueImpactRanker:
     # 单条评估项字段别名映射
     _EVAL_FIELD_ALIASES: dict[str, str] = {
         # issue_id 别名
-        "争点id": "issue_id", "争点编号": "issue_id", "id": "issue_id",
+        "争点id": "issue_id",
+        "争点编号": "issue_id",
+        "id": "issue_id",
         # outcome_impact 别名
-        "impact": "outcome_impact", "影响程度": "outcome_impact",
+        "impact": "outcome_impact",
+        "影响程度": "outcome_impact",
         "outcome_impact_level": "outcome_impact",
         # evidence strength 别名
         "proponent_strength": "proponent_evidence_strength",
@@ -322,15 +336,21 @@ class IssueImpactRanker:
         "opponent_strength": "opponent_attack_strength",
         "attack_strength": "opponent_attack_strength",
         # recommended action 别名
-        "action": "recommended_action", "recommendation": "recommended_action",
+        "action": "recommended_action",
+        "recommendation": "recommended_action",
         "action_basis": "recommended_action_basis",
         "basis": "recommended_action_basis",
         # scoring 别名
-        "importance": "importance_score", "关键程度": "importance_score",
-        "swing": "swing_score", "摆幅": "swing_score",
-        "gap": "evidence_strength_gap", "证据差距": "evidence_strength_gap",
-        "depth": "dependency_depth", "层级": "dependency_depth",
-        "credibility": "credibility_impact", "可信度冲击": "credibility_impact",
+        "importance": "importance_score",
+        "关键程度": "importance_score",
+        "swing": "swing_score",
+        "摆幅": "swing_score",
+        "gap": "evidence_strength_gap",
+        "证据差距": "evidence_strength_gap",
+        "depth": "dependency_depth",
+        "层级": "dependency_depth",
+        "credibility": "credibility_impact",
+        "可信度冲击": "credibility_impact",
     }
 
     # dimensions 子键到平铺字段的映射
@@ -395,12 +415,16 @@ class IssueImpactRanker:
             logger.debug("展平 dimensions: %s", list(dims.keys()))
             for dim_name, dim_val in dims.items():
                 # 剥离 LLM 喜欢加的编号前缀（如 D01_, D1_, dim01_, 01_）
-                stripped = re.sub(r'^[Dd]?\d+[_\-]', '', dim_name)
-                mapping = cls._DIMENSION_FIELD_MAP.get(dim_name) or cls._DIMENSION_FIELD_MAP.get(stripped)
+                stripped = re.sub(r"^[Dd]?\d+[_\-]", "", dim_name)
+                mapping = cls._DIMENSION_FIELD_MAP.get(dim_name) or cls._DIMENSION_FIELD_MAP.get(
+                    stripped
+                )
                 # Layer 2: pattern-based dimension matching if exact map fails
                 if mapping is None:
                     lower_name = stripped.lower()
-                    if any(p in lower_name for p in ("import", "weight", "关键", "key", "critical")):
+                    if any(
+                        p in lower_name for p in ("import", "weight", "关键", "key", "critical")
+                    ):
                         mapping = ("importance_score", int)
                     elif any(p in lower_name for p in ("swing", "revers", "flip", "翻转")):
                         mapping = ("swing_score", int)
@@ -408,7 +432,9 @@ class IssueImpactRanker:
                         mapping = ("evidence_strength_gap", int)
                     elif any(p in lower_name for p in ("depth", "depend", "层级", "chain")):
                         mapping = ("dependency_depth", int)
-                    elif any(p in lower_name for p in ("credib", "可信", "risk", "burden", "exposure")):
+                    elif any(
+                        p in lower_name for p in ("credib", "可信", "risk", "burden", "exposure")
+                    ):
                         mapping = ("credibility_impact", int)
                     if mapping:
                         logger.debug("维度模式匹配: %s → %s", dim_name, mapping[0])
@@ -425,7 +451,10 @@ class IssueImpactRanker:
                             score = float(raw)
                     elif isinstance(dim_val, (int, float)):
                         score = dim_val
-                    elif isinstance(dim_val, str) and dim_val.replace(".", "", 1).lstrip("-").isdigit():
+                    elif (
+                        isinstance(dim_val, str)
+                        and dim_val.replace(".", "", 1).lstrip("-").isdigit()
+                    ):
                         # LLM 返回字符串数字如 "85"
                         score = float(dim_val)
                     elif isinstance(dim_val, str) and expected_type is str:
@@ -435,7 +464,9 @@ class IssueImpactRanker:
                     if score is not None:
                         # 多个维度映射到同一字段时取最大值
                         existing = item.get(field_name)
-                        if existing is None or (isinstance(existing, (int, float)) and score > existing):
+                        if existing is None or (
+                            isinstance(existing, (int, float)) and score > existing
+                        ):
                             item[field_name] = score
                 elif isinstance(dim_val, str):
                     # Opus 可能将枚举字段（如 proponent_evidence_strength）
@@ -480,7 +511,8 @@ class IssueImpactRanker:
             result["_score_rescaled"] = True
             logger.warning(
                 "Score rescale 0-10→0-100 triggered: fields=%s, original=%s",
-                list(values.keys()), {k: v for k, v in values.items()},
+                list(values.keys()),
+                {k: v for k, v in values.items()},
             )
         return result
 
@@ -574,9 +606,7 @@ class IssueImpactRanker:
         """
         # 构建 eval_map（过滤未知 issue_id）
         eval_map: dict[str, LLMSingleIssueEvaluation] = {
-            ev.issue_id: ev
-            for ev in evaluations
-            if ev.issue_id in known_issue_ids
+            ev.issue_id: ev for ev in evaluations if ev.issue_id in known_issue_ids
         }
         unmatched = [ev.issue_id for ev in evaluations if ev.issue_id not in known_issue_ids]
         if unmatched:
@@ -586,7 +616,7 @@ class IssueImpactRanker:
         if not eval_map and evaluations:
             logger.warning("eval_map 完全为空，尝试模糊匹配 issue_id...")
             for ev in evaluations:
-                match = re.search(r'(\d{2,})$', ev.issue_id)
+                match = re.search(r"(\d{2,})$", ev.issue_id)
                 if match:
                     suffix = match.group(1)
                     for kid in known_issue_ids:
@@ -662,8 +692,11 @@ class IssueImpactRanker:
             # 规则层覆盖：有 parent_issue_id 的争点深度至少为 1
             if issue.parent_issue_id and updates["dependency_depth"] == 0:
                 updates["dependency_depth"] = 1
-                logger.info("depth override: %s has parent=%s, forcing depth=1",
-                            issue.issue_id, issue.parent_issue_id)
+                logger.info(
+                    "depth override: %s has parent=%s, forcing depth=1",
+                    issue.issue_id,
+                    issue.parent_issue_id,
+                )
             updates["credibility_impact"] = max(0, min(100, ev.credibility_impact))
 
             if issue_degraded:
@@ -714,7 +747,8 @@ class IssueImpactRanker:
             if capped_ids:
                 logger.info(
                     "Admissibility gate: capped composite_score for %d issues: %s",
-                    len(capped_ids), capped_ids,
+                    len(capped_ids),
+                    capped_ids,
                 )
             enriched = enriched_capped
 
@@ -737,9 +771,11 @@ class IssueImpactRanker:
                     )
                 ):
                     enriched_demoted.append(
-                        issue.model_copy(update={
-                            "composite_score": score * _DISPUTE_PENALTY,
-                        })
+                        issue.model_copy(
+                            update={
+                                "composite_score": score * _DISPUTE_PENALTY,
+                            }
+                        )
                     )
                     demoted_ids.append(issue.issue_id)
                 else:
@@ -747,22 +783,22 @@ class IssueImpactRanker:
             if demoted_ids:
                 logger.info(
                     "Strong argument demotion: demoted %d issues: %s",
-                    len(demoted_ids), demoted_ids,
+                    len(demoted_ids),
+                    demoted_ids,
                 )
             enriched = enriched_demoted
 
         # 诊断：evaluated 争点的 composite_score 分布
-        evaluated_scores = [
-            i.composite_score for i in enriched
-            if i.composite_score is not None
-        ]
+        evaluated_scores = [i.composite_score for i in enriched if i.composite_score is not None]
         if len(evaluated_scores) >= 3:
             spread = max(evaluated_scores) - min(evaluated_scores)
             if spread < 5.0:
                 logger.warning(
                     "Composite scores poorly differentiated: spread=%.1f, "
                     "range=[%.1f, %.1f], count=%d",
-                    spread, min(evaluated_scores), max(evaluated_scores),
+                    spread,
+                    min(evaluated_scores),
+                    max(evaluated_scores),
                     len(evaluated_scores),
                 )
 
@@ -833,8 +869,8 @@ class IssueImpactRanker:
             model=self._model,
             tool_name="evaluate_issues",
             tool_description="对案件所有争点进行五维度批量评估（影响程度、证据强度、建议行动等）。"
-                             "Batch-evaluate all case issues across five dimensions: "
-                             "outcome impact, evidence strength, recommended action, etc.",
+            "Batch-evaluate all case issues across five dimensions: "
+            "outcome impact, evidence strength, recommended action, etc.",
             tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,

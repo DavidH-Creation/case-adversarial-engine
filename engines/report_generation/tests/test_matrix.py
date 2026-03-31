@@ -12,6 +12,7 @@ Tests for engines.report_generation.issue_evidence_defense_matrix module.
 - Edge case: issue_tree.issues 为空 → 返回 None
 - Integration: 完整 report 生成流程（mock LLM）→ 报告包含矩阵表格章节
 """
+
 from __future__ import annotations
 
 import json
@@ -33,6 +34,7 @@ from engines.report_generation.schemas import (
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_issue(
     issue_id: str,
@@ -77,8 +79,8 @@ def _make_defense_chain(defense_points: list) -> SimpleNamespace:
 # Test: build_issue_evidence_defense_matrix
 # ---------------------------------------------------------------------------
 
-class TestBuildMatrix:
 
+class TestBuildMatrix:
     def test_happy_path_three_issues_with_evidence_and_defense(self) -> None:
         """3 issues, each with 2 evidence and 1 defense → 3 rows, correct counts."""
         issues = [
@@ -220,9 +222,10 @@ class TestBuildMatrix:
 
     def test_empty_issues_returns_none(self) -> None:
         """Empty issues list → None."""
-        assert build_issue_evidence_defense_matrix(
-            _make_issue_tree([]), _make_evidence_index([])
-        ) is None
+        assert (
+            build_issue_evidence_defense_matrix(_make_issue_tree([]), _make_evidence_index([]))
+            is None
+        )
 
     def test_issues_without_outcome_impact(self) -> None:
         """Issues without outcome_impact → impact='', sorted to end."""
@@ -274,8 +277,8 @@ class TestBuildMatrix:
 # Test: render_matrix_markdown
 # ---------------------------------------------------------------------------
 
-class TestRenderMatrixMarkdown:
 
+class TestRenderMatrixMarkdown:
     def _make_matrix(self, rows: list[MatrixRow]) -> IssueEvidenceDefenseMatrix:
         return IssueEvidenceDefenseMatrix(
             rows=rows,
@@ -369,7 +372,8 @@ class TestRenderMatrixMarkdown:
         md = render_matrix_markdown(self._make_matrix(rows))
         # Count data rows (lines starting with | but not the separator line)
         data_rows = [
-            line for line in md.splitlines()
+            line
+            for line in md.splitlines()
             if line.startswith("|") and "---" not in line and "争点 |" not in line
         ]
         assert len(data_rows) == 5
@@ -379,29 +383,31 @@ class TestRenderMatrixMarkdown:
 # Test: integration with ReportGenerator (mock LLM)
 # ---------------------------------------------------------------------------
 
-class TestMatrixIntegrationWithGenerator:
 
+class TestMatrixIntegrationWithGenerator:
     @pytest.fixture
     def mock_llm_response(self) -> str:
-        return json.dumps({
-            "title": "测试报告",
-            "summary": "测试摘要",
-            "sections": [
-                {
-                    "title": "借贷关系",
-                    "body": "借贷关系成立。",
-                    "linked_issue_ids": ["i-1"],
-                    "linked_evidence_ids": ["e-1"],
-                    "key_conclusions": [
-                        {
-                            "text": "借贷关系成立",
-                            "statement_class": "fact",
-                            "supporting_evidence_ids": ["e-1"],
-                        }
-                    ],
-                }
-            ],
-        })
+        return json.dumps(
+            {
+                "title": "测试报告",
+                "summary": "测试摘要",
+                "sections": [
+                    {
+                        "title": "借贷关系",
+                        "body": "借贷关系成立。",
+                        "linked_issue_ids": ["i-1"],
+                        "linked_evidence_ids": ["e-1"],
+                        "key_conclusions": [
+                            {
+                                "text": "借贷关系成立",
+                                "statement_class": "fact",
+                                "supporting_evidence_ids": ["e-1"],
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
 
     async def test_report_includes_matrix_section(self, mock_llm_response: str) -> None:
         """Full generate() call with defense_chain → report has matrix section."""
@@ -479,7 +485,8 @@ class TestMatrixIntegrationWithGenerator:
         assert "| 争点 |" in matrix_section.body
         # Should have a row per issue
         data_rows = [
-            line for line in matrix_section.body.splitlines()
+            line
+            for line in matrix_section.body.splitlines()
             if line.startswith("|") and "---" not in line and "争点 |" not in line
         ]
         assert len(data_rows) == len(issue_tree.issues)
@@ -521,8 +528,8 @@ class TestMatrixIntegrationWithGenerator:
 # Test: _safe_enum_value
 # ---------------------------------------------------------------------------
 
-class TestSafeEnumValue:
 
+class TestSafeEnumValue:
     def test_none_returns_empty_string(self) -> None:
         assert _safe_enum_value(None) == ""
 

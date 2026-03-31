@@ -213,9 +213,7 @@ def _make_conference_result(
 import importlib
 import sys
 
-_PROJECT_ROOT_STR = str(
-    __import__("pathlib").Path(__file__).parent.parent.parent
-)
+_PROJECT_ROOT_STR = str(__import__("pathlib").Path(__file__).parent.parent.parent)
 if _PROJECT_ROOT_STR not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT_STR)
 
@@ -249,15 +247,17 @@ class TestDeriveEvidenceGaps:
 
     def test_derive_evidence_gaps_skips_resolved(self):
         """Resolved focus items are excluded from evidence gaps."""
-        conference = _make_conference_result(focus_items=[
-            CrossExaminationFocusItem(
-                evidence_id="ev-resolved",
-                issue_id="issue-001",
-                dimension=CrossExaminationDimension.authenticity,
-                dispute_summary="Already resolved",
-                is_resolved=True,
-            ),
-        ])
+        conference = _make_conference_result(
+            focus_items=[
+                CrossExaminationFocusItem(
+                    evidence_id="ev-resolved",
+                    issue_id="issue-001",
+                    dimension=CrossExaminationDimension.authenticity,
+                    dispute_summary="Already resolved",
+                    is_resolved=True,
+                ),
+            ]
+        )
         gaps = _derive_evidence_gaps(conference, CASE_ID, RUN_ID)
         assert gaps == []
 

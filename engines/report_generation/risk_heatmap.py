@@ -9,6 +9,7 @@ Usage:
     rows = build_risk_heatmap(ranked_issues)
     # rows: list[HeatmapRow] or None
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -21,8 +22,9 @@ if TYPE_CHECKING:
 
 class RiskLevel(str, Enum):
     """争点风险等级 / Issue risk level."""
-    favorable = "favorable"    # 🟢 我方有利
-    neutral = "neutral"        # 🟡 中性/不确定
+
+    favorable = "favorable"  # 🟢 我方有利
+    neutral = "neutral"  # 🟡 中性/不确定
     unfavorable = "unfavorable"  # 🔴 我方不利
 
 
@@ -44,13 +46,14 @@ RISK_LABEL_ZH: dict[RiskLevel, str] = {
 @dataclass
 class HeatmapRow:
     """热力图单行数据。"""
+
     issue_id: str
     title: str
-    outcome_impact: str       # high / medium / low
-    attack_strength: str      # strong / medium / weak
-    evidence_strength: str    # strong / medium / weak
+    outcome_impact: str  # high / medium / low
+    attack_strength: str  # strong / medium / weak
+    evidence_strength: str  # strong / medium / weak
     risk_level: RiskLevel
-    recommended_action: str   # supplement_evidence / amend_claim / abandon / explain_in_trial
+    recommended_action: str  # supplement_evidence / amend_claim / abandon / explain_in_trial
 
 
 def _classify_risk(outcome_impact: str, attack_strength: str, evidence_strength: str) -> RiskLevel:
@@ -103,15 +106,17 @@ def build_risk_heatmap(ranked_issues: Any) -> list[HeatmapRow] | None:
         action = _safe_enum_value(getattr(iss, "recommended_action", None))
 
         risk = _classify_risk(impact, attack, evidence)
-        rows.append(HeatmapRow(
-            issue_id=iss.issue_id,
-            title=getattr(iss, "title", iss.issue_id),
-            outcome_impact=impact,
-            attack_strength=attack,
-            evidence_strength=evidence,
-            risk_level=risk,
-            recommended_action=action,
-        ))
+        rows.append(
+            HeatmapRow(
+                issue_id=iss.issue_id,
+                title=getattr(iss, "title", iss.issue_id),
+                outcome_impact=impact,
+                attack_strength=attack,
+                evidence_strength=evidence,
+                risk_level=risk,
+                recommended_action=action,
+            )
+        )
 
     return rows if rows else None
 

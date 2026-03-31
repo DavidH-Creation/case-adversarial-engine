@@ -8,6 +8,7 @@ Unit tests for EvidenceGapROIRanker (P1.7).
 - 覆盖所有 ROI 规则分组（4 个组的全部边界情况）
 - 覆盖合约保证（roi_rank 连续、从 1 开始、稳定排序、零 LLM）
 """
+
 from __future__ import annotations
 
 import pytest
@@ -203,17 +204,30 @@ class TestEmptyInput:
 class TestSingleItem:
     def test_single_item_gets_roi_rank_1(self):
         """单条缺证项，roi_rank 必须为 1。"""
-        result = ranker.rank(_inp([
-            _desc("g1", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes)
-        ]))
+        result = ranker.rank(
+            _inp(
+                [
+                    _desc(
+                        "g1",
+                        impact=OutcomeImpactSize.significant,
+                        obtainable=PracticallyObtainable.yes,
+                    )
+                ]
+            )
+        )
         assert len(result.ranked_items) == 1
         assert result.ranked_items[0].roi_rank == 1
 
     def test_single_item_fields_preserved(self):
         """单条缺证项的所有字段被正确复制到 EvidenceGapItem。"""
-        desc = _desc("g1", issue_id="issue-999", cost=SupplementCost.high,
-                     impact=OutcomeImpactSize.marginal, obtainable=PracticallyObtainable.no,
-                     alt_paths=["path-A", "path-B"])
+        desc = _desc(
+            "g1",
+            issue_id="issue-999",
+            cost=SupplementCost.high,
+            impact=OutcomeImpactSize.marginal,
+            obtainable=PracticallyObtainable.no,
+            alt_paths=["path-A", "path-B"],
+        )
         result = ranker.rank(_inp([desc]))
         item = result.ranked_items[0]
         assert item.gap_id == "g1"
@@ -235,7 +249,11 @@ class TestGroup1:
         """yes+significant 应排在所有其他组之前。"""
         items = [
             _desc("g-low", impact=OutcomeImpactSize.marginal, obtainable=PracticallyObtainable.no),
-            _desc("g-group1", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes),
+            _desc(
+                "g-group1",
+                impact=OutcomeImpactSize.significant,
+                obtainable=PracticallyObtainable.yes,
+            ),
         ]
         result = ranker.rank(_inp(items))
         assert result.ranked_items[0].gap_id == "g-group1"
@@ -244,9 +262,15 @@ class TestGroup1:
     def test_multiple_group1_items_maintain_original_order(self):
         """同为组 1 的项按原始顺序排列（稳定排序）。"""
         items = [
-            _desc("g1a", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes),
-            _desc("g1b", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes),
-            _desc("g1c", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes),
+            _desc(
+                "g1a", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes
+            ),
+            _desc(
+                "g1b", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes
+            ),
+            _desc(
+                "g1c", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes
+            ),
         ]
         result = ranker.rank(_inp(items))
         ids = [item.gap_id for item in result.ranked_items]
@@ -280,7 +304,11 @@ class TestGroup3:
     def test_group3_after_group2(self):
         """uncertain+significant 排在 yes+moderate 之后。"""
         items = [
-            _desc("g3", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.uncertain),
+            _desc(
+                "g3",
+                impact=OutcomeImpactSize.significant,
+                obtainable=PracticallyObtainable.uncertain,
+            ),
             _desc("g2", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.yes),
         ]
         result = ranker.rank(_inp(items))
@@ -290,9 +318,17 @@ class TestGroup3:
     def test_group3_before_group4(self):
         """uncertain+significant 排在所有组 4 项目之前。"""
         items = [
-            _desc("g4", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.no,
-                  cost=SupplementCost.low),
-            _desc("g3", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.uncertain),
+            _desc(
+                "g4",
+                impact=OutcomeImpactSize.moderate,
+                obtainable=PracticallyObtainable.no,
+                cost=SupplementCost.low,
+            ),
+            _desc(
+                "g3",
+                impact=OutcomeImpactSize.significant,
+                obtainable=PracticallyObtainable.uncertain,
+            ),
         ]
         result = ranker.rank(_inp(items))
         assert result.ranked_items[0].gap_id == "g3"
@@ -308,9 +344,21 @@ class TestGroup4:
     def test_group4_sort_by_impact_desc(self):
         """组 4 内按 outcome_impact_size 降序排列（significant>moderate>marginal）。"""
         items = [
-            _desc("g4-marginal", impact=OutcomeImpactSize.marginal, obtainable=PracticallyObtainable.no),
-            _desc("g4-moderate", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.no),
-            _desc("g4-significant", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.no),
+            _desc(
+                "g4-marginal",
+                impact=OutcomeImpactSize.marginal,
+                obtainable=PracticallyObtainable.no,
+            ),
+            _desc(
+                "g4-moderate",
+                impact=OutcomeImpactSize.moderate,
+                obtainable=PracticallyObtainable.no,
+            ),
+            _desc(
+                "g4-significant",
+                impact=OutcomeImpactSize.significant,
+                obtainable=PracticallyObtainable.no,
+            ),
         ]
         result = ranker.rank(_inp(items))
         ids = [item.gap_id for item in result.ranked_items]
@@ -319,12 +367,24 @@ class TestGroup4:
     def test_group4_same_impact_sort_by_cost_asc(self):
         """组 4 内同 impact 时按 supplement_cost 升序排列（low<medium<high）。"""
         items = [
-            _desc("g-high-cost", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.no,
-                  cost=SupplementCost.high),
-            _desc("g-low-cost", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.no,
-                  cost=SupplementCost.low),
-            _desc("g-med-cost", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.no,
-                  cost=SupplementCost.medium),
+            _desc(
+                "g-high-cost",
+                impact=OutcomeImpactSize.moderate,
+                obtainable=PracticallyObtainable.no,
+                cost=SupplementCost.high,
+            ),
+            _desc(
+                "g-low-cost",
+                impact=OutcomeImpactSize.moderate,
+                obtainable=PracticallyObtainable.no,
+                cost=SupplementCost.low,
+            ),
+            _desc(
+                "g-med-cost",
+                impact=OutcomeImpactSize.moderate,
+                obtainable=PracticallyObtainable.no,
+                cost=SupplementCost.medium,
+            ),
         ]
         result = ranker.rank(_inp(items))
         ids = [item.gap_id for item in result.ranked_items]
@@ -333,9 +393,17 @@ class TestGroup4:
     def test_group4_yes_marginal_is_group4(self):
         """yes+marginal 属于组 4（不在前三组中）。"""
         items = [
-            _desc("g4-yes-marginal", impact=OutcomeImpactSize.marginal,
-                  obtainable=PracticallyObtainable.yes, cost=SupplementCost.low),
-            _desc("g3", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.uncertain),
+            _desc(
+                "g4-yes-marginal",
+                impact=OutcomeImpactSize.marginal,
+                obtainable=PracticallyObtainable.yes,
+                cost=SupplementCost.low,
+            ),
+            _desc(
+                "g3",
+                impact=OutcomeImpactSize.significant,
+                obtainable=PracticallyObtainable.uncertain,
+            ),
         ]
         result = ranker.rank(_inp(items))
         assert result.ranked_items[0].gap_id == "g3"
@@ -344,10 +412,18 @@ class TestGroup4:
     def test_group4_yes_marginal_cost_sort(self):
         """yes+marginal 属于组 4，组内按 cost ASC 排序。"""
         items = [
-            _desc("yes-marginal-high", impact=OutcomeImpactSize.marginal,
-                  obtainable=PracticallyObtainable.yes, cost=SupplementCost.high),
-            _desc("yes-marginal-low", impact=OutcomeImpactSize.marginal,
-                  obtainable=PracticallyObtainable.yes, cost=SupplementCost.low),
+            _desc(
+                "yes-marginal-high",
+                impact=OutcomeImpactSize.marginal,
+                obtainable=PracticallyObtainable.yes,
+                cost=SupplementCost.high,
+            ),
+            _desc(
+                "yes-marginal-low",
+                impact=OutcomeImpactSize.marginal,
+                obtainable=PracticallyObtainable.yes,
+                cost=SupplementCost.low,
+            ),
         ]
         result = ranker.rank(_inp(items))
         assert result.ranked_items[0].gap_id == "yes-marginal-low"
@@ -356,9 +432,17 @@ class TestGroup4:
     def test_group4_uncertain_moderate_is_group4(self):
         """uncertain+moderate 属于组 4（不满足组 3 条件 uncertain+significant）。"""
         items = [
-            _desc("g4-uncertain-moderate", impact=OutcomeImpactSize.moderate,
-                  obtainable=PracticallyObtainable.uncertain, cost=SupplementCost.high),
-            _desc("g3", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.uncertain),
+            _desc(
+                "g4-uncertain-moderate",
+                impact=OutcomeImpactSize.moderate,
+                obtainable=PracticallyObtainable.uncertain,
+                cost=SupplementCost.high,
+            ),
+            _desc(
+                "g3",
+                impact=OutcomeImpactSize.significant,
+                obtainable=PracticallyObtainable.uncertain,
+            ),
         ]
         result = ranker.rank(_inp(items))
         assert result.ranked_items[0].gap_id == "g3"
@@ -368,7 +452,9 @@ class TestGroup4:
         """obtainable=no 的任何 impact 均属于组 4，且按 impact DESC 排序。"""
         items = [
             _desc("no-mod", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.no),
-            _desc("no-sig", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.no),
+            _desc(
+                "no-sig", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.no
+            ),
         ]
         result = ranker.rank(_inp(items))
         # 组 4 内 significant > moderate
@@ -378,10 +464,18 @@ class TestGroup4:
     def test_group4_stable_sort_same_key(self):
         """组 4 内同 impact + 同 cost 时，原始顺序保持不变（稳定排序）。"""
         items = [
-            _desc("first", impact=OutcomeImpactSize.marginal, obtainable=PracticallyObtainable.no,
-                  cost=SupplementCost.medium),
-            _desc("second", impact=OutcomeImpactSize.marginal, obtainable=PracticallyObtainable.no,
-                  cost=SupplementCost.medium),
+            _desc(
+                "first",
+                impact=OutcomeImpactSize.marginal,
+                obtainable=PracticallyObtainable.no,
+                cost=SupplementCost.medium,
+            ),
+            _desc(
+                "second",
+                impact=OutcomeImpactSize.marginal,
+                obtainable=PracticallyObtainable.no,
+                cost=SupplementCost.medium,
+            ),
         ]
         result = ranker.rank(_inp(items))
         assert result.ranked_items[0].gap_id == "first"
@@ -398,12 +492,22 @@ class TestFullMixedScenario:
         """四个优先组混合输入，最终顺序必须严格符合规则。"""
         items = [
             # 组 4: no+marginal, cost=low
-            _desc("g4-1", impact=OutcomeImpactSize.marginal, obtainable=PracticallyObtainable.no,
-                  cost=SupplementCost.low),
+            _desc(
+                "g4-1",
+                impact=OutcomeImpactSize.marginal,
+                obtainable=PracticallyObtainable.no,
+                cost=SupplementCost.low,
+            ),
             # 组 1: yes+significant
-            _desc("g1-1", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes),
+            _desc(
+                "g1-1", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes
+            ),
             # 组 3: uncertain+significant
-            _desc("g3-1", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.uncertain),
+            _desc(
+                "g3-1",
+                impact=OutcomeImpactSize.significant,
+                obtainable=PracticallyObtainable.uncertain,
+            ),
             # 组 2: yes+moderate
             _desc("g2-1", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.yes),
         ]
@@ -416,7 +520,11 @@ class TestFullMixedScenario:
         items = [
             _desc("g1", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.yes),
             _desc("g2", impact=OutcomeImpactSize.moderate, obtainable=PracticallyObtainable.yes),
-            _desc("g3", impact=OutcomeImpactSize.significant, obtainable=PracticallyObtainable.uncertain),
+            _desc(
+                "g3",
+                impact=OutcomeImpactSize.significant,
+                obtainable=PracticallyObtainable.uncertain,
+            ),
             _desc("g4", impact=OutcomeImpactSize.marginal, obtainable=PracticallyObtainable.no),
         ]
         result = ranker.rank(_inp(items))
@@ -425,11 +533,13 @@ class TestFullMixedScenario:
 
     def test_result_preserves_case_and_run_id(self):
         """结果中 case_id 和 run_id 来自输入。"""
-        result = ranker.rank(_inp(
-            [_desc("g1")],
-            case_id="case-999",
-            run_id="run-XYZ",
-        ))
+        result = ranker.rank(
+            _inp(
+                [_desc("g1")],
+                case_id="case-999",
+                run_id="run-XYZ",
+            )
+        )
         assert result.case_id == "case-999"
         assert result.run_id == "run-XYZ"
 
@@ -461,11 +571,13 @@ class TestFullMixedScenario:
 
     def test_item_case_id_and_run_id_from_input(self):
         """ranked_items 内每个 EvidenceGapItem 的 case_id/run_id 来自输入。"""
-        result = ranker.rank(_inp(
-            [_desc("g1")],
-            case_id="CASE-42",
-            run_id="RUN-99",
-        ))
+        result = ranker.rank(
+            _inp(
+                [_desc("g1")],
+                case_id="CASE-42",
+                run_id="RUN-99",
+            )
+        )
         item = result.ranked_items[0]
         assert item.case_id == "CASE-42"
         assert item.run_id == "RUN-99"

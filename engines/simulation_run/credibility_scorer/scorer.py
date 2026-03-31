@@ -23,6 +23,7 @@ Credibility Scorer — rule-based credibility deduction engine for P2.9.
 - CRED-05: 关键时间节点缺乏证据支撑 (-10)
 - CRED-06: 存在被质疑真实性但未给出解释的证据 (-5)
 """
+
 from __future__ import annotations
 
 import uuid
@@ -195,9 +196,7 @@ class CredibilityScorer:
             if issue.opponent_attack_strength != AttackStrength.strong:
                 continue
             types_in_issue = {
-                evidence_map[eid].evidence_type
-                for eid in issue.evidence_ids
-                if eid in evidence_map
+                evidence_map[eid].evidence_type for eid in issue.evidence_ids if eid in evidence_map
             }
             if (
                 EvidenceType.witness_statement in types_in_issue

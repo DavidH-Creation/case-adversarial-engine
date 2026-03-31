@@ -98,7 +98,9 @@ async def call_llm_with_retry(
             delay = float(2 ** (attempt - 1)) + random.random() * 0.5  # 1~1.5s, 2~2.5s, 4~4.5s
             logger.debug(
                 "LLM retry %d/%d after %.2fs backoff",
-                attempt, max_retries, delay,
+                attempt,
+                max_retries,
+                delay,
             )
             await _sleep(delay)
 
@@ -128,6 +130,5 @@ async def call_llm_with_retry(
             )
 
     raise RuntimeError(
-        f"LLM 调用失败，已重试 {max_retries} 次。"
-        f"最后错误 / Last error: {type(last_error).__name__}"
+        f"LLM 调用失败，已重试 {max_retries} 次。最后错误 / Last error: {type(last_error).__name__}"
     )

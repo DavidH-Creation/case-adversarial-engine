@@ -9,6 +9,7 @@ Takes AdversarialResult (5 AgentOutputs), calls LLM for global analysis,
 outputs structured AdversarialSummary (strongest arguments, unresolved issue reasons,
 missing evidence analysis, overall assessment).
 """
+
 from __future__ import annotations
 
 from engines.shared.json_utils import _extract_json_object
@@ -153,8 +154,7 @@ class AdversarialSummarizer:
             lines.append(f"--- 第 {round_state.round_number} 轮 ({round_state.phase.value}) ---")
             for output in round_state.outputs:
                 lines.append(
-                    f"  [{output.output_id}] {output.agent_role_code} "
-                    f"(round {output.round_index}):"
+                    f"  [{output.output_id}] {output.agent_role_code} (round {output.round_index}):"
                 )
                 lines.append(f"  标题: {output.title}")
                 lines.append(f"  正文: {output.body[:600]}")
@@ -165,9 +165,7 @@ class AdversarialSummarizer:
         if result.evidence_conflicts:
             lines.append("【已检测证据冲突】")
             for conflict in result.evidence_conflicts:
-                lines.append(
-                    f"  争点 {conflict.issue_id}: {conflict.conflict_description}"
-                )
+                lines.append(f"  争点 {conflict.issue_id}: {conflict.conflict_description}")
             lines.append("")
 
         # 已检测的未决争点（规则层，供参考）
@@ -202,6 +200,7 @@ class AdversarialSummarizer:
             RuntimeError: 超过最大重试次数 / Max retries exceeded
         """
         from engines.shared.llm_utils import call_llm_with_retry
+
         return await call_llm_with_retry(
             self._llm,
             system=system,
@@ -221,6 +220,7 @@ class AdversarialSummarizer:
         """将 LLM JSON 输出解析为 AdversarialSummary。
         Parse LLM JSON output dict to AdversarialSummary.
         """
+
         def _to_dict(item: object) -> dict:
             """Normalize LLM output element: if it's a string, wrap it."""
             return item if isinstance(item, dict) else {"issue_id": str(item)}

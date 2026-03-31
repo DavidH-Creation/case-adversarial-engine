@@ -81,10 +81,7 @@ def build_user_prompt(
         try:
             top = getattr(attack_chain, "top_attacks", [])
             if top:
-                top_strs = [
-                    f"{n.attack_node_id}: {n.attack_description}"
-                    for n in top[:3]
-                ]
+                top_strs = [f"{n.attack_node_id}: {n.attack_description}" for n in top[:3]]
                 attack_block = "\n".join(f"  - {s}" for s in top_strs)
         except Exception:  # noqa: BLE001
             pass

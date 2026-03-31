@@ -1,6 +1,7 @@
 """
 P0.1 数据模型单元测试 — 新增枚举和 Issue 扩展字段。
 """
+
 from __future__ import annotations
 
 import pytest

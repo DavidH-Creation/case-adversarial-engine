@@ -16,6 +16,7 @@ Issue Category Classifier — main class for P1.6 issue category classification.
 - LLM 整体失败返回 failed 结果（原始顺序，全部争点进 unclassified），不抛异常
 - 空争点树不调用 LLM，直接返回
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -76,9 +77,7 @@ class IssueCategoryClassifier:
 
         if case_type not in PROMPT_REGISTRY:
             available = ", ".join(PROMPT_REGISTRY.keys()) or "(none)"
-            raise ValueError(
-                f"不支持的案由类型: '{case_type}'。可用: {available}"
-            )
+            raise ValueError(f"不支持的案由类型: '{case_type}'。可用: {available}")
         return PROMPT_REGISTRY[case_type]
 
     async def classify(
@@ -106,8 +105,7 @@ class IssueCategoryClassifier:
 
         known_issue_ids: set[str] = {i.issue_id for i in issues}
         known_claim_entry_ids: set[str] = {
-            e.claim_id
-            for e in inp.amount_calculation_report.claim_calculation_table
+            e.claim_id for e in inp.amount_calculation_report.claim_calculation_table
         }
 
         try:
@@ -131,9 +129,7 @@ class IssueCategoryClassifier:
                 known_claim_entry_ids=known_claim_entry_ids,
             )
 
-            classified_tree = inp.issue_tree.model_copy(
-                update={"issues": classified_issues}
-            )
+            classified_tree = inp.issue_tree.model_copy(update={"issues": classified_issues})
             return IssueCategoryClassificationResult(
                 classified_issue_tree=classified_tree,
                 classification_metadata={
@@ -179,9 +175,7 @@ class IssueCategoryClassifier:
         """
         # 构建 cls_map（过滤未知 issue_id）
         cls_map: dict[str, LLMIssueCategoryItem] = {
-            item.issue_id: item
-            for item in classifications
-            if item.issue_id in known_issue_ids
+            item.issue_id: item for item in classifications if item.issue_id in known_issue_ids
         }
 
         classified: list[Issue] = []
@@ -213,9 +207,7 @@ class IssueCategoryClassifier:
             # 校验 calculation_issue 关联
             if category == IssueCategory.calculation_issue:
                 valid_entries = [
-                    cid
-                    for cid in item.related_claim_entry_ids
-                    if cid in known_claim_entry_ids
+                    cid for cid in item.related_claim_entry_ids if cid in known_claim_entry_ids
                 ]
                 if not valid_entries:
                     unclassified.append(issue.issue_id)
@@ -253,8 +245,8 @@ class IssueCategoryClassifier:
             model=self._model,
             tool_name="classify_issue_categories",
             tool_description="对案件所有争点进行批量分类（事实争点、法律争点、计算争点、程序信用争点）。"
-                             "Batch-classify all case issues into four categories: "
-                             "fact_issue, legal_issue, calculation_issue, procedure_credibility_issue.",
+            "Batch-classify all case issues into four categories: "
+            "fact_issue, legal_issue, calculation_issue, procedure_credibility_issue.",
             tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,

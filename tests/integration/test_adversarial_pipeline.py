@@ -59,6 +59,7 @@ EV_D_PRIVATE = "ev-defendant-private-001"
 # 构建测试数据 / Build test data
 # ---------------------------------------------------------------------------
 
+
 def _make_issue_tree() -> IssueTree:
     """构造包含一个争点的 IssueTree。"""
     return IssueTree(
@@ -70,7 +71,9 @@ def _make_issue_tree() -> IssueTree:
                 title="借贷关系是否成立",
                 issue_type=IssueType.factual,
                 evidence_ids=[EV_SHARED, EV_P_PRIVATE, EV_D_PRIVATE],
-                status=__import__("engines.shared.models", fromlist=["IssueStatus"]).IssueStatus.open,
+                status=__import__(
+                    "engines.shared.models", fromlist=["IssueStatus"]
+                ).IssueStatus.open,
             )
         ],
     )
@@ -117,7 +120,9 @@ def _make_evidence_index() -> EvidenceIndex:
     )
 
 
-def _agent_response(title: str, issue_id: str = ISSUE_ID, evidence_ids: list[str] | None = None) -> str:
+def _agent_response(
+    title: str, issue_id: str = ISSUE_ID, evidence_ids: list[str] | None = None
+) -> str:
     """构造 party agent 的 LLM mock 响应。"""
     ev = evidence_ids or [EV_SHARED]
     return json.dumps(
@@ -348,8 +353,8 @@ _PIPELINE_PLAINTIFF_ID = "party-fp-p-001"
 _PIPELINE_DEFENDANT_ID = "party-fp-d-001"
 
 # EvidenceIndexer 生成的 evidence_id = f"evidence-{case_slug}-{idx:03d}"
-_P_EV_ID = "evidence-fp-p-001"   # case_slug="fp-p"
-_D_EV_ID = "evidence-fp-d-001"   # case_slug="fp-d"
+_P_EV_ID = "evidence-fp-p-001"  # case_slug="fp-p"
+_D_EV_ID = "evidence-fp-d-001"  # case_slug="fp-d"
 
 _INDEXER_P_RESPONSE = json.dumps(
     [

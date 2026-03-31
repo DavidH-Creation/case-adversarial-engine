@@ -29,9 +29,10 @@ _logger = logging.getLogger(__name__)
 
 class ModelTier(str, Enum):
     """模型分级 / Model tiers."""
-    fast = "fast"          # haiku — lightweight tasks
+
+    fast = "fast"  # haiku — lightweight tasks
     balanced = "balanced"  # sonnet — standard analysis
-    deep = "deep"          # opus — complex reasoning
+    deep = "deep"  # opus — complex reasoning
 
 
 # ---------------------------------------------------------------------------
@@ -116,7 +117,9 @@ class ModelSelector:
         if task_tag not in self._task_tiers:
             _logger.warning(
                 "Unknown task tag %r, falling back to %s tier (model=%s)",
-                task_tag, self._fallback_tier.value, model_id,
+                task_tag,
+                self._fallback_tier.value,
+                model_id,
             )
 
         return model_id
@@ -161,7 +164,8 @@ class ModelSelector:
         path = Path(config_path)
         if not path.exists():
             _logger.warning(
-                "Model tier config not found at %s, using hardcoded defaults", path,
+                "Model tier config not found at %s, using hardcoded defaults",
+                path,
             )
             return cls(model_override=model_override)
 
@@ -169,7 +173,8 @@ class ModelSelector:
         if not isinstance(raw, dict):
             _logger.warning(
                 "Invalid model tier config at %s (expected dict, got %s), using defaults",
-                path, type(raw).__name__,
+                path,
+                type(raw).__name__,
             )
             return cls(model_override=model_override)
 
@@ -195,7 +200,8 @@ class ModelSelector:
                 except ValueError:
                     _logger.warning(
                         "Unknown tier %r for task %r in config, ignoring",
-                        tier_name, task_tag,
+                        tier_name,
+                        task_tag,
                     )
 
         fallback_tier = FALLBACK_TIER
@@ -205,7 +211,8 @@ class ModelSelector:
             except ValueError:
                 _logger.warning(
                     "Unknown fallback_tier %r in config, using %s",
-                    raw["fallback_tier"], FALLBACK_TIER.value,
+                    raw["fallback_tier"],
+                    FALLBACK_TIER.value,
                 )
 
         return cls(

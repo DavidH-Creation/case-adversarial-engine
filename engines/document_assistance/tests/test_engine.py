@@ -132,33 +132,39 @@ def _make_input(
 
 
 def _pleading_json(ev_ids: list[str] | None = None) -> str:
-    return json.dumps({
-        "header": "民间借贷纠纷起诉状 | 案件：case-test",
-        "fact_narrative_items": ["2023年1月借款10万元"],
-        "legal_claim_items": ["依据《民法典》第六百七十五条"],
-        "prayer_for_relief_items": ["请求返还借款本金100000元"],
-        "evidence_ids_cited": ev_ids or ["ev-001"],
-        "attack_chain_basis": "unavailable",
-    })
+    return json.dumps(
+        {
+            "header": "民间借贷纠纷起诉状 | 案件：case-test",
+            "fact_narrative_items": ["2023年1月借款10万元"],
+            "legal_claim_items": ["依据《民法典》第六百七十五条"],
+            "prayer_for_relief_items": ["请求返还借款本金100000元"],
+            "evidence_ids_cited": ev_ids or ["ev-001"],
+            "attack_chain_basis": "unavailable",
+        }
+    )
 
 
 def _defense_json(ev_ids: list[str] | None = None) -> str:
-    return json.dumps({
-        "header": "答辩状 | 案件：case-test",
-        "denial_items": ["否认原告主张的借款金额"],
-        "defense_claim_items": ["款项已于2023年6月全部归还，有银行转账记录为证"],
-        "counter_prayer_items": ["请求驳回原告全部诉讼请求"],
-        "evidence_ids_cited": ev_ids or ["ev-002"],
-    })
+    return json.dumps(
+        {
+            "header": "答辩状 | 案件：case-test",
+            "denial_items": ["否认原告主张的借款金额"],
+            "defense_claim_items": ["款项已于2023年6月全部归还，有银行转账记录为证"],
+            "counter_prayer_items": ["请求驳回原告全部诉讼请求"],
+            "evidence_ids_cited": ev_ids or ["ev-002"],
+        }
+    )
 
 
 def _cross_exam_json(ev_ids: list[str] | None = None) -> str:
     ids = ev_ids or ["ev-001", "ev-002"]
     items = [{"evidence_id": eid, "opinion_text": f"对{eid}的质证意见"} for eid in ids]
-    return json.dumps({
-        "items": items,
-        "evidence_ids_cited": ids,
-    })
+    return json.dumps(
+        {
+            "items": items,
+            "evidence_ids_cited": ids,
+        }
+    )
 
 
 def _make_engine(response: str, fail_times: int = 0) -> DocumentAssistanceEngine:
@@ -202,16 +208,20 @@ class TestPleadingDraftHappyPath:
     @pytest.mark.asyncio
     async def test_attack_chain_basis_unavailable_when_no_attack_chain(self):
         """OptimalAttackChain 产物缺失 → attack_chain_basis="unavailable"。"""
-        response = json.dumps({
-            "header": "起诉状",
-            "fact_narrative_items": ["事实"],
-            "legal_claim_items": ["依据"],
-            "prayer_for_relief_items": ["请求"],
-            "evidence_ids_cited": ["ev-001"],
-            "attack_chain_basis": "unavailable",
-        })
+        response = json.dumps(
+            {
+                "header": "起诉状",
+                "fact_narrative_items": ["事实"],
+                "legal_claim_items": ["依据"],
+                "prayer_for_relief_items": ["请求"],
+                "evidence_ids_cited": ["ev-001"],
+                "attack_chain_basis": "unavailable",
+            }
+        )
         engine = _make_engine(response)
-        draft = await engine.generate(input=_make_input("pleading", "civil_loan", attack_chain=None))
+        draft = await engine.generate(
+            input=_make_input("pleading", "civil_loan", attack_chain=None)
+        )
         assert isinstance(draft.content, PleadingDraft)
         assert draft.content.attack_chain_basis == "unavailable"
 
@@ -291,7 +301,9 @@ class TestCrossExaminationOpinionHappyPath:
     async def test_labor_dispute_cross_exam(self):
         ev_ids = ["ev-001"]
         engine = _make_engine(_cross_exam_json(ev_ids))
-        draft = await engine.generate(input=_make_input("cross_exam", "labor_dispute", ev_ids=ev_ids))
+        draft = await engine.generate(
+            input=_make_input("cross_exam", "labor_dispute", ev_ids=ev_ids)
+        )
         assert isinstance(draft.content, CrossExaminationOpinion)
         assert draft.content.items[0].evidence_id == "ev-001"
 
@@ -334,10 +346,12 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_cross_exam_extra_items_from_evidence_ids_cited(self):
         """LLM 在 evidence_ids_cited 中引用但 items 里缺少 → engine 补充占位条目。"""
-        response = json.dumps({
-            "items": [{"evidence_id": "ev-001", "opinion_text": "意见1"}],
-            "evidence_ids_cited": ["ev-001", "ev-002"],  # ev-002 not in items
-        })
+        response = json.dumps(
+            {
+                "items": [{"evidence_id": "ev-001", "opinion_text": "意见1"}],
+                "evidence_ids_cited": ["ev-001", "ev-002"],  # ev-002 not in items
+            }
+        )
         engine = _make_engine(response)
         draft = await engine.generate(
             input=_make_input("cross_exam", "civil_loan", ev_ids=["ev-001", "ev-002"])
@@ -394,14 +408,16 @@ class TestErrorPaths:
     @pytest.mark.asyncio
     async def test_empty_evidence_ids_cited_raises_error(self):
         """LLM 返回 evidence_ids_cited=[] → DocumentGenerationError。"""
-        response = json.dumps({
-            "header": "起诉状",
-            "fact_narrative_items": ["事实"],
-            "legal_claim_items": ["依据"],
-            "prayer_for_relief_items": ["请求"],
-            "evidence_ids_cited": [],  # empty!
-            "attack_chain_basis": "unavailable",
-        })
+        response = json.dumps(
+            {
+                "header": "起诉状",
+                "fact_narrative_items": ["事实"],
+                "legal_claim_items": ["依据"],
+                "prayer_for_relief_items": ["请求"],
+                "evidence_ids_cited": [],  # empty!
+                "attack_chain_basis": "unavailable",
+            }
+        )
         engine = _make_engine(response)
         with pytest.raises(DocumentGenerationError, match="evidence_ids_cited is empty"):
             await engine.generate(input=_make_input("pleading", "civil_loan"))
@@ -431,14 +447,14 @@ class TestPromptRegistryCoverage:
     def test_all_nine_combinations_registered(self):
         """PROMPT_REGISTRY 覆盖全部 9 个 (doc_type, case_type) 组合。"""
         expected = {
-            ("pleading",   "civil_loan"),
-            ("defense",    "civil_loan"),
+            ("pleading", "civil_loan"),
+            ("defense", "civil_loan"),
             ("cross_exam", "civil_loan"),
-            ("pleading",   "labor_dispute"),
-            ("defense",    "labor_dispute"),
+            ("pleading", "labor_dispute"),
+            ("defense", "labor_dispute"),
             ("cross_exam", "labor_dispute"),
-            ("pleading",   "real_estate"),
-            ("defense",    "real_estate"),
+            ("pleading", "real_estate"),
+            ("defense", "real_estate"),
             ("cross_exam", "real_estate"),
         }
         assert set(PROMPT_REGISTRY.keys()) == expected
@@ -454,25 +470,29 @@ class TestPromptRegistryCoverage:
         """所有 build_user_prompt 函数返回非空字符串。"""
         issue_tree = IssueTree(
             case_id="case-test",
-            issues=[Issue(
-                issue_id="issue-001",
-                case_id="case-test",
-                title="借款人主体争议",
-                issue_type=IssueType.factual,
-            )],
+            issues=[
+                Issue(
+                    issue_id="issue-001",
+                    case_id="case-test",
+                    title="借款人主体争议",
+                    issue_type=IssueType.factual,
+                )
+            ],
         )
         ev_index = EvidenceIndex(
             case_id="case-test",
-            evidence=[Evidence(
-                evidence_id="ev-001",
-                case_id="case-test",
-                title="借条",
-                source="test",
-                summary="借款10万元",
-                evidence_type=EvidenceType.documentary,
-                owner_party_id="party-p",
-                target_fact_ids=["fact-001"],
-            )],
+            evidence=[
+                Evidence(
+                    evidence_id="ev-001",
+                    case_id="case-test",
+                    title="借条",
+                    source="test",
+                    summary="借款10万元",
+                    evidence_type=EvidenceType.documentary,
+                    owner_party_id="party-p",
+                    target_fact_ids=["fact-001"],
+                )
+            ],
         )
         case_data = {
             "case_id": "case-test",

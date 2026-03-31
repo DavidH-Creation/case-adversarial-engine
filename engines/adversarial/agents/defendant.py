@@ -2,6 +2,7 @@
 DefendantAgent — 被告代理人，生成抗辩和反驳。
 DefendantAgent — defendant party agent, generates defenses and rebuttals.
 """
+
 from __future__ import annotations
 
 from engines.shared.few_shot_examples import load_few_shot_text

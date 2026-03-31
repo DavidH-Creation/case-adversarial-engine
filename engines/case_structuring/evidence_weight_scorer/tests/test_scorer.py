@@ -7,6 +7,7 @@ Unit tests for EvidenceWeightScorer (P1.5).
 - 分层测试：枚举/模型字段 → schemas → prompts → 规则层逻辑 → 完整 score() 流程
 - 覆盖所有合约保证（见 spec P1.5 约束及验收标准）
 """
+
 from __future__ import annotations
 
 import json
@@ -265,19 +266,22 @@ def _llm_response(
     notes: Optional[str] = None,
 ) -> str:
     """生成标准测试用 LLM 响应 JSON。"""
-    return json.dumps({
-        "evidence_weights": [
-            {
-                "evidence_id": eid,
-                "authenticity_risk": risk,
-                "relevance_score": "strong",
-                "probative_value": "strong",
-                "vulnerability": vuln,
-                "admissibility_notes": notes,
-            }
-            for eid in evidence_ids
-        ]
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "evidence_weights": [
+                {
+                    "evidence_id": eid,
+                    "authenticity_risk": risk,
+                    "relevance_score": "strong",
+                    "probative_value": "strong",
+                    "vulnerability": vuln,
+                    "admissibility_notes": notes,
+                }
+                for eid in evidence_ids
+            ]
+        },
+        ensure_ascii=False,
+    )
 
 
 def _make_scorer(response: str, *, fail: bool = False) -> EvidenceWeightScorer:
@@ -359,14 +363,20 @@ class TestAdmissibilityNotesEnforcement:
     @pytest.mark.asyncio
     async def test_high_authenticity_risk_without_notes_skips_scoring(self):
         """authenticity_risk=high 但无 admissibility_notes → 不更新该条证据权重字段。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "high",
-            "relevance_score": "strong",
-            "probative_value": "strong",
-            "vulnerability": "low",
-            "admissibility_notes": None,
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "high",
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         ev = result.evidence[0]
         assert ev.evidence_weight_scored is False
@@ -375,14 +385,20 @@ class TestAdmissibilityNotesEnforcement:
     @pytest.mark.asyncio
     async def test_high_vulnerability_without_notes_skips_scoring(self):
         """vulnerability=high 但无 admissibility_notes → 不更新该条证据权重字段。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "low",
-            "relevance_score": "strong",
-            "probative_value": "medium",
-            "vulnerability": "high",
-            "admissibility_notes": None,
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "low",
+                        "relevance_score": "strong",
+                        "probative_value": "medium",
+                        "vulnerability": "high",
+                        "admissibility_notes": None,
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         ev = result.evidence[0]
         assert ev.evidence_weight_scored is False
@@ -390,14 +406,20 @@ class TestAdmissibilityNotesEnforcement:
     @pytest.mark.asyncio
     async def test_high_risk_with_notes_updates_successfully(self):
         """authenticity_risk=high 且有 admissibility_notes → 正常更新。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "high",
-            "relevance_score": "strong",
-            "probative_value": "strong",
-            "vulnerability": "low",
-            "admissibility_notes": "仅有复印件，建议申请原件核实",
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "high",
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": "仅有复印件，建议申请原件核实",
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         ev = result.evidence[0]
         assert ev.evidence_weight_scored is True
@@ -407,14 +429,20 @@ class TestAdmissibilityNotesEnforcement:
     @pytest.mark.asyncio
     async def test_high_vulnerability_with_notes_updates_successfully(self):
         """vulnerability=high 且有 admissibility_notes → 正常更新。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "low",
-            "relevance_score": "medium",
-            "probative_value": "weak",
-            "vulnerability": "high",
-            "admissibility_notes": "证人证言存在前后矛盾，对方可能申请证人出庭",
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "low",
+                        "relevance_score": "medium",
+                        "probative_value": "weak",
+                        "vulnerability": "high",
+                        "admissibility_notes": "证人证言存在前后矛盾，对方可能申请证人出庭",
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         ev = result.evidence[0]
         assert ev.evidence_weight_scored is True
@@ -430,14 +458,20 @@ class TestAdmissibilityNotesEnforcement:
     @pytest.mark.asyncio
     async def test_both_high_with_notes_updates_successfully(self):
         """authenticity_risk=high 且 vulnerability=high，有 notes → 正常更新。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "high",
-            "relevance_score": "weak",
-            "probative_value": "weak",
-            "vulnerability": "high",
-            "admissibility_notes": "存在多处矛盾，需进一步核实",
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "high",
+                        "relevance_score": "weak",
+                        "probative_value": "weak",
+                        "vulnerability": "high",
+                        "admissibility_notes": "存在多处矛盾，需进一步核实",
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         ev = result.evidence[0]
         assert ev.evidence_weight_scored is True
@@ -448,14 +482,20 @@ class TestAdmissibilityNotesEnforcement:
     async def test_admissibility_notes_from_llm_stored_on_evidence(self):
         """LLM 提供的 admissibility_notes 写入 Evidence.admissibility_notes 字段。"""
         notes = "此证据为复印件，请申请原件"
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "high",
-            "relevance_score": "strong",
-            "probative_value": "medium",
-            "vulnerability": "low",
-            "admissibility_notes": notes,
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "high",
+                        "relevance_score": "strong",
+                        "probative_value": "medium",
+                        "vulnerability": "low",
+                        "admissibility_notes": notes,
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         assert result.evidence[0].admissibility_notes == notes
 
@@ -471,80 +511,108 @@ class TestInvalidEnumFiltering:
     @pytest.mark.asyncio
     async def test_invalid_authenticity_risk_skips_evidence(self):
         """非法 authenticity_risk 值（自由文本）的证据被跳过。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "非常可疑",  # 非法枚举
-            "relevance_score": "strong",
-            "probative_value": "strong",
-            "vulnerability": "low",
-            "admissibility_notes": None,
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "非常可疑",  # 非法枚举
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         assert result.evidence[0].evidence_weight_scored is False
 
     @pytest.mark.asyncio
     async def test_invalid_relevance_score_skips_evidence(self):
         """非法 relevance_score 值的证据被跳过。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "low",
-            "relevance_score": "very_strong",  # 非法枚举
-            "probative_value": "strong",
-            "vulnerability": "low",
-            "admissibility_notes": None,
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "low",
+                        "relevance_score": "very_strong",  # 非法枚举
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         assert result.evidence[0].evidence_weight_scored is False
 
     @pytest.mark.asyncio
     async def test_empty_enum_string_skips_evidence(self):
         """空字符串枚举值的证据被跳过。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "",  # 空值
-            "relevance_score": "strong",
-            "probative_value": "strong",
-            "vulnerability": "low",
-            "admissibility_notes": None,
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "",  # 空值
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         assert result.evidence[0].evidence_weight_scored is False
 
     @pytest.mark.asyncio
     async def test_high_risk_with_empty_string_notes_skips_scoring(self):
         """authenticity_risk=high 且 admissibility_notes 为空字符串（非 None）→ 同样被跳过。"""
-        response = json.dumps({"evidence_weights": [{
-            "evidence_id": "ev-001",
-            "authenticity_risk": "high",
-            "relevance_score": "strong",
-            "probative_value": "strong",
-            "vulnerability": "low",
-            "admissibility_notes": "",  # 空字符串，等同于缺失
-        }]})
+        response = json.dumps(
+            {
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "high",
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": "",  # 空字符串，等同于缺失
+                    }
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         assert result.evidence[0].evidence_weight_scored is False
 
     @pytest.mark.asyncio
     async def test_duplicate_evidence_id_in_llm_output_last_wins(self):
         """LLM 输出重复 evidence_id 时，最后一条覆盖前一条（last wins）。"""
-        response = json.dumps({"evidence_weights": [
+        response = json.dumps(
             {
-                "evidence_id": "ev-001",
-                "authenticity_risk": "high",
-                "relevance_score": "strong",
-                "probative_value": "strong",
-                "vulnerability": "low",
-                "admissibility_notes": "第一条（应被覆盖）",
-            },
-            {
-                "evidence_id": "ev-001",  # 重复 ID，最后一条覆盖
-                "authenticity_risk": "low",
-                "relevance_score": "medium",
-                "probative_value": "medium",
-                "vulnerability": "low",
-                "admissibility_notes": None,
-            },
-        ]})
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "high",
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": "第一条（应被覆盖）",
+                    },
+                    {
+                        "evidence_id": "ev-001",  # 重复 ID，最后一条覆盖
+                        "authenticity_risk": "low",
+                        "relevance_score": "medium",
+                        "probative_value": "medium",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    },
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         ev = result.evidence[0]
         # 最后一条（low risk）覆盖第一条（high risk）
@@ -554,24 +622,28 @@ class TestInvalidEnumFiltering:
     @pytest.mark.asyncio
     async def test_unknown_evidence_id_in_llm_output_ignored(self):
         """LLM 输出了未知 evidence_id → 该条被忽略，已知证据正常处理。"""
-        response = json.dumps({"evidence_weights": [
+        response = json.dumps(
             {
-                "evidence_id": "ev-GHOST",  # 不存在
-                "authenticity_risk": "low",
-                "relevance_score": "strong",
-                "probative_value": "strong",
-                "vulnerability": "low",
-                "admissibility_notes": None,
-            },
-            {
-                "evidence_id": "ev-001",  # 存在
-                "authenticity_risk": "low",
-                "relevance_score": "strong",
-                "probative_value": "strong",
-                "vulnerability": "low",
-                "admissibility_notes": None,
-            },
-        ]})
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-GHOST",  # 不存在
+                        "authenticity_risk": "low",
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    },
+                    {
+                        "evidence_id": "ev-001",  # 存在
+                        "authenticity_risk": "low",
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    },
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001"))
         assert result.evidence[0].evidence_weight_scored is True
 
@@ -650,24 +722,28 @@ class TestMixedValidInvalid:
     @pytest.mark.asyncio
     async def test_partial_success_only_valid_evidence_scored(self):
         """部分证据有效、部分枚举非法时，只有有效的被标记 scored=True。"""
-        response = json.dumps({"evidence_weights": [
+        response = json.dumps(
             {
-                "evidence_id": "ev-001",
-                "authenticity_risk": "low",
-                "relevance_score": "strong",
-                "probative_value": "strong",
-                "vulnerability": "low",
-                "admissibility_notes": None,
-            },  # 有效
-            {
-                "evidence_id": "ev-002",
-                "authenticity_risk": "高风险",  # 非法枚举
-                "relevance_score": "strong",
-                "probative_value": "strong",
-                "vulnerability": "low",
-                "admissibility_notes": None,
-            },  # 非法枚举 → 跳过
-        ]})
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "low",
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    },  # 有效
+                    {
+                        "evidence_id": "ev-002",
+                        "authenticity_risk": "高风险",  # 非法枚举
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,
+                    },  # 非法枚举 → 跳过
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001", "ev-002"))
         ev1 = next(e for e in result.evidence if e.evidence_id == "ev-001")
         ev2 = next(e for e in result.evidence if e.evidence_id == "ev-002")
@@ -677,24 +753,28 @@ class TestMixedValidInvalid:
     @pytest.mark.asyncio
     async def test_one_high_risk_missing_notes_one_valid(self):
         """一条高风险缺 notes（跳过），一条正常（更新）。"""
-        response = json.dumps({"evidence_weights": [
+        response = json.dumps(
             {
-                "evidence_id": "ev-001",
-                "authenticity_risk": "high",
-                "relevance_score": "strong",
-                "probative_value": "strong",
-                "vulnerability": "low",
-                "admissibility_notes": None,  # 缺失 → 跳过
-            },
-            {
-                "evidence_id": "ev-002",
-                "authenticity_risk": "low",
-                "relevance_score": "medium",
-                "probative_value": "medium",
-                "vulnerability": "low",
-                "admissibility_notes": None,  # 低风险，无需 notes
-            },
-        ]})
+                "evidence_weights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "authenticity_risk": "high",
+                        "relevance_score": "strong",
+                        "probative_value": "strong",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,  # 缺失 → 跳过
+                    },
+                    {
+                        "evidence_id": "ev-002",
+                        "authenticity_risk": "low",
+                        "relevance_score": "medium",
+                        "probative_value": "medium",
+                        "vulnerability": "low",
+                        "admissibility_notes": None,  # 低风险，无需 notes
+                    },
+                ]
+            }
+        )
         result = await _make_scorer(response).score(_make_input("ev-001", "ev-002"))
         ev1 = next(e for e in result.evidence if e.evidence_id == "ev-001")
         ev2 = next(e for e in result.evidence if e.evidence_id == "ev-002")

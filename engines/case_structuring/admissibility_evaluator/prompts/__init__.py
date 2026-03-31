@@ -1,4 +1,5 @@
 """Prompt registry for admissibility_evaluator."""
+
 from .civil_loan import SYSTEM_PROMPT, build_user_prompt
 
 PROMPT_REGISTRY = {

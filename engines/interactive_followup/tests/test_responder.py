@@ -86,17 +86,20 @@ _SAMPLE_EVIDENCE_IDS = [
     "evidence-civil-loan-test-001-02",
 ]
 
-_MOCK_LLM_RESPONSE = json.dumps({
-    "answer": "根据借条原件（evidence-civil-loan-test-001-01）和转账记录（evidence-civil-loan-test-001-02），"
-              "借贷关系依据两份直接证据可认定成立。",
-    "issue_ids": ["issue-civil-loan-test-001-001"],
-    "evidence_ids": ["evidence-civil-loan-test-001-01", "evidence-civil-loan-test-001-02"],
-    "statement_class": "fact",
-    "citations": [
-        {"evidence_id": "evidence-civil-loan-test-001-01", "quote": "借款金额50万元"},
-        {"evidence_id": "evidence-civil-loan-test-001-02", "quote": "2024-01-15转账记录"},
-    ],
-}, ensure_ascii=False)
+_MOCK_LLM_RESPONSE = json.dumps(
+    {
+        "answer": "根据借条原件（evidence-civil-loan-test-001-01）和转账记录（evidence-civil-loan-test-001-02），"
+        "借贷关系依据两份直接证据可认定成立。",
+        "issue_ids": ["issue-civil-loan-test-001-001"],
+        "evidence_ids": ["evidence-civil-loan-test-001-01", "evidence-civil-loan-test-001-02"],
+        "statement_class": "fact",
+        "citations": [
+            {"evidence_id": "evidence-civil-loan-test-001-01", "quote": "借款金额50万元"},
+            {"evidence_id": "evidence-civil-loan-test-001-02", "quote": "2024-01-15转账记录"},
+        ],
+    },
+    ensure_ascii=False,
+)
 
 _SAMPLE_REPORT = ReportArtifact(
     report_id=_REPORT_ID,
@@ -258,16 +261,19 @@ async def test_evidence_boundary_enforced():
     Contract: evidence_ids must be subset of report's evidence.
     """
     # LLM 返回一个不在报告中的 evidence_id
-    response_with_out_of_scope_evidence = json.dumps({
-        "answer": "分析内容",
-        "issue_ids": ["issue-civil-loan-test-001-001"],
-        "evidence_ids": [
-            "evidence-civil-loan-test-001-01",
-            "evidence-OUTSIDE-REPORT-999",  # 不在报告中
-        ],
-        "statement_class": "inference",
-        "citations": [],
-    }, ensure_ascii=False)
+    response_with_out_of_scope_evidence = json.dumps(
+        {
+            "answer": "分析内容",
+            "issue_ids": ["issue-civil-loan-test-001-001"],
+            "evidence_ids": [
+                "evidence-civil-loan-test-001-01",
+                "evidence-OUTSIDE-REPORT-999",  # 不在报告中
+            ],
+            "statement_class": "inference",
+            "citations": [],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(response_with_out_of_scope_evidence)
     responder = FollowupResponder(llm_client=client, case_type="civil_loan")
@@ -280,9 +286,7 @@ async def test_evidence_boundary_enforced():
 
     # evidence_ids 中不应包含报告外的证据
     report_evidence_ids = {
-        eid
-        for sec in _SAMPLE_REPORT.sections
-        for eid in sec.linked_evidence_ids
+        eid for sec in _SAMPLE_REPORT.sections for eid in sec.linked_evidence_ids
     }
     for eid in turn.evidence_ids:
         assert eid in report_evidence_ids, (
@@ -295,13 +299,16 @@ async def test_issue_ids_fallback_when_llm_returns_empty():
     """LLM 返回空 issue_ids 时，引擎应从报告中推断出默认争点。
     When LLM returns empty issue_ids, engine should infer default issues from report.
     """
-    response_empty_issues = json.dumps({
-        "answer": "分析内容",
-        "issue_ids": [],  # LLM 返回空
-        "evidence_ids": ["evidence-civil-loan-test-001-01"],
-        "statement_class": "inference",
-        "citations": [],
-    }, ensure_ascii=False)
+    response_empty_issues = json.dumps(
+        {
+            "answer": "分析内容",
+            "issue_ids": [],  # LLM 返回空
+            "evidence_ids": ["evidence-civil-loan-test-001-01"],
+            "statement_class": "inference",
+            "citations": [],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(response_empty_issues)
     responder = FollowupResponder(llm_client=client, case_type="civil_loan")
@@ -381,9 +388,7 @@ async def test_llm_retry_succeeds_after_failures():
     Should succeed after two LLM failures if third attempt succeeds.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=2)
-    responder = FollowupResponder(
-        llm_client=client, case_type="civil_loan", max_retries=3
-    )
+    responder = FollowupResponder(llm_client=client, case_type="civil_loan", max_retries=3)
 
     turn = await responder.respond(
         report=_SAMPLE_REPORT,
@@ -401,9 +406,7 @@ async def test_llm_retry_exhausted_raises_runtime_error():
     Exhausted retries should raise RuntimeError.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=10)
-    responder = FollowupResponder(
-        llm_client=client, case_type="civil_loan", max_retries=3
-    )
+    responder = FollowupResponder(llm_client=client, case_type="civil_loan", max_retries=3)
 
     with pytest.raises(RuntimeError, match="LLM 调用失败"):
         await responder.respond(
@@ -460,13 +463,16 @@ async def test_statement_class_unknown_defaults_to_inference():
     """LLM 返回未知 statement_class 时应默认为 inference。
     Unknown statement_class from LLM should default to inference.
     """
-    response_unknown_class = json.dumps({
-        "answer": "分析内容",
-        "issue_ids": ["issue-civil-loan-test-001-001"],
-        "evidence_ids": ["evidence-civil-loan-test-001-01"],
-        "statement_class": "unknown_class_xyz",  # 未知值
-        "citations": [],
-    }, ensure_ascii=False)
+    response_unknown_class = json.dumps(
+        {
+            "answer": "分析内容",
+            "issue_ids": ["issue-civil-loan-test-001-001"],
+            "evidence_ids": ["evidence-civil-loan-test-001-01"],
+            "statement_class": "unknown_class_xyz",  # 未知值
+            "citations": [],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(response_unknown_class)
     responder = FollowupResponder(llm_client=client, case_type="civil_loan")
@@ -608,9 +614,7 @@ async def test_respond_safe_returns_turn_on_llm_failure():
     respond_safe() should return an error InteractionTurn when LLM fails (no exception).
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=100)
-    responder = FollowupResponder(
-        llm_client=client, case_type="civil_loan", max_retries=2
-    )
+    responder = FollowupResponder(llm_client=client, case_type="civil_loan", max_retries=2)
 
     turn = await responder.respond_safe(
         report=_SAMPLE_REPORT,
@@ -670,23 +674,27 @@ class TestSanitizeQuestion:
     def test_normal_input_passes_through(self):
         """正常输入应原样返回（去除首尾空白）。"""
         from engines.interactive_followup.validator import sanitize_question
+
         assert sanitize_question("  请问借贷关系如何认定？  ") == "请问借贷关系如何认定？"
 
     def test_empty_input_raises(self):
         """空输入应抛出 ValueError。"""
         from engines.interactive_followup.validator import sanitize_question
+
         with pytest.raises(ValueError, match="不能为空|cannot be empty"):
             sanitize_question("")
 
     def test_whitespace_only_raises(self):
         """仅空白字符应抛出 ValueError。"""
         from engines.interactive_followup.validator import sanitize_question
+
         with pytest.raises(ValueError, match="不能为空|cannot be empty"):
             sanitize_question("   \n\t  ")
 
     def test_html_tags_removed(self):
         """HTML 标签应被移除。"""
         from engines.interactive_followup.validator import sanitize_question
+
         result = sanitize_question("请问<script>alert('xss')</script>这个问题")
         assert "<script>" not in result
         assert "alert" not in result
@@ -696,12 +704,14 @@ class TestSanitizeQuestion:
     def test_html_only_input_raises(self):
         """仅含 HTML 标签的输入在标签移除后应抛出 ValueError。"""
         from engines.interactive_followup.validator import sanitize_question
+
         with pytest.raises(ValueError, match="HTML"):
             sanitize_question("<script>alert(1)</script>")
 
     def test_truncation_at_max_length(self):
         """超长输入应截断至 MAX_QUESTION_LENGTH。"""
         from engines.interactive_followup.validator import sanitize_question, MAX_QUESTION_LENGTH
+
         long_input = "测" * (MAX_QUESTION_LENGTH + 500)
         result = sanitize_question(long_input)
         assert len(result) == MAX_QUESTION_LENGTH
@@ -709,6 +719,7 @@ class TestSanitizeQuestion:
     def test_input_at_max_length_not_truncated(self):
         """恰好 MAX_QUESTION_LENGTH 长度的输入不应被截断。"""
         from engines.interactive_followup.validator import sanitize_question, MAX_QUESTION_LENGTH
+
         exact_input = "A" * MAX_QUESTION_LENGTH
         result = sanitize_question(exact_input)
         assert len(result) == MAX_QUESTION_LENGTH
@@ -716,6 +727,7 @@ class TestSanitizeQuestion:
     def test_style_tags_removed(self):
         """<style> 标签也应被移除。"""
         from engines.interactive_followup.validator import sanitize_question
+
         result = sanitize_question("正文<style>body{display:none}</style>继续")
         assert "<style>" not in result
         assert "正文" in result

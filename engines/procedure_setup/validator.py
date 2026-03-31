@@ -33,6 +33,7 @@ from .schemas import (
 @dataclass
 class ValidationResult:
     """单条校验错误 / A single validation error entry."""
+
     code: str
     message: str
     location: str = ""  # 错误位置（如 state_id、phase）/ Error location (e.g. state_id, phase)
@@ -41,6 +42,7 @@ class ValidationResult:
 @dataclass
 class ValidationReport:
     """程序设置校验结果汇总 / Aggregated procedure setup validation result."""
+
     errors: list[ValidationResult] = field(default_factory=list)
     warnings: list[ValidationResult] = field(default_factory=list)
 
@@ -82,7 +84,10 @@ class ProcedureValidationError(Exception):
 _VALID_PHASES: set[str] = set(PHASE_ORDER)
 _VALID_ACCESS_DOMAINS: set[str] = {"owner_private", "shared_common", "admitted_record"}
 _VALID_EVIDENCE_STATUSES: set[str] = {
-    "private", "submitted", "challenged", "admitted_for_discussion"
+    "private",
+    "submitted",
+    "challenged",
+    "admitted_for_discussion",
 }
 
 
@@ -110,132 +115,155 @@ def validate_procedure_state(
 
     # ── 1. 必填字段 / Required fields ─────────────────────────────────────
     if not state.state_id:
-        result.errors.append(ValidationResult(
-            code="MISSING_FIELD",
-            message="state_id 不能为空 / state_id cannot be empty",
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="MISSING_FIELD",
+                message="state_id 不能为空 / state_id cannot be empty",
+            )
+        )
     if not state.case_id:
-        result.errors.append(ValidationResult(
-            code="MISSING_FIELD",
-            message="case_id 不能为空 / case_id cannot be empty",
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="MISSING_FIELD",
+                message="case_id 不能为空 / case_id cannot be empty",
+                location=loc,
+            )
+        )
     if not state.phase:
-        result.errors.append(ValidationResult(
-            code="MISSING_FIELD",
-            message="phase 不能为空 / phase cannot be empty",
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="MISSING_FIELD",
+                message="phase 不能为空 / phase cannot be empty",
+                location=loc,
+            )
+        )
 
     # ── 2. phase 合法值 / Valid phase ──────────────────────────────────────
     if state.phase and state.phase not in _VALID_PHASES:
-        result.errors.append(ValidationResult(
-            code="INVALID_PHASE",
-            message=(
-                f"phase 无效值 {state.phase!r}，必须来自 ProcedurePhase 枚举 / "
-                f"Invalid phase {state.phase!r}, must be from ProcedurePhase enum"
-            ),
-            location=loc,
-        ))
+        result.errors.append(
+            ValidationResult(
+                code="INVALID_PHASE",
+                message=(
+                    f"phase 无效值 {state.phase!r}，必须来自 ProcedurePhase 枚举 / "
+                    f"Invalid phase {state.phase!r}, must be from ProcedurePhase enum"
+                ),
+                location=loc,
+            )
+        )
 
     # ── 3. 访问域合法值 / Valid access domains ─────────────────────────────
     for domain in state.readable_access_domains:
         if domain not in _VALID_ACCESS_DOMAINS:
-            result.errors.append(ValidationResult(
-                code="INVALID_ACCESS_DOMAIN",
-                message=(
-                    f"readable_access_domains 包含无效值 {domain!r} / "
-                    f"readable_access_domains contains invalid value {domain!r}"
-                ),
-                location=loc,
-            ))
+            result.errors.append(
+                ValidationResult(
+                    code="INVALID_ACCESS_DOMAIN",
+                    message=(
+                        f"readable_access_domains 包含无效值 {domain!r} / "
+                        f"readable_access_domains contains invalid value {domain!r}"
+                    ),
+                    location=loc,
+                )
+            )
 
     # ── 4. judge_questions 访问域约束 / judge_questions access constraint ──
     # judge_questions 不得读取 owner_private（裁判不得接触当事人私有材料）
     if state.phase == "judge_questions":
         if "owner_private" in state.readable_access_domains:
-            result.errors.append(ValidationResult(
-                code="JUDGE_QUESTIONS_OWNER_PRIVATE_VIOLATION",
-                message=(
-                    "judge_questions 阶段禁止读取 owner_private 域 / "
-                    "judge_questions phase must not include owner_private in readable_access_domains"
-                ),
-                location=loc,
-            ))
+            result.errors.append(
+                ValidationResult(
+                    code="JUDGE_QUESTIONS_OWNER_PRIVATE_VIOLATION",
+                    message=(
+                        "judge_questions 阶段禁止读取 owner_private 域 / "
+                        "judge_questions phase must not include owner_private in readable_access_domains"
+                    ),
+                    location=loc,
+                )
+            )
 
     # ── 5. output_branching 证据状态约束 / output_branching evidence constraint ──
     # output_branching 只能基于 admitted_for_discussion 的证据
     if state.phase == "output_branching":
         for status in state.admissible_evidence_statuses:
             if status != "admitted_for_discussion":
-                result.errors.append(ValidationResult(
-                    code="OUTPUT_BRANCHING_INADMISSIBLE_STATUS",
-                    message=(
-                        f"output_branching 阶段仅允许 admitted_for_discussion，"
-                        f"不允许 {status!r} / "
-                        f"output_branching phase only allows admitted_for_discussion, "
-                        f"not {status!r}"
-                    ),
-                    location=loc,
-                ))
+                result.errors.append(
+                    ValidationResult(
+                        code="OUTPUT_BRANCHING_INADMISSIBLE_STATUS",
+                        message=(
+                            f"output_branching 阶段仅允许 admitted_for_discussion，"
+                            f"不允许 {status!r} / "
+                            f"output_branching phase only allows admitted_for_discussion, "
+                            f"not {status!r}"
+                        ),
+                        location=loc,
+                    )
+                )
             break  # 只报告第一个违规
 
     # ── 6. 证据状态合法值 / Valid evidence statuses ─────────────────────────
     for status in state.admissible_evidence_statuses:
         if status not in _VALID_EVIDENCE_STATUSES:
-            result.errors.append(ValidationResult(
-                code="INVALID_EVIDENCE_STATUS",
-                message=(
-                    f"admissible_evidence_statuses 包含无效值 {status!r} / "
-                    f"admissible_evidence_statuses contains invalid value {status!r}"
-                ),
-                location=loc,
-            ))
+            result.errors.append(
+                ValidationResult(
+                    code="INVALID_EVIDENCE_STATUS",
+                    message=(
+                        f"admissible_evidence_statuses 包含无效值 {status!r} / "
+                        f"admissible_evidence_statuses contains invalid value {status!r}"
+                    ),
+                    location=loc,
+                )
+            )
 
     # ── 7. entry_conditions / exit_conditions 非空校验 / Non-empty conditions ──
     if not state.entry_conditions:
-        result.warnings.append(ValidationResult(
-            code="EMPTY_ENTRY_CONDITIONS",
-            message=(
-                f"状态 {loc} 的 entry_conditions 为空 / "
-                f"entry_conditions is empty for state {loc}"
-            ),
-            location=loc,
-        ))
+        result.warnings.append(
+            ValidationResult(
+                code="EMPTY_ENTRY_CONDITIONS",
+                message=(
+                    f"状态 {loc} 的 entry_conditions 为空 / "
+                    f"entry_conditions is empty for state {loc}"
+                ),
+                location=loc,
+            )
+        )
     if not state.exit_conditions:
-        result.warnings.append(ValidationResult(
-            code="EMPTY_EXIT_CONDITIONS",
-            message=(
-                f"状态 {loc} 的 exit_conditions 为空 / "
-                f"exit_conditions is empty for state {loc}"
-            ),
-            location=loc,
-        ))
+        result.warnings.append(
+            ValidationResult(
+                code="EMPTY_EXIT_CONDITIONS",
+                message=(
+                    f"状态 {loc} 的 exit_conditions 为空 / exit_conditions is empty for state {loc}"
+                ),
+                location=loc,
+            )
+        )
 
     # ── 8. 悬空 open_issue_ids 校验 / Dangling open_issue_ids ──────────────
     if known_issue_ids is not None:
         for issue_id in state.open_issue_ids:
             if issue_id not in known_issue_ids:
-                result.errors.append(ValidationResult(
-                    code="DANGLING_ISSUE_REF",
-                    message=(
-                        f"open_issue_ids 引用了不存在的 issue_id: {issue_id!r} / "
-                        f"open_issue_ids references unknown issue_id: {issue_id!r}"
-                    ),
-                    location=loc,
-                ))
+                result.errors.append(
+                    ValidationResult(
+                        code="DANGLING_ISSUE_REF",
+                        message=(
+                            f"open_issue_ids 引用了不存在的 issue_id: {issue_id!r} / "
+                            f"open_issue_ids references unknown issue_id: {issue_id!r}"
+                        ),
+                        location=loc,
+                    )
+                )
 
     # ── 9. 终止状态显式标记 / Terminal state explicit marking ──────────────
     # output_branching 是唯一的终止阶段，应无 next_state_ids
     if state.phase == "output_branching" and state.next_state_ids:
-        result.warnings.append(ValidationResult(
-            code="TERMINAL_STATE_HAS_NEXT",
-            message=(
-                "output_branching 是终止状态，不应有 next_state_ids / "
-                "output_branching is a terminal state and should not have next_state_ids"
-            ),
-            location=loc,
-        ))
+        result.warnings.append(
+            ValidationResult(
+                code="TERMINAL_STATE_HAS_NEXT",
+                message=(
+                    "output_branching 是终止状态，不应有 next_state_ids / "
+                    "output_branching is a terminal state and should not have next_state_ids"
+                ),
+                location=loc,
+            )
+        )
 
     return result
 
@@ -275,67 +303,80 @@ def validate_procedure_setup_result(
     covered_phases = {s.phase for s in result_obj.procedure_states}
     missing_phases = set(PHASE_ORDER) - covered_phases
     if missing_phases:
-        report.errors.append(ValidationResult(
-            code="MISSING_PHASES",
-            message=(
-                f"程序状态序列缺少以下阶段 / Procedure state sequence missing phases: "
-                f"{missing_phases}"
-            ),
-        ))
+        report.errors.append(
+            ValidationResult(
+                code="MISSING_PHASES",
+                message=(
+                    f"程序状态序列缺少以下阶段 / Procedure state sequence missing phases: "
+                    f"{missing_phases}"
+                ),
+            )
+        )
 
     # ── ProcedureConfig 合约 / ProcedureConfig contract ───────────────────
     cfg = result_obj.procedure_config
     if cfg.total_phases != len(PHASE_ORDER):
-        report.warnings.append(ValidationResult(
-            code="CONFIG_PHASE_COUNT_MISMATCH",
-            message=(
-                f"procedure_config.total_phases ({cfg.total_phases}) 与"
-                f" 标准阶段数 ({len(PHASE_ORDER)}) 不一致 / "
-                f"procedure_config.total_phases ({cfg.total_phases}) does not match "
-                f"standard phase count ({len(PHASE_ORDER)})"
-            ),
-        ))
+        report.warnings.append(
+            ValidationResult(
+                code="CONFIG_PHASE_COUNT_MISMATCH",
+                message=(
+                    f"procedure_config.total_phases ({cfg.total_phases}) 与"
+                    f" 标准阶段数 ({len(PHASE_ORDER)}) 不一致 / "
+                    f"procedure_config.total_phases ({cfg.total_phases}) does not match "
+                    f"standard phase count ({len(PHASE_ORDER)})"
+                ),
+            )
+        )
     if cfg.evidence_submission_deadline_days <= 0:
-        report.errors.append(ValidationResult(
-            code="INVALID_DEADLINE",
-            message=(
-                "evidence_submission_deadline_days 必须大于 0 / "
-                "evidence_submission_deadline_days must be greater than 0"
-            ),
-        ))
+        report.errors.append(
+            ValidationResult(
+                code="INVALID_DEADLINE",
+                message=(
+                    "evidence_submission_deadline_days 必须大于 0 / "
+                    "evidence_submission_deadline_days must be greater than 0"
+                ),
+            )
+        )
 
     # ── Run 合约 / Run contract ────────────────────────────────────────────
     run = result_obj.run
     if not run.run_id:
-        report.errors.append(ValidationResult(
-            code="RUN_MISSING_FIELD",
-            message="run.run_id 不能为空 / run.run_id cannot be empty",
-        ))
+        report.errors.append(
+            ValidationResult(
+                code="RUN_MISSING_FIELD",
+                message="run.run_id 不能为空 / run.run_id cannot be empty",
+            )
+        )
     if not run.workspace_id:
-        report.errors.append(ValidationResult(
-            code="RUN_MISSING_FIELD",
-            message="run.workspace_id 不能为空 / run.workspace_id cannot be empty",
-        ))
+        report.errors.append(
+            ValidationResult(
+                code="RUN_MISSING_FIELD",
+                message="run.workspace_id 不能为空 / run.workspace_id cannot be empty",
+            )
+        )
     if run.trigger_type != "procedure_setup":
-        report.errors.append(ValidationResult(
-            code="RUN_WRONG_TRIGGER_TYPE",
-            message=(
-                f"run.trigger_type 必须为 'procedure_setup'，实际为 {run.trigger_type!r} / "
-                f"run.trigger_type must be 'procedure_setup', got {run.trigger_type!r}"
-            ),
-            location=run.run_id or "<unknown>",
-        ))
+        report.errors.append(
+            ValidationResult(
+                code="RUN_WRONG_TRIGGER_TYPE",
+                message=(
+                    f"run.trigger_type 必须为 'procedure_setup'，实际为 {run.trigger_type!r} / "
+                    f"run.trigger_type must be 'procedure_setup', got {run.trigger_type!r}"
+                ),
+                location=run.run_id or "<unknown>",
+            )
+        )
 
     # ── output_refs 非空 / Non-empty output_refs ──────────────────────────
     if not run.output_refs:
-        report.warnings.append(ValidationResult(
-            code="RUN_EMPTY_OUTPUT_REFS",
-            message=(
-                f"run {run.run_id} 的 output_refs 为空 / "
-                f"run {run.run_id} has empty output_refs"
-            ),
-            location=run.run_id or "<unknown>",
-        ))
+        report.warnings.append(
+            ValidationResult(
+                code="RUN_EMPTY_OUTPUT_REFS",
+                message=(
+                    f"run {run.run_id} 的 output_refs 为空 / run {run.run_id} has empty output_refs"
+                ),
+                location=run.run_id or "<unknown>",
+            )
+        )
 
     return report
 

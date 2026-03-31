@@ -26,6 +26,7 @@ from jsonschema import Draft202012Validator, ValidationError
 @dataclass
 class ValidationResult:
     """单条校验错误 / A single validation error entry."""
+
     code: str
     message: str
     location: str = ""
@@ -34,6 +35,7 @@ class ValidationResult:
 @dataclass
 class ValidationReport:
     """证据校验结果汇总 / Aggregated evidence validation result."""
+
     errors: list[ValidationResult] = field(default_factory=list)
     warnings: list[ValidationResult] = field(default_factory=list)
 
@@ -93,13 +95,16 @@ def load_evidence_schema(schema_dir: Path | str | None = None) -> dict[str, Any]
 # 校验逻辑
 # ---------------------------------------------------------------------------
 
+
 class EvidenceValidationError(Exception):
     """证据校验失败异常，包含详细错误列表。"""
 
     def __init__(self, errors: list[dict[str, Any]]) -> None:
         self.errors = errors
         messages = [f"[{e['evidence_id']}] {e['message']}" for e in errors]
-        super().__init__(f"Evidence validation failed with {len(errors)} error(s):\n" + "\n".join(messages))
+        super().__init__(
+            f"Evidence validation failed with {len(errors)} error(s):\n" + "\n".join(messages)
+        )
 
 
 def validate_evidence(
@@ -187,10 +192,12 @@ def validate_evidence_report(
             schema = load_evidence_schema()
         except FileNotFoundError as exc:
             report = ValidationReport()
-            report.errors.append(ValidationResult(
-                code="SCHEMA_NOT_FOUND",
-                message=str(exc),
-            ))
+            report.errors.append(
+                ValidationResult(
+                    code="SCHEMA_NOT_FOUND",
+                    message=str(exc),
+                )
+            )
             return report
 
     report = ValidationReport()
@@ -198,10 +205,12 @@ def validate_evidence_report(
         eid = evidence_data.get("evidence_id", f"<index-{i}>")
         errors = validate_evidence(evidence_data, schema)
         for msg in errors:
-            report.errors.append(ValidationResult(
-                code="SCHEMA_VIOLATION",
-                message=msg,
-                location=eid,
-            ))
+            report.errors.append(
+                ValidationResult(
+                    code="SCHEMA_VIOLATION",
+                    message=msg,
+                    location=eid,
+                )
+            )
 
     return report

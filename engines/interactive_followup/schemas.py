@@ -40,12 +40,14 @@ from engines.shared.models import (  # noqa: F401
 
 class LLMCitationItem(BaseModel):
     """LLM 返回的单条证据引用。"""
+
     evidence_id: str
     quote: Optional[str] = None
 
 
 class LLMFollowupOutput(BaseModel):
     """LLM 返回的追问响应（尚未规范化）。"""
+
     answer: str = Field(..., min_length=1)
     issue_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -60,6 +62,7 @@ class LLMFollowupOutput(BaseModel):
 
 class Citation(BaseModel):
     """规范化的证据引用。"""
+
     evidence_id: str = Field(..., min_length=1)
     quote: Optional[str] = None
     relevance: Optional[str] = None
@@ -67,12 +70,14 @@ class Citation(BaseModel):
 
 class FollowupQuestion(BaseModel):
     """追问输入包装。"""
+
     question: str = Field(..., min_length=1)
     hint_issue_ids: list[str] = Field(default_factory=list)
 
 
 class FollowupAnswer(BaseModel):
     """追问回答中间模型（在规范化为 InteractionTurn 前的内部表示）。"""
+
     answer: str = Field(..., min_length=1)
     issue_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -82,6 +87,7 @@ class FollowupAnswer(BaseModel):
 
 class SessionState(BaseModel):
     """多轮追问会话状态。"""
+
     session_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     report_id: str = Field(..., min_length=1)

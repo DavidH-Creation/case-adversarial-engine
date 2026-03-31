@@ -2,6 +2,7 @@
 PlaintiffAgent — 原告代理人，生成主张和反驳。
 PlaintiffAgent — plaintiff party agent, generates claims and rebuttals.
 """
+
 from __future__ import annotations
 
 from engines.shared.few_shot_examples import load_few_shot_text

@@ -25,9 +25,7 @@ import pytest
 # Fixture 路径 / Fixture paths
 # ---------------------------------------------------------------------------
 
-_FIXTURES_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent / "benchmarks" / "fixtures"
-)
+_FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "benchmarks" / "fixtures"
 _OUTPUT_FIXTURE = _FIXTURES_DIR / "report_artifact_example.json"
 
 
@@ -82,16 +80,12 @@ class TestReportContractFixtures:
         required = {"section_id", "section_index", "title", "body", "linked_evidence_ids"}
         for sec in self.sections:
             missing = required - set(sec.keys())
-            assert not missing, (
-                f"Section {sec.get('section_id', '?')} missing fields: {missing}"
-            )
+            assert not missing, f"Section {sec.get('section_id', '?')} missing fields: {missing}"
 
     def test_section_indices_unique(self):
         """section_index 在报告中唯一。"""
         indices = [sec.get("section_index") for sec in self.sections]
-        assert len(indices) == len(set(indices)), (
-            f"存在重复的 section_index: {indices}"
-        )
+        assert len(indices) == len(set(indices)), f"存在重复的 section_index: {indices}"
 
     def test_sections_have_linked_output_ids(self):
         """每个章节必须有 linked_output_ids（推演回连）。"""
@@ -115,8 +109,7 @@ class TestReportContractFixtures:
         for concl in self.all_conclusions:
             sc = concl.get("statement_class")
             assert sc in valid, (
-                f"Conclusion {concl.get('conclusion_id', '?')} "
-                f"has invalid statement_class: {sc!r}"
+                f"Conclusion {concl.get('conclusion_id', '?')} has invalid statement_class: {sc!r}"
             )
 
     def test_conclusions_have_required_fields(self):

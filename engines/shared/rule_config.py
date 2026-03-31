@@ -3,6 +3,7 @@
 集中式规则阈值配置 — 所有确定性规则的可调参数。
 Centralized rule thresholds — configurable parameters for all deterministic rules.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -20,6 +21,7 @@ class RuleThresholds(BaseModel):
         false_litigation_ratio:     虚假诉讼预警：起诉金额/可核实交付 比值上限
         lpr_multiplier_cap:         合同无效时 LPR 倍数上限
     """
+
     prof_lender_min_cases: int = Field(default=3, gt=0)
     prof_lender_min_borrowers: int = Field(default=3, gt=0)
     prof_lender_max_span_months: int = Field(default=24, gt=0)

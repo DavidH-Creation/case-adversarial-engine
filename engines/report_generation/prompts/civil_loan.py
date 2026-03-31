@@ -86,6 +86,7 @@ def format_issue_tree_block(issue_tree: dict) -> str:
     Format the IssueTree into a readable prompt block.
     """
     import json
+
     issues = issue_tree.get("issues", [])
     burdens = issue_tree.get("burdens", [])
 
@@ -107,16 +108,22 @@ def format_issue_tree_block(issue_tree: dict) -> str:
     if child_issues:
         lines.append("\n### 子争点（sub-issues）")
         for issue in child_issues:
-            lines.append(f"\n**{issue['issue_id']}** (父: {issue['parent_issue_id']}): {issue['title']}")
+            lines.append(
+                f"\n**{issue['issue_id']}** (父: {issue['parent_issue_id']}): {issue['title']}"
+            )
             if issue.get("evidence_ids"):
                 lines.append(f"  关联证据: {', '.join(issue['evidence_ids'])}")
             for fp in issue.get("fact_propositions", []):
-                lines.append(f"  - 事实命题: {fp.get('text', '')} [{fp.get('status', 'unverified')}]")
+                lines.append(
+                    f"  - 事实命题: {fp.get('text', '')} [{fp.get('status', 'unverified')}]"
+                )
 
     if burdens:
         lines.append("\n### 举证责任")
         for b in burdens:
-            lines.append(f"  {b['burden_id']} → {b['issue_id']}: {b.get('description', '')} [{b.get('status', '')}]")
+            lines.append(
+                f"  {b['burden_id']} → {b['issue_id']}: {b.get('description', '')} [{b.get('status', '')}]"
+            )
 
     return "\n".join(lines)
 
@@ -128,8 +135,14 @@ def format_evidence_block(evidence_list: list[dict]) -> str:
     使用 XML 标签隔离每条证据防止注入。
     Uses XML tags to isolate each evidence item against prompt injection.
     """
+
     def _escape(val: str) -> str:
-        return val.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+        return (
+            val.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+        )
 
     blocks = []
     for e in evidence_list:

@@ -7,6 +7,7 @@ CredibilityScorer 单元测试（P2.9）。
 - 边界条件：空输入（无证据、无争点）、多规则同时触发、满分场景
 - 合约保证：零 LLM 调用（纯规则层）、final_score 一致性校验
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -553,7 +554,11 @@ class TestCredibilityScorerIntegration:
         )
         result = CredibilityScorer().score(inp)
         assert result.final_score < 60
-        assert "警告" in result.summary or "WARNING" in result.summary.upper() or "低" in result.summary
+        assert (
+            "警告" in result.summary
+            or "WARNING" in result.summary.upper()
+            or "低" in result.summary
+        )
 
     def test_deduction_ids_are_unique(self):
         conflict = make_conflict()
@@ -649,8 +654,12 @@ class TestCRED07ProfessionalLender:
 
     def test_not_triggered_without_litigation_history(self):
         party = Party(
-            party_id="p1", case_id="case1", name="A",
-            party_type="natural_person", role_code="plaintiff_agent", side="plaintiff",
+            party_id="p1",
+            case_id="case1",
+            name="A",
+            party_type="natural_person",
+            role_code="plaintiff_agent",
+            side="plaintiff",
         )
         inp = CredibilityScorerInput(
             case_id="case1",

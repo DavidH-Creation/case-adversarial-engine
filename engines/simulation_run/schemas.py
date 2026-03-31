@@ -43,6 +43,7 @@ from engines.shared.models import (  # noqa: F401
 
 class ScenarioInput(BaseModel):
     """场景引擎输入合约。"""
+
     scenario_id: str = Field(..., min_length=1)
     baseline_run_id: str = Field(..., min_length=1)
     change_set: list[ChangeItem]
@@ -56,6 +57,7 @@ class ScenarioInput(BaseModel):
 
 class ScenarioResult(BaseModel):
     """场景推演结果。"""
+
     scenario: Scenario
     run: Run
 
@@ -67,6 +69,7 @@ class ScenarioResult(BaseModel):
 
 class LLMDiffEntry(BaseModel):
     """LLM 返回的单条差异条目（尚未规范化）。"""
+
     issue_id: str
     impact_description: str
     direction: str  # "strengthen" / "weaken" / "neutral"
@@ -74,5 +77,6 @@ class LLMDiffEntry(BaseModel):
 
 class LLMDiffOutput(BaseModel):
     """LLM 返回的完整差异分析（尚未规范化）。"""
+
     diff_entries: list[LLMDiffEntry]
     summary: str = ""

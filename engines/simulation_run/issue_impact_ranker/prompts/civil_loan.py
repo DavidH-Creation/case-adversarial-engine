@@ -5,6 +5,7 @@ LLM prompt templates for civil loan case type issue impact ranking.
 指导 LLM 对每个争点从五个维度进行结构化评估，输出严格 JSON。
 Guides LLM to evaluate each issue on 5 dimensions and output strict JSON.
 """
+
 from __future__ import annotations
 
 from engines.shared.few_shot_examples import load_few_shot_text
@@ -130,12 +131,8 @@ def build_user_prompt(
     # 争点块
     issue_lines: list[str] = []
     for issue in issue_tree.issues:
-        evidence_ids_str = (
-            ", ".join(issue.evidence_ids) if issue.evidence_ids else "（无关联证据）"
-        )
-        burden_ids_str = (
-            ", ".join(issue.burden_ids) if issue.burden_ids else "（无）"
-        )
+        evidence_ids_str = ", ".join(issue.evidence_ids) if issue.evidence_ids else "（无关联证据）"
+        burden_ids_str = ", ".join(issue.burden_ids) if issue.burden_ids else "（无）"
         parent_str = (
             f"\n  parent_issue_id: {issue.parent_issue_id}"
             if issue.parent_issue_id
@@ -146,9 +143,7 @@ def build_user_prompt(
         # contradicted = 已被证据否定；unverified = 尚无证据
         if issue.fact_propositions:
             total_fp = len(issue.fact_propositions)
-            disputed_fp = sum(
-                1 for fp in issue.fact_propositions if fp.status.value == "disputed"
-            )
+            disputed_fp = sum(1 for fp in issue.fact_propositions if fp.status.value == "disputed")
             supported_fp = sum(
                 1 for fp in issue.fact_propositions if fp.status.value == "supported"
             )

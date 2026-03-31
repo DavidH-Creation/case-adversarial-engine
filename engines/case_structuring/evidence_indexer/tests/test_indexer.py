@@ -31,6 +31,7 @@ from engines.case_structuring.evidence_indexer.indexer import (
 # Mock LLM Client
 # ---------------------------------------------------------------------------
 
+
 class MockLLMClient:
     """返回预定义 JSON 响应的 mock LLM 客户端。"""
 
@@ -51,35 +52,46 @@ class MockLLMClient:
 # 测试数据
 # ---------------------------------------------------------------------------
 
-MOCK_LLM_RESPONSE = json.dumps([
-    {
-        "title": "借条原件",
-        "summary": "被告于2024年1月15日向原告出具借条，载明借款金额5万元。",
-        "evidence_type": "documentary",
-        "source_id": "doc-promissory-note-001",
-        "target_facts": ["fact-loan-contract-existence-001", "fact-loan-amount-50000-001"],
-        "target_issues": ["issue-loan-contract-validity-001"],
-    },
-    {
-        "title": "银行转账电子回单",
-        "summary": "工商银行电子回单显示原告于2024年1月15日向被告转账人民币50,000元。",
-        "evidence_type": "electronic_data",
-        "source_id": "doc-bank-transfer-001",
-        "target_facts": ["fact-loan-disbursement-001"],
-        "target_issues": ["issue-repayment-obligation-001"],
-    },
-], ensure_ascii=False)
+MOCK_LLM_RESPONSE = json.dumps(
+    [
+        {
+            "title": "借条原件",
+            "summary": "被告于2024年1月15日向原告出具借条，载明借款金额5万元。",
+            "evidence_type": "documentary",
+            "source_id": "doc-promissory-note-001",
+            "target_facts": ["fact-loan-contract-existence-001", "fact-loan-amount-50000-001"],
+            "target_issues": ["issue-loan-contract-validity-001"],
+        },
+        {
+            "title": "银行转账电子回单",
+            "summary": "工商银行电子回单显示原告于2024年1月15日向被告转账人民币50,000元。",
+            "evidence_type": "electronic_data",
+            "source_id": "doc-bank-transfer-001",
+            "target_facts": ["fact-loan-disbursement-001"],
+            "target_issues": ["issue-repayment-obligation-001"],
+        },
+    ],
+    ensure_ascii=False,
+)
 
 SAMPLE_MATERIALS = [
     RawMaterial(
         source_id="doc-promissory-note-001",
         text="借条。今借到王某某人民币伍万元整...",
-        metadata={"document_type": "promissory_note", "date": "2024-01-15", "submitter": "party-plaintiff-002"},
+        metadata={
+            "document_type": "promissory_note",
+            "date": "2024-01-15",
+            "submitter": "party-plaintiff-002",
+        },
     ),
     RawMaterial(
         source_id="doc-bank-transfer-001",
         text="中国工商银行电子回单...",
-        metadata={"document_type": "bank_transfer_receipt", "date": "2024-01-15", "submitter": "party-plaintiff-002"},
+        metadata={
+            "document_type": "bank_transfer_receipt",
+            "date": "2024-01-15",
+            "submitter": "party-plaintiff-002",
+        },
     ),
 ]
 
@@ -87,6 +99,7 @@ SAMPLE_MATERIALS = [
 # ---------------------------------------------------------------------------
 # 测试用例
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_index_produces_valid_evidences():
@@ -205,6 +218,7 @@ async def test_llm_client_receives_prompt():
 # JSON 解析辅助函数测试
 # ---------------------------------------------------------------------------
 
+
 def test_extract_json_from_code_block():
     """应能从 markdown 代码块中提取 JSON。"""
     text = '这是一些前置文字\n```json\n[{"title": "test"}]\n```\n后续文字'
@@ -236,9 +250,11 @@ def test_extract_json_invalid_raises():
 # 证据类型映射测试
 # ---------------------------------------------------------------------------
 
+
 def test_resolve_evidence_type_chinese():
     """中文证据类型应正确映射。"""
     from engines.case_structuring.evidence_indexer.schemas import EvidenceType
+
     assert _resolve_evidence_type("书证") == EvidenceType.documentary
     assert _resolve_evidence_type("电子数据") == EvidenceType.electronic_data
     assert _resolve_evidence_type("证人证言") == EvidenceType.witness_statement
@@ -247,6 +263,7 @@ def test_resolve_evidence_type_chinese():
 def test_resolve_evidence_type_english():
     """英文证据类型应直接映射。"""
     from engines.case_structuring.evidence_indexer.schemas import EvidenceType
+
     assert _resolve_evidence_type("documentary") == EvidenceType.documentary
     assert _resolve_evidence_type("electronic_data") == EvidenceType.electronic_data
 
@@ -254,12 +271,14 @@ def test_resolve_evidence_type_english():
 def test_resolve_evidence_type_unknown():
     """未知类型应回退为 other。"""
     from engines.case_structuring.evidence_indexer.schemas import EvidenceType
+
     assert _resolve_evidence_type("未知类型xyz") == EvidenceType.other
 
 
 # ---------------------------------------------------------------------------
 # 原子批处理测试 / Atomic batch processing tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_parse_failure_aborts_entire_batch():
@@ -268,21 +287,24 @@ async def test_parse_failure_aborts_entire_batch():
     """
     # title 字段缺失会导致 LLMEvidenceItem 验证失败
     # Missing required field 'title' causes LLMEvidenceItem validation failure
-    bad_response = json.dumps([
-        {
-            "title": "正常项",
-            "summary": "正常摘要",
-            "evidence_type": "documentary",
-            "source_id": "doc-promissory-note-001",
-            "target_facts": ["fact-001"],
-        },
-        {
-            # 缺少 title / missing required title
-            "summary": "损坏项",
-            "evidence_type": "documentary",
-            "source_id": "doc-bank-transfer-001",
-        },
-    ], ensure_ascii=False)
+    bad_response = json.dumps(
+        [
+            {
+                "title": "正常项",
+                "summary": "正常摘要",
+                "evidence_type": "documentary",
+                "source_id": "doc-promissory-note-001",
+                "target_facts": ["fact-001"],
+            },
+            {
+                # 缺少 title / missing required title
+                "summary": "损坏项",
+                "evidence_type": "documentary",
+                "source_id": "doc-bank-transfer-001",
+            },
+        ],
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(bad_response)
     indexer = EvidenceIndexer(llm_client=client, case_type="civil_loan")
@@ -298,6 +320,7 @@ async def test_parse_failure_aborts_entire_batch():
 # ---------------------------------------------------------------------------
 # source_coverage 校验测试 / Source coverage validation tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_source_coverage_passes_when_all_covered():
@@ -324,16 +347,19 @@ async def test_source_coverage_fails_when_uncovered():
     """
     # LLM 只返回一条证据，但输入有两条材料
     # LLM returns only one evidence, but input has two materials
-    partial_response = json.dumps([
-        {
-            "title": "借条原件",
-            "summary": "借条摘要",
-            "evidence_type": "documentary",
-            "source_id": "doc-promissory-note-001",
-            "target_facts": ["fact-001"],
-            "target_issues": [],
-        },
-    ], ensure_ascii=False)
+    partial_response = json.dumps(
+        [
+            {
+                "title": "借条原件",
+                "summary": "借条摘要",
+                "evidence_type": "documentary",
+                "source_id": "doc-promissory-note-001",
+                "target_facts": ["fact-001"],
+                "target_issues": [],
+            },
+        ],
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(partial_response)
     indexer = EvidenceIndexer(llm_client=client, case_type="civil_loan")
@@ -349,6 +375,7 @@ async def test_source_coverage_fails_when_uncovered():
 # ---------------------------------------------------------------------------
 # ValidationReport 测试 / ValidationReport tests
 # ---------------------------------------------------------------------------
+
 
 def test_validate_evidence_report_returns_report():
     """validate_evidence_report 应返回 ValidationReport 对象。"""

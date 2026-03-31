@@ -4,6 +4,7 @@ Engine-specific schemas for executive_summarizer.
 
 共享类型从 engines.shared.models 导入；本模块只保留引擎 I/O wrapper。
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -37,6 +38,7 @@ class ExecutiveSummarizerInput(BaseModel):
         decision_path_tree:         P0.3 裁判路径树（v7 新增，用于诉请拆分和内部决策摘要）
         defense_chain_result:       防御链优化结果（可选，用于风险评估和防御策略摘要）
     """
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     issue_list: list[Issue] = Field(default_factory=list)

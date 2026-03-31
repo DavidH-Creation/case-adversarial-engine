@@ -5,6 +5,7 @@ Unit tests for multi-case-type prompt registry registration.
 验证 labor_dispute 和 real_estate 已正确注册到所有引擎的 PROMPT_REGISTRY，
 并检查注册模块包含必要的属性。
 """
+
 from __future__ import annotations
 
 import pytest
@@ -20,9 +21,7 @@ NEW_CASE_TYPES = ["labor_dispute", "real_estate"]
 def _assert_registry_has_case_types(registry: dict, engine_name: str) -> None:
     """断言注册表包含所有新案型。"""
     for ct in NEW_CASE_TYPES:
-        assert ct in registry, (
-            f"[{engine_name}] PROMPT_REGISTRY missing case_type '{ct}'"
-        )
+        assert ct in registry, f"[{engine_name}] PROMPT_REGISTRY missing case_type '{ct}'"
 
 
 # ---------------------------------------------------------------------------
@@ -36,6 +35,7 @@ class TestIssueExtractorRegistry:
     @pytest.fixture(autouse=True)
     def load_registry(self):
         from engines.case_structuring.issue_extractor.prompts import PROMPT_REGISTRY
+
         self.registry = PROMPT_REGISTRY
 
     def test_all_new_case_types_registered(self):
@@ -88,6 +88,7 @@ class TestEvidenceIndexerRegistry:
     @pytest.fixture(autouse=True)
     def load_registry(self):
         from engines.case_structuring.evidence_indexer.prompts import PROMPT_REGISTRY
+
         self.registry = PROMPT_REGISTRY
 
     def test_all_new_case_types_registered(self):
@@ -129,6 +130,7 @@ class TestEvidenceWeightScorerRegistry:
     @pytest.fixture(autouse=True)
     def load_registry(self):
         from engines.case_structuring.evidence_weight_scorer.prompts import PROMPT_REGISTRY
+
         self.registry = PROMPT_REGISTRY
 
     def test_all_new_case_types_registered(self):
@@ -168,6 +170,7 @@ class TestAdversarialRegistry:
     @pytest.fixture(autouse=True)
     def load_registry(self):
         from engines.adversarial.prompts import PROMPT_REGISTRY
+
         self.registry = PROMPT_REGISTRY
 
     def test_all_new_case_types_registered(self):
@@ -179,9 +182,7 @@ class TestAdversarialRegistry:
     @pytest.mark.parametrize("case_type", NEW_CASE_TYPES)
     def test_module_has_case_context(self, case_type):
         module = self.registry[case_type]
-        assert hasattr(module, "CASE_CONTEXT"), (
-            f"adversarial/{case_type} missing CASE_CONTEXT"
-        )
+        assert hasattr(module, "CASE_CONTEXT"), f"adversarial/{case_type} missing CASE_CONTEXT"
         assert isinstance(module.CASE_CONTEXT, str)
         assert len(module.CASE_CONTEXT) > 50
 
@@ -204,12 +205,15 @@ class TestPromptProfileEnum:
 
     def test_labor_dispute_in_prompt_profile(self):
         from engines.shared.models import PromptProfile
+
         assert PromptProfile.labor_dispute.value == "labor_dispute"
 
     def test_real_estate_in_prompt_profile(self):
         from engines.shared.models import PromptProfile
+
         assert PromptProfile.real_estate.value == "real_estate"
 
     def test_civil_loan_still_in_prompt_profile(self):
         from engines.shared.models import PromptProfile
+
         assert PromptProfile.civil_loan.value == "civil_loan"

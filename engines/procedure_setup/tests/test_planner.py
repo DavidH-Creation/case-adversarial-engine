@@ -84,104 +84,107 @@ _CASE_ID = "case-civil-loan-test-001"
 _RUN_ID = "run-procedure-setup-test-001"
 _WORKSPACE_ID = "workspace-test-001"
 
-_MOCK_LLM_RESPONSE = json.dumps({
-    "procedure_config": {
-        "evidence_submission_deadline_days": 15,
-        "evidence_challenge_window_days": 10,
-        "max_rounds_per_phase": 3,
-        "applicable_laws": ["中华人民共和国民法典", "中华人民共和国民事诉讼法"],
+_MOCK_LLM_RESPONSE = json.dumps(
+    {
+        "procedure_config": {
+            "evidence_submission_deadline_days": 15,
+            "evidence_challenge_window_days": 10,
+            "max_rounds_per_phase": 3,
+            "applicable_laws": ["中华人民共和国民法典", "中华人民共和国民事诉讼法"],
+        },
+        "procedure_states": [
+            {
+                "phase": "case_intake",
+                "allowed_role_codes": ["plaintiff_agent", "judge_agent"],
+                "readable_access_domains": ["shared_common"],
+                "writable_object_types": ["Party", "Claim"],
+                "admissible_evidence_statuses": ["private"],
+                "entry_conditions": ["案件登记完成"],
+                "exit_conditions": ["被告已收到应诉通知"],
+            },
+            {
+                "phase": "element_mapping",
+                "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "judge_agent"],
+                "readable_access_domains": ["shared_common"],
+                "writable_object_types": ["Issue", "Burden"],
+                "admissible_evidence_statuses": ["private", "submitted"],
+                "entry_conditions": ["案件受理完毕"],
+                "exit_conditions": ["争点树梳理完成"],
+            },
+            {
+                "phase": "opening",
+                "allowed_role_codes": ["plaintiff_agent", "defendant_agent"],
+                "readable_access_domains": ["shared_common"],
+                "writable_object_types": ["AgentOutput"],
+                "admissible_evidence_statuses": ["submitted"],
+                "entry_conditions": ["争点梳理完成"],
+                "exit_conditions": ["双方陈述完毕"],
+            },
+            {
+                "phase": "evidence_submission",
+                "allowed_role_codes": ["plaintiff_agent", "defendant_agent"],
+                "readable_access_domains": ["shared_common"],
+                "writable_object_types": ["Evidence"],
+                "admissible_evidence_statuses": ["private", "submitted"],
+                "entry_conditions": ["举证期限开始"],
+                "exit_conditions": ["举证期限届满"],
+            },
+            {
+                "phase": "evidence_challenge",
+                "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "judge_agent"],
+                "readable_access_domains": ["shared_common", "admitted_record"],
+                "writable_object_types": ["Evidence", "AgentOutput"],
+                "admissible_evidence_statuses": ["submitted", "challenged"],
+                "entry_conditions": ["举证期限届满"],
+                "exit_conditions": ["质证完毕"],
+            },
+            {
+                "phase": "judge_questions",
+                "allowed_role_codes": ["judge_agent"],
+                "readable_access_domains": ["shared_common", "admitted_record"],
+                "writable_object_types": ["AgentOutput"],
+                "admissible_evidence_statuses": ["admitted_for_discussion"],
+                "entry_conditions": ["质证完毕"],
+                "exit_conditions": ["问询完毕"],
+            },
+            {
+                "phase": "rebuttal",
+                "allowed_role_codes": ["plaintiff_agent", "defendant_agent"],
+                "readable_access_domains": ["shared_common", "admitted_record"],
+                "writable_object_types": ["AgentOutput"],
+                "admissible_evidence_statuses": ["admitted_for_discussion"],
+                "entry_conditions": ["问询完毕"],
+                "exit_conditions": ["辩论完毕"],
+            },
+            {
+                "phase": "output_branching",
+                "allowed_role_codes": ["judge_agent"],
+                "readable_access_domains": ["shared_common", "admitted_record"],
+                "writable_object_types": ["AgentOutput", "ReportArtifact"],
+                "admissible_evidence_statuses": ["admitted_for_discussion"],
+                "entry_conditions": ["辩论终结"],
+                "exit_conditions": ["输出完毕"],
+            },
+        ],
+        "timeline_events": [
+            {
+                "event_type": "evidence_submission_deadline",
+                "phase": "evidence_submission",
+                "description": "举证期限届满",
+                "relative_day": 15,
+                "is_mandatory": True,
+            },
+            {
+                "event_type": "evidence_challenge_deadline",
+                "phase": "evidence_challenge",
+                "description": "质证期限届满",
+                "relative_day": 25,
+                "is_mandatory": True,
+            },
+        ],
     },
-    "procedure_states": [
-        {
-            "phase": "case_intake",
-            "allowed_role_codes": ["plaintiff_agent", "judge_agent"],
-            "readable_access_domains": ["shared_common"],
-            "writable_object_types": ["Party", "Claim"],
-            "admissible_evidence_statuses": ["private"],
-            "entry_conditions": ["案件登记完成"],
-            "exit_conditions": ["被告已收到应诉通知"],
-        },
-        {
-            "phase": "element_mapping",
-            "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "judge_agent"],
-            "readable_access_domains": ["shared_common"],
-            "writable_object_types": ["Issue", "Burden"],
-            "admissible_evidence_statuses": ["private", "submitted"],
-            "entry_conditions": ["案件受理完毕"],
-            "exit_conditions": ["争点树梳理完成"],
-        },
-        {
-            "phase": "opening",
-            "allowed_role_codes": ["plaintiff_agent", "defendant_agent"],
-            "readable_access_domains": ["shared_common"],
-            "writable_object_types": ["AgentOutput"],
-            "admissible_evidence_statuses": ["submitted"],
-            "entry_conditions": ["争点梳理完成"],
-            "exit_conditions": ["双方陈述完毕"],
-        },
-        {
-            "phase": "evidence_submission",
-            "allowed_role_codes": ["plaintiff_agent", "defendant_agent"],
-            "readable_access_domains": ["shared_common"],
-            "writable_object_types": ["Evidence"],
-            "admissible_evidence_statuses": ["private", "submitted"],
-            "entry_conditions": ["举证期限开始"],
-            "exit_conditions": ["举证期限届满"],
-        },
-        {
-            "phase": "evidence_challenge",
-            "allowed_role_codes": ["plaintiff_agent", "defendant_agent", "judge_agent"],
-            "readable_access_domains": ["shared_common", "admitted_record"],
-            "writable_object_types": ["Evidence", "AgentOutput"],
-            "admissible_evidence_statuses": ["submitted", "challenged"],
-            "entry_conditions": ["举证期限届满"],
-            "exit_conditions": ["质证完毕"],
-        },
-        {
-            "phase": "judge_questions",
-            "allowed_role_codes": ["judge_agent"],
-            "readable_access_domains": ["shared_common", "admitted_record"],
-            "writable_object_types": ["AgentOutput"],
-            "admissible_evidence_statuses": ["admitted_for_discussion"],
-            "entry_conditions": ["质证完毕"],
-            "exit_conditions": ["问询完毕"],
-        },
-        {
-            "phase": "rebuttal",
-            "allowed_role_codes": ["plaintiff_agent", "defendant_agent"],
-            "readable_access_domains": ["shared_common", "admitted_record"],
-            "writable_object_types": ["AgentOutput"],
-            "admissible_evidence_statuses": ["admitted_for_discussion"],
-            "entry_conditions": ["问询完毕"],
-            "exit_conditions": ["辩论完毕"],
-        },
-        {
-            "phase": "output_branching",
-            "allowed_role_codes": ["judge_agent"],
-            "readable_access_domains": ["shared_common", "admitted_record"],
-            "writable_object_types": ["AgentOutput", "ReportArtifact"],
-            "admissible_evidence_statuses": ["admitted_for_discussion"],
-            "entry_conditions": ["辩论终结"],
-            "exit_conditions": ["输出完毕"],
-        },
-    ],
-    "timeline_events": [
-        {
-            "event_type": "evidence_submission_deadline",
-            "phase": "evidence_submission",
-            "description": "举证期限届满",
-            "relative_day": 15,
-            "is_mandatory": True,
-        },
-        {
-            "event_type": "evidence_challenge_deadline",
-            "phase": "evidence_challenge",
-            "description": "质证期限届满",
-            "relative_day": 25,
-            "is_mandatory": True,
-        },
-    ],
-}, ensure_ascii=False)
+    ensure_ascii=False,
+)
 
 _SAMPLE_ISSUE_TREE = IssueTree(
     case_id=_CASE_ID,
@@ -354,9 +357,7 @@ async def test_output_branching_is_terminal():
 
     phase_map = {s.phase: s for s in result.procedure_states}
     terminal = phase_map["output_branching"]
-    assert terminal.next_state_ids == [], (
-        "output_branching.next_state_ids must be empty"
-    )
+    assert terminal.next_state_ids == [], "output_branching.next_state_ids must be empty"
 
 
 @pytest.mark.asyncio
@@ -366,26 +367,33 @@ async def test_judge_questions_no_owner_private():
     """
     # 故意在 LLM 响应中包含 owner_private（测试引擎清理逻辑）
     # Intentionally include owner_private in LLM response (tests engine sanitization)
-    response_with_violation = json.dumps({
-        "procedure_config": {
-            "evidence_submission_deadline_days": 15,
-            "evidence_challenge_window_days": 10,
-            "max_rounds_per_phase": 3,
-            "applicable_laws": [],
-        },
-        "procedure_states": [
-            {
-                "phase": "judge_questions",
-                "allowed_role_codes": ["judge_agent"],
-                "readable_access_domains": ["owner_private", "shared_common", "admitted_record"],
-                "writable_object_types": ["AgentOutput"],
-                "admissible_evidence_statuses": ["admitted_for_discussion"],
-                "entry_conditions": ["质证完毕"],
-                "exit_conditions": ["问询完毕"],
+    response_with_violation = json.dumps(
+        {
+            "procedure_config": {
+                "evidence_submission_deadline_days": 15,
+                "evidence_challenge_window_days": 10,
+                "max_rounds_per_phase": 3,
+                "applicable_laws": [],
             },
-        ],
-        "timeline_events": [],
-    }, ensure_ascii=False)
+            "procedure_states": [
+                {
+                    "phase": "judge_questions",
+                    "allowed_role_codes": ["judge_agent"],
+                    "readable_access_domains": [
+                        "owner_private",
+                        "shared_common",
+                        "admitted_record",
+                    ],
+                    "writable_object_types": ["AgentOutput"],
+                    "admissible_evidence_statuses": ["admitted_for_discussion"],
+                    "entry_conditions": ["质证完毕"],
+                    "exit_conditions": ["问询完毕"],
+                },
+            ],
+            "timeline_events": [],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(response_with_violation)
     planner = ProcedurePlanner(llm_client=client, case_type="civil_loan")
@@ -410,26 +418,29 @@ async def test_output_branching_only_admitted_evidence():
     """
     # 故意在 LLM 响应中包含非法状态（测试引擎清理逻辑）
     # Intentionally include illegal status (tests engine sanitization)
-    response_with_violation = json.dumps({
-        "procedure_config": {
-            "evidence_submission_deadline_days": 15,
-            "evidence_challenge_window_days": 10,
-            "max_rounds_per_phase": 3,
-            "applicable_laws": [],
-        },
-        "procedure_states": [
-            {
-                "phase": "output_branching",
-                "allowed_role_codes": ["judge_agent"],
-                "readable_access_domains": ["admitted_record"],
-                "writable_object_types": ["AgentOutput"],
-                "admissible_evidence_statuses": ["submitted", "admitted_for_discussion"],
-                "entry_conditions": ["辩论终结"],
-                "exit_conditions": ["输出完毕"],
+    response_with_violation = json.dumps(
+        {
+            "procedure_config": {
+                "evidence_submission_deadline_days": 15,
+                "evidence_challenge_window_days": 10,
+                "max_rounds_per_phase": 3,
+                "applicable_laws": [],
             },
-        ],
-        "timeline_events": [],
-    }, ensure_ascii=False)
+            "procedure_states": [
+                {
+                    "phase": "output_branching",
+                    "allowed_role_codes": ["judge_agent"],
+                    "readable_access_domains": ["admitted_record"],
+                    "writable_object_types": ["AgentOutput"],
+                    "admissible_evidence_statuses": ["submitted", "admitted_for_discussion"],
+                    "entry_conditions": ["辩论终结"],
+                    "exit_conditions": ["输出完毕"],
+                },
+            ],
+            "timeline_events": [],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(response_with_violation)
     planner = ProcedurePlanner(llm_client=client, case_type="civil_loan")
@@ -632,9 +643,7 @@ async def test_llm_retry_succeeds_after_failures():
     Should succeed after two LLM failures if third attempt succeeds.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=2)
-    planner = ProcedurePlanner(
-        llm_client=client, case_type="civil_loan", max_retries=3
-    )
+    planner = ProcedurePlanner(llm_client=client, case_type="civil_loan", max_retries=3)
 
     result = await planner.plan(
         setup_input=_SAMPLE_SETUP_INPUT,
@@ -652,9 +661,7 @@ async def test_llm_retry_exhausted_returns_failed_result():
     Exhausted retries should return a failed ProcedureSetupResult, not raise.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=10)
-    planner = ProcedurePlanner(
-        llm_client=client, case_type="civil_loan", max_retries=3
-    )
+    planner = ProcedurePlanner(llm_client=client, case_type="civil_loan", max_retries=3)
 
     result = await planner.plan(
         setup_input=_SAMPLE_SETUP_INPUT,
@@ -676,9 +683,7 @@ async def test_parse_failure_returns_failed_result():
     Unparseable LLM response should return a failed ProcedureSetupResult.
     """
     client = MockLLMClient("这不是合法的JSON，无法解析")
-    planner = ProcedurePlanner(
-        llm_client=client, case_type="civil_loan", max_retries=1
-    )
+    planner = ProcedurePlanner(llm_client=client, case_type="civil_loan", max_retries=1)
 
     result = await planner.plan(
         setup_input=_SAMPLE_SETUP_INPUT,
@@ -695,9 +700,7 @@ async def test_failed_result_preserves_ids():
     Failed result should preserve run_id, case_id, workspace_id.
     """
     client = MockLLMClient(_MOCK_LLM_RESPONSE, fail_times=10)
-    planner = ProcedurePlanner(
-        llm_client=client, case_type="civil_loan", max_retries=1
-    )
+    planner = ProcedurePlanner(llm_client=client, case_type="civil_loan", max_retries=1)
 
     result = await planner.plan(
         setup_input=_SAMPLE_SETUP_INPUT,
@@ -717,26 +720,29 @@ async def test_missing_phase_in_llm_response_uses_default():
     Missing phase in LLM response should be filled with default config.
     """
     # 只提供 5 个阶段，缺少 3 个 / Only provide 5 phases, missing 3
-    partial_response = json.dumps({
-        "procedure_config": {
-            "evidence_submission_deadline_days": 15,
-            "evidence_challenge_window_days": 10,
-            "max_rounds_per_phase": 3,
-            "applicable_laws": [],
-        },
-        "procedure_states": [
-            {
-                "phase": "case_intake",
-                "allowed_role_codes": ["plaintiff_agent"],
-                "readable_access_domains": ["shared_common"],
-                "writable_object_types": ["Party"],
-                "admissible_evidence_statuses": ["private"],
-                "entry_conditions": ["开始"],
-                "exit_conditions": ["完成"],
+    partial_response = json.dumps(
+        {
+            "procedure_config": {
+                "evidence_submission_deadline_days": 15,
+                "evidence_challenge_window_days": 10,
+                "max_rounds_per_phase": 3,
+                "applicable_laws": [],
             },
-        ],
-        "timeline_events": [],
-    }, ensure_ascii=False)
+            "procedure_states": [
+                {
+                    "phase": "case_intake",
+                    "allowed_role_codes": ["plaintiff_agent"],
+                    "readable_access_domains": ["shared_common"],
+                    "writable_object_types": ["Party"],
+                    "admissible_evidence_statuses": ["private"],
+                    "entry_conditions": ["开始"],
+                    "exit_conditions": ["完成"],
+                },
+            ],
+            "timeline_events": [],
+        },
+        ensure_ascii=False,
+    )
 
     client = MockLLMClient(partial_response)
     planner = ProcedurePlanner(llm_client=client, case_type="civil_loan")
@@ -788,10 +794,7 @@ async def test_input_snapshot_has_issue_refs():
     )
 
     snapshot = result.run.input_snapshot
-    issue_ref_ids = {
-        ref.object_id for ref in snapshot.material_refs
-        if ref.object_type == "Issue"
-    }
+    issue_ref_ids = {ref.object_id for ref in snapshot.material_refs if ref.object_type == "Issue"}
     for issue in _SAMPLE_ISSUE_TREE.issues:
         assert issue.issue_id in issue_ref_ids, (
             f"input_snapshot missing material_ref for issue {issue.issue_id}"

@@ -69,12 +69,12 @@ class TestClaudeCLIClient:
     async def test_returns_stdout_on_success(self, client: ClaudeCLIClient) -> None:
         mock_proc = MagicMock()
         mock_proc.returncode = 0
-        mock_proc.communicate = AsyncMock(
-            return_value=(b"  JSON response here  \n", b"")
-        )
+        mock_proc.communicate = AsyncMock(return_value=(b"  JSON response here  \n", b""))
 
-        with patch("shutil.which", return_value="/usr/bin/claude"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+        with (
+            patch("shutil.which", return_value="/usr/bin/claude"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc),
+        ):
             result = await client.create_message(
                 system="你是律师",
                 user="分析借条",
@@ -89,8 +89,10 @@ class TestClaudeCLIClient:
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"ok", b""))
 
-        with patch("shutil.which", return_value="/usr/bin/claude"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        with (
+            patch("shutil.which", return_value="/usr/bin/claude"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
             await client.create_message(
                 system="system text",
                 user="user text",
@@ -117,8 +119,10 @@ class TestClaudeCLIClient:
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"ok", b""))
 
-        with patch("shutil.which", return_value="/usr/bin/claude"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        with (
+            patch("shutil.which", return_value="/usr/bin/claude"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
             await client.create_message(system="", user="hello")
 
         cmd = list(mock_exec.call_args[0])
@@ -138,8 +142,10 @@ class TestClaudeCLIClient:
         mock_proc.returncode = 1
         mock_proc.communicate = AsyncMock(return_value=(b"", b"fatal error"))
 
-        with patch("shutil.which", return_value="/usr/bin/claude"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+        with (
+            patch("shutil.which", return_value="/usr/bin/claude"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc),
+        ):
             with pytest.raises(CLICallError) as exc_info:
                 await client.create_message(system="s", user="u")
 
@@ -159,9 +165,11 @@ class TestClaudeCLIClient:
                 coro.close()
             raise asyncio.TimeoutError()
 
-        with patch("shutil.which", return_value="/usr/bin/claude"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc), \
-             patch("asyncio.wait_for", side_effect=_wait_for_timeout):
+        with (
+            patch("shutil.which", return_value="/usr/bin/claude"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc),
+            patch("asyncio.wait_for", side_effect=_wait_for_timeout),
+        ):
             with pytest.raises(asyncio.TimeoutError):
                 await client.create_message(system="s", user="u")
 
@@ -200,8 +208,10 @@ class TestCodexCLIClient:
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"  codex response  \n", b""))
 
-        with patch("shutil.which", return_value="/usr/bin/codex"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+        with (
+            patch("shutil.which", return_value="/usr/bin/codex"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc),
+        ):
             result = await client.create_message(
                 system="法律助手",
                 user="分析案件",
@@ -216,8 +226,10 @@ class TestCodexCLIClient:
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"ok", b""))
 
-        with patch("shutil.which", return_value="/usr/bin/codex"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        with (
+            patch("shutil.which", return_value="/usr/bin/codex"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
             await client.create_message(
                 system="my system",
                 user="my user",
@@ -238,8 +250,10 @@ class TestCodexCLIClient:
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"ok", b""))
 
-        with patch("shutil.which", return_value="/usr/bin/codex"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        with (
+            patch("shutil.which", return_value="/usr/bin/codex"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
             await client.create_message(system="s", user="u", model="o3")
 
         cmd = list(mock_exec.call_args[0])
@@ -252,8 +266,10 @@ class TestCodexCLIClient:
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"ok", b""))
 
-        with patch("shutil.which", return_value="/usr/bin/codex"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        with (
+            patch("shutil.which", return_value="/usr/bin/codex"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
             await client.create_message(system="s", user="u", model="gpt-5")
 
         cmd = list(mock_exec.call_args[0])
@@ -266,8 +282,10 @@ class TestCodexCLIClient:
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"ok", b""))
 
-        with patch("shutil.which", return_value="/usr/bin/codex"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        with (
+            patch("shutil.which", return_value="/usr/bin/codex"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
             await client.create_message(system="", user="hello world")
 
         # prompt is sent via stdin, not in the command line
@@ -290,8 +308,10 @@ class TestCodexCLIClient:
         mock_proc.returncode = 2
         mock_proc.communicate = AsyncMock(return_value=(b"", b"codex error msg"))
 
-        with patch("shutil.which", return_value="/usr/bin/codex"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+        with (
+            patch("shutil.which", return_value="/usr/bin/codex"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc),
+        ):
             with pytest.raises(CLICallError) as exc_info:
                 await client.create_message(system="s", user="u")
 
@@ -310,9 +330,11 @@ class TestCodexCLIClient:
                 coro.close()
             raise asyncio.TimeoutError()
 
-        with patch("shutil.which", return_value="/usr/bin/codex"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc), \
-             patch("asyncio.wait_for", side_effect=_wait_for_timeout):
+        with (
+            patch("shutil.which", return_value="/usr/bin/codex"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc),
+            patch("asyncio.wait_for", side_effect=_wait_for_timeout),
+        ):
             with pytest.raises(asyncio.TimeoutError):
                 await client.create_message(system="s", user="u")
 

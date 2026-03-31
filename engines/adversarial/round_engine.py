@@ -12,8 +12,10 @@ Round structure (fixed 3 rounds):
   Round 2 (evidence): EvidenceManager organizes evidence and flags conflicts
   Round 3 (rebuttal): Plaintiff rebuts defendant, defendant rebuts plaintiff
 """
+
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -184,32 +186,35 @@ class RoundEngine:
                 self._job_manager.update_progress(job_id, 0.66, "完成 Round 2 evidence")
 
             # ── Round 3: 针对性反驳 / rebuttal ──────────────────────────────
+            # 原被告反驳互不依赖，使用 asyncio.gather 并行执行以降低延迟。
             state_id_r3 = f"state-r3-{uuid.uuid4().hex[:8]}"
+            context_snapshot = list(all_outputs)  # 冻结当前快照供两者共用
 
-            p_rebuttal = await plaintiff.generate_rebuttal(
-                issue_tree=issue_tree,
-                visible_evidence=plaintiff_evidence,
-                context_outputs=all_outputs,
-                opponent_outputs=[d_claim],
-                run_id=run_id,
-                state_id=state_id_r3,
-                round_index=3,
+            p_rebuttal_raw, d_rebuttal_raw = await asyncio.gather(
+                plaintiff.generate_rebuttal(
+                    issue_tree=issue_tree,
+                    visible_evidence=plaintiff_evidence,
+                    context_outputs=context_snapshot,
+                    opponent_outputs=[d_claim],
+                    run_id=run_id,
+                    state_id=state_id_r3,
+                    round_index=3,
+                ),
+                defendant.generate_rebuttal(
+                    issue_tree=issue_tree,
+                    visible_evidence=defendant_evidence,
+                    context_outputs=context_snapshot,
+                    opponent_outputs=[p_claim],
+                    run_id=run_id,
+                    state_id=state_id_r3,
+                    round_index=3,
+                ),
             )
-            p_rebuttal = p_rebuttal.model_copy(update={"case_id": case_id})
+
+            p_rebuttal = p_rebuttal_raw.model_copy(update={"case_id": case_id})
+            d_rebuttal = d_rebuttal_raw.model_copy(update={"case_id": case_id})
             if self._workspace:
                 self._workspace.save_agent_output(p_rebuttal, AccessDomain.owner_private)
-
-            d_rebuttal = await defendant.generate_rebuttal(
-                issue_tree=issue_tree,
-                visible_evidence=defendant_evidence,
-                context_outputs=all_outputs,
-                opponent_outputs=[p_claim],
-                run_id=run_id,
-                state_id=state_id_r3,
-                round_index=3,
-            )
-            d_rebuttal = d_rebuttal.model_copy(update={"case_id": case_id})
-            if self._workspace:
                 self._workspace.save_agent_output(d_rebuttal, AccessDomain.owner_private)
 
             round3 = RoundState(
@@ -225,8 +230,11 @@ class RoundEngine:
             defendant_best = self._extract_best_arguments(d_claim, d_rebuttal)
             unresolved_issues = self._compute_unresolved_issues(issue_tree, evidence_conflicts)
             missing_ev_report = self._build_missing_evidence_report(
-                issue_tree, plaintiff_evidence, defendant_evidence,
-                plaintiff_party_id, defendant_party_id,
+                issue_tree,
+                plaintiff_evidence,
+                defendant_evidence,
+                plaintiff_party_id,
+                defendant_party_id,
             )
 
             result = AdversarialResult(
@@ -282,11 +290,13 @@ class RoundEngine:
                 continue
             # 每个 issue 生成一条 Argument
             for issue_id in output.issue_ids:
-                best.append(Argument(
-                    issue_id=issue_id,
-                    position=output.body[:500] if output.body else output.title,
-                    supporting_evidence_ids=output.evidence_citations[:5],
-                ))
+                best.append(
+                    Argument(
+                        issue_id=issue_id,
+                        position=output.body[:500] if output.body else output.title,
+                        supporting_evidence_ids=output.evidence_citations[:5],
+                    )
+                )
         return best
 
     @staticmethod
@@ -331,15 +341,19 @@ class RoundEngine:
             d_has = bool(issue_ev_ids & d_ev_ids)
 
             if not p_has:
-                report.append(MissingEvidenceReport(
-                    issue_id=issue.issue_id,
-                    missing_for_party_id=plaintiff_party_id,
-                    description=f"争点「{issue.title}」原告方缺乏直接证据支撑",
-                ))
+                report.append(
+                    MissingEvidenceReport(
+                        issue_id=issue.issue_id,
+                        missing_for_party_id=plaintiff_party_id,
+                        description=f"争点「{issue.title}」原告方缺乏直接证据支撑",
+                    )
+                )
             if not d_has:
-                report.append(MissingEvidenceReport(
-                    issue_id=issue.issue_id,
-                    missing_for_party_id=defendant_party_id,
-                    description=f"争点「{issue.title}」被告方缺乏直接证据支撑",
-                ))
+                report.append(
+                    MissingEvidenceReport(
+                        issue_id=issue.issue_id,
+                        missing_for_party_id=defendant_party_id,
+                        description=f"争点「{issue.title}」被告方缺乏直接证据支撑",
+                    )
+                )
         return report

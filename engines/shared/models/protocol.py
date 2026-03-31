@@ -24,6 +24,7 @@ from engines.shared.models.core import (
 
 class ChangeItem(BaseModel):
     """单条变量注入。"""
+
     target_object_type: ChangeItemObjectType
     target_object_id: str = Field(..., min_length=1)
     field_path: str = Field(..., min_length=1)
@@ -33,6 +34,7 @@ class ChangeItem(BaseModel):
 
 class DiffEntry(BaseModel):
     """单争点差异条目。NO affected_party_ids per spec."""
+
     issue_id: str = Field(..., min_length=1)
     impact_description: str = Field(..., min_length=1)
     direction: DiffDirection
@@ -40,6 +42,7 @@ class DiffEntry(BaseModel):
 
 class Scenario(BaseModel):
     """场景对象。NO separate DiffSummary wrapper per spec."""
+
     scenario_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     baseline_run_id: str = Field(..., min_length=1)

@@ -16,6 +16,7 @@ Usage::
     # Unknown case types raise UnsupportedCaseTypeError (not KeyError)
     plugin.get_prompt("engine", "unknown", {})  # raises UnsupportedCaseTypeError
 """
+
 from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
@@ -28,10 +29,7 @@ class UnsupportedCaseTypeError(Exception):
         self.case_type = case_type
         self.available = available or []
         if self.available:
-            msg = (
-                f"不支持的案由类型: '{case_type}'。"
-                f"可用: {', '.join(self.available)}"
-            )
+            msg = f"不支持的案由类型: '{case_type}'。可用: {', '.join(self.available)}"
         else:
             msg = f"不支持的案由类型: '{case_type}'"
         super().__init__(msg)

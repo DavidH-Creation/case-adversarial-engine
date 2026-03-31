@@ -122,13 +122,9 @@ class FollowupResponder:
             ValueError: question 为空，或 report 无章节。
         """
         if not question.strip():
-            raise ValueError(
-                "question 不能为空 / question cannot be empty"
-            )
+            raise ValueError("question 不能为空 / question cannot be empty")
         if not report.sections:
-            raise ValueError(
-                "report.sections 不能为空 / report.sections cannot be empty"
-            )
+            raise ValueError("report.sections 不能为空 / report.sections cannot be empty")
 
     def _collect_report_evidence_ids(self, report: ReportArtifact) -> set[str]:
         """收集报告中所有引用过的 evidence_id 集合。
@@ -184,9 +180,7 @@ class FollowupResponder:
 
         # 构建 prompt / Build prompt
         system_prompt = self._prompt_module.SYSTEM_PROMPT
-        report_context_block = self._prompt_module.format_report_context(
-            report.model_dump()
-        )
+        report_context_block = self._prompt_module.format_report_context(report.model_dump())
         history_block = self._prompt_module.format_history_block(
             [t.model_dump() for t in previous_turns]
         )
@@ -291,7 +285,7 @@ class FollowupResponder:
             model=self._model,
             tool_name="generate_followup_response",
             tool_description="根据报告上下文和追问问题，生成带 citation 的结构化追问回答。"
-                             "Generate a structured cited answer to a followup question based on report context.",
+            "Generate a structured cited answer to a followup question based on report context.",
             tool_schema=_TOOL_SCHEMA,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
@@ -325,9 +319,7 @@ class FollowupResponder:
 
         # ── 证据边界过滤 / Evidence boundary filtering ───────────────────────
         # 只允许报告已引用的证据 ID / Only allow evidence IDs from the report
-        valid_evidence_ids = [
-            eid for eid in llm_output.evidence_ids if eid in report_evidence_ids
-        ]
+        valid_evidence_ids = [eid for eid in llm_output.evidence_ids if eid in report_evidence_ids]
         # 合并 citations 中的 evidence_id / Merge citation evidence IDs
         for citation in llm_output.citations:
             if citation.evidence_id in report_evidence_ids:
@@ -336,9 +328,7 @@ class FollowupResponder:
 
         # ── 争点绑定保证 / Issue binding guarantee ───────────────────────────
         # 过滤只保留报告中存在的 issue_id / Filter to issue IDs present in report
-        valid_issue_ids = [
-            iid for iid in llm_output.issue_ids if iid in report_issue_ids
-        ]
+        valid_issue_ids = [iid for iid in llm_output.issue_ids if iid in report_issue_ids]
         # 合约保证：至少一个 issue_id / Contract: at least one issue_id
         if not valid_issue_ids:
             # 回退到报告关联的所有争点 / Fallback to all report-linked issues

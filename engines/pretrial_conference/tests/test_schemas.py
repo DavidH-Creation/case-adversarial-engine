@@ -198,9 +198,7 @@ class TestJudgeQuestionSet:
             )
             for i in range(1, 11)
         ]
-        qs = JudgeQuestionSet(
-            case_id="case-001", run_id="run-001", questions=questions
-        )
+        qs = JudgeQuestionSet(case_id="case-001", run_id="run-001", questions=questions)
         assert len(qs.questions) == 10
 
 
@@ -239,15 +237,9 @@ class TestPretrialConferenceResult:
         result = PretrialConferenceResult(
             case_id="case-001",
             run_id="run-001",
-            cross_examination_result=CrossExaminationResult(
-                case_id="case-001", run_id="run-001"
-            ),
-            judge_questions=JudgeQuestionSet(
-                case_id="case-001", run_id="run-001"
-            ),
-            final_evidence_index=EvidenceIndex(
-                case_id="case-001", evidence=[]
-            ),
+            cross_examination_result=CrossExaminationResult(case_id="case-001", run_id="run-001"),
+            judge_questions=JudgeQuestionSet(case_id="case-001", run_id="run-001"),
+            final_evidence_index=EvidenceIndex(case_id="case-001", evidence=[]),
         )
         assert result.case_id == "case-001"
 
@@ -260,9 +252,7 @@ class TestPretrialConferenceResult:
                 cross_examination_result=CrossExaminationResult(
                     case_id="case-001", run_id="run-001"
                 ),
-                judge_questions=JudgeQuestionSet(
-                    case_id="case-001", run_id="run-001"
-                ),
+                judge_questions=JudgeQuestionSet(case_id="case-001", run_id="run-001"),
                 final_evidence_index={},
             )
 

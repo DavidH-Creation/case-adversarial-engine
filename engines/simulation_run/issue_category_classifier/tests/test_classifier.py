@@ -7,6 +7,7 @@ Unit tests for IssueCategoryClassifier.
 - 分层测试：校验规则 → 完整 classify() 流程
 - 覆盖所有合约保证（见 spec P1.6 约束）
 """
+
 from __future__ import annotations
 
 import json
@@ -245,7 +246,9 @@ class TestValidationRules:
         classifier = IssueCategoryClassifier(client)
         result = await classifier.classify(_make_classifier_input(issues, claim_ids=["claim-001"]))
 
-        assert result.classified_issue_tree.issues[0].issue_category == IssueCategory.calculation_issue
+        assert (
+            result.classified_issue_tree.issues[0].issue_category == IssueCategory.calculation_issue
+        )
         assert "i-001" not in result.unclassified_issue_ids
 
     @pytest.mark.asyncio
@@ -404,9 +407,7 @@ class TestClassifyFullFlow:
         item = _cls_item("i-001")
         client = MockLLMClient(_stub_response([item]))
         classifier = IssueCategoryClassifier(client)
-        await classifier.classify(
-            _make_classifier_input(issues, claim_ids=["claim-special-001"])
-        )
+        await classifier.classify(_make_classifier_input(issues, claim_ids=["claim-special-001"]))
 
         assert client.last_user is not None
         assert "claim-special-001" in client.last_user

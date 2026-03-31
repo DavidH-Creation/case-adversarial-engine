@@ -54,9 +54,7 @@ class CLICallError(RuntimeError):
         self.returncode = returncode
         self.stderr = stderr
         sanitized = _sanitize_stderr(stderr)
-        super().__init__(
-            f"{tool} CLI 调用失败 (exit {returncode}): {sanitized}"
-        )
+        super().__init__(f"{tool} CLI 调用失败 (exit {returncode}): {sanitized}")
 
 
 # ---------------------------------------------------------------------------
@@ -64,10 +62,20 @@ class CLICallError(RuntimeError):
 # ---------------------------------------------------------------------------
 
 # 触发整行脱敏的关键词（不区分大小写）
-_SENSITIVE_KEYWORDS = frozenset({
-    "token", "key", "bearer", "authorization", "credential",
-    "password", "secret", "apikey", "api_key", "auth",
-})
+_SENSITIVE_KEYWORDS = frozenset(
+    {
+        "token",
+        "key",
+        "bearer",
+        "authorization",
+        "credential",
+        "password",
+        "secret",
+        "apikey",
+        "api_key",
+        "auth",
+    }
+)
 
 # 文件系统路径正则（Windows 和 Unix）
 _WIN_PATH_RE = re.compile(r"[A-Za-z]:\\[^\s,;\"'<>]+")
@@ -144,9 +152,7 @@ class ClaudeCLIClient:
             )
 
         self._last_usage = None
-        stdout, stderr, rc = await self._invoke(
-            resolved_bin, system=system, user=user, model=model
-        )
+        stdout, stderr, rc = await self._invoke(resolved_bin, system=system, user=user, model=model)
         if rc == 0:
             return stdout.decode(errors="replace").strip()
 
@@ -294,8 +300,7 @@ class CodexCLIClient:
             proc.kill()
             await proc.communicate()
             raise asyncio.TimeoutError(
-                f"codex CLI 调用超时（>{self._timeout}s）"
-                f" / codex CLI timed out (>{self._timeout}s)"
+                f"codex CLI 调用超时（>{self._timeout}s） / codex CLI timed out (>{self._timeout}s)"
             )
 
         if proc.returncode != 0:

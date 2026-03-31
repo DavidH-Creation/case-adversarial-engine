@@ -36,7 +36,7 @@ from engines.shared.models import (
     WorkflowStage,
 )
 
-_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
+_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]+$")
 
 
 def _validate_id(value: str, field: str) -> None:
@@ -96,9 +96,7 @@ class WorkspaceManager:
         """
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = path.with_suffix(".tmp")
-        tmp_path.write_text(
-            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        tmp_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
         os.replace(tmp_path, path)  # atomic on POSIX; best-effort on Windows
 
     def _empty_workspace(self, case_type: str) -> dict:
@@ -236,9 +234,7 @@ class WorkspaceManager:
             ]
             self._atomic_write(self._workspace_path(), ws)
 
-    def save_claims_defenses(
-        self, claims: list[Claim], defenses: list[Defense]
-    ) -> None:
+    def save_claims_defenses(self, claims: list[Claim], defenses: list[Defense]) -> None:
         """持久化诉请与抗辩，更新 material_index.Claim / Defense。
         Persist Claims and Defenses and update material_index entries.
         """
@@ -458,25 +454,13 @@ class WorkspaceManager:
 
         if access_domain == AccessDomain.owner_private:
             storage_ref = f"artifacts/private/{owner}/agent_outputs/{output_id}.json"
-            path = (
-                self._artifacts_dir()
-                / "private" / owner / "agent_outputs"
-                / f"{output_id}.json"
-            )
+            path = self._artifacts_dir() / "private" / owner / "agent_outputs" / f"{output_id}.json"
         elif access_domain == AccessDomain.shared_common:
             storage_ref = f"artifacts/shared/agent_outputs/{output_id}.json"
-            path = (
-                self._artifacts_dir()
-                / "shared" / "agent_outputs"
-                / f"{output_id}.json"
-            )
+            path = self._artifacts_dir() / "shared" / "agent_outputs" / f"{output_id}.json"
         elif access_domain == AccessDomain.admitted_record:
             storage_ref = f"artifacts/admitted/agent_outputs/{output_id}.json"
-            path = (
-                self._artifacts_dir()
-                / "admitted" / "agent_outputs"
-                / f"{output_id}.json"
-            )
+            path = self._artifacts_dir() / "admitted" / "agent_outputs" / f"{output_id}.json"
         else:
             raise ValueError(f"Unsupported access_domain: {access_domain!r}")
 
@@ -503,9 +487,7 @@ class WorkspaceManager:
         try:
             path.resolve().relative_to(self.workspace_dir.resolve())
         except ValueError:
-            raise ValueError(
-                f"Path traversal detected in storage_ref: {storage_ref!r}"
-            )
+            raise ValueError(f"Path traversal detected in storage_ref: {storage_ref!r}")
         if not path.exists():
             return None
         data = json.loads(path.read_text(encoding="utf-8"))

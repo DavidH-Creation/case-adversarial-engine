@@ -95,6 +95,7 @@ class TestHappyPath:
     def test_returns_amount_calculation_report(self):
         """calculate() 应返回 AmountCalculationReport。"""
         from engines.shared.models import AmountCalculationReport
+
         calc = AmountCalculator()
         report = calc.calculate(_base_input())
         assert isinstance(report, AmountCalculationReport)
@@ -371,7 +372,9 @@ class TestClaimCalculationEntries:
         """principal calculated_amount = sum(loans) - sum(repayments to principal)。"""
         inp = _base_input(
             loan_transactions=[_loan("loan-001", "50000")],
-            repayment_transactions=[_repayment("repay-001", "10000", RepaymentAttribution.principal)],
+            repayment_transactions=[
+                _repayment("repay-001", "10000", RepaymentAttribution.principal)
+            ],
             claim_entries=[_claim("c1", ClaimType.principal, "40000")],
         )
         report = AmountCalculator().calculate(inp)
@@ -383,7 +386,9 @@ class TestClaimCalculationEntries:
         """claimed 45000 vs calculated 40000 → delta = 5000。"""
         inp = _base_input(
             loan_transactions=[_loan("loan-001", "50000")],
-            repayment_transactions=[_repayment("repay-001", "10000", RepaymentAttribution.principal)],
+            repayment_transactions=[
+                _repayment("repay-001", "10000", RepaymentAttribution.principal)
+            ],
             claim_entries=[_claim("c1", ClaimType.principal, "45000")],
         )
         report = AmountCalculator().calculate(inp)
@@ -446,6 +451,7 @@ from engines.shared.rule_config import RuleThresholds
 # Rule #6: 起诉金额/可核实交付比值 (claim_delivery_ratio_normal)
 # ---------------------------------------------------------------------------
 
+
 class TestRule6ClaimDeliveryRatio:
     """rule #6: total_claimed / total_principal_loans > threshold → 预警。"""
 
@@ -491,7 +497,8 @@ class TestRule6ClaimDeliveryRatio:
         calc = AmountCalculator(thresholds=RuleThresholds())
         report = calc.calculate(inp)
         ratio_conflicts = [
-            c for c in report.consistency_check_result.unresolved_conflicts
+            c
+            for c in report.consistency_check_result.unresolved_conflicts
             if "虚假诉讼" in c.conflict_description or "ratio" in c.conflict_description.lower()
         ]
         assert len(ratio_conflicts) >= 1
@@ -506,7 +513,8 @@ class TestRule6ClaimDeliveryRatio:
         report = calc.calculate(inp)
         assert report.consistency_check_result.claim_delivery_ratio_normal is False
         ratio_conflicts = [
-            c for c in report.consistency_check_result.unresolved_conflicts
+            c
+            for c in report.consistency_check_result.unresolved_conflicts
             if "∞" in c.conflict_description or "为零" in c.conflict_description
         ]
         assert len(ratio_conflicts) >= 1
@@ -527,6 +535,7 @@ from engines.shared.models import ContractValidity, InterestRecalculation
 # ---------------------------------------------------------------------------
 # Rule #7: 合同无效后利息重算 (interest recalculation)
 # ---------------------------------------------------------------------------
+
 
 class TestRule7InterestRecalculation:
     """rule #7: contract invalid → interest recalculated at LPR。"""
@@ -598,7 +607,8 @@ class TestRule7InterestRecalculation:
         report = calc.calculate(inp)
         assert report.interest_recalculation is None
         missing_conflicts = [
-            c for c in report.consistency_check_result.unresolved_conflicts
+            c
+            for c in report.consistency_check_result.unresolved_conflicts
             if "利息重算缺失" in c.conflict_description
         ]
         assert len(missing_conflicts) == 1
@@ -614,7 +624,8 @@ class TestRule7InterestRecalculation:
         report = calc.calculate(inp)
         assert report.interest_recalculation is None
         missing_conflicts = [
-            c for c in report.consistency_check_result.unresolved_conflicts
+            c
+            for c in report.consistency_check_result.unresolved_conflicts
             if "利息重算缺失" in c.conflict_description
         ]
         assert len(missing_conflicts) == 1

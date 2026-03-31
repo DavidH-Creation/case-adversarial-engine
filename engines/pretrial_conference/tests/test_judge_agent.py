@@ -90,9 +90,7 @@ def _make_llm_response(questions=None):
 
 def _make_agent(llm_response=None):
     mock_llm = AsyncMock()
-    mock_llm.create_message.return_value = (
-        llm_response or _make_llm_response()
-    )
+    mock_llm.create_message.return_value = llm_response or _make_llm_response()
     agent = JudgeAgent(
         llm_client=mock_llm,
         model="test-model",
@@ -339,7 +337,10 @@ class TestLLMFailure:
         mock_llm = AsyncMock()
         mock_llm.create_message.side_effect = RuntimeError("LLM down")
         agent = JudgeAgent(
-            llm_client=mock_llm, model="m", temperature=0.0, max_retries=1,
+            llm_client=mock_llm,
+            model="m",
+            temperature=0.0,
+            max_retries=1,
         )
         qs = await agent.generate_questions(
             issue_tree=_make_issue_tree(),

@@ -1,6 +1,6 @@
 [project]
 name = "case-adversarial-engine"
-version = "1.5.0"
+version = "2.0.0-dev"
 description = "Case Adversarial Engine — 对抗式案件分析引擎"
 requires-python = ">=3.11"
 dependencies = [
@@ -52,6 +52,9 @@ testpaths = [
     "engines/simulation_run/hearing_order/tests",
     "engines/simulation_run/issue_dependency_graph/tests",
     "tests/integration",
+    "engines/case_extraction/tests",
+    "engines/document_assistance/tests",
+    "api/tests",
 ]
 
 [tool.coverage.run]

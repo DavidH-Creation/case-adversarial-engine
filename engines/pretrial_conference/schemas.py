@@ -30,25 +30,28 @@ from engines.shared.models import EvidenceIndex
 
 class CrossExaminationDimension(str, Enum):
     """质证四维度。"""
-    authenticity = "authenticity"          # 真实性
-    relevance = "relevance"               # 关联性
-    legality = "legality"                 # 合法性
-    probative_value = "probative_value"   # 证明力
+
+    authenticity = "authenticity"  # 真实性
+    relevance = "relevance"  # 关联性
+    legality = "legality"  # 合法性
+    probative_value = "probative_value"  # 证明力
 
 
 class CrossExaminationVerdict(str, Enum):
     """单维度质证结论。"""
-    accepted = "accepted"       # 认可
-    challenged = "challenged"   # 不认可
-    reserved = "reserved"       # 保留意见
+
+    accepted = "accepted"  # 认可
+    challenged = "challenged"  # 不认可
+    reserved = "reserved"  # 保留意见
 
 
 class JudgeQuestionType(str, Enum):
     """法官追问类型。"""
-    clarification = "clarification"       # 澄清
-    contradiction = "contradiction"       # 矛盾发现
-    gap = "gap"                           # 缺证识别
-    legal_basis = "legal_basis"           # 法律依据
+
+    clarification = "clarification"  # 澄清
+    contradiction = "contradiction"  # 矛盾发现
+    gap = "gap"  # 缺证识别
+    legal_basis = "legal_basis"  # 法律依据
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +61,7 @@ class JudgeQuestionType(str, Enum):
 
 class CrossExaminationOpinion(BaseModel):
     """一方对一条证据在一个维度的意见。"""
+
     evidence_id: str = Field(..., min_length=1)
     issue_ids: list[str] = Field(..., min_length=1)
     dimension: CrossExaminationDimension
@@ -68,6 +72,7 @@ class CrossExaminationOpinion(BaseModel):
 
 class CrossExaminationRecord(BaseModel):
     """单条证据的完整质证记录。"""
+
     evidence_id: str = Field(..., min_length=1)
     evidence_title: str = Field(default="")
     owner_party_id: str = Field(..., min_length=1)
@@ -81,6 +86,7 @@ class CrossExaminationRecord(BaseModel):
 
 class CrossExaminationFocusItem(BaseModel):
     """《质证焦点清单》单条。"""
+
     evidence_id: str = Field(..., min_length=1)
     issue_id: str = Field(..., min_length=1)
     dimension: CrossExaminationDimension
@@ -90,6 +96,7 @@ class CrossExaminationFocusItem(BaseModel):
 
 class CrossExaminationResult(BaseModel):
     """质证阶段完整输出。"""
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     records: list[CrossExaminationRecord] = Field(default_factory=list)
@@ -103,6 +110,7 @@ class CrossExaminationResult(BaseModel):
 
 class JudgeQuestion(BaseModel):
     """法官追问条目。"""
+
     question_id: str = Field(..., min_length=1)
     issue_id: str = Field(..., min_length=1)
     evidence_ids: list[str] = Field(..., min_length=1)
@@ -114,6 +122,7 @@ class JudgeQuestion(BaseModel):
 
 class JudgeQuestionSet(BaseModel):
     """《法官可能追问 Top10》。"""
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     questions: list[JudgeQuestion] = Field(default_factory=list, max_length=10)
@@ -131,6 +140,7 @@ class JudgeQuestionSet(BaseModel):
 
 class LLMOpinionItem(BaseModel):
     """LLM 输出的单条质证意见（中间格式）。"""
+
     evidence_id: str = ""
     issue_ids: list[str] = Field(default_factory=list)
     dimension: str = ""
@@ -140,11 +150,13 @@ class LLMOpinionItem(BaseModel):
 
 class LLMCrossExaminationOutput(BaseModel):
     """LLM 质证输出（中间格式）。"""
+
     opinions: list[LLMOpinionItem] = Field(default_factory=list)
 
 
 class LLMJudgeQuestionItem(BaseModel):
     """LLM 输出的单条法官追问（中间格式）。"""
+
     question_id: str = ""
     issue_id: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
@@ -156,6 +168,7 @@ class LLMJudgeQuestionItem(BaseModel):
 
 class LLMJudgeQuestionOutput(BaseModel):
     """LLM 法官追问输出（中间格式）。"""
+
     questions: list[LLMJudgeQuestionItem] = Field(default_factory=list)
 
 
@@ -166,6 +179,7 @@ class LLMJudgeQuestionOutput(BaseModel):
 
 class PretrialConferenceResult(BaseModel):
     """庭前会议顶层输出信封。"""
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     cross_examination_result: CrossExaminationResult

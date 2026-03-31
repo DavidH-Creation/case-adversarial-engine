@@ -15,6 +15,7 @@ Court Hearing Order Generator (P2).
 - total_estimated_duration_minutes == sum(phase.estimated_duration_minutes)
 - 不调用 LLM（纯规则层）
 """
+
 from __future__ import annotations
 
 import logging
@@ -90,23 +91,15 @@ class HearingOrderGenerator:
 
         # 1. 从拓扑排序获取基础顺序
         topo_order = list(graph.topological_order)
-        cycle_ids = {
-            issue_id for cycle in graph.cycles for issue_id in cycle
-        }
+        cycle_ids = {issue_id for cycle in graph.cycles for issue_id in cycle}
         # 将环路节点追加到顺序末尾（按 issue_id 字典序保持稳定）
-        cycle_nodes_ordered = [
-            iid for iid in sorted(cycle_ids)
-            if iid in issue_map
-        ]
+        cycle_nodes_ordered = [iid for iid in sorted(cycle_ids) if iid in issue_map]
 
         # 只保留本次 issues 中存在的 issue_id
         ordered_ids = [iid for iid in topo_order if iid in issue_map]
         # 补全 topo 中未出现的 issue（依赖图未包含的争点）
         topo_set = set(ordered_ids) | set(cycle_nodes_ordered)
-        orphan_ids = [
-            i.issue_id for i in issues
-            if i.issue_id not in topo_set
-        ]
+        orphan_ids = [i.issue_id for i in issues if i.issue_id not in topo_set]
 
         full_order = ordered_ids + cycle_nodes_ordered + orphan_ids
 
@@ -133,12 +126,8 @@ class HearingOrderGenerator:
 
         # 4. 原告方优先争点排到对应阶段首位
         for phase_key, phase_issue_ids in phases_map.items():
-            priority_in_phase = [
-                iid for iid in phase_issue_ids if iid in plaintiff_priority
-            ]
-            rest_in_phase = [
-                iid for iid in phase_issue_ids if iid not in plaintiff_priority
-            ]
+            priority_in_phase = [iid for iid in phase_issue_ids if iid in plaintiff_priority]
+            rest_in_phase = [iid for iid in phase_issue_ids if iid not in plaintiff_priority]
             phases_map[phase_key] = priority_in_phase + rest_in_phase
 
         # 5. 构建 issue_presentation_order（按阶段顺序拼接）

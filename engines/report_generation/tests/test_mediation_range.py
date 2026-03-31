@@ -10,6 +10,7 @@ Tests for engines.report_generation.mediation_range module.
 - Edge case: 无 confidence_interval → 使用默认 [30%, 90%]
 - Edge case: calculated_amount 为 None → 使用 claimed_amount 作为 fallback
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -27,6 +28,7 @@ from engines.report_generation.mediation_range import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_entry(claimed: str, calculated: str | None = None) -> SimpleNamespace:
     """Create a mock ClaimCalculationEntry."""
@@ -49,9 +51,11 @@ def _make_decision_tree(confidence_intervals: list[tuple[float, float]]) -> Simp
     """Create a mock DecisionPathTree with confidence intervals."""
     paths = []
     for lo, hi in confidence_intervals:
-        paths.append(SimpleNamespace(
-            confidence_interval=SimpleNamespace(lower=lo, upper=hi),
-        ))
+        paths.append(
+            SimpleNamespace(
+                confidence_interval=SimpleNamespace(lower=lo, upper=hi),
+            )
+        )
     return SimpleNamespace(paths=paths)
 
 
@@ -59,13 +63,15 @@ def _make_decision_tree(confidence_intervals: list[tuple[float, float]]) -> Simp
 # Test: compute_mediation_range
 # ---------------------------------------------------------------------------
 
-class TestComputeMediationRange:
 
+class TestComputeMediationRange:
     def test_happy_path_with_decision_tree(self) -> None:
         """amount_report + decision_tree → 正确的 [min, max, suggested]。"""
-        report = _make_amount_report([
-            _make_entry("100000", "80000"),
-        ])
+        report = _make_amount_report(
+            [
+                _make_entry("100000", "80000"),
+            ]
+        )
         tree = _make_decision_tree([(0.4, 0.8)])
 
         result = compute_mediation_range(report, tree)
@@ -84,10 +90,12 @@ class TestComputeMediationRange:
 
     def test_multiple_claims_summed(self) -> None:
         """多条 claim → 金额正确求和。"""
-        report = _make_amount_report([
-            _make_entry("50000", "40000"),
-            _make_entry("30000", "30000"),
-        ])
+        report = _make_amount_report(
+            [
+                _make_entry("50000", "40000"),
+                _make_entry("30000", "30000"),
+            ]
+        )
         tree = _make_decision_tree([(0.5, 0.9)])
 
         result = compute_mediation_range(report, tree)
@@ -111,9 +119,11 @@ class TestComputeMediationRange:
 
     def test_no_decision_tree_uses_default(self) -> None:
         """无 decision_tree → 使用默认 [30%, 90%]。"""
-        report = _make_amount_report([
-            _make_entry("100000", "100000"),
-        ])
+        report = _make_amount_report(
+            [
+                _make_entry("100000", "100000"),
+            ]
+        )
         result = compute_mediation_range(report, None)
 
         assert result is not None
@@ -126,12 +136,16 @@ class TestComputeMediationRange:
 
     def test_no_confidence_intervals_uses_default(self) -> None:
         """decision_tree 有 paths 但无 confidence_interval → 使用默认。"""
-        report = _make_amount_report([
-            _make_entry("50000", "50000"),
-        ])
-        tree = SimpleNamespace(paths=[
-            SimpleNamespace(confidence_interval=None),
-        ])
+        report = _make_amount_report(
+            [
+                _make_entry("50000", "50000"),
+            ]
+        )
+        tree = SimpleNamespace(
+            paths=[
+                SimpleNamespace(confidence_interval=None),
+            ]
+        )
         result = compute_mediation_range(report, tree)
 
         assert result is not None
@@ -140,9 +154,11 @@ class TestComputeMediationRange:
 
     def test_calculated_none_uses_claimed_fallback(self) -> None:
         """calculated_amount 为 None → verified 使用 claimed 作为 fallback。"""
-        report = _make_amount_report([
-            _make_entry("100000", None),
-        ])
+        report = _make_amount_report(
+            [
+                _make_entry("100000", None),
+            ]
+        )
         result = compute_mediation_range(report, None)
 
         assert result is not None
@@ -150,9 +166,11 @@ class TestComputeMediationRange:
 
     def test_max_capped_at_claimed(self) -> None:
         """max_amount 不超过 claimed 总额。"""
-        report = _make_amount_report([
-            _make_entry("50000", "80000"),  # verified > claimed
-        ])
+        report = _make_amount_report(
+            [
+                _make_entry("50000", "80000"),  # verified > claimed
+            ]
+        )
         tree = _make_decision_tree([(0.8, 1.0)])
 
         result = compute_mediation_range(report, tree)
@@ -163,14 +181,18 @@ class TestComputeMediationRange:
 
     def test_multiple_paths_averaged(self) -> None:
         """多条 paths → confidence intervals 取平均。"""
-        report = _make_amount_report([
-            _make_entry("100000", "100000"),
-        ])
-        tree = _make_decision_tree([
-            (0.2, 0.6),
-            (0.4, 0.8),
-            (0.6, 1.0),
-        ])
+        report = _make_amount_report(
+            [
+                _make_entry("100000", "100000"),
+            ]
+        )
+        tree = _make_decision_tree(
+            [
+                (0.2, 0.6),
+                (0.4, 0.8),
+                (0.6, 1.0),
+            ]
+        )
         result = compute_mediation_range(report, tree)
 
         assert result is not None
@@ -195,9 +217,11 @@ class TestComputeMediationRange:
 
     def test_rationale_populated(self) -> None:
         """rationale 字段包含关键信息。"""
-        report = _make_amount_report([
-            _make_entry("100000", "80000"),
-        ])
+        report = _make_amount_report(
+            [
+                _make_entry("100000", "80000"),
+            ]
+        )
         result = compute_mediation_range(report, None)
         assert result is not None
         assert "100000" in str(result.rationale) or "100,000" in result.rationale
@@ -208,8 +232,8 @@ class TestComputeMediationRange:
 # Test: _aggregate_confidence
 # ---------------------------------------------------------------------------
 
-class TestAggregateConfidence:
 
+class TestAggregateConfidence:
     def test_none_tree(self) -> None:
         assert _aggregate_confidence(None) == (0.3, 0.9)
 

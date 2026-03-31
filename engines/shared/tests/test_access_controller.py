@@ -57,7 +57,12 @@ def _ev(
 EV_PLAINTIFF_PRIVATE = _ev("ev-p-priv", PLAINTIFF_PARTY, AccessDomain.owner_private)
 EV_DEFENDANT_PRIVATE = _ev("ev-d-priv", DEFENDANT_PARTY, AccessDomain.owner_private)
 EV_SHARED = _ev("ev-shared", PLAINTIFF_PARTY, AccessDomain.shared_common, EvidenceStatus.submitted)
-EV_ADMITTED = _ev("ev-admitted", DEFENDANT_PARTY, AccessDomain.admitted_record, EvidenceStatus.admitted_for_discussion)
+EV_ADMITTED = _ev(
+    "ev-admitted",
+    DEFENDANT_PARTY,
+    AccessDomain.admitted_record,
+    EvidenceStatus.admitted_for_discussion,
+)
 
 ALL_EVIDENCE = [EV_PLAINTIFF_PRIVATE, EV_DEFENDANT_PRIVATE, EV_SHARED, EV_ADMITTED]
 
@@ -220,9 +225,7 @@ class TestEvidenceManager:
 class TestUnknownRole:
     def test_raises_access_violation_error(self, controller: AccessController) -> None:
         with pytest.raises(AccessViolationError, match="未知角色编码"):
-            controller.filter_evidence_for_agent(
-                "unknown_role", PLAINTIFF_PARTY, ALL_EVIDENCE
-            )
+            controller.filter_evidence_for_agent("unknown_role", PLAINTIFF_PARTY, ALL_EVIDENCE)
 
     def test_raises_on_empty_string(self, controller: AccessController) -> None:
         with pytest.raises(AccessViolationError):

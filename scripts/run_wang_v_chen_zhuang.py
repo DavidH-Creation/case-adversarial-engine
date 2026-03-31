@@ -40,17 +40,32 @@ from engines.case_structuring.issue_extractor.extractor import IssueExtractor
 from engines.shared.access_control import AccessController
 from engines.shared.cli_adapter import CLINotFoundError, ClaudeCLIClient, CodexCLIClient
 from engines.shared.models import (
-    AgentRole, ClaimType, EvidenceIndex, EvidenceStatus, LoanTransaction,
-    RawMaterial, RepaymentTransaction,
+    AgentRole,
+    ClaimType,
+    EvidenceIndex,
+    EvidenceStatus,
+    LoanTransaction,
+    RawMaterial,
+    RepaymentTransaction,
 )
 
 # Post-debate analysis modules
 from decimal import Decimal
-from engines.case_structuring.amount_calculator import AmountCalculator, AmountCalculatorInput, AmountClaimDescriptor
+from engines.case_structuring.amount_calculator import (
+    AmountCalculator,
+    AmountCalculatorInput,
+    AmountClaimDescriptor,
+)
 from engines.simulation_run.issue_impact_ranker.ranker import IssueImpactRanker
 from engines.simulation_run.issue_impact_ranker.schemas import IssueImpactRankerInput
-from engines.simulation_run.decision_path_tree import DecisionPathTreeGenerator, DecisionPathTreeInput
-from engines.simulation_run.attack_chain_optimizer import AttackChainOptimizer, AttackChainOptimizerInput
+from engines.simulation_run.decision_path_tree import (
+    DecisionPathTreeGenerator,
+    DecisionPathTreeInput,
+)
+from engines.simulation_run.attack_chain_optimizer import (
+    AttackChainOptimizer,
+    AttackChainOptimizerInput,
+)
 from engines.simulation_run.action_recommender import ActionRecommender
 from engines.simulation_run.action_recommender.schemas import ActionRecommenderInput
 from engines.report_generation.executive_summarizer import ExecutiveSummarizer
@@ -98,7 +113,11 @@ PLAINTIFF_MATERIALS: list[RawMaterial] = [
             "2025-01-10  C支付宝→小陈  100,000元\n"
             "合计：200,000元。"
         ),
-        metadata={"document_type": "bank_transfer_records", "direction": "outgoing", "submitter": "plaintiff"},
+        metadata={
+            "document_type": "bank_transfer_records",
+            "direction": "outgoing",
+            "submitter": "plaintiff",
+        },
     ),
     RawMaterial(
         source_id="src-p-sms",
@@ -110,9 +129,9 @@ PLAINTIFF_MATERIALS: list[RawMaterial] = [
         text=(
             "补充证据：微信朋友圈截图、录屏（附光盘）\n"
             "证明：\n"
-            "1、原告出借案涉借款的时间是2025年1月10日。而被告小陈自称老庄入股\"A公司\"的"
+            '1、原告出借案涉借款的时间是2025年1月10日。而被告小陈自称老庄入股"A公司"的'
             "时间为2025年2月20日至2025年5月2日止。故该笔借款发生时，老庄与公司无关。\n"
-            "2、被告小陈自称其为\"原A负责人\"，证明其非员工。"
+            '2、被告小陈自称其为"原A负责人"，证明其非员工。'
         ),
         metadata={"document_type": "social_media_records", "submitter": "plaintiff"},
     ),
@@ -165,9 +184,9 @@ DEFENDANT_MATERIALS: list[RawMaterial] = [
             "其本人在使用，被告老庄在录音中也陈述了被告小陈所发的微信朋友圈"
             "系其编辑好后才让被告小陈发的。\n"
             "3、证明原告2025年1月10日转给被告小陈的案涉20万元款项系被告老庄向原告所借，"
-            "原告老王在2025年1月11日通过微信询问被告老庄\"大概什么时候能回款\"，"
+            '原告老王在2025年1月11日通过微信询问被告老庄"大概什么时候能回款"，'
             "与庭审时被告二老庄陈述说答应原告第二天还款一致，也与原告证据中的短信截图内容"
-            "\"我跟你老板说了，明天要带上我，不难就翻脸\"相对应。\n"
+            '"我跟你老板说了，明天要带上我，不难就翻脸"相对应。\n'
             "上述录音足以证实原告2025年1月10日转给被告小陈的20万元款项系被告老庄"
             "向原告所借，与被告小陈无关，否则原告不会在2025年1月11日向老庄催讨款项，"
             "也无需阻止被告老庄出庭，更无需让老庄将微信聊天记录删除。"
@@ -178,8 +197,11 @@ DEFENDANT_MATERIALS: list[RawMaterial] = [
 
 PLAINTIFF_CLAIMS: list[dict] = [
     {
-        "claim_id": "c-001", "case_id": CASE_ID, "owner_party_id": P_PARTY,
-        "claim_category": "返还借款", "title": "二被告偿还借款本金20万元",
+        "claim_id": "c-001",
+        "case_id": CASE_ID,
+        "owner_party_id": P_PARTY,
+        "claim_category": "返还借款",
+        "title": "二被告偿还借款本金20万元",
         "claim_text": (
             "2025年1月10日，被告以短期资金周转为由向原告借款20万元。"
             "原告通过银行转账10万元、支付宝代付10万元，合计出借20万元。"
@@ -187,24 +209,33 @@ PLAINTIFF_CLAIMS: list[dict] = [
         ),
     },
     {
-        "claim_id": "c-002", "case_id": CASE_ID, "owner_party_id": P_PARTY,
-        "claim_category": "利息", "title": "支付资金占用利息损失",
+        "claim_id": "c-002",
+        "case_id": CASE_ID,
+        "owner_party_id": P_PARTY,
+        "claim_category": "利息",
+        "title": "支付资金占用利息损失",
         "claim_text": (
             "以20万元为基数，自起诉之日起至实际偿清款项之日止，"
             "按全国银行间同业拆借中心公布的一年期贷款市场报价利率计算资金占用利息损失。"
         ),
     },
     {
-        "claim_id": "c-003", "case_id": CASE_ID, "owner_party_id": P_PARTY,
-        "claim_category": "诉讼费用", "title": "被告承担全部诉讼费用",
+        "claim_id": "c-003",
+        "case_id": CASE_ID,
+        "owner_party_id": P_PARTY,
+        "claim_category": "诉讼费用",
+        "title": "被告承担全部诉讼费用",
         "claim_text": "被告承担本案全部诉讼费用（包括但不限于案件受理费、公告费、财产保全费等）。",
     },
 ]
 
 DEFENDANT_DEFENSES: list[dict] = [
     {
-        "defense_id": "d-001", "case_id": CASE_ID, "owner_party_id": D_PARTY,
-        "defense_category": "借贷关系不成立", "against_claim_id": "c-001",
+        "defense_id": "d-001",
+        "case_id": CASE_ID,
+        "owner_party_id": D_PARTY,
+        "defense_category": "借贷关系不成立",
+        "against_claim_id": "c-001",
         "title": "被告小陈与原告之间不存在借贷合意",
         "defense_text": (
             "案涉20万元款项系原告要支付给老庄的，老庄指示原告转入被告小陈的账户。"
@@ -214,8 +245,11 @@ DEFENDANT_DEFENSES: list[dict] = [
         ),
     },
     {
-        "defense_id": "d-002", "case_id": CASE_ID, "owner_party_id": D_PARTY,
-        "defense_category": "实际借款人抗辩", "against_claim_id": "c-001",
+        "defense_id": "d-002",
+        "case_id": CASE_ID,
+        "owner_party_id": D_PARTY,
+        "defense_category": "实际借款人抗辩",
+        "against_claim_id": "c-001",
         "title": "实际借款人为老庄，非被告小陈",
         "defense_text": (
             "录音证据、微信聊天记录证实：(1)原告在2025年1月11日向老庄催讨回款，"
@@ -225,8 +259,11 @@ DEFENDANT_DEFENSES: list[dict] = [
         ),
     },
     {
-        "defense_id": "d-003", "case_id": CASE_ID, "owner_party_id": D_PARTY,
-        "defense_category": "面对面合意不存在", "against_claim_id": "c-001",
+        "defense_id": "d-003",
+        "case_id": CASE_ID,
+        "owner_party_id": D_PARTY,
+        "defense_category": "面对面合意不存在",
+        "against_claim_id": "c-001",
         "title": "不存在三方面对面达成借款合意",
         "defense_text": (
             "滴滴打车记录显示被告小陈在2025年1月10日当晚21时11分已打车回家，"
@@ -235,8 +272,11 @@ DEFENDANT_DEFENSES: list[dict] = [
         ),
     },
     {
-        "defense_id": "d-004", "case_id": CASE_ID, "owner_party_id": D_PARTY,
-        "defense_category": "原告妨碍诉讼", "against_claim_id": "c-001",
+        "defense_id": "d-004",
+        "case_id": CASE_ID,
+        "owner_party_id": D_PARTY,
+        "defense_category": "原告妨碍诉讼",
+        "against_claim_id": "c-001",
         "title": "原告存在妨碍诉讼行为",
         "defense_text": (
             "原告劝被告老庄不要应诉，让老庄删除与原告的微信聊天记录，"
@@ -250,16 +290,38 @@ DEFENDANT_DEFENSES: list[dict] = [
 
 # ── 金额计算数据（供 AmountCalculator 使用） ─────────────────────────────────
 LOAN_TRANSACTIONS = [
-    LoanTransaction(tx_id="tx-loan-001", date="2025-01-10", amount=Decimal("100000"), evidence_id="src-p-transfers", principal_base_contribution=True),
-    LoanTransaction(tx_id="tx-loan-002", date="2025-01-10", amount=Decimal("100000"), evidence_id="src-p-transfers", principal_base_contribution=True),
+    LoanTransaction(
+        tx_id="tx-loan-001",
+        date="2025-01-10",
+        amount=Decimal("100000"),
+        evidence_id="src-p-transfers",
+        principal_base_contribution=True,
+    ),
+    LoanTransaction(
+        tx_id="tx-loan-002",
+        date="2025-01-10",
+        amount=Decimal("100000"),
+        evidence_id="src-p-transfers",
+        principal_base_contribution=True,
+    ),
 ]
 
 # 被告未还款
 REPAYMENT_TRANSACTIONS: list[RepaymentTransaction] = []
 
 CLAIM_ENTRIES = [
-    AmountClaimDescriptor(claim_id="c-001", claim_type=ClaimType.principal, claimed_amount=Decimal("200000"), evidence_ids=["src-p-transfers"]),
-    AmountClaimDescriptor(claim_id="c-002", claim_type=ClaimType.interest, claimed_amount=Decimal("0"), evidence_ids=[]),
+    AmountClaimDescriptor(
+        claim_id="c-001",
+        claim_type=ClaimType.principal,
+        claimed_amount=Decimal("200000"),
+        evidence_ids=["src-p-transfers"],
+    ),
+    AmountClaimDescriptor(
+        claim_id="c-002",
+        claim_type=ClaimType.interest,
+        claimed_amount=Decimal("0"),
+        evidence_ids=[],
+    ),
 ]
 
 
@@ -313,16 +375,29 @@ def _write_md(
     # 争点排序（若有 ranked_issues，按 outcome_impact 排列）
     display_issues = ranked_issues.issues if ranked_issues else issue_tree.issues
     for iss in display_issues:
-        impact_tag = f" **{iss.outcome_impact.value}**" if getattr(iss, "outcome_impact", None) else ""
-        action_tag = f" [{iss.recommended_action.value}]" if getattr(iss, "recommended_action", None) else ""
-        lines.append(f"- **[{iss.issue_id}]** {iss.title} `{iss.issue_type.value}`{impact_tag}{action_tag}")
+        impact_tag = (
+            f" **{iss.outcome_impact.value}**" if getattr(iss, "outcome_impact", None) else ""
+        )
+        action_tag = (
+            f" [{iss.recommended_action.value}]" if getattr(iss, "recommended_action", None) else ""
+        )
+        lines.append(
+            f"- **[{iss.issue_id}]** {iss.title} `{iss.issue_type.value}`{impact_tag}{action_tag}"
+        )
     lines += ["", "## 三轮对抗记录", ""]
     for rs in result.rounds:
         lines.append(f"### Round {rs.round_number}（{rs.phase.value}）")
         lines.append("")
         for o in rs.outputs:
-            lines += [f"**{o.agent_role_code}** — {o.title}", "", o.body, "",
-                      f"*引用证据*: {', '.join(o.evidence_citations)}", "---", ""]
+            lines += [
+                f"**{o.agent_role_code}** — {o.title}",
+                "",
+                o.body,
+                "",
+                f"*引用证据*: {', '.join(o.evidence_citations)}",
+                "---",
+                "",
+            ]
     if result.evidence_conflicts:
         lines += ["## 证据冲突", ""]
         for c in result.evidence_conflicts:
@@ -351,9 +426,13 @@ def _write_md(
         for iss in ranked_issues.issues:
             impact = iss.outcome_impact.value if iss.outcome_impact else "-"
             attack = iss.opponent_attack_strength.value if iss.opponent_attack_strength else "-"
-            ev_str = iss.proponent_evidence_strength.value if iss.proponent_evidence_strength else "-"
+            ev_str = (
+                iss.proponent_evidence_strength.value if iss.proponent_evidence_strength else "-"
+            )
             action = iss.recommended_action.value if iss.recommended_action else "-"
-            lines.append(f"| {iss.issue_id} | {iss.title[:20]} | {impact} | {attack} | {ev_str} | {action} |")
+            lines.append(
+                f"| {iss.issue_id} | {iss.title[:20]} | {impact} | {attack} | {ev_str} | {action} |"
+            )
         lines.append("")
 
     # ── 裁判路径树 ──────────────────────────────────────────────────────────
@@ -380,7 +459,9 @@ def _write_md(
     # ── 对方最优攻击链 ──────────────────────────────────────────────────────
     if attack_chain:
         lines += ["## 对方最优攻击链", ""]
-        lines.append(f"**攻击方**: {attack_chain.owner_party_id}  |  **推荐顺序**: {' -> '.join(attack_chain.recommended_order)}")
+        lines.append(
+            f"**攻击方**: {attack_chain.owner_party_id}  |  **推荐顺序**: {' -> '.join(attack_chain.recommended_order)}"
+        )
         lines.append("")
         for node in attack_chain.top_attacks:
             lines.append(f"### {node.attack_node_id}")
@@ -403,7 +484,9 @@ def _write_md(
         if action_rec.recommended_claim_amendments:
             lines.append("### 建议修改诉请")
             for am in action_rec.recommended_claim_amendments:
-                lines.append(f"- **{am.suggestion_id}** ({am.original_claim_id}): {am.amendment_description}")
+                lines.append(
+                    f"- **{am.suggestion_id}** ({am.original_claim_id}): {am.amendment_description}"
+                )
             lines.append("")
         if action_rec.evidence_supplement_priorities:
             lines.append("### 补证优先级")
@@ -426,12 +509,16 @@ def _write_md(
         else:
             lines.append(f"**Top3 立即行动**: {exec_summary.top3_immediate_actions}")
         lines.append("")
-        lines.append(f"**Top3 对方最优攻击**: {', '.join(exec_summary.top3_adversary_optimal_attacks)}")
+        lines.append(
+            f"**Top3 对方最优攻击**: {', '.join(exec_summary.top3_adversary_optimal_attacks)}"
+        )
         lines.append("")
         lines.append(f"**最稳诉请版本**: {exec_summary.current_most_stable_claim}")
         lines.append("")
         if isinstance(exec_summary.critical_evidence_gaps, list):
-            lines.append(f"**关键缺证**: {', '.join(exec_summary.critical_evidence_gaps) if exec_summary.critical_evidence_gaps else '无'}")
+            lines.append(
+                f"**关键缺证**: {', '.join(exec_summary.critical_evidence_gaps) if exec_summary.critical_evidence_gaps else '无'}"
+            )
         else:
             lines.append(f"**关键缺证**: {exec_summary.critical_evidence_gaps}")
         lines.append("")
@@ -507,9 +594,13 @@ async def _run_rounds(
     missing = RoundEngine._build_missing_evidence_report(issue_tree, p_ev, d_ev, P_PARTY, D_PARTY)
 
     result = AdversarialResult(
-        case_id=case_id, run_id=run_id, rounds=rounds,
-        plaintiff_best_arguments=p_best, defendant_best_defenses=d_best,
-        unresolved_issues=unresolved, evidence_conflicts=conflicts,
+        case_id=case_id,
+        run_id=run_id,
+        rounds=rounds,
+        plaintiff_best_arguments=p_best,
+        defendant_best_defenses=d_best,
+        unresolved_issues=unresolved,
+        evidence_conflicts=conflicts,
         missing_evidence_report=missing,
     )
 
@@ -530,6 +621,7 @@ async def main(claude_only: bool = False) -> None:
         codex = claude
     else:
         import shutil as _sh
+
         if not _sh.which("codex"):
             print("\n[警告] codex 不在 PATH，被告代理降级为 Claude CLI")
             codex = claude
@@ -538,7 +630,9 @@ async def main(claude_only: bool = False) -> None:
             codex = CodexCLIClient(timeout=180.0)
 
     print("\n[Step 1] 索引双方证据...")
-    indexer = EvidenceIndexer(llm_client=claude, case_type="civil_loan", model="claude-opus-4-6", max_retries=2)
+    indexer = EvidenceIndexer(
+        llm_client=claude, case_type="civil_loan", model="claude-opus-4-6", max_retries=2
+    )
     p_ev = await indexer.index(PLAINTIFF_MATERIALS, CASE_ID, P_PARTY, "plaintiff")
     print(f"  ✓ 原告证据: {len(p_ev)} 条")
     d_ev = await indexer.index(DEFENDANT_MATERIALS, CASE_ID, D_PARTY, "defendant")
@@ -548,9 +642,13 @@ async def main(claude_only: bool = False) -> None:
     print(f"  ✓ 合并索引: {len(all_ev)} 条")
 
     print("\n[Step 2] 提取争点树...")
-    extractor = IssueExtractor(llm_client=claude, case_type="civil_loan", model="claude-opus-4-6", max_retries=2)
+    extractor = IssueExtractor(
+        llm_client=claude, case_type="civil_loan", model="claude-opus-4-6", max_retries=2
+    )
     ev_dicts = [e.model_dump() for e in all_ev]
-    issue_tree = await extractor.extract(PLAINTIFF_CLAIMS, DEFENDANT_DEFENSES, ev_dicts, CASE_ID, CASE_SLUG)
+    issue_tree = await extractor.extract(
+        PLAINTIFF_CLAIMS, DEFENDANT_DEFENSES, ev_dicts, CASE_ID, CASE_SLUG
+    )
     print(f"  ✓ 争点树: {len(issue_tree.issues)} 个争点, {len(issue_tree.burdens)} 个举证责任")
     for iss in issue_tree.issues:
         print(f"    - [{iss.issue_id}] {iss.title}")
@@ -578,7 +676,8 @@ async def main(claude_only: bool = False) -> None:
     # P0.2: AmountCalculator（纯规则，同步）
     print("  - 金额一致性校验...")
     amount_input = AmountCalculatorInput(
-        case_id=CASE_ID, run_id=run_id,
+        case_id=CASE_ID,
+        run_id=run_id,
         source_material_ids=["src-p-transfers"],
         claim_entries=CLAIM_ENTRIES,
         loan_transactions=LOAN_TRANSACTIONS,
@@ -586,21 +685,28 @@ async def main(claude_only: bool = False) -> None:
     )
     amount_report = AmountCalculator().calculate(amount_input)
     print(f"    ✓ 阻断裁判: {amount_report.consistency_check_result.verdict_block_active}")
-    print(f"    ✓ 未解决冲突: {len(amount_report.consistency_check_result.unresolved_conflicts)} 条")
+    print(
+        f"    ✓ 未解决冲突: {len(amount_report.consistency_check_result.unresolved_conflicts)} 条"
+    )
 
     # P0.1: IssueImpactRanker（LLM）
     print("  - 争点影响排序...")
     ranker = IssueImpactRanker(
-        llm_client=claude, model="claude-opus-4-6",
-        temperature=0.0, max_retries=2,
+        llm_client=claude,
+        model="claude-opus-4-6",
+        temperature=0.0,
+        max_retries=2,
     )
-    ranking_result = await ranker.rank(IssueImpactRankerInput(
-        case_id=CASE_ID, run_id=run_id,
-        issue_tree=issue_tree,
-        evidence_index=ev_index,
-        amount_calculation_report=amount_report,
-        proponent_party_id=P_PARTY,
-    ))
+    ranking_result = await ranker.rank(
+        IssueImpactRankerInput(
+            case_id=CASE_ID,
+            run_id=run_id,
+            issue_tree=issue_tree,
+            evidence_index=ev_index,
+            amount_calculation_report=amount_report,
+            proponent_party_id=P_PARTY,
+        )
+    )
     ranked_tree = ranking_result.ranked_issue_tree
     print(f"    ✓ 已排序争点: {len(ranked_tree.issues)} 个")
     for iss in ranked_tree.issues:
@@ -611,51 +717,67 @@ async def main(claude_only: bool = False) -> None:
     # P0.3 + P0.4: DecisionPathTree + AttackChainOptimizer（可并行）
     print("  - 裁判路径树 + 攻击链优化...")
     dpt_gen = DecisionPathTreeGenerator(
-        llm_client=claude, model="claude-opus-4-6",
-        temperature=0.0, max_retries=2,
+        llm_client=claude,
+        model="claude-opus-4-6",
+        temperature=0.0,
+        max_retries=2,
     )
     aco = AttackChainOptimizer(
-        llm_client=claude, model="claude-opus-4-6",
-        temperature=0.0, max_retries=2,
+        llm_client=claude,
+        model="claude-opus-4-6",
+        temperature=0.0,
+        max_retries=2,
     )
     decision_tree, attack_chain = await asyncio.gather(
-        dpt_gen.generate(DecisionPathTreeInput(
-            case_id=CASE_ID, run_id=run_id,
-            ranked_issue_tree=ranked_tree,
-            evidence_index=ev_index,
-            amount_calculation_report=amount_report,
-        )),
-        aco.optimize(AttackChainOptimizerInput(
-            case_id=CASE_ID, run_id=run_id,
-            owner_party_id=D_PARTY,
-            issue_tree=ranked_tree,
-            evidence_index=ev_index,
-        )),
+        dpt_gen.generate(
+            DecisionPathTreeInput(
+                case_id=CASE_ID,
+                run_id=run_id,
+                ranked_issue_tree=ranked_tree,
+                evidence_index=ev_index,
+                amount_calculation_report=amount_report,
+            )
+        ),
+        aco.optimize(
+            AttackChainOptimizerInput(
+                case_id=CASE_ID,
+                run_id=run_id,
+                owner_party_id=D_PARTY,
+                issue_tree=ranked_tree,
+                evidence_index=ev_index,
+            )
+        ),
     )
     print(f"    ✓ 裁判路径: {len(decision_tree.paths)} 条")
     print(f"    ✓ 攻击节点: {len(attack_chain.top_attacks)} 个")
 
     # P1.8: ActionRecommender（规则层 + 可选 LLM 策略层）
     print("  - 行动建议生成...")
-    action_rec = await ActionRecommender().recommend(ActionRecommenderInput(
-        case_id=CASE_ID, run_id=run_id,
-        issue_list=ranked_tree.issues,
-        evidence_gap_list=[],   # P1.7 暂未启用
-        amount_calculation_report=amount_report,
-    ))
+    action_rec = await ActionRecommender().recommend(
+        ActionRecommenderInput(
+            case_id=CASE_ID,
+            run_id=run_id,
+            issue_list=ranked_tree.issues,
+            evidence_gap_list=[],  # P1.7 暂未启用
+            amount_calculation_report=amount_report,
+        )
+    )
     print(f"    ✓ 建议修改诉请: {len(action_rec.recommended_claim_amendments)} 条")
     print(f"    ✓ 建议放弃: {len(action_rec.claims_to_abandon)} 条")
 
     # P2.12: ExecutiveSummarizer（纯规则，同步）
     print("  - 执行摘要...")
-    exec_summary = ExecutiveSummarizer().summarize(ExecutiveSummarizerInput(
-        case_id=CASE_ID, run_id=run_id,
-        issue_list=ranked_tree.issues,
-        adversary_attack_chain=attack_chain,
-        amount_calculation_report=amount_report,
-        action_recommendation=action_rec,
-        evidence_gap_items=None,    # P1.7 暂未启用
-    ))
+    exec_summary = ExecutiveSummarizer().summarize(
+        ExecutiveSummarizerInput(
+            case_id=CASE_ID,
+            run_id=run_id,
+            issue_list=ranked_tree.issues,
+            adversary_attack_chain=attack_chain,
+            amount_calculation_report=amount_report,
+            action_recommendation=action_rec,
+            evidence_gap_items=None,  # P1.7 暂未启用
+        )
+    )
     print(f"    ✓ Top5 决定性争点: {exec_summary.top5_decisive_issues}")
     print(f"    ✓ 最稳诉请: {exec_summary.current_most_stable_claim[:60]}...")
 
@@ -663,7 +785,9 @@ async def main(claude_only: bool = False) -> None:
     out = _output_dir()
     jp = _write_json(out, result)
     mp = _write_md(
-        out, result, issue_tree,
+        out,
+        result,
+        issue_tree,
         ranked_issues=ranked_tree,
         decision_tree=decision_tree,
         attack_chain=attack_chain,
@@ -672,10 +796,16 @@ async def main(claude_only: bool = False) -> None:
         amount_report=amount_report,
     )
     # 序列化新产物
-    (out / "decision_tree.json").write_text(decision_tree.model_dump_json(indent=2), encoding="utf-8")
-    (out / "executive_summary.json").write_text(exec_summary.model_dump_json(indent=2), encoding="utf-8")
+    (out / "decision_tree.json").write_text(
+        decision_tree.model_dump_json(indent=2), encoding="utf-8"
+    )
+    (out / "executive_summary.json").write_text(
+        exec_summary.model_dump_json(indent=2), encoding="utf-8"
+    )
     (out / "attack_chain.json").write_text(attack_chain.model_dump_json(indent=2), encoding="utf-8")
-    (out / "amount_report.json").write_text(amount_report.model_dump_json(indent=2), encoding="utf-8")
+    (out / "amount_report.json").write_text(
+        amount_report.model_dump_json(indent=2), encoding="utf-8"
+    )
 
     print(f"\n{'=' * 60}")
     print(f"✓ 运行完成")
@@ -696,7 +826,11 @@ if __name__ == "__main__":
         description="民间借贷真实案件对抗模拟（老王诉小陈、老庄）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--claude-only", action="store_true", help="被告也用 Claude CLI（Codex 不可用时的 fallback）")
+    parser.add_argument(
+        "--claude-only",
+        action="store_true",
+        help="被告也用 Claude CLI（Codex 不可用时的 fallback）",
+    )
     args = parser.parse_args()
     try:
         asyncio.run(main(claude_only=args.claude_only))

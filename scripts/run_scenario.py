@@ -71,7 +71,8 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Workspace ID (default: workspace-default)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Enable verbose logging",
     )
@@ -100,12 +101,13 @@ async def _main() -> None:
 
     # Pre-validate: load baseline and change_set to fail fast
     issue_tree, evidence_index, baseline_run_id = load_baseline(baseline)
-    print(f"  \u2713 Loaded baseline: {len(issue_tree.issues)} issues, "
-          f"{len(evidence_index.evidence)} evidence items")
+    print(
+        f"  \u2713 Loaded baseline: {len(issue_tree.issues)} issues, "
+        f"{len(evidence_index.evidence)} evidence items"
+    )
 
     scenario_id, change_items = parse_change_set(change_set)
-    print(f"  \u2713 Parsed change set: scenario={scenario_id}, "
-          f"{len(change_items)} changes")
+    print(f"  \u2713 Parsed change set: scenario={scenario_id}, {len(change_items)} changes")
 
     # Build LLM client
     try:
@@ -139,8 +141,7 @@ async def _main() -> None:
         print(f"    - {iid}")
     print(f"  Diff entries: {len(scenario.diff_summary)}")
     for entry in scenario.diff_summary:
-        print(f"    [{entry.direction.value}] {entry.issue_id}: "
-              f"{entry.impact_description[:80]}")
+        print(f"    [{entry.direction.value}] {entry.issue_id}: {entry.impact_description[:80]}")
 
     out_path = baseline / f"scenario_{scenario.scenario_id}" / "diff_summary.json"
     print(f"\n  Output: {out_path}")

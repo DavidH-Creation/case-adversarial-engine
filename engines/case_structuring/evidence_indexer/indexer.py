@@ -38,7 +38,6 @@ _TOOL_SCHEMA: dict = {
 }
 
 
-
 # 证据类型映射：中文 ↔ 英文 ↔ EvidenceType 枚举
 # Evidence type mapping: Chinese ↔ English ↔ EvidenceType enum
 _EVIDENCE_TYPE_MAP: dict[str, EvidenceType] = {
@@ -133,10 +132,7 @@ class EvidenceIndexer:
 
         if case_type not in PROMPT_REGISTRY:
             available = ", ".join(PROMPT_REGISTRY.keys()) or "(none)"
-            raise ValueError(
-                f"不支持的案由类型: {case_type}。"
-                f"可用类型: {available}"
-            )
+            raise ValueError(f"不支持的案由类型: {case_type}。可用类型: {available}")
         return PROMPT_REGISTRY[case_type]
 
     def _validate_input(self, materials: list[RawMaterial]) -> None:
@@ -232,7 +228,7 @@ class EvidenceIndexer:
                 model=self._model,
                 tool_name="index_evidence",
                 tool_description="从案件材料中提取结构化证据条目列表。"
-                                 "Extract a list of structured evidence items from case materials.",
+                "Extract a list of structured evidence items from case materials.",
                 tool_schema=_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_tokens=self._max_tokens,
@@ -243,6 +239,7 @@ class EvidenceIndexer:
         # Fallback：LLM 返回裸 JSON 数组，由 _extract_json_array 解析
         # Fallback: LLM returns a bare JSON array, parsed by _extract_json_array
         from engines.shared.llm_utils import call_llm_with_retry
+
         raw = await call_llm_with_retry(
             self._llm_client,
             system=system,

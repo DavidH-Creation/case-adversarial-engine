@@ -296,7 +296,10 @@ class TestCompleteJob:
         )
         completed = mgr.complete_job(job.job_id, ref)
         assert completed.result_ref.object_type == "AgentOutput"
-        assert completed.result_ref.storage_ref == "artifacts/private/plaintiff/agent_outputs/out-001.json"
+        assert (
+            completed.result_ref.storage_ref
+            == "artifacts/private/plaintiff/agent_outputs/out-001.json"
+        )
 
 
 # ---------------------------------------------------------------------------

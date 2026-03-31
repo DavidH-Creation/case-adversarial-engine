@@ -186,8 +186,14 @@ def format_parties_block(parties: list[dict]) -> str:
     使用 XML 标签隔离防止注入。
     Uses XML tags to isolate each party against prompt injection.
     """
+
     def _escape(val: str) -> str:
-        return val.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+        return (
+            val.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+        )
 
     blocks = []
     for p in parties:
@@ -227,7 +233,9 @@ def format_issue_tree_block(issue_tree: dict) -> str:
     if child_issues:
         lines.append("\n### 子争点（sub-issues）")
         for issue in child_issues:
-            lines.append(f"\n**{issue['issue_id']}** (父: {issue['parent_issue_id']}): {issue['title']}")
+            lines.append(
+                f"\n**{issue['issue_id']}** (父: {issue['parent_issue_id']}): {issue['title']}"
+            )
             if issue.get("evidence_ids"):
                 lines.append(f"  关联证据: {', '.join(issue['evidence_ids'])}")
 

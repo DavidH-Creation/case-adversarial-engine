@@ -13,6 +13,7 @@ def _no_llm_retry_sleep(monkeypatch):
     """替换 LLM 重试退避中的 sleep 为即时返回，加速测试。
     Replace retry backoff sleep with instant no-op to keep tests fast.
     """
+
     async def _instant_sleep(_delay: float) -> None:  # noqa: RUF029
         await asyncio.sleep(0)
 

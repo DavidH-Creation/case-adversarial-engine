@@ -6,6 +6,7 @@ Unit tests for IssueDependencyGraphGenerator.
 - 纯规则层，无 LLM 依赖
 - 覆盖：空输入、无依赖、线性链、DAG、环路检测、非法引用过滤
 """
+
 from __future__ import annotations
 
 import pytest

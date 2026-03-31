@@ -53,6 +53,7 @@ _BANK_CARD_RE = re.compile(
 # 姓名脱敏辅助 / Name redaction helpers
 # ---------------------------------------------------------------------------
 
+
 def _build_name_map(party_names: Sequence[str]) -> dict[str, str]:
     """从当事人姓名列表构建 姓名→角色代号 映射。
 
@@ -71,6 +72,7 @@ def _build_name_map(party_names: Sequence[str]) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 # 核心脱敏函数 / Core redaction functions
 # ---------------------------------------------------------------------------
+
 
 def redact_id_card(text: str) -> str:
     """将身份证号替换为 `***`。"""

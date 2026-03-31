@@ -4,6 +4,7 @@ Engine-specific schemas for hearing_order.
 
 共享类型从 engines.shared.models 导入；本模块只保留引擎 I/O wrapper。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -32,6 +33,7 @@ class HearingPhase(BaseModel):
         estimated_duration_minutes:     本阶段预估庭审时长（分钟）
         phase_rationale:                阶段划分依据说明
     """
+
     phase_id: str = Field(..., min_length=1)
     phase_name: str = Field(..., min_length=1)
     issue_ids: list[str] = Field(default_factory=list)
@@ -41,6 +43,7 @@ class HearingPhase(BaseModel):
 
 class IssueTimeEstimate(BaseModel):
     """单个争点的庭审时间预估。"""
+
     issue_id: str = Field(..., min_length=1)
     estimated_minutes: int = Field(ge=1)
     rationale: str = Field(default="")
@@ -59,6 +62,7 @@ class PartyPosition(BaseModel):
         role:           角色（"plaintiff" / "defendant"）
         priority_issue_ids: 该方希望优先审理的争点 ID 列表
     """
+
     party_id: str = Field(..., min_length=1)
     role: str = Field(..., pattern=r"^(plaintiff|defendant)$")
     priority_issue_ids: list[str] = Field(default_factory=list)
@@ -73,6 +77,7 @@ class HearingOrderInput(BaseModel):
         issues:             含 P0.1 富化字段的争点列表
         party_positions:    当事方庭审立场列表（可选）
     """
+
     case_id: str = Field(..., min_length=1)
     dependency_graph: IssueDependencyGraph
     issues: list[Issue] = Field(default_factory=list)
@@ -98,12 +103,11 @@ class HearingOrderResult(BaseModel):
         metadata:                           构建元信息
         created_at:                         ISO-8601 时间戳
     """
+
     order_id: str = Field(..., min_length=1)
     case_id: str = Field(..., min_length=1)
     phases: list[HearingPhase]
-    issue_presentation_order: list[str] = Field(
-        description="全量争点建议出庭顺序（issue_id 列表）"
-    )
+    issue_presentation_order: list[str] = Field(description="全量争点建议出庭顺序（issue_id 列表）")
     issue_time_estimates: list[IssueTimeEstimate] = Field(default_factory=list)
     total_estimated_duration_minutes: int = Field(ge=0)
     ordering_rationale: str = Field(default="")

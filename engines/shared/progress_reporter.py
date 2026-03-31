@@ -2,6 +2,7 @@
 ProgressReporter — 管道步骤进度上报抽象与实现。
 Pipeline step progress reporter: abstract interface + CLI + SSE implementations.
 """
+
 from __future__ import annotations
 
 import abc

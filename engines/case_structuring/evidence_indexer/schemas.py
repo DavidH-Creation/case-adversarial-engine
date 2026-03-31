@@ -37,6 +37,7 @@ class EvidenceIndexResult(BaseModel):
     Working format: case_id + evidence list + metadata.
     NOTE: 磁盘 artifact 格式（含 artifact_id, evidences 等）由 WorkspaceManager 负责序列化。
     """
+
     case_id: str = Field(..., min_length=1)
     evidence: list[Evidence]
     extraction_metadata: dict[str, Any] = Field(
@@ -52,6 +53,7 @@ class EvidenceIndexResult(BaseModel):
 
 class LLMEvidenceItem(BaseModel):
     """LLM 返回的单条证据提取结果（尚未补全 ID 等字段）。"""
+
     title: str
     summary: str
     evidence_type: str  # 中文或英文均可，indexer 负责映射

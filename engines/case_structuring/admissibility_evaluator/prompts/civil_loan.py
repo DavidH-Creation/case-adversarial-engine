@@ -5,6 +5,7 @@ LLM prompt templates for civil loan case type admissibility evaluation.
 指导 LLM 为每份证据评估可采性评分（admissibility_score）、质疑理由
 （admissibility_challenges）及排除影响（exclusion_impact），输出严格 JSON。
 """
+
 from __future__ import annotations
 
 from engines.shared.models import EvidenceIndex, EvidenceType
@@ -112,9 +113,7 @@ def build_user_prompt(*, evidence_index: EvidenceIndex) -> str:
             line += " | ⚠️ 仅有复印件"
         lines.append(line)
 
-    evidence_block = "【待评估证据列表】\n" + (
-        "\n".join(lines) if lines else "  （无证据）"
-    )
+    evidence_block = "【待评估证据列表】\n" + ("\n".join(lines) if lines else "  （无证据）")
 
     return f"""\
 {evidence_block}

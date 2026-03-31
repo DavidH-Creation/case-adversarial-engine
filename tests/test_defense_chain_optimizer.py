@@ -6,6 +6,7 @@ Unit tests for DefenseChainOptimizer.
 - 使用 MockLLMClient，不依赖真实 LLM
 - 覆盖：空争点、正常流程、证据 ID 校验、LLM 失败降级、优先级排序
 """
+
 from __future__ import annotations
 
 import json
@@ -99,11 +100,14 @@ def _make_input(
 
 
 def _mock_response(defense_points: list[dict], confidence: float = 0.8) -> str:
-    return json.dumps({
-        "defense_points": defense_points,
-        "confidence_score": confidence,
-        "strategic_summary": "整体防御策略摘要",
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "defense_points": defense_points,
+            "confidence_score": confidence,
+            "strategic_summary": "整体防御策略摘要",
+        },
+        ensure_ascii=False,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -126,15 +130,19 @@ async def test_empty_issues_returns_empty_chain():
 async def test_happy_path_basic():
     """正常流程：LLM 返回有效防御论点，正确构建 DefenseChain。"""
     issues = [_make_issue("ISS-001", OutcomeImpact.high)]
-    mock = MockLLMClient(response=_mock_response([
-        {
-            "issue_id": "ISS-001",
-            "defense_strategy": "主张借贷关系成立",
-            "supporting_argument": "借条原件 + 银行转账回单证明本金交付",
-            "evidence_ids": ["EV-001"],
-            "priority": 1,
-        }
-    ]))
+    mock = MockLLMClient(
+        response=_mock_response(
+            [
+                {
+                    "issue_id": "ISS-001",
+                    "defense_strategy": "主张借贷关系成立",
+                    "supporting_argument": "借条原件 + 银行转账回单证明本金交付",
+                    "evidence_ids": ["EV-001"],
+                    "priority": 1,
+                }
+            ]
+        )
+    )
     optimizer = DefenseChainOptimizer(llm_client=mock)
     result = await optimizer.optimize(_make_input(issues))
 
@@ -152,15 +160,19 @@ async def test_happy_path_basic():
 async def test_unknown_issue_id_filtered():
     """LLM 返回未知 issue_id 被过滤，对应争点记入 unevaluated。"""
     issues = [_make_issue("ISS-REAL")]
-    mock = MockLLMClient(response=_mock_response([
-        {
-            "issue_id": "ISS-FAKE-999",
-            "defense_strategy": "不存在的争点",
-            "supporting_argument": "无效",
-            "evidence_ids": [],
-            "priority": 1,
-        }
-    ]))
+    mock = MockLLMClient(
+        response=_mock_response(
+            [
+                {
+                    "issue_id": "ISS-FAKE-999",
+                    "defense_strategy": "不存在的争点",
+                    "supporting_argument": "无效",
+                    "evidence_ids": [],
+                    "priority": 1,
+                }
+            ]
+        )
+    )
     optimizer = DefenseChainOptimizer(llm_client=mock)
     result = await optimizer.optimize(_make_input(issues))
 
@@ -172,15 +184,19 @@ async def test_unknown_issue_id_filtered():
 async def test_invalid_evidence_ids_filtered():
     """非法证据 ID 被过滤，不因此丢弃整条论点。"""
     issues = [_make_issue("ISS-002")]
-    mock = MockLLMClient(response=_mock_response([
-        {
-            "issue_id": "ISS-002",
-            "defense_strategy": "有效策略",
-            "supporting_argument": "有效论证",
-            "evidence_ids": ["EV-001", "EV-FAKE-999"],  # EV-FAKE-999 不存在
-            "priority": 1,
-        }
-    ]))
+    mock = MockLLMClient(
+        response=_mock_response(
+            [
+                {
+                    "issue_id": "ISS-002",
+                    "defense_strategy": "有效策略",
+                    "supporting_argument": "有效论证",
+                    "evidence_ids": ["EV-001", "EV-FAKE-999"],  # EV-FAKE-999 不存在
+                    "priority": 1,
+                }
+            ]
+        )
+    )
     optimizer = DefenseChainOptimizer(llm_client=mock)
     result = await optimizer.optimize(_make_input(issues))
 
@@ -192,15 +208,19 @@ async def test_invalid_evidence_ids_filtered():
 async def test_missing_strategy_marks_unevaluated():
     """缺少 defense_strategy 或 supporting_argument 时标记为 unevaluated。"""
     issues = [_make_issue("ISS-003")]
-    mock = MockLLMClient(response=_mock_response([
-        {
-            "issue_id": "ISS-003",
-            "defense_strategy": "",  # 空值
-            "supporting_argument": "有论证",
-            "evidence_ids": [],
-            "priority": 1,
-        }
-    ]))
+    mock = MockLLMClient(
+        response=_mock_response(
+            [
+                {
+                    "issue_id": "ISS-003",
+                    "defense_strategy": "",  # 空值
+                    "supporting_argument": "有论证",
+                    "evidence_ids": [],
+                    "priority": 1,
+                }
+            ]
+        )
+    )
     optimizer = DefenseChainOptimizer(llm_client=mock)
     result = await optimizer.optimize(_make_input(issues))
 
@@ -216,14 +236,33 @@ async def test_priority_renumbered_consecutively():
         _make_issue("ISS-B"),
         _make_issue("ISS-C"),
     ]
-    mock = MockLLMClient(response=_mock_response([
-        {"issue_id": "ISS-B", "defense_strategy": "B策略", "supporting_argument": "B论证",
-         "evidence_ids": [], "priority": 5},
-        {"issue_id": "ISS-A", "defense_strategy": "A策略", "supporting_argument": "A论证",
-         "evidence_ids": [], "priority": 2},
-        {"issue_id": "ISS-C", "defense_strategy": "C策略", "supporting_argument": "C论证",
-         "evidence_ids": [], "priority": 10},
-    ]))
+    mock = MockLLMClient(
+        response=_mock_response(
+            [
+                {
+                    "issue_id": "ISS-B",
+                    "defense_strategy": "B策略",
+                    "supporting_argument": "B论证",
+                    "evidence_ids": [],
+                    "priority": 5,
+                },
+                {
+                    "issue_id": "ISS-A",
+                    "defense_strategy": "A策略",
+                    "supporting_argument": "A论证",
+                    "evidence_ids": [],
+                    "priority": 2,
+                },
+                {
+                    "issue_id": "ISS-C",
+                    "defense_strategy": "C策略",
+                    "supporting_argument": "C论证",
+                    "evidence_ids": [],
+                    "priority": 10,
+                },
+            ]
+        )
+    )
     optimizer = DefenseChainOptimizer(llm_client=mock)
     result = await optimizer.optimize(_make_input(issues))
 

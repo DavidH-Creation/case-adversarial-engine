@@ -6,6 +6,7 @@ Engine-specific schemas for issue_impact_ranker.
 Shared types imported from engines.shared.models; this module only keeps
 input/output wrappers and LLM intermediate models.
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -33,6 +34,7 @@ class LLMSingleIssueEvaluation(BaseModel):
     """LLM 对单个争点的评估输出（中间模型，由规则层进一步校验）。
     LLM evaluation output for a single issue (intermediate model, validated by rule layer).
     """
+
     issue_id: str = Field(..., min_length=1)
     outcome_impact: str = Field(default="")
     impact_targets: list[str] = Field(default_factory=list)
@@ -62,6 +64,7 @@ class LLMSingleIssueEvaluation(BaseModel):
 
 class LLMIssueEvaluationOutput(BaseModel):
     """LLM 批量评估输出（中间模型）。LLM batch evaluation output (intermediate model)."""
+
     evaluations: list[LLMSingleIssueEvaluation]
 
 
@@ -81,6 +84,7 @@ class IssueImpactRankerInput(BaseModel):
         amount_calculation_report:  P0.2 产物（必须已完成）
         proponent_party_id:         主张方 party_id，对应 Burden.burden_party_id
     """
+
     case_id: str = Field(..., min_length=1)
     run_id: str = Field(..., min_length=1)
     issue_tree: IssueTree
@@ -102,6 +106,7 @@ class IssueImpactRankingResult(BaseModel):
     unevaluated_issue_ids:  未能评估或校验失败的争点 ID（供审计）
     created_at:             ISO-8601 时间戳
     """
+
     ranked_issue_tree: IssueTree
     evaluation_metadata: dict[str, Any] = Field(default_factory=dict)
     unevaluated_issue_ids: list[str] = Field(default_factory=list)

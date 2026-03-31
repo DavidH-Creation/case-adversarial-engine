@@ -20,6 +20,7 @@ Evidence Weight Scorer — main class for P1.5.
 - LLM 失败时返回原始 EvidenceIndex（evidence_weight_scored 保持 False），不抛异常
 - 空证据列表不调用 LLM
 """
+
 from __future__ import annotations
 
 import logging
@@ -123,12 +124,15 @@ class EvidenceWeightScorer:
                 ev.evidence_weight_scored = True
                 # v7: 计算 stability_score（稳 ≠ 强）
                 ev.stability_score = self._compute_stability_score(
-                    item["authenticity_risk"], item["vulnerability"],
+                    item["authenticity_risk"],
+                    item["vulnerability"],
                 )
                 # v7: 派生 admissibility_status
                 ev.admissibility_status = self._derive_admissibility_status(
-                    item["authenticity_risk"], item["vulnerability"],
-                    ev.admissibility_challenges, ev.status.value if ev.status else "",
+                    item["authenticity_risk"],
+                    item["vulnerability"],
+                    ev.admissibility_challenges,
+                    ev.status.value if ev.status else "",
                 )
             updated_evidence.append(ev)
 
@@ -142,9 +146,7 @@ class EvidenceWeightScorer:
     # 私有方法
     # ------------------------------------------------------------------
 
-    async def _call_llm(
-        self, inp: EvidenceWeightScorerInput
-    ) -> LLMEvidenceWeightOutput | None:
+    async def _call_llm(self, inp: EvidenceWeightScorerInput) -> LLMEvidenceWeightOutput | None:
         """调用 LLM（结构化输出优先，fallback 到 json_utils），失败时返回 None（不抛异常）。
         Call LLM (structured output first, fallback to json_utils); returns None on failure.
         """
@@ -159,8 +161,8 @@ class EvidenceWeightScorer:
                 model=self._model,
                 tool_name="score_evidence_weights",
                 tool_description="对案件证据进行四维度权重评分（真实性风险、相关度、证明力、脆弱性）。"
-                                 "Score case evidence on four dimensions: authenticity risk, "
-                                 "relevance, probative value, and vulnerability.",
+                "Score case evidence on four dimensions: authenticity risk, "
+                "relevance, probative value, and vulnerability.",
                 tool_schema=_TOOL_SCHEMA,
                 temperature=self._temperature,
                 max_retries=self._max_retries,
@@ -244,7 +246,11 @@ class EvidenceWeightScorer:
         区别于 probative_value（冲击力/表面说服力）。
         排序时 stability_score 优先于 probative_value。
         """
-        _AR_SCORE = {AuthenticityRisk.low: 1.0, AuthenticityRisk.medium: 0.6, AuthenticityRisk.high: 0.2}
+        _AR_SCORE = {
+            AuthenticityRisk.low: 1.0,
+            AuthenticityRisk.medium: 0.6,
+            AuthenticityRisk.high: 0.2,
+        }
         _VL_SCORE = {Vulnerability.low: 1.0, Vulnerability.medium: 0.6, Vulnerability.high: 0.2}
         ar_s = _AR_SCORE.get(authenticity_risk, 0.5)
         vl_s = _VL_SCORE.get(vulnerability, 0.5)
