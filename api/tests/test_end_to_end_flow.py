@@ -307,9 +307,9 @@ class TestEndToEndFlow:
 
         assert rec.status == CaseStatus.analyzed
 
-        # Simulate restart
+        # Simulate restart: direct _cases.clear() bypasses TTL eviction,
+        # so get() now falls back to disk. Use load_from_workspace() for explicit recovery.
         store._cases.clear()
-        assert store.get(case_id) is None
 
         recovered = store.load_from_workspace(case_id)
         assert recovered is not None
