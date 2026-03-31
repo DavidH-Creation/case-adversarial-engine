@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from .schemas import (
@@ -28,7 +28,7 @@ from .schemas import (
     CreateCaseResponse,
     ExtractionResponse,
 )
-from .service import run_analysis, run_extraction, store
+from .service import get_artifact, list_artifacts, run_analysis, run_extraction, store
 
 # ---------------------------------------------------------------------------
 # 应用初始化
@@ -361,6 +361,65 @@ async def download_report(case_id: str):
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         filename=f"case_{case_id[-8:]}_report.docx",
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/cases/{case_id}/artifacts — 列出所有产物文件名
+# ---------------------------------------------------------------------------
+
+@app.get("/api/cases/{case_id}/artifacts")
+async def list_case_artifacts(case_id: str):
+    """列出该 run 所有已就绪的产物文件名。"""
+    record = store.get(case_id)
+    if record is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"案件不存在：{case_id}", "code": 404},
+        )
+    return {"run_id": case_id, "artifacts": list_artifacts(record)}
+
+
+# ---------------------------------------------------------------------------
+# GET /api/cases/{case_id}/artifacts/{artifact_name} — 获取具体产物 JSON
+# ---------------------------------------------------------------------------
+
+@app.get("/api/cases/{case_id}/artifacts/{artifact_name}")
+async def get_case_artifact(case_id: str, artifact_name: str):
+    """获取具体产物 JSON（分析完成后可用）。"""
+    record = store.get(case_id)
+    if record is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"案件不存在：{case_id}", "code": 404},
+        )
+    artifact = get_artifact(record, artifact_name)
+    if artifact is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"产物尚不可用：{artifact_name}", "code": 404},
+        )
+    return artifact
+
+
+# ---------------------------------------------------------------------------
+# GET /api/cases/{case_id}/report/markdown — 获取 Markdown 格式报告
+# ---------------------------------------------------------------------------
+
+@app.get("/api/cases/{case_id}/report/markdown")
+async def get_markdown_report(case_id: str):
+    """获取 Markdown 格式分析报告内容（分析完成后可用）。"""
+    record = store.get(case_id)
+    if record is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"案件不存在：{case_id}", "code": 404},
+        )
+    if record.report_markdown is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "报告尚不可用，请先完成分析", "code": 404},
+        )
+    return Response(content=record.report_markdown, media_type="text/markdown")
 
 
 # ---------------------------------------------------------------------------
