@@ -1,0 +1,165 @@
+# 劳动合同解除纠纷：李某诉某科技公司（2025年）
+# Labor contract dissolution dispute: Li v Tech Co. (2025)
+
+case_id: "case-labor-dispute-li-v-techco-2025"
+case_slug: "litechco2025"
+case_type: "labor_dispute"
+model: "claude-sonnet-4-6"
+
+parties:
+  plaintiff:
+    party_id: "party-plaintiff-li"
+    name: "李某"
+  defendant:
+    party_id: "party-defendant-techco"
+    name: "某科技有限公司"
+
+summary:
+  - ["原告", "李某（前研发工程师）"]
+  - ["被告", "某科技有限公司"]
+  - ["劳动关系起止", "2022年3月—2025年1月"]
+  - ["解除原因（被告主张）", "严重违纪：泄露公司商业秘密"]
+  - ["原告主张", "被告违法解除，要求赔偿金及未付工资"]
+  - ["争议金额", "赔偿金9.6万元 + 拖欠工资1.2万元"]
+  - ["核心争议", "解除是否合法；商业秘密指控是否成立"]
+
+materials:
+  plaintiff:
+    - source_id: "src-p-contract"
+      text: |
+        劳动合同（2022年3月1日签订）：
+        甲方：某科技有限公司
+        乙方：李某
+        职位：高级研发工程师
+        月薪：16,000元
+        合同期限：2022年3月1日至2025年2月28日
+      metadata:
+        document_type: "labor_contract"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-termination-notice"
+      text: |
+        解除劳动合同通知书（2025年1月15日）：
+        公司以"严重违反公司保密制度，泄露核心技术资料"为由，
+        即时解除与李某的劳动合同，不支付任何补偿。
+        落款：某科技有限公司人力资源部
+      metadata:
+        document_type: "termination_notice"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-salary-records"
+      text: |
+        银行流水记录：
+        2024年10月  某科技公司→李某  16,000元（正常发放）
+        2024年11月  某科技公司→李某  16,000元（正常发放）
+        2024年12月  某科技公司→李某  4,000元（少发12,000元，原因不明）
+        2025年1月   某科技公司→李某  0元（解除前已停发）
+        主张：被告拖欠2024年12月差额12,000元，合计欠薪12,000元。
+      metadata:
+        document_type: "bank_transfer_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-wechat-work"
+      text: |
+        企业微信聊天记录（2024年12月—2025年1月）：
+        证明：原告发送的技术文件均通过公司内部渠道，未向外部泄露；
+        所谓"泄露"系原告在公司自用电脑上备份工作文件，符合公司惯例。
+      metadata:
+        document_type: "communication_records"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-p-colleagues-statement"
+      text: |
+        同事书面证明（张某、王某签署）：
+        证明：公司技术部门历来允许员工在本机备份工作文件；
+        公司从未就此行为进行过任何告知或警告。
+      metadata:
+        document_type: "witness_statement"
+        submitter: "plaintiff"
+        status: "admitted_for_discussion"
+
+  defendant:
+    - source_id: "src-d-nda"
+      text: |
+        保密协议（2022年3月1日签订）：
+        李某承诺不得将公司技术资料、客户名单等商业秘密传输至外部设备或账户。
+        违反者，公司有权立即解除合同，并追究违约责任。
+      metadata:
+        document_type: "nda_agreement"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-it-log"
+      text: |
+        IT系统日志（2025年1月10日）：
+        记录显示李某账户于2025年1月10日通过U盘将312个文件（包含源代码）
+        拷贝至外部存储设备，文件总大小2.3GB。
+        IT部门认定涉及核心产品技术文档。
+      metadata:
+        document_type: "system_log"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+    - source_id: "src-d-discipline-record"
+      text: |
+        公司规章制度（已公示）第12条：
+        "员工未经授权将公司资料拷贝至外部设备，视为严重违纪，
+        公司有权依《劳动合同法》第39条立即解除劳动合同。"
+        公示记录显示全员已于2022年4月签署知悉确认书。
+      metadata:
+        document_type: "company_policy"
+        submitter: "defendant"
+        status: "admitted_for_discussion"
+
+claims:
+  - claim_id: "c-001"
+    claim_category: "违法解除赔偿金"
+    title: "被告支付违法解除劳动合同赔偿金96,000元"
+    claim_text: >
+      被告以虚假理由违法解除劳动合同，依据《劳动合同法》第87条，
+      应按经济补偿标准的两倍支付赔偿金。
+      原告工龄3年，月均工资16,000元，赔偿金=16,000×3×2=96,000元。
+
+  - claim_id: "c-002"
+    claim_category: "拖欠工资"
+    title: "被告补发2024年12月拖欠工资12,000元"
+    claim_text: >
+      2024年12月被告仅发放4,000元，与合同约定月薪16,000元相差12,000元，
+      被告应补足欠付工资12,000元。
+
+  - claim_id: "c-003"
+    claim_category: "诉讼费用"
+    title: "被告承担全部诉讼费用"
+    claim_text: "被告承担本案全部仲裁及诉讼费用。"
+
+defenses:
+  - defense_id: "d-001"
+    defense_category: "合法解除"
+    against_claim_id: "c-001"
+    title: "原告严重违纪，公司依法解除合同"
+    defense_text: >
+      IT日志证实原告擅自将312个核心技术文件拷贝至U盘，
+      违反双方签署的保密协议及公司规章制度第12条。
+      上述行为属于严重违纪，公司依《劳动合同法》第39条即时解除合同合法，
+      无需支付补偿或赔偿。
+
+  - defense_id: "d-002"
+    defense_category: "工资核减有据"
+    against_claim_id: "c-002"
+    title: "2024年12月工资核减系绩效考核扣款，有合同依据"
+    defense_text: >
+      劳动合同附件绩效考核制度明确：季度绩效不达标可扣减当月奖金。
+      2024年第四季度原告KPI完成率仅62%，依制度扣减绩效奖金12,000元，
+      非无故拖欠，有合法依据。
+
+  - defense_id: "d-003"
+    defense_category: "规章制度合规"
+    against_claim_id: "c-001"
+    title: "公司规章制度已依法民主制定并公示"
+    defense_text: >
+      公司保密制度经职工代表大会审议通过，并于2022年4月全员公示，
+      原告已签署知悉确认书，规章制度程序合规，对原告具有约束力。
