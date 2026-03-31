@@ -74,6 +74,10 @@ class CaseRecord:
         self.analysis_data: Optional[dict] = None
         # 生成的报告路径
         self.report_path: Optional[Path] = None
+        # 中间产物（按文件名索引的 JSON 字典）
+        self.artifacts: dict[str, Any] = {}
+        # Markdown 格式报告内容
+        self.report_markdown: Optional[str] = None
         # 进度日志
         self.progress: list[str] = []
         self.error: Optional[str] = None
@@ -398,6 +402,17 @@ async def run_analysis(record: CaseRecord) -> None:
         except Exception as doc_err:
             record.log(f"[警告] Word 报告生成失败（{doc_err}），可继续使用分析结果")
 
+        # 存储产物
+        record.artifacts["result.json"] = result_dict
+        record.artifacts["analysis_summary.json"] = record.analysis_data
+
+        # 生成 Markdown 报告
+        try:
+            record.report_markdown = _generate_markdown_report(record)
+            record.artifacts["report.md"] = record.report_markdown
+        except Exception as md_err:
+            record.log(f"[警告] Markdown 报告生成失败（{md_err}），可继续使用分析结果")
+
         record.status = CaseStatus.analyzed
         record.log("[分析] 完成 ✓")
 
@@ -467,6 +482,89 @@ class ScenarioService:
 
 # 全局单例
 scenario_service = ScenarioService(_PROJECT_ROOT / "outputs")
+
+
+# ---------------------------------------------------------------------------
+# 产物访问（供 API 端点调用）
+# ---------------------------------------------------------------------------
+
+def list_artifacts(record: CaseRecord) -> list[str]:
+    """返回该 run 所有已就绪的产物文件名。"""
+    return list(record.artifacts.keys())
+
+
+def get_artifact(record: CaseRecord, name: str) -> Optional[Any]:
+    """返回具体产物内容，不存在时返回 None。"""
+    return record.artifacts.get(name)
+
+
+# ---------------------------------------------------------------------------
+# Markdown 报告生成
+# ---------------------------------------------------------------------------
+
+def _generate_markdown_report(record: CaseRecord) -> str:
+    """从 analysis_data 和 case info 生成 Markdown 格式报告。"""
+    info = record.info
+    analysis = record.analysis_data or {}
+    plaintiff_name = info.get("plaintiff", {}).get("name", "原告")
+    defendant_name = info.get("defendant", {}).get("name", "被告")
+    case_type = info.get("case_type", "unknown")
+
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    lines: list[str] = [
+        f"# {case_type} 对抗分析报告",
+        "",
+        f"**案件ID**: {record.case_id}  |  **生成时间**: {ts}",
+        "",
+        "## 案件摘要",
+        "",
+        "| 项目 | 内容 |",
+        "|------|------|",
+        f"| 原告 | {plaintiff_name} |",
+        f"| 被告 | {defendant_name} |",
+        f"| 案件类型 | {case_type} |",
+        "",
+    ]
+
+    overall = analysis.get("overall_assessment")
+    if overall:
+        lines += ["## 综合评估", "", overall, ""]
+
+    unresolved = analysis.get("unresolved_issues", [])
+    if unresolved:
+        lines += ["## 未解决争点", ""]
+        for issue_id in unresolved:
+            lines.append(f"- {issue_id}")
+        lines.append("")
+
+    rounds = analysis.get("rounds", [])
+    if rounds:
+        lines += ["## 三轮对抗记录", ""]
+        for rd in rounds:
+            lines.append(f"### Round {rd.get('round_number', '?')}（{rd.get('phase', '')}）")
+            lines.append("")
+            for o in rd.get("outputs", []):
+                role = o.get("agent_role_code", "")
+                title = o.get("title", "")
+                body = o.get("body", "")
+                lines.append(f"**{role}** — {title}")
+                lines.append("")
+                lines.append(body)
+                citations = o.get("evidence_citations", [])
+                if citations:
+                    lines.append(f"\n*引用证据*: {', '.join(citations)}")
+                lines += ["---", ""]
+
+    conflicts = analysis.get("evidence_conflicts", [])
+    if conflicts:
+        lines += ["## 证据冲突", ""]
+        for c in conflicts:
+            issue_id = c.get("issue_id", "")
+            desc = c.get("description", "")
+            lines.append(f"- `{issue_id}`: {desc}")
+        lines.append("")
+
+    return "\n".join(lines)
 
 
 def _build_case_data_dict(record: CaseRecord) -> dict[str, Any]:
