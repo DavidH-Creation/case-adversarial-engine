@@ -218,6 +218,7 @@ def generate_docx_report(
         attack_chain:    OptimalAttackChain 序列��� dict（可选）
         exec_summary:    ExecutiveSummaryArtifact 序列化 dict（可选���
         amount_report:   AmountCalculationReport 序列化 dict（可选）
+        similar_cases:   RankedCase 序列化 dict 列表（可选，类案检索结果）
         filename:        自定义文件名（默认 "对抗分析报告.docx"）
 
     Returns:

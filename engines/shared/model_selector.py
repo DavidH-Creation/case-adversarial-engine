@@ -51,6 +51,7 @@ DEFAULT_TASK_TIERS: dict[str, ModelTier] = {
     "issue_classifier": ModelTier.fast,
     "issue_category_classifier": ModelTier.fast,
     "hearing_order": ModelTier.fast,
+    "keyword_extractor": ModelTier.fast,
     # balanced — core analysis
     "plaintiff_agent": ModelTier.balanced,
     "defendant_agent": ModelTier.balanced,
@@ -62,6 +63,7 @@ DEFAULT_TASK_TIERS: dict[str, ModelTier] = {
     "decision_path_tree": ModelTier.balanced,
     "attack_chain_optimizer": ModelTier.balanced,
     "issue_dependency_graph": ModelTier.balanced,
+    "relevance_ranker": ModelTier.balanced,
     # deep — complex reasoning
     "executive_summarizer": ModelTier.deep,
     "scenario_simulator": ModelTier.deep,
