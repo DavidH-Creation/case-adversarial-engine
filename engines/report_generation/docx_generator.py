@@ -204,6 +204,7 @@ def generate_docx_report(
     amount_report: dict | None = None,
     action_rec: Any = None,
     document_drafts: list | None = None,
+    similar_cases: list | None = None,
     filename: str | None = None,
 ) -> Path:
     """生成通用对抗分析 Word 报告。
@@ -272,6 +273,9 @@ def generate_docx_report(
     # ── 文书草稿 ──
     if document_drafts:
         _render_document_drafts(doc, document_drafts)
+    # ── 类案检索参考 ──
+    if similar_cases:
+        _render_similar_cases(doc, similar_cases)
 
     # 保存
     if filename is None:
@@ -961,3 +965,82 @@ def _render_list_section(doc, label: str, items: list[str]) -> None:
     doc.add_heading(label, level=3)
     for item in items:
         _bullet(doc, item, size=SZ_NORMAL, color=CLR_BODY)
+
+
+def _render_similar_cases(doc, similar_cases: list) -> None:
+    """类案检索参考章节。
+
+    Args:
+        similar_cases: RankedCase 序列化 dict 列表（model_dump 输出）
+    """
+    _styled(doc, "类案检索参考", bold=True, size=SZ_SUBTITLE, color=CLR_TITLE_DARK)
+    _styled(
+        doc,
+        "以下案例来源于人民法院案例库（rmfyalk.court.gov.cn），经最高人民法院审核认可，"
+        "按与本案相关性由高到低排列。",
+        size=SZ_NORMAL,
+        color=CLR_GRAY,
+    )
+    doc.add_paragraph()
+
+    for idx, rc in enumerate(similar_cases, 1):
+        case_info = rc.get("case", rc) if isinstance(rc, dict) else rc
+        relevance = rc.get("relevance", {}) if isinstance(rc, dict) else {}
+        analysis = rc.get("analysis", "") if isinstance(rc, dict) else ""
+
+        if isinstance(case_info, dict):
+            case_number = case_info.get("case_number", "")
+            court = case_info.get("court", "")
+            cause = case_info.get("cause_of_action", "")
+            kw_list = case_info.get("keywords", [])
+            summary = case_info.get("summary", "")
+            url = case_info.get("url", "")
+        else:
+            case_number = getattr(case_info, "case_number", "")
+            court = getattr(case_info, "court", "")
+            cause = getattr(case_info, "cause_of_action", "")
+            kw_list = getattr(case_info, "keywords", [])
+            summary = getattr(case_info, "summary", "")
+            url = getattr(case_info, "url", "")
+
+        if isinstance(relevance, dict):
+            overall = relevance.get("overall", 0)
+        else:
+            overall = getattr(relevance, "overall", 0)
+
+        # 标题行
+        p_title = doc.add_paragraph()
+        _add_run(
+            p_title,
+            f"类案 {idx}：{case_number}",
+            bold=True,
+            size=SZ_SECTION_HDR,
+            color=CLR_BLUE,
+        )
+
+        # 基本信息表格
+        table = doc.add_table(rows=5, cols=2, style="Table Grid")
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        fields = [
+            ("审理法院", court),
+            ("案由", cause),
+            ("关键词", "、".join(kw_list) if kw_list else "—"),
+            ("裁判要旨", summary or "—"),
+            ("相关性评分", f"{overall:.0%}"),
+        ]
+        for row_idx, (label, value) in enumerate(fields):
+            table.cell(row_idx, 0).text = label
+            table.cell(row_idx, 1).text = str(value)
+        _set_table_font(table)
+
+        # 相关性分析
+        if analysis:
+            p_analysis = doc.add_paragraph()
+            _add_run(p_analysis, "与本案相关性分析：", bold=True, size=SZ_NORMAL, color=CLR_BODY)
+            _styled(doc, str(analysis), size=SZ_NORMAL, color=CLR_BODY)
+
+        # 案例库链接
+        if url:
+            _styled(doc, f"案例库链接：{url}", size=SZ_EVIDENCE, color=CLR_GRAY)
+
+        doc.add_paragraph()  # 案例间间隔
