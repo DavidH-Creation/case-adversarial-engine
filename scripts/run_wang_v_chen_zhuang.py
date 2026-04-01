@@ -446,7 +446,7 @@ def _write_md(
             lines.append(f"**可能结果**: {path.possible_outcome}")
             if path.confidence_interval:
                 ci = path.confidence_interval
-                lines.append(f"**置信区间**: {ci.low:.0%} ~ {ci.high:.0%}")
+                lines.append(f"**置信区间**: {ci.lower:.0%} ~ {ci.upper:.0%}")
             if path.path_notes:
                 lines.append(f"**备注**: {path.path_notes}")
             lines.append("")
@@ -615,7 +615,7 @@ async def main(claude_only: bool = False) -> None:
     print("民间借贷纠纷对抗模拟 — 真实案件（2025年，老王诉小陈、老庄）")
     print("=" * 60)
 
-    claude = ClaudeCLIClient(timeout=180.0)
+    claude = ClaudeCLIClient(timeout=600.0)
     if claude_only:
         print("\n[配置] 全部代理使用 Claude CLI（--claude-only 模式）")
         codex = claude
