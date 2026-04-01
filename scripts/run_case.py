@@ -1142,6 +1142,7 @@ async def main(
     model_config: str | None = None,
     max_tokens_per_output: int = 2000,
     with_mediation: bool = False,
+    perspective: str = "neutral",
 ) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
@@ -1488,20 +1489,31 @@ async def main(
         try:
             print("\n[Step 4] Writing outputs...")
             jp = _write_json(out, result)
-            mp = _write_md(
-                out,
-                result,
-                issue_tree,
-                case_data,
+            # V3 four-layer report
+            from engines.report_generation.v3.report_writer import (
+                build_four_layer_report,
+                write_v3_report_md,
+            )
+            v3_report = build_four_layer_report(
+                adversarial_result=result,
+                issue_tree=issue_tree,
+                evidence_index=ev_index,
+                case_data=case_data,
                 ranked_issues=artifacts.get("ranked_issues"),
                 decision_tree=artifacts.get("decision_tree"),
                 attack_chain=artifacts.get("attack_chain"),
+                defense_chain=artifacts.get("defense_chain"),
                 action_rec=artifacts.get("action_rec"),
                 exec_summary=artifacts.get("exec_summary"),
                 amount_report=artifacts.get("amount_report"),
-                evidence_gaps=artifacts.get("evidence_gaps"),
-                no_redact=no_redact,
-                with_mediation=with_mediation,
+                hearing_order=artifacts.get("hearing_order"),
+                perspective=perspective,
+            )
+            mp = write_v3_report_md(out, v3_report, case_data, no_redact=no_redact)
+            # Also save V3 report data as JSON
+            _v3_json_path = out / "report_v3.json"
+            _v3_json_path.write_text(
+                v3_report.model_dump_json(indent=2), encoding="utf-8"
             )
             ckpt.save(STEP_OUTPUTS, {"result_json": str(jp), "report_md": str(mp)})
             reporter.on_step_complete(4, "Write Outputs")
@@ -1778,6 +1790,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Include mediation range analysis in report (default: off)",
     )
+    parser.add_argument(
+        "--perspective",
+        choices=["plaintiff", "defendant", "neutral"],
+        default="neutral",
+        help="Report perspective: plaintiff/defendant/neutral (default: neutral — shows both sides)",
+    )
     args = parser.parse_args()
     _pipeline_cfg = _load_pipeline_config()
     # CLI flags take priority; config.yaml provides defaults for unset toggles
@@ -1811,6 +1829,7 @@ if __name__ == "__main__":
                 model_config=args.model_config,
                 max_tokens_per_output=_max_tokens,
                 with_mediation=args.with_mediation,
+                perspective=args.perspective,
             )
         )
     except CLINotFoundError as e:
