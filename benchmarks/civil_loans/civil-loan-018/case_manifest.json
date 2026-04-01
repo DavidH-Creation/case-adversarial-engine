@@ -1,0 +1,41 @@
+{
+  "case_id": "civil-loan-018",
+  "case_slug": "civil-loan-018",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "表见代理认定与借款主体确定纠纷（（2021）鄂02民终2246号）",
+  "case_number": "（2021）鄂02民终2246号",
+  "court": "湖北省黄石市中级人民法院",
+  "cause_of_action": "借款合同纠纷",
+  "description": "本案涉及表见代理的认定标准及借款主体确定。核心争点包括：建筑公司向项目部出借资金时，合同中仅指向具体个人而非项目部，是否构成表见代理；作为从事建设行业的专业公司，出借人应当清楚工程转包中存在实际施工人的情形，其是否属于善意相对人；刘某某等个人的行为是否构成对项目部所属公司的表见代理。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-018-001",
+      "name": "出借人/建筑公司/原告",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-018-002",
+      "name": "借款人个人/被告",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-018-003",
+      "name": "项目部所属公司",
+      "side": "defendant",
+      "role_code": "third_party_agent"
+    }
+  ]
+}

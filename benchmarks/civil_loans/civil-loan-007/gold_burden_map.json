@@ -1,0 +1,77 @@
+{
+  "case_id": "civil-loan-007",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-007-001",
+      "case_id": "civil-loan-007",
+      "issue_id": "issue-civil-loan-007-001",
+      "burden_party_id": "party-civil-loan-007-002",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-007-001: 保证人与债权人签订了保证合同，为借款人的借款债务提供保证担保",
+      "legal_basis": "《民法典》第681条（保证合同定义）、第685条（保证合同形式）。保证人主张保证合同成立应提交保证合同原件，证明保证法律关系存在。",
+      "shift_condition": "保证人提交保证合同后，债权人如否认保证合同效力应承担举证责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-007-002",
+      "case_id": "civil-loan-007",
+      "issue_id": "issue-civil-loan-007-002",
+      "burden_party_id": "party-civil-loan-007-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-007-005: 债权人在保证期间内未以任何方式向保证人主张过保证责任",
+      "legal_basis": "《民法典》第692条（保证期间的确定）、第693条（保证期间届满的法律后果）。债权人主张在保证期间内向保证人主张过权利的，应由债权人承担举证责任；债权人无法举证的，保证期间届满，保证人不再承担保证责任。",
+      "shift_condition": "保证人主张债权人未在保证期间内主张权利后，债权人应提供催收通知、诉讼文书等证据证明已在保证期间内主张权利。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-007-003",
+      "case_id": "civil-loan-007",
+      "issue_id": "issue-civil-loan-007-003",
+      "burden_party_id": "party-civil-loan-007-002",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-007-007: 债权人未在保证期间内依法向保证人主张权利，保证期间届满，保证人的保证责任依法免除",
+      "legal_basis": "《民法典》第693条第1款（一般保证的保证期间：债权人未在保证期间内对债务人提起诉讼或申请仲裁的，保证人不再承担保证责任）、第693条第2款（连带保证的保证期间：债权人未在保证期间内请求保证人承担保证责任的，保证人不再承担保证责任）。",
+      "shift_condition": "保证人证明保证期间已届满且债权人未主张权利后，债权人如主张保证期间中断或延长应自行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-007-004",
+      "case_id": "civil-loan-007",
+      "issue_id": "issue-civil-loan-007-004",
+      "burden_party_id": "party-civil-loan-007-002",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-007-010: 只有在过错责任条件下才能启动不良信用记录司法化程序，无过错责任和公平责任不应适用",
+      "legal_basis": "《征信业管理条例》第25条（信息主体异议权）、第26条（信息主体投诉权）；参照《民法典》侵权责任编过错责任原则。不良信用记录司法化的启动以利害关系人存在过错为前提，无过错则不应启动该程序。",
+      "shift_condition": "保证人说明不良信用记录司法化需要过错责任条件后，债权人如主张保证人存在过错应承担举证责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-007-005",
+      "case_id": "civil-loan-007",
+      "issue_id": "issue-civil-loan-007-005",
+      "burden_party_id": "party-civil-loan-007-002",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-007-014: 保证人无过错情况下被列入不良信用记录，金融机构应予删除",
+      "legal_basis": "《征信业管理条例》第25条（信息主体认为征信机构采集、保存、提供的信息存在错误、遗漏的有权提出异议）、第26条；《民法典》第1029条（民事主体有权依法查询自己的信用评价，发现不当的有权提出异议并请求更正）。保证人应证明保证责任已免除且自身无过错，据此主张不良信用记录缺乏事实基础。",
+      "shift_condition": "保证人证明保证责任免除且无过错后，金融机构如主张报送合法应举证证明保证人确有违约事实。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-007-006",
+      "case_id": "civil-loan-007",
+      "issue_id": "issue-civil-loan-007-006",
+      "burden_party_id": "party-civil-loan-007-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-007-015: 金融机构依据征信管理条例报送保证人不良信用记录",
+      "legal_basis": "《征信业管理条例》第13条（信息提供者向征信机构提供个人不良信息应事先告知信息主体本人）、第15条（信息提供者应当按照约定和规定报送信息）。金融机构主张报送行为合法应举证证明报送时保证人确实存在违约事实，且已履行事先告知义务。",
+      "shift_condition": "金融机构提交报送依据后，保证人如主张报送程序违法或实体要件不成就应自行举证。",
+      "status": "active"
+    }
+  ]
+}

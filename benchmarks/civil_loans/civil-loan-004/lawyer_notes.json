@@ -1,0 +1,54 @@
+{
+  "case_id": "civil-loan-004",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-004-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-004-001",
+      "evidence_ids": ["evidence-civil-loan-004-001", "evidence-civil-loan-004-002"],
+      "content": "金融借款合同关系成立的证据链完整：借款合同载明双方权利义务，银行放款凭证证明款项实际交付。作为金融机构贷款，合同形式规范，放款流程有系统记录，真实性争议空间较小。"
+    },
+    {
+      "note_id": "note-civil-loan-004-002",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-004-002",
+      "evidence_ids": ["evidence-civil-loan-004-003"],
+      "content": "应收账款质押合同系出质人（担保人）与质权人（债权人/银行）之间签订，合同主体明确，签章真实。质押合同本身的成立不以附件《应收账款确认函》的真实性为前提条件——确认函仅涉及应收账款债务人对债务的确认，属于质押标的物的证明材料，而非合同成立的构成要件。"
+    },
+    {
+      "note_id": "note-civil-loan-004-003",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-004-003",
+      "evidence_ids": ["evidence-civil-loan-004-004", "evidence-civil-loan-004-005"],
+      "content": "担保人的抗辩逻辑为：确认函印章伪造 -> 应收账款不存在 -> 质押标的不存在 -> 质押合同不成立。但法院拆解该逻辑链：确认函确认方是担保人的债务人（第三方），并非质押合同当事人。即便确认函存在伪造，影响的是质押标的（应收账款）的真实性，而非出质人与质权人之间质押合同的成立。合同成立与质权设立是两个不同层面的法律问题。"
+    },
+    {
+      "note_id": "note-civil-loan-004-004",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-004-004",
+      "evidence_ids": ["evidence-civil-loan-004-005"],
+      "content": "刑民交叉处理的关键在于区分：涉嫌犯罪的法律事实与民事纠纷的法律事实是否属于同一法律事实。本案中，伪造印章的犯罪嫌疑人为担保人的债务人（第三方），犯罪行为指向确认函的真实性；而民事纠纷的核心是质押合同及保证责任，当事人为出质人与质权人。两者法律事实不同、当事人不同，故不构成\"先刑后民\"的适用条件，民事案件应继续审理。"
+    },
+    {
+      "note_id": "note-civil-loan-004-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-004-005",
+      "evidence_ids": ["evidence-civil-loan-004-003", "evidence-civil-loan-004-007"],
+      "content": "质押合同中\"质权未设立或无效时出质人承担连带保证责任\"的条款设计，系金融实务中常见的风险兜底机制。即使质押登记未完成或质押标的存在瑕疵导致质权未设立，担保人仍需基于该条款承担连带保证责任。这种\"质押+保证\"双重担保结构有效隔离了质权设立风险对债权人的影响。"
+    },
+    {
+      "note_id": "note-civil-loan-004-006",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-004-003",
+      "evidence_ids": [],
+      "content": "担保人以刑事犯罪为由主张民事合同不成立或要求中止审理，是金融借款纠纷中常见的拖延策略。代理人应注意：（1）精确区分犯罪事实涉及的主体与民事合同当事人是否一致；（2）确认函的真伪问题影响的是质权能否设立，而非质押合同能否成立；（3）即便质权未设立，连带保证条款仍可独立适用。建议在类似案件中提前准备刑民分离的法律论证。"
+    },
+    {
+      "note_id": "note-civil-loan-004-007",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-004-004",
+      "evidence_ids": [],
+      "content": "关于刑民交叉的程序处理，最高法的裁判思路为：将涉嫌伪造印章的犯罪线索移送侦查机关处理，同时民事案件继续审理。这体现了\"分别审理\"原则——当刑事犯罪事实与民事纠纷的法律事实可以区分时，不适用\"先刑后民\"。代理人在遇到对方提出刑事抗辩时，应着重论证刑事事实与民事审理的可分离性。"
+    }
+  ]
+}

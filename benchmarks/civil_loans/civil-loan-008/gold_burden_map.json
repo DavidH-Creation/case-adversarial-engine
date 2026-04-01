@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-008",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-008-001",
+      "case_id": "civil-loan-008",
+      "issue_id": "issue-civil-loan-008-001",
+      "burden_party_id": "party-civil-loan-008-001",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-008-004: 银行就被驳回的变更请求提起上诉，该部分构成上诉利益",
+      "legal_basis": "《民事诉讼法》第171条。银行虽获得一审全部诉请支持，但其变更诉讼请求（请求确认抵销权效力）被驳回，该驳回部分构成银行的上诉利益，银行有权就此提起上诉。",
+      "shift_condition": "银行说明变更请求被驳回的事实后，典当公司如主张银行不具有上诉利益应自行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-008-002",
+      "case_id": "civil-loan-008",
+      "issue_id": "issue-civil-loan-008-002",
+      "burden_party_id": "party-civil-loan-008-002",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-008-005: 典当公司在银行开设有结算账户，账户内资金归属于典当公司",
+      "legal_basis": "《商业银行法》第6条、第33条。存款人对其银行账户中的存款享有所有权，银行账户内的资金权属以账户登记为准。典当公司作为账户持有人对账户内资金享有权利。",
+      "shift_condition": "典当公司提交开户资料证明账户归属后，银行如主张特定资金不归属典当公司应自行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-008-003",
+      "case_id": "civil-loan-008",
+      "issue_id": "issue-civil-loan-008-003",
+      "burden_party_id": "party-civil-loan-008-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-008-008: 银行汇款行为可认定为对生效判决确定债务的清偿",
+      "legal_basis": "《民法典》第557条（债权债务终止）。银行主张其汇款已清偿生效判决确定的债务，应举证证明汇款事实及清偿意思表示（备注内容）。",
+      "shift_condition": "银行提交转账凭证和备注内容后，典当公司如否认清偿效力应说明理由并举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-008-004",
+      "case_id": "civil-loan-008",
+      "issue_id": "issue-civil-loan-008-004",
+      "burden_party_id": "party-civil-loan-008-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-008-011: 银行的扣划行为系依据合同约定的扣收权实施，属于依约扣收",
+      "legal_basis": "《民法典》第509条（合同全面履行原则）。银行主张扣划系依约行使合同权利，应举证证明合同中存在扣收条款且扣划行为符合该条款的约定条件。",
+      "shift_condition": "银行提交载有扣收条款的合同及扣划记录后，典当公司如主张扣划不符合合同约定应自行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-008-005",
+      "case_id": "civil-loan-008",
+      "issue_id": "issue-civil-loan-008-005",
+      "burden_party_id": "party-civil-loan-008-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-008-013: 银行依合同扣划账户存款实质上构成抵销，产生消灭等额债权的法律后果",
+      "legal_basis": "《民法典》第568条（法定抵销）、第569条（约定抵销）。银行主张扣划行为产生抵销效力的，应证明双方互负到期债务且债务种类、品质相同，或合同已约定抵销条款。",
+      "shift_condition": "银行完成举证后，典当公司如主张抵销条件不成就（如债务未到期、种类不同等）应自行举证。",
+      "status": "active"
+    }
+  ]
+}

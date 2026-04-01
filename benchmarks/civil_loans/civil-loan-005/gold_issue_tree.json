@@ -1,0 +1,135 @@
+{
+  "case_id": "civil-loan-005",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-005-001",
+      "case_id": "civil-loan-005",
+      "title": "农村信用社接受本单位股金作为质押标的的合同效力",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-005-001"],
+      "related_defense_ids": ["defense-civil-loan-005-001"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-005-001",
+          "text": "农村信用社属于农村合作金融组织，具有非营利性、地域性、民主性、合作性特征，不属于公司法人",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-005-001"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-005-002",
+          "text": "质押合同以农信社本单位股金为标的，不违反法律、行政法规的强制性规定",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-005-002"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-005-001"],
+      "evidence_ids": ["evidence-civil-loan-005-001", "evidence-civil-loan-005-002"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-005-002",
+      "case_id": "civil-loan-005",
+      "title": "农信社股金出质的质权设立方式是否合法有效",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-005-001",
+      "related_claim_ids": ["claim-civil-loan-005-001"],
+      "related_defense_ids": ["defense-civil-loan-005-002"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-005-003",
+          "text": "农信社股金不等同于公司股权，不属于《物权法》第226条规定的'其他股权'出质范围，不属于工商行政管理部门办理出质登记的范围",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-005-004",
+          "text": "出质人向质权人交付了股金证，且办理了冻结止付登记手续，出质股金不能再流通",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-005-003", "evidence-civil-loan-005-004"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-005-002"],
+      "evidence_ids": ["evidence-civil-loan-005-003", "evidence-civil-loan-005-004"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-005-003",
+      "case_id": "civil-loan-005",
+      "title": "农信社改制为农商行后原股金质权是否存续",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-005-002"],
+      "related_defense_ids": ["defense-civil-loan-005-003"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-005-005",
+          "text": "借款期限持续至农信社改制后，农信社股金转变为农商行股权",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-005-005"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-005-006",
+          "text": "改制后股权性质变更，需根据担保的从属性原理分析质权是否需要完善登记手续",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-005-003"],
+      "evidence_ids": ["evidence-civil-loan-005-005"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-005-004",
+      "case_id": "civil-loan-005",
+      "title": "借新还旧情形下质权是否消灭",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-005-003",
+      "related_claim_ids": ["claim-civil-loan-005-002"],
+      "related_defense_ids": ["defense-civil-loan-005-004"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-005-007",
+          "text": "借新还旧导致主债权消灭，根据担保从属性原理，旧贷股金质权随之消灭",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-005-006", "evidence-civil-loan-005-007"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-005-008",
+          "text": "为旧贷提供股金质押的担保人同意继续为新贷提供担保的，质权存续（例外情形）",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-005-008"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-005-004"],
+      "evidence_ids": ["evidence-civil-loan-005-006", "evidence-civil-loan-005-007", "evidence-civil-loan-005-008"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-005-005",
+      "case_id": "civil-loan-005",
+      "title": "循环贷款和贷款展期情形下质权是否继续有效",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-005-003",
+      "related_claim_ids": ["claim-civil-loan-005-002"],
+      "related_defense_ids": ["defense-civil-loan-005-005"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-005-009",
+          "text": "循环贷款和贷款展期情形下主债权并未消灭，仅是期限变更或额度循环使用",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-005-009"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-005-010",
+          "text": "主债权未消灭，质权依担保从属性原理继续有效，无需重新办理登记手续",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-005-005"],
+      "evidence_ids": ["evidence-civil-loan-005-009"],
+      "status": "open"
+    }
+  ]
+}

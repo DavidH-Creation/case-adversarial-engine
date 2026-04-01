@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-019",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-019-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-019-001",
+      "evidence_ids": ["evidence-civil-loan-019-001", "evidence-civil-loan-019-003"],
+      "content": "本案核心争点在于出借人仅持有一张借条，除当事人陈述外无任何款项交付的客观证据（如银行转账凭证、取现记录、第三方见证等）。民间借贷合同为实践性合同，借条仅能证明借贷合意，出借人还需证明款项已实际交付。"
+    },
+    {
+      "note_id": "note-civil-loan-019-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-019-003",
+      "evidence_ids": ["evidence-civil-loan-019-005", "evidence-civil-loan-019-006"],
+      "content": "一审与二审庭审笔录的比对是本案的关键突破口。出借人在交付时间、交付地点、交付数额、付款前现金的保存方式等核心细节上存在多处前后不一致的陈述。对于亲身经历的重大事实（大额现金借贷），正常情况下当事人的记忆应当基本稳定，多处矛盾说明其陈述的真实性存在严重疑问。"
+    },
+    {
+      "note_id": "note-civil-loan-019-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-019-002",
+      "evidence_ids": ["evidence-civil-loan-019-001"],
+      "content": "实务中借条的证明力因借款金额和交付方式而异。小额现金借贷中借条的独立证明力较强；但大额借款仅凭借条主张以现金交付的，法院通常会要求出借人进一步举证：（1）出借人的经济能力和资金来源；（2）交付的具体时间、地点和方式；（3）借款人取得款项后的资金去向。本案金额较大且主张现金交付，仅凭借条远不够。"
+    },
+    {
+      "note_id": "note-civil-loan-019-004",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-019-004",
+      "evidence_ids": ["evidence-civil-loan-019-004"],
+      "content": "建议出借人方代理律师在民间借贷案件中务必准备完整的资金来源链条证据：银行取现记录、工资流水、投资收益证明等。建议被告方代理律师重点审查出借人的经济状况与借款金额是否匹配，并对出借人在庭审中关于交付细节的陈述进行精确质证，记录每一处矛盾以便在后续程序中使用。"
+    },
+    {
+      "note_id": "note-civil-loan-019-005",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-019-005",
+      "evidence_ids": ["evidence-civil-loan-019-001", "evidence-civil-loan-019-003", "evidence-civil-loan-019-005", "evidence-civil-loan-019-006"],
+      "content": "法院最终裁判认定：出借人仅凭借条主张债权，不能证明借款来源和已实际交付的事实，且对交付时间、地点、数额和付款前现金保存方式等具体情况的陈述存在多处前后不一致，全案证据不足以达到高度盖然性标准认定借款事实存在，债权主张不予支持。该裁判思路体现了对民间借贷尤其是大额现金借贷的严格审查标准。"
+    }
+  ]
+}

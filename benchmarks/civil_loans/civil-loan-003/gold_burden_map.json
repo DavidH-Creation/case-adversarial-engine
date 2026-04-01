@@ -1,0 +1,77 @@
+{
+  "case_id": "civil-loan-003",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-003-001",
+      "case_id": "civil-loan-003",
+      "issue_id": "issue-civil-loan-003-001",
+      "burden_party_id": "party-civil-loan-003-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-003-001: 债权人与债务人之间存在合法有效的借款合同关系，借款金额及利息约定明确",
+      "legal_basis": "《民法典》第667条：借款合同是借款人向贷款人借款，到期返还借款并支付利息的合同。债权人主张借贷关系成立并要求还款，应举证证明合同成立及款项交付。",
+      "shift_condition": "债权人提交借款合同及转账凭证后，如债务人主张已清偿或合同无效，由债务人举证。",
+      "status": "discharged"
+    },
+    {
+      "burden_id": "burden-civil-loan-003-002",
+      "case_id": "civil-loan-003",
+      "issue_id": "issue-civil-loan-003-002",
+      "burden_party_id": "party-civil-loan-003-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-003-003: 第三人以自己名义与债权人签订还款协议，约定分期代为偿还债务人所欠借款及利息",
+      "legal_basis": "《民法典》第552条：第三人与债务人约定加入债务并通知债权人，或者第三人向债权人表示愿意加入债务，债权人未在合理期限内明确拒绝的，债权人可以请求第三人在其愿意承担的债务范围内和债务人承担连带债务。债权人须证明第三人作出了愿意承担债务的意思表示。",
+      "shift_condition": "债权人证明还款协议存在后，如第三人主张该协议构成债务转移而非债务加入，由第三人举证协议性质。",
+      "status": "discharged"
+    },
+    {
+      "burden_id": "burden-civil-loan-003-003",
+      "case_id": "civil-loan-003",
+      "issue_id": "issue-civil-loan-003-002",
+      "burden_party_id": "party-civil-loan-003-003",
+      "burden_type": "反驳举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "第三人主张还款协议的性质为债务转移（免责的债务承担），而非债务加入",
+      "legal_basis": "《民法典》第551条：债务人将债务的全部或者部分转移给第三人的，应当经债权人同意。主张债务转移的一方须证明债权人明确同意免除原债务人的义务。",
+      "shift_condition": "第三人须举证证明：（1）还款协议的真实意思为债务转移；（2）债权人明确同意免除原债务人义务。否则应认定为债务加入。",
+      "status": "not_discharged"
+    },
+    {
+      "burden_id": "burden-civil-loan-003-004",
+      "case_id": "civil-loan-003",
+      "issue_id": "issue-civil-loan-003-003",
+      "burden_party_id": "party-civil-loan-003-003",
+      "burden_type": "主张举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-003-008: '代为偿还'在文义上应当理解为债务转移",
+      "legal_basis": "《民法典》第142条：有相对人的意思表示的解释，应当按照所使用的词句，结合相关条款、行为的性质和目的、习惯以及诚信原则，确定意思表示的含义。'代为偿还'一词在文义上存在多种解释可能，不能当然得出债务已转移的结论。",
+      "shift_condition": "无法转移。法院认定'代为偿还'不能当然说明债务已转移，需结合其他要素综合判断。",
+      "status": "not_discharged"
+    },
+    {
+      "burden_id": "burden-civil-loan-003-005",
+      "case_id": "civil-loan-003",
+      "issue_id": "issue-civil-loan-003-004",
+      "burden_party_id": "party-civil-loan-003-004",
+      "burden_type": "反驳举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "连带责任保证人主张因第三人加入债务或债务转移，保证人应免除保证责任",
+      "legal_basis": "《民法典》第697条：债权人未经保证人书面同意，允许债务人转移全部或者部分债务，保证人对未经其同意转移的债务不再承担保证责任。但债务加入不同于债务转移，不适用该条，保证人仍应承担保证责任。",
+      "shift_condition": "保证人须证明构成债务转移且未经其同意，才能主张免除保证责任。若认定为债务加入，保证责任不受影响。",
+      "status": "not_discharged"
+    },
+    {
+      "burden_id": "burden-civil-loan-003-006",
+      "case_id": "civil-loan-003",
+      "issue_id": "issue-civil-loan-003-005",
+      "burden_party_id": "party-civil-loan-003-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-003-011: 第三人债务加入后，应与债务人、连带责任保证人共同向债权人承担清偿义务",
+      "legal_basis": "《民法典》第552条：债务加入后，第三人在其愿意承担的债务范围内和债务人承担连带债务。结合《民法典》第688条连带保证的规定，债权人可以请求债务人、债务加入人及连带保证人共同承担清偿义务。",
+      "shift_condition": "债权人证明各方责任基础后，由各责任主体分别举证各自的免责事由。",
+      "status": "discharged"
+    }
+  ]
+}

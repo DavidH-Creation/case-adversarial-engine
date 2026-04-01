@@ -1,0 +1,225 @@
+{
+  "case_id": "civil-loan-020",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-020-001",
+      "case_id": "civil-loan-020",
+      "title": "债权转让是否已有效通知债务人",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-020-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-020-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-020-001",
+          "text": "原债权人在诉讼前未向债务人发出书面债权转让通知",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-020-002",
+          "text": "原债权人在诉讼过程中通过提交证据或陈述的方式披露了债权转让事实",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-004",
+            "evidence-civil-loan-020-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-020-003",
+          "text": "债务人在二审程序中得知了案涉债权已被转让的事实",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-005",
+            "evidence-civil-loan-020-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-020-001",
+        "burden-civil-loan-020-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-020-003",
+        "evidence-civil-loan-020-004",
+        "evidence-civil-loan-020-005",
+        "evidence-civil-loan-020-006"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-020-002",
+      "case_id": "civil-loan-020",
+      "title": "诉讼中披露债权转让信息是否构成合法有效的通知",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-020-001",
+      "related_claim_ids": [
+        "claim-civil-loan-020-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-020-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-020-004",
+          "text": "原合同法第80条第1款未对通知的形式作限制性规定，诉讼中披露可构成有效通知",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-020-005",
+          "text": "通知的目的在于使债务人知悉债权转让事实，诉讼中的披露同样能够实现该目的",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-005"
+          ]
+        }
+      ],
+      "burden_ids": [],
+      "evidence_ids": [
+        "evidence-civil-loan-020-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-020-003",
+      "case_id": "civil-loan-020",
+      "title": "债权转让对债务人的生效时点认定",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-020-001",
+      "related_claim_ids": [],
+      "related_defense_ids": [
+        "defense-civil-loan-020-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-020-006",
+          "text": "债权转让在转让人与受让人之间签订转让协议时即生效",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-020-007",
+          "text": "债权转让对债务人的效力自通知到达债务人时发生",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-005",
+            "evidence-civil-loan-020-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-020-008",
+          "text": "本案中债务人在二审中得知债权转让，故转让自二审时对债务人发生效力",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-020-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-020-002",
+        "evidence-civil-loan-020-005",
+        "evidence-civil-loan-020-006"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-020-004",
+      "case_id": "civil-loan-020",
+      "title": "原债权人是否仍具有原审原告的诉讼主体资格",
+      "issue_type": "procedural",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-020-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-020-004"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-020-009",
+          "text": "原债权人在一审起诉时系合法的债权持有人，具有适格原告地位",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-001",
+            "evidence-civil-loan-020-007"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-020-010",
+          "text": "案涉民事权利义务在二审中因债权转让而发生转移",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-002",
+            "evidence-civil-loan-020-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-020-011",
+          "text": "根据民诉法司法解释第249条，诉讼中权利义务转移不影响当事人的诉讼主体资格",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-020-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-020-001",
+        "evidence-civil-loan-020-002",
+        "evidence-civil-loan-020-006",
+        "evidence-civil-loan-020-007"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-020-005",
+      "case_id": "civil-loan-020",
+      "title": "基础债权债务关系是否成立",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-020-001"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-020-012",
+          "text": "原债权人与债务人之间存在合法有效的借款合同关系",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-020-013",
+          "text": "借款已实际交付，债务人负有还款义务",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-020-001",
+            "evidence-civil-loan-020-007"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-020-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-020-001",
+        "evidence-civil-loan-020-007"
+      ],
+      "status": "open"
+    }
+  ]
+}

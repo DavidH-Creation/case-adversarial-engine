@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-013",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-013-001",
+      "case_id": "civil-loan-013",
+      "issue_id": "issue-civil-loan-013-001",
+      "burden_party_id": "party-civil-loan-013-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-013-001: 公司已进入清算程序；fp-civil-loan-013-002: 清算组已通知申报债权；fp-civil-loan-013-003: 债权人已在期限内申报债权",
+      "legal_basis": "《公司法》第240条（原第185条）、第241条（原第186条）。债权人提起债权确认诉讼的前提是已依法向清算组申报债权。",
+      "shift_condition": "债权人提交申报材料及回执后，如对方主张债权人未在法定期限内申报或申报材料不完整，由对方举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-013-002",
+      "case_id": "civil-loan-013",
+      "issue_id": "issue-civil-loan-013-002",
+      "burden_party_id": "party-civil-loan-013-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-013-004: 清算组对债权不予确认或怠于核定处理",
+      "legal_basis": "《公司法司法解释二》第21条。清算组不予确认债权或怠于处理的，债权人有权向法院提起诉讼。债权人应举证证明清算组的不予确认行为或怠于处理的事实。",
+      "shift_condition": "债权人提交清算组不予确认通知或催告后未回复的证据后，如清算组主张已对债权进行了确认或正在处理中，由清算组举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-013-003",
+      "case_id": "civil-loan-013",
+      "issue_id": "issue-civil-loan-013-003",
+      "burden_party_id": "party-civil-loan-013-001",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-013-006: 清算组不予确认时债权人有权起诉；fp-civil-loan-013-007: 清算组怠于处理时债权人同样有权起诉",
+      "legal_basis": "《公司法司法解释二》第21条、《民事诉讼法》第122条。债权人提起诉讼时应说明其已穷尽清算程序内的债权确认途径仍未获救济。清算组怠于处理同样构成债权人起诉的正当事由，不以清算组明确否认为前提。",
+      "shift_condition": "债权人说明已申报债权且清算组不予确认或怠于处理后，被清算公司如主张债权人未依法申报或清算组已确认债权，应自行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-013-004",
+      "case_id": "civil-loan-013",
+      "issue_id": "issue-civil-loan-013-004",
+      "burden_party_id": "party-civil-loan-013-001",
+      "burden_type": "说明责任",
+      "proof_standard": "形式审查标准",
+      "fact_proposition": "fp-civil-loan-013-009: 强制清算中债权确认诉讼由受理清算申请的法院管辖",
+      "legal_basis": "《公司法司法解释二》第21条。强制清算中的债权确认之诉具有管辖集中性，由受理强制清算申请的法院管辖。原告应提交强制清算裁定证明管辖依据。",
+      "shift_condition": "原告提交强制清算受理裁定后，如被告提出管辖异议，由被告说明应由其他法院管辖的理由。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-013-005",
+      "case_id": "civil-loan-013",
+      "issue_id": "issue-civil-loan-013-005",
+      "burden_party_id": "party-civil-loan-013-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-013-011: 债权债务关系合法有效；fp-civil-loan-013-012: 债权金额明确",
+      "legal_basis": "《民法典》第509条、第577条。债权人主张债权确认的，应举证证明基础法律关系的成立和有效性，以及债权金额的计算依据。",
+      "shift_condition": "债权人完成初步举证后，如被清算公司或清算组主张债权不真实、已清偿或金额有误，由其承担举证责任。",
+      "status": "active"
+    }
+  ]
+}

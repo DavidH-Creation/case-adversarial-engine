@@ -1,0 +1,208 @@
+{
+  "case_id": "civil-loan-009",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-009-001",
+      "case_id": "civil-loan-009",
+      "title": "债权人是否尽到对公司担保决议的合理审查义务",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-009-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-009-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-009-001",
+          "text": "担保人公司对外提供担保，需经公司权力机关（股东会或董事会）作出决议",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-009-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-002",
+          "text": "债权人在接受担保时应审查公司章程中关于对外担保的决策权限规定",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-009-001",
+            "evidence-civil-loan-009-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-003",
+          "text": "债权人应审查公司权力机关作出的担保决议是否真实、合法、有效",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-009-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-004",
+          "text": "债权人未审查或未充分审查担保决议等相关文件",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-009-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-009-001",
+        "burden-civil-loan-009-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-009-001",
+        "evidence-civil-loan-009-002",
+        "evidence-civil-loan-009-003",
+        "evidence-civil-loan-009-004"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-009-002",
+      "case_id": "civil-loan-009",
+      "title": "担保合同对担保人公司是否产生效力",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-009-001",
+      "related_claim_ids": [
+        "claim-civil-loan-009-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-009-001",
+        "defense-civil-loan-009-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-009-005",
+          "text": "债权人未尽合理审查义务的，担保合同对公司不产生效力（非善意相对人）",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-006",
+          "text": "担保合同不对公司产生效力并不意味着合同无效，而是公司不受该担保合同约束",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-009-003"
+      ],
+      "evidence_ids": [],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-009-003",
+      "case_id": "civil-loan-009",
+      "title": "担保人未对担保合同效力提出异议时法院是否应依职权审查",
+      "issue_type": "procedural",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-009-001"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-009-007",
+          "text": "担保人公司在诉讼中未对担保合同效力提出异议",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-009-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-008",
+          "text": "公司在诉讼中未提出异议不能视为公司整体及所有股东同意担保",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-009",
+          "text": "查明案件基本事实是法院的职责，担保合同效力属于案件基本事实",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-009-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-009-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-009-004",
+      "case_id": "civil-loan-009",
+      "title": "法院依职权审查担保合同效力对中小股东保护的意义",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-009-003",
+      "related_claim_ids": [],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-009-010",
+          "text": "公司对外担保可能损害中小股东利益，中小股东在诉讼中往往无法直接参加诉讼",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-011",
+          "text": "法院主动审查担保合同效力有助于防止公司法定代表人或控股股东滥用代表权损害中小股东利益",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-012",
+          "text": "依职权审查是对公司法第十六条规范目的的司法落实",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [],
+      "evidence_ids": [],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-009-005",
+      "case_id": "civil-loan-009",
+      "title": "借款合同效力与借款人还款义务",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-009-002"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-009-013",
+          "text": "债权人与借款人之间签订的借款合同合法有效",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-009-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-009-014",
+          "text": "借款人到期未偿还借款本息，构成违约",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-009-007",
+            "evidence-civil-loan-009-008"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-009-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-009-006",
+        "evidence-civil-loan-009-007",
+        "evidence-civil-loan-009-008"
+      ],
+      "status": "open"
+    }
+  ]
+}

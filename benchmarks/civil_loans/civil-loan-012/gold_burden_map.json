@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-012",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-012-001",
+      "case_id": "civil-loan-012",
+      "issue_id": "issue-civil-loan-012-001",
+      "burden_party_id": "party-civil-loan-012-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-012-001: 原告作为借款合同签订方提起诉讼；fp-civil-loan-012-002: 借款合同载明原告为债权人",
+      "legal_basis": "《民事诉讼法》第122条。原告起诉应提交证明其与本案有直接利害关系的初步证据。借款合同签订人持合同起诉，已满足原告主体资格的立案审查标准。",
+      "shift_condition": "原告提交借款合同后，如被告主张原告非实际出借人，该争议应通过实体审理解决，不影响原告主体资格。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-012-002",
+      "case_id": "civil-loan-012",
+      "issue_id": "issue-civil-loan-012-002",
+      "burden_party_id": "party-civil-loan-012-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "形式审查标准",
+      "fact_proposition": "fp-civil-loan-012-003: 立案阶段仅需审查原告是否提交了证明借贷法律关系存在的初步证据",
+      "legal_basis": "《民事诉讼法》第122条、第126条。立案登记制下，法院对起诉进行形式审查，不应将出借人经济状况、款项来源等实体事项作为立案条件。",
+      "shift_condition": "原告提交借款合同及初步交付凭证即满足立案条件，进一步审查属实体审理范畴。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-012-003",
+      "case_id": "civil-loan-012",
+      "issue_id": "issue-civil-loan-012-003",
+      "burden_party_id": "party-civil-loan-012-002",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-012-006: 被告主张原告不具有债权人资格",
+      "legal_basis": "《民间借贷规定》第2条第2款。该条款的适用前提为债权凭证没有载明债权人。如债权凭证明确载明原告为债权人，被告的债权人资格抗辩不适用该条款，应通过实体审理解决。被告对其抗辩主张承担举证责任。",
+      "shift_condition": "被告提出充分证据证明原告非实际债权人的，法院应在实体审理中综合认定，但不得据此驳回起诉。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-012-004",
+      "case_id": "civil-loan-012",
+      "issue_id": "issue-civil-loan-012-004",
+      "burden_party_id": "party-civil-loan-012-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-012-009: 上级法院已指令审理；fp-civil-loan-012-010: 下级法院变更理由再次驳回",
+      "legal_basis": "《民事诉讼法》审级监督制度。上级法院指令审理裁定对下级法院具有约束力，下级法院不得变更裁判理由规避上级法院的指令。原告提交上下级法院裁定书即可证明程序违法。",
+      "shift_condition": "原告举证证明上级法院已指令审理后，下级法院如主张再次驳回有正当理由，应说明新的驳回理由不属于上级法院裁定已否定的范围。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-012-005",
+      "case_id": "civil-loan-012",
+      "issue_id": "issue-civil-loan-012-005",
+      "burden_party_id": "party-civil-loan-012-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-012-012: 签订借款合同；fp-civil-loan-012-013: 实际交付借款；fp-civil-loan-012-014: 被告逾期未还",
+      "legal_basis": "《民法典》第667条、第679条。民间借贷合同自贷款人提供借款时成立。原告应举证证明借款合同成立、款项已交付、被告逾期未还。",
+      "shift_condition": "原告完成初步举证后，被告如主张未收到借款或已偿还，由被告承担举证责任。",
+      "status": "active"
+    }
+  ]
+}

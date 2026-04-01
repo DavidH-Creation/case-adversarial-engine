@@ -1,0 +1,221 @@
+{
+  "case_id": "civil-loan-019",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-019-001",
+      "case_id": "civil-loan-019",
+      "title": "借贷事实是否真实存在（借款是否实际交付）",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-019-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-019-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-019-001",
+          "text": "出借人主张的借款已经实际交付给借款人",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-001",
+            "evidence-civil-loan-019-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-019-002",
+          "text": "出借人具有与借款金额相匹配的资金来源和出借能力",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-004"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-019-003",
+          "text": "存在明确的借款交付方式（转账凭证、取现记录、见证人等）",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-003",
+            "evidence-civil-loan-019-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-019-001",
+        "burden-civil-loan-019-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-019-001",
+        "evidence-civil-loan-019-003",
+        "evidence-civil-loan-019-004"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-019-002",
+      "case_id": "civil-loan-019",
+      "title": "借条的证明力是否足以单独认定借贷事实",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-019-001",
+      "related_claim_ids": [
+        "claim-civil-loan-019-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-019-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-019-004",
+          "text": "借条系借款人真实签署，形式要件完备",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-019-005",
+          "text": "民间借贷中借条仅为债权凭证，不能单独证明款项已实际交付",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-019-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-019-001"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-019-003",
+      "case_id": "civil-loan-019",
+      "title": "出借人关于借款交付细节的陈述是否前后一致",
+      "issue_type": "factual",
+      "parent_issue_id": "issue-civil-loan-019-001",
+      "related_claim_ids": [],
+      "related_defense_ids": [
+        "defense-civil-loan-019-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-019-006",
+          "text": "出借人关于借款交付时间的陈述前后一致",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-005",
+            "evidence-civil-loan-019-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-019-007",
+          "text": "出借人关于借款交付地点的陈述前后一致",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-005",
+            "evidence-civil-loan-019-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-019-008",
+          "text": "出借人关于借款数额及付款前现金保存方式的陈述前后一致",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-005",
+            "evidence-civil-loan-019-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-019-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-019-005",
+        "evidence-civil-loan-019-006"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-019-004",
+      "case_id": "civil-loan-019",
+      "title": "出借人的资金来源是否可以合理解释",
+      "issue_type": "factual",
+      "parent_issue_id": "issue-civil-loan-019-001",
+      "related_claim_ids": [],
+      "related_defense_ids": [
+        "defense-civil-loan-019-004"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-019-009",
+          "text": "出借人能够说明借款资金的具体来源渠道",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-004"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-019-010",
+          "text": "出借人的收入状况与借款金额相匹配",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-019-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-019-004"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-019-005",
+      "case_id": "civil-loan-019",
+      "title": "综合全案证据能否达到高度盖然性标准认定借贷事实",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-019-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-019-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-019-011",
+          "text": "出借人提交的证据链（借条+交付证明+资金来源）能够形成完整闭合",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-001",
+            "evidence-civil-loan-019-003",
+            "evidence-civil-loan-019-004"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-019-012",
+          "text": "出借人的陈述存在多处前后不一致，严重削弱其主张的可信度",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-019-005",
+            "evidence-civil-loan-019-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-019-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-019-001",
+        "evidence-civil-loan-019-003",
+        "evidence-civil-loan-019-004",
+        "evidence-civil-loan-019-005",
+        "evidence-civil-loan-019-006"
+      ],
+      "status": "open"
+    }
+  ]
+}

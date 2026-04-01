@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-008",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-008-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-008-001",
+      "evidence_ids": ["evidence-civil-loan-008-001", "evidence-civil-loan-008-002", "evidence-civil-loan-008-004"],
+      "content": "上诉利益的认定关键：虽然一审法院支持了银行的全部原始诉请，但银行在诉讼中变更请求（实质为请求确认抵销权效力）被驳回。该驳回部分使银行在一审中存在未获支持的诉讼请求，因此银行具有上诉利益。上诉利益不以全案败诉为前提，部分诉请被驳回即可构成上诉利益。"
+    },
+    {
+      "note_id": "note-civil-loan-008-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-008-003",
+      "evidence_ids": ["evidence-civil-loan-008-006", "evidence-civil-loan-008-007"],
+      "content": "银行向典当公司账户汇款并备注履行生效判决，该行为的法律性质分析：（1）汇款进入典当公司名下账户后，资金即归属于典当公司；（2）备注内容构成银行清偿意思的外在表示；（3）结合生效判决确定的给付义务，可认定该汇款行为产生清偿生效判决确定债务的法律后果。核心推理链条为：汇款行为+清偿意思+生效判决=债务清偿。"
+    },
+    {
+      "note_id": "note-civil-loan-008-003",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-008-004",
+      "evidence_ids": ["evidence-civil-loan-008-008", "evidence-civil-loan-008-009"],
+      "content": "银行扣划行为的事实基础：（1）借款合同中明确约定银行享有从借款人账户直接扣收到期应还款项的权利；（2）扣划流水显示银行实际从典当公司账户扣划了相应款项；（3）扣划金额与到期应还本息一致。三项事实互相印证，可认定银行扣划行为系依据合同约定实施。"
+    },
+    {
+      "note_id": "note-civil-loan-008-004",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-008-005",
+      "evidence_ids": [],
+      "content": "实务中银行依约扣收与抵销权行使的关系：银行在借款合同中约定扣收条款是银行业通行做法。该扣收行为在法律性质上可能被认定为约定抵销或法定抵销的行使。实务建议：（1）银行方应在合同中明确约定扣收权条款，确保扣收行为有合同依据；（2）扣收前应确认债务已到期；（3）典当公司方如欲对抗扣收，应关注扣收条款的效力（是否属于格式条款、是否充分提示说明）以及扣收金额是否超过到期债务范围。"
+    },
+    {
+      "note_id": "note-civil-loan-008-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-008-001",
+      "evidence_ids": [],
+      "content": "本案对上诉利益认定具有参考价值：即使一审判决在形式上全部支持了原告诉请，但原告在诉讼中变更或增加的诉讼请求被驳回的，原告仍可就被驳回部分提起上诉。诉讼策略提示：（1）原告方在变更诉请时应充分说明变更理由及法律依据；（2）被告方应关注原告变更诉请的实质内容，及时提出异议；（3）二审中应重点审查一审法院驳回变更请求的理由是否成立。"
+    }
+  ]
+}

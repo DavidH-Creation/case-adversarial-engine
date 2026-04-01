@@ -1,0 +1,35 @@
+{
+  "case_id": "civil-loan-017",
+  "case_slug": "civil-loan-017",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "债权转让预先约定协议管辖条款效力纠纷（（2024）沪0107民初8524号）",
+  "case_number": "（2024）沪0107民初8524号",
+  "court": "上海市普陀区人民法院",
+  "cause_of_action": "借款合同纠纷",
+  "description": "本案涉及当事人在合同中预先约定债权转让后争议由新受让人住所地法院管辖的条款效力。核心争点包括：该协议管辖条款是否因债权受让方不确定且未参与缔结而无效；受让方所在地法院是否属于订立合同时与争议有实际联系地点的人民法院；债权转让后管辖应如何确定。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-017-001",
+      "name": "债权受让人/原告",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-017-002",
+      "name": "债务人/被告",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    }
+  ]
+}

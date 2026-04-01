@@ -1,0 +1,147 @@
+{
+  "case_id": "civil-loan-010",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-010-001",
+      "case_id": "civil-loan-010",
+      "title": "借款合同中约定的服务费、咨询费、管理费是否构成变相利息",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-010-001"],
+      "related_defense_ids": ["defense-civil-loan-010-001"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-010-001",
+          "text": "借款合同中除约定借款利息外，另行约定借款人应向出借人支付服务费、咨询费、管理费等费用",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-001", "evidence-civil-loan-010-002"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-010-002",
+          "text": "服务费、咨询费、管理费等费用实质上是借款人为获得借款而支付的成本，性质上与利率无异",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-002"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-010-003",
+          "text": "出借人未能证明其实际提供了与上述费用相对应的独立服务内容",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-010-001"],
+      "evidence_ids": ["evidence-civil-loan-010-001", "evidence-civil-loan-010-002"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-010-002",
+      "case_id": "civil-loan-010",
+      "title": "服务费等费用与利息合并计算后是否超过利率保护上限",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-010-001",
+      "related_claim_ids": ["claim-civil-loan-010-001"],
+      "related_defense_ids": ["defense-civil-loan-010-002"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-010-004",
+          "text": "将借款合同约定的利息、逾期利息、违约金与服务费、咨询费、管理费合并计算后，总成本折算年利率超过民间借贷利率保护上限",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-003", "evidence-civil-loan-010-004"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-010-005",
+          "text": "超过利率保护上限的部分不予支持，已支付的超出部分可抵扣本金或另行返还",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-004"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-010-002"],
+      "evidence_ids": ["evidence-civil-loan-010-003", "evidence-civil-loan-010-004"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-010-003",
+      "case_id": "civil-loan-010",
+      "title": "逾期利息与违约金是否应纳入利率上限合并审查",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-010-001",
+      "related_claim_ids": ["claim-civil-loan-010-002"],
+      "related_defense_ids": ["defense-civil-loan-010-003"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-010-006",
+          "text": "借款合同中同时约定了逾期利息和违约金条款，两者均因借款人迟延还款而触发",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-001"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-010-007",
+          "text": "逾期利息和违约金在功能上均属于出借人因借款人违约获得的金钱利益，应与利息合并受利率上限约束",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-010-003"],
+      "evidence_ids": ["evidence-civil-loan-010-001"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-010-004",
+      "case_id": "civil-loan-010",
+      "title": "律师费是否应归入变相利息范畴纳入利率上限审查",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-010-003"],
+      "related_defense_ids": ["defense-civil-loan-010-004"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-010-008",
+          "text": "律师费系出借人因借款人未按约偿还借款，为维护自身合法权益进行诉讼而产生的支出和损失",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-005", "evidence-civil-loan-010-006"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-010-009",
+          "text": "律师费不属于出借人因借贷关系获得的金钱利益，借款人如约履行还款义务则律师费并非必然发生",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-005"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-010-010",
+          "text": "律师费不属于借款人为获得借款而支付的成本，不应纳入利率上限审查范围",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-010-004"],
+      "evidence_ids": ["evidence-civil-loan-010-005", "evidence-civil-loan-010-006"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-010-005",
+      "case_id": "civil-loan-010",
+      "title": "诉讼费用等维权支出是否属于合理损失赔偿范围",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-010-004",
+      "related_claim_ids": ["claim-civil-loan-010-003"],
+      "related_defense_ids": ["defense-civil-loan-010-005"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-010-011",
+          "text": "合同中明确约定借款人违约时应承担出借人为实现债权而支出的律师费、诉讼费等合理费用",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-001"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-010-012",
+          "text": "出借人实际支出的律师费金额合理，与案件标的额及复杂程度相适应",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-010-005", "evidence-civil-loan-010-006"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-010-005"],
+      "evidence_ids": ["evidence-civil-loan-010-001", "evidence-civil-loan-010-005", "evidence-civil-loan-010-006"],
+      "status": "open"
+    }
+  ]
+}

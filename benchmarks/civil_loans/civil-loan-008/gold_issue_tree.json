@@ -1,0 +1,236 @@
+{
+  "case_id": "civil-loan-008",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-008-001",
+      "case_id": "civil-loan-008",
+      "title": "银行变更诉讼请求后是否具有上诉利益",
+      "issue_type": "procedural",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-008-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-008-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-008-001",
+          "text": "一审法院支持了银行的全部诉讼请求",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-008-002",
+          "text": "银行在一审中变更诉讼请求，实质系请求法院审查其抵销权行使的效力",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-002",
+            "evidence-civil-loan-008-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-008-003",
+          "text": "一审法院驳回了银行关于审查抵销权效力的变更请求",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-008-004",
+          "text": "银行就被驳回的变更请求提起上诉，该部分构成上诉利益",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-008-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-008-001",
+        "evidence-civil-loan-008-002",
+        "evidence-civil-loan-008-003",
+        "evidence-civil-loan-008-004"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-008-002",
+      "case_id": "civil-loan-008",
+      "title": "典当公司对其名下银行账户资金是否享有权利",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-008-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-008-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-008-005",
+          "text": "典当公司在银行开设有结算账户，账户内资金归属于典当公司",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-008-006",
+          "text": "银行将款项汇入典当公司账户并备注为履行生效判决，该款项进入账户后即归属典当公司",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-006",
+            "evidence-civil-loan-008-007"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-008-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-008-005",
+        "evidence-civil-loan-008-006",
+        "evidence-civil-loan-008-007"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-008-003",
+      "case_id": "civil-loan-008",
+      "title": "银行汇入款项并备注履行生效判决是否产生清偿效力",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-008-002",
+      "related_claim_ids": [
+        "claim-civil-loan-008-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-008-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-008-007",
+          "text": "银行向典当公司账户汇入款项时明确备注为履行生效判决确定的给付义务",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-008-008",
+          "text": "该汇款行为可认定为银行对生效判决确定债务的清偿，产生消灭该笔债务的法律后果",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-006",
+            "evidence-civil-loan-008-007"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-008-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-008-006",
+        "evidence-civil-loan-008-007"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-008-004",
+      "case_id": "civil-loan-008",
+      "title": "银行扣划典当公司账户存款是否符合合同约定（依约扣收的效力）",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-008-003"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-008-004"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-008-009",
+          "text": "银行与典当公司签订的借款合同中约定银行有权从典当公司账户中扣收到期债务",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-008"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-008-010",
+          "text": "银行实际从典当公司账户中扣划了相应款项用于偿还借款债务",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-009"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-008-011",
+          "text": "银行的扣划行为系依据合同约定的扣收权实施，属于依约扣收",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-008",
+            "evidence-civil-loan-008-009"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-008-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-008-008",
+        "evidence-civil-loan-008-009"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-008-005",
+      "case_id": "civil-loan-008",
+      "title": "抵销权行使条件是否成就及其法律效力",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-008-003"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-008-005"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-008-012",
+          "text": "银行对典当公司享有到期借款债权，典当公司对银行享有账户存款债权（基于清偿后的账户资金），双方互负到期债务",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-005",
+            "evidence-civil-loan-008-008"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-008-013",
+          "text": "银行依合同约定扣划账户存款的行为实质上构成合同约定抵销（或法定抵销的行使），产生消灭等额债权的法律后果",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-008-008",
+            "evidence-civil-loan-008-009",
+            "evidence-civil-loan-008-003"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-008-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-008-003",
+        "evidence-civil-loan-008-005",
+        "evidence-civil-loan-008-008",
+        "evidence-civil-loan-008-009"
+      ],
+      "status": "open"
+    }
+  ]
+}

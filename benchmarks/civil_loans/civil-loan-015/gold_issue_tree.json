@@ -1,0 +1,246 @@
+{
+  "case_id": "civil-loan-015",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-015-001",
+      "case_id": "civil-loan-015",
+      "title": "债权人对公司是否享有合法到期债权",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-015-001"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-015-001",
+          "text": "债权人与公司之间存在合法有效的借贷关系，债权已经生效判决或仲裁裁决确认",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-001",
+            "evidence-civil-loan-015-002"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-015-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-015-001",
+        "evidence-civil-loan-015-002"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-015-002",
+      "case_id": "civil-loan-015",
+      "title": "公司是否被吊销营业执照且未依法清算",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-015-002"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-015-002",
+          "text": "公司营业执照已被行政机关依法吊销",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-015-003",
+          "text": "公司自被吊销营业执照至今未组织清算",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-003",
+            "evidence-civil-loan-015-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-015-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-015-003",
+        "evidence-civil-loan-015-004"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-015-003",
+      "case_id": "civil-loan-015",
+      "title": "公司主要财产、账册、重要文件是否灭失以及是否导致无法清算",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-015-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-015-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-015-004",
+          "text": "公司的主要财产已无法查找或已被处置",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-015-005",
+          "text": "公司账册、重要文件（公司章程、股东会决议、财务账簿等）已灭失或下落不明",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-015-006",
+          "text": "因主要财产、账册灭失导致公司已无法进行正常清算",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-005",
+            "evidence-civil-loan-015-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-015-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-015-005",
+        "evidence-civil-loan-015-006"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-015-004",
+      "case_id": "civil-loan-015",
+      "title": "财产、账册灭失是否因股东怠于履行清算义务所致",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-015-003",
+      "related_claim_ids": [
+        "claim-civil-loan-015-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-015-001",
+        "defense-civil-loan-015-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-015-007",
+          "text": "股东在公司被吊销营业执照后十五日内未依法成立清算组进行清算",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-004"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-015-008",
+          "text": "股东长期怠于履行清算义务导致公司财产、账册在此期间灭失或流失",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-004",
+            "evidence-civil-loan-015-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-015-009",
+          "text": "股东的怠于清算行为与公司无法清算之间存在因果关系",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-015-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-015-004",
+        "evidence-civil-loan-015-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-015-005",
+      "case_id": "civil-loan-015",
+      "title": "大股东是否应对公司债务承担连带清偿责任",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-015-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-015-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-015-010",
+          "text": "大股东作为公司实际控制人和主要股东，对公司清算负有主要义务，怠于清算导致公司无法清算的应承担连带责任",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-007"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-015-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-015-007"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-015-006",
+      "case_id": "civil-loan-015",
+      "title": "小股东是否存在免责事由",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-015-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-015-002",
+        "defense-civil-loan-015-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-015-011",
+          "text": "小股东持股比例较低，未实际参与公司经营管理",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-008"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-015-012",
+          "text": "小股东能否证明其已积极履行了清算义务或已采取合理措施催促其他股东进行清算",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-009"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-015-013",
+          "text": "小股东未实际控制公司财产和账册，对账册灭失无过错",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-015-008"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-015-006"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-015-008",
+        "evidence-civil-loan-015-009"
+      ],
+      "status": "open"
+    }
+  ]
+}

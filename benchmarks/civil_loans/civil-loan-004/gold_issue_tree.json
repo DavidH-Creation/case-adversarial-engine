@@ -1,0 +1,154 @@
+{
+  "case_id": "civil-loan-004",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-004-001",
+      "case_id": "civil-loan-004",
+      "title": "金融借款合同关系是否成立并有效",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-004-001"],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-004-001",
+          "text": "债权人（银行）与债务人签订了金融借款合同，约定借款金额、利率、期限等主要条款",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-001"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-004-002",
+          "text": "债权人依约向债务人发放了贷款，借款已实际交付",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-002"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-004-001"],
+      "evidence_ids": [
+        "evidence-civil-loan-004-001",
+        "evidence-civil-loan-004-002"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-004-002",
+      "case_id": "civil-loan-004",
+      "title": "应收账款质押合同是否成立",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-004-002"],
+      "related_defense_ids": ["defense-civil-loan-004-001"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-004-003",
+          "text": "担保人（出质人）与债权人（质权人）签订了应收账款质押合同，合同系双方真实意思表示",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-004-004",
+          "text": "质押合同约定：质权未设立或无效情形下，出质人对主合同项下债务承担连带保证责任",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-003"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-004-002"],
+      "evidence_ids": [
+        "evidence-civil-loan-004-003"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-004-003",
+      "case_id": "civil-loan-004",
+      "title": "《应收账款确认函》涉嫌伪造印章是否影响质押合同的成立与效力",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-004-002",
+      "related_claim_ids": [],
+      "related_defense_ids": ["defense-civil-loan-004-001"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-004-005",
+          "text": "质押合同附件《应收账款确认函》的确认方印章涉嫌伪造",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-004", "evidence-civil-loan-004-005"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-004-006",
+          "text": "《应收账款确认函》的确认方是担保人的债务人（第三方），与质押合同当事人（出质人与质权人）无关",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-004"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-004-007",
+          "text": "涉嫌伪造印章的犯罪事实不影响出质人与质权人之间质押合同的成立",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-004-003"],
+      "evidence_ids": [
+        "evidence-civil-loan-004-004",
+        "evidence-civil-loan-004-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-004-004",
+      "case_id": "civil-loan-004",
+      "title": "刑民交叉情形下本案是否应当继续审理",
+      "issue_type": "procedural",
+      "parent_issue_id": "issue-civil-loan-004-003",
+      "related_claim_ids": [],
+      "related_defense_ids": ["defense-civil-loan-004-002"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-004-008",
+          "text": "涉嫌犯罪事实（伪造印章）的主体是担保人的债务人，并非质押合同的当事人",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-005"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-004-009",
+          "text": "犯罪线索与本案民事法律关系可分离，不构成\"先刑后民\"的法定事由",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-004-004"],
+      "evidence_ids": [
+        "evidence-civil-loan-004-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-004-005",
+      "case_id": "civil-loan-004",
+      "title": "担保人是否应承担连带保证责任",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-004-003"],
+      "related_defense_ids": ["defense-civil-loan-004-001", "defense-civil-loan-004-002"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-004-010",
+          "text": "质押合同明确约定出质人在质权未设立或无效情形下承担连带保证责任",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-004-011",
+          "text": "债务人未按期偿还借款本息，已构成违约",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-004-006"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-004-005"],
+      "evidence_ids": [
+        "evidence-civil-loan-004-003",
+        "evidence-civil-loan-004-006"
+      ],
+      "status": "open"
+    }
+  ]
+}

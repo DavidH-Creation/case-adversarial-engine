@@ -1,0 +1,38 @@
+{
+  "case_id": "civil-loan-004",
+  "case_slug": "civil-loan-004",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "应收账款质押合同中涉嫌伪造印章的刑民交叉处理（（2021）最高法民终654号）",
+  "description": "最高人民法院二审案件。核心争点为：（1）担保人与债权人签订应收账款质押合同，约定质权未设立或无效时担保人承担连带保证责任；（2）质押合同附件《应收账款确认函》上第三方印章涉嫌伪造，担保人据此主张质押合同不成立；（3）法院认定确认函确认方（担保人的债务人）并非质押合同当事人，伪造印章犯罪事实不影响质押合同成立，民事案件继续审理，犯罪线索移送侦查机关。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "agent-b-dual",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-004-001",
+      "name": "债权人/银行（原告）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-004-002",
+      "name": "借款人/债务人（被告）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-004-003",
+      "name": "担保人/出质人",
+      "side": "defendant",
+      "role_code": "guarantor_pledgor_agent"
+    }
+  ]
+}

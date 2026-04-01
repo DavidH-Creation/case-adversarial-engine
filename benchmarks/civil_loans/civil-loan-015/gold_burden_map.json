@@ -1,0 +1,77 @@
+{
+  "case_id": "civil-loan-015",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-015-001",
+      "case_id": "civil-loan-015",
+      "issue_id": "issue-civil-loan-015-001",
+      "burden_party_id": "party-civil-loan-015-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-015-001: 债权人与公司之间存在合法有效的借贷关系，债权已经生效判决确认",
+      "legal_basis": "债权人应提交生效法律文书证明对被告公司享有合法到期债权，这是主张股东清算责任的前提。",
+      "shift_condition": "债权人提交生效判决后，如被告主张债权已消灭，由被告举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-015-002",
+      "case_id": "civil-loan-015",
+      "issue_id": "issue-civil-loan-015-002",
+      "burden_party_id": "party-civil-loan-015-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-015-002: 公司营业执照已被吊销；fp-civil-loan-015-003: 公司未依法清算",
+      "legal_basis": "《公司法》第一百八十三条（原第一百八十条）。公司被吊销营业执照属于法定解散事由，股东应在法定期限内组织清算。债权人应举证公司已被吊销且至今未清算。",
+      "shift_condition": "债权人证明公司被吊销且未清算后，如股东主张已进行清算，由股东提交清算组成立及清算进展等证据。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-015-003",
+      "case_id": "civil-loan-015",
+      "issue_id": "issue-civil-loan-015-003",
+      "burden_party_id": "party-civil-loan-015-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-015-004: 公司主要财产灭失或被处置；fp-civil-loan-015-005: 公司账册、重要文件灭失；fp-civil-loan-015-006: 上述灭失导致公司无法清算",
+      "legal_basis": "《最高人民法院关于适用〈中华人民共和国公司法〉若干问题的规定（二）》第十八条第二款。债权人应初步证明公司主要财产、账册、重要文件灭失导致无法清算。",
+      "shift_condition": "债权人初步举证后，股东应反证证明财产、账册仍然完整或仍可进行清算。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-015-004",
+      "case_id": "civil-loan-015",
+      "issue_id": "issue-civil-loan-015-004",
+      "burden_party_id": "party-civil-loan-015-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-015-007: 股东在法定期限内未成立清算组；fp-civil-loan-015-009: 怠于清算与无法清算之间的因果关系",
+      "legal_basis": "《公司法司法解释（二）》第十八条第二款。有限责任公司的股东因怠于履行义务，导致公司主要财产、账册、重要文件等灭失，无法进行清算，债权人主张其对公司债务承担连带清偿责任的，人民法院应依法予以支持。",
+      "shift_condition": "债权人举证怠于清算事实后，股东如主张已尽到注意义务或灭失非其过错所致，应由股东承担反证责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-015-005",
+      "case_id": "civil-loan-015",
+      "issue_id": "issue-civil-loan-015-005",
+      "burden_party_id": "party-civil-loan-015-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-015-010: 大股东作为公司实际控制人对清算负有主要义务",
+      "legal_basis": "《公司法司法解释（二）》第十八条第二款。大股东作为公司实际控制人，对公司的财产、账册保管以及清算义务的履行负有主要责任。",
+      "shift_condition": "债权人证明大股东为控股股东后，大股东如主张其不应承担连带责任，应自行举证其已尽到清算义务或存在免责事由。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-015-006",
+      "case_id": "civil-loan-015",
+      "issue_id": "issue-civil-loan-015-006",
+      "burden_party_id": "party-civil-loan-015-004",
+      "burden_type": "免责抗辩举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-015-011: 小股东持股比例低且未实际参与经营；fp-civil-loan-015-012: 小股东已采取积极措施催促清算；fp-civil-loan-015-013: 小股东对账册灭失无过错",
+      "legal_basis": "《公司法司法解释（二）》第十八条第二款但书及《九民纪要》第14条。小股东主张其不应承担连带责任的，应举证证明其已积极履行了清算义务或已采取合理措施推动清算，对无法清算的结果不存在过错。仅以持股比例低或未参与经营为由不能当然免责。",
+      "shift_condition": "小股东证明其已尽到勤勉义务的，法院可酌情认定其不承担或减轻承担连带责任。",
+      "status": "active"
+    }
+  ]
+}

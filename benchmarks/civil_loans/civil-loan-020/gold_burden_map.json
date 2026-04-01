@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-020",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-020-001",
+      "case_id": "civil-loan-020",
+      "issue_id": "issue-civil-loan-020-001",
+      "burden_party_id": "party-civil-loan-020-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-020-002: 原债权人在诉讼过程中通过提交证据或陈述的方式披露了债权转让事实",
+      "legal_basis": "原《合同法》第80条第1款：\"债权人转让权利的，应当通知债务人。未经通知，该转让对债务人不发生效力。\"原债权人需证明已以某种方式将转让事实通知到债务人。",
+      "shift_condition": "原债权人提交庭审笔录等证据证明已在诉讼中披露转让事实且债务人确已知悉后，债务人如主张该通知方式无效，由债务人举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-020-002",
+      "case_id": "civil-loan-020",
+      "issue_id": "issue-civil-loan-020-001",
+      "burden_party_id": "party-civil-loan-020-002",
+      "burden_type": "转移后举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-020-001: 原债权人在诉讼前未向债务人发出书面债权转让通知（反面：债务人主张通知方式不合法）",
+      "legal_basis": "债务人抗辩诉讼中披露不构成合法通知的，应提出法律依据或证据支持。原《合同法》第80条未限制通知形式。",
+      "shift_condition": "债务人如能举证证明法律对通知形式有特定要求或诉讼中披露未达到通知效果，抗辩成立；否则抗辩不成立。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-020-003",
+      "case_id": "civil-loan-020",
+      "issue_id": "issue-civil-loan-020-003",
+      "burden_party_id": "party-civil-loan-020-001",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-020-007: 债权转让对债务人的效力自通知到达债务人时发生",
+      "legal_basis": "原《合同法》第80条第1款。债权转让的内部效力（转让人与受让人之间）自协议成立时生效，对外效力（对债务人）自通知到达时生效。原债权人需说明通知到达的具体时点。",
+      "shift_condition": "原债权人明确说明通知时点为二审庭审中，该说明义务即完成。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-020-004",
+      "case_id": "civil-loan-020",
+      "issue_id": "issue-civil-loan-020-004",
+      "burden_party_id": "party-civil-loan-020-002",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-020-010: 案涉民事权利义务在二审中因债权转让而发生转移（反面：债务人主张原告丧失诉讼主体资格）",
+      "legal_basis": "《民诉法司法解释》第249条：\"在诉讼中，争议的民事权利义务转移的，不影响当事人的诉讼主体资格和诉讼地位。\"债务人如主张原债权人已丧失原告资格，应举证证明不适用第249条的情形。",
+      "shift_condition": "债务人不能证明存在排除第249条适用的特殊情形的，原债权人诉讼主体资格不受影响。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-020-005",
+      "case_id": "civil-loan-020",
+      "issue_id": "issue-civil-loan-020-005",
+      "burden_party_id": "party-civil-loan-020-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-020-012: 原债权人与债务人之间存在合法有效的借款合同关系；fp-civil-loan-020-013: 借款已实际交付",
+      "legal_basis": "《民法典》第667条、第675条（原《合同法》第196条、第206条）。原告应举证证明借款合同成立生效、款项已交付、债务人逾期未还。",
+      "shift_condition": "原告完成基础债权存在的举证后，若债务人主张已还款或合同无效，由债务人举证。",
+      "status": "active"
+    }
+  ]
+}

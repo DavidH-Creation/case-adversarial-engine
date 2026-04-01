@@ -1,0 +1,32 @@
+{
+  "case_id": "civil-loan-008",
+  "case_slug": "civil-loan-008",
+  "case_type": "civil",
+  "civil_subtype": "金融借款合同",
+  "title": "银行扣收权与抵销权效力纠纷（（2020）鄂民终147号）",
+  "description": "本案涉及银行依合同约定扣收借款人账户存款的效力认定。核心争点包括：一审法院支持银行全部诉请后银行变更诉讼请求是否具有上诉利益；银行将款项汇入典当公司账户并备注履行生效判决是否产生清偿效力；银行依合同约定扣划典当公司账户存款是否构成依约扣收并产生消灭等额债权的法律后果。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "agent-a-dual",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-008-001",
+      "name": "银行（债权人）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-008-002",
+      "name": "典当公司（债务人）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    }
+  ]
+}

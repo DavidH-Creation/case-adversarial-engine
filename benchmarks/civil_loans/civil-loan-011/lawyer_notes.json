@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-011",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-011-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-011-003",
+      "evidence_ids": ["evidence-civil-loan-011-006", "evidence-civil-loan-011-007"],
+      "content": "收购承诺的法律性质认定是本案核心争点。从承诺内容看：（1）承诺的触发条件为借款人违约，具有从属性；（2）承诺的经济实质是担保人以自有资金覆盖债权人未获清偿的部分，等同于以信用担保；（3）银行将该承诺作为授信审批条件，进一步印证其增信功能。三者综合认定该承诺具有担保性质。"
+    },
+    {
+      "note_id": "note-civil-loan-011-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-011-004",
+      "evidence_ids": ["evidence-civil-loan-011-006"],
+      "content": "收购承诺与典型保证的区别在于形式而非实质。典型保证直接承诺代为清偿债务，而收购承诺通过\"收购抵押物和质物\"的方式间接实现债权人的受偿。但两者的经济效果一致——担保人均以自身财产和信用为债权人提供保障。法院应当\"穿透\"形式审查其实质法律关系，依据《民法典》担保司法解释第36条认定为非典型保证。"
+    },
+    {
+      "note_id": "note-civil-loan-011-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-011-004",
+      "evidence_ids": [],
+      "content": "实务中增信措施的法律定性是高频争议点。建议债权人方：（1）在收购承诺函中明确载明\"为债权提供担保\"的意思表示；（2）在授信审批材料中将收购承诺归入担保措施；（3）要求担保人在承诺函中确认知悉该承诺的担保性质。建议担保人方：如主张收购承诺不构成担保，应证明其为独立的商事交易安排（如资产收购的预约合同），不具有从属性。"
+    },
+    {
+      "note_id": "note-civil-loan-011-004",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-011-005",
+      "evidence_ids": [],
+      "content": "补充赔偿责任的适用意味着担保人处于最后清偿顺位。债权人必须先执行主债务人财产、实现抵押权和质权、向保证人追偿，仍有不足的部分才能要求非典型保证人承担。这一责任顺序体现了非典型保证人相较于典型保证人更弱的担保责任定位。"
+    },
+    {
+      "note_id": "note-civil-loan-011-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-011-002",
+      "evidence_ids": ["evidence-civil-loan-011-004", "evidence-civil-loan-011-005"],
+      "content": "海域使用权抵押属于特殊担保物权类型。需注意：（1）海域使用权抵押应在海洋行政主管部门办理登记；（2）海域使用权的评估价值和变现能力受海域类型、养殖许可等因素影响较大；（3）股权质押的实际价值取决于借款人公司的经营状况和资产负债情况。担保物的实际变现能力不足正是催生收购承诺这一增信安排的商业背景。"
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "case_id": "civil-loan-007",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-007-001",
+      "case_id": "civil-loan-007",
+      "title": "保证合同是否成立及保证方式认定",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-007-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-007-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-007-001",
+          "text": "保证人与债权人签订了保证合同，为借款人的借款债务提供保证担保",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-002",
+          "text": "保证合同中约定的保证方式（一般保证或连带保证）对保证期间的适用具有影响",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-003",
+          "text": "借款合同合法有效，主债权债务关系成立",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-002"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-007-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-007-001",
+        "evidence-civil-loan-007-002"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-007-002",
+      "case_id": "civil-loan-007",
+      "title": "债权人是否在保证期间内向保证人主张过保证责任",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-007-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-007-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-007-004",
+          "text": "保证期间为保证合同约定的期间或法定六个月期间",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-001",
+            "evidence-civil-loan-007-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-005",
+          "text": "债权人在保证期间内未以任何方式向保证人主张过保证责任",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-004"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-006",
+          "text": "债权人无法提供在保证期间内向保证人催收或提起诉讼的证据",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-007-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-007-001",
+        "evidence-civil-loan-007-004",
+        "evidence-civil-loan-007-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-007-003",
+      "case_id": "civil-loan-007",
+      "title": "保证期间届满后保证人保证责任是否免除",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-007-002",
+      "related_claim_ids": [
+        "claim-civil-loan-007-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-007-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-007-007",
+          "text": "债权人未在保证期间内依法向保证人主张权利，保证期间届满，保证人的保证责任依法免除",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-004",
+            "evidence-civil-loan-007-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-008",
+          "text": "保证责任的免除系因债权人怠于行使权利所致，保证人对此不存在过错",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-007-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-007-004",
+        "evidence-civil-loan-007-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-007-004",
+      "case_id": "civil-loan-007",
+      "title": "不良信用记录司法化的启动条件——过错责任原则",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-007-003"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-007-004"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-007-009",
+          "text": "不良信用记录司法化具有从属性特征，其启动需满足过错责任条件",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-010",
+          "text": "只有在过错责任条件下才能启动不良信用记录司法化程序，无过错责任和公平责任不应适用",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-011",
+          "text": "因不可抗力或商业风险等不可归责原因导致的损害，不能启动不良信用记录司法化程序",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-007-004"
+      ],
+      "evidence_ids": [],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-007-005",
+      "case_id": "civil-loan-007",
+      "title": "保证人是否有权请求删除不良信用记录",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-007-003",
+      "related_claim_ids": [
+        "claim-civil-loan-007-003"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-007-005"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-007-012",
+          "text": "金融机构将保证人列入不良信用记录，系基于保证人未履行保证责任的事实",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-013",
+          "text": "保证人的保证责任已因保证期间届满而免除，保证人不存在应履行而未履行保证责任的过错",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-003",
+            "evidence-civil-loan-007-004"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-014",
+          "text": "保证人无过错情况下被列入不良信用记录，金融机构应予删除",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-003",
+            "evidence-civil-loan-007-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-007-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-007-003",
+        "evidence-civil-loan-007-004",
+        "evidence-civil-loan-007-006"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-007-006",
+      "case_id": "civil-loan-007",
+      "title": "金融机构报送不良信用记录的合法性基础",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-007-004"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-007-006"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-007-015",
+          "text": "金融机构依据征信管理条例报送保证人不良信用记录",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-007"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-007-016",
+          "text": "金融机构报送不良信用记录应以保证人确实存在违约事实为前提，保证责任已免除则报送基础丧失",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-007-003",
+            "evidence-civil-loan-007-007"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-007-006"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-007-003",
+        "evidence-civil-loan-007-007"
+      ],
+      "status": "open"
+    }
+  ]
+}

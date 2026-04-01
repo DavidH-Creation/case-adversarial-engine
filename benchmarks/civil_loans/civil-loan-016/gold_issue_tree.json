@@ -1,0 +1,216 @@
+{
+  "case_id": "civil-loan-016",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-016-001",
+      "case_id": "civil-loan-016",
+      "title": "债权转让是否合法有效",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-016-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-016-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-016-001",
+          "text": "原债权人与债权受让人之间签订了合法有效的债权转让协议",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-016-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-002",
+          "text": "被转让的债权不属于法律规定的不得转让的债权类型",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-016-001",
+            "evidence-civil-loan-016-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-003",
+          "text": "债权转让已通知债务人，对债务人发生法律效力",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-016-003"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-016-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-016-001",
+        "evidence-civil-loan-016-002",
+        "evidence-civil-loan-016-003"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-016-002",
+      "case_id": "civil-loan-016",
+      "title": "债权受让人是否有权向债务人主张基础合同项下的债权",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-016-001",
+      "related_claim_ids": [
+        "claim-civil-loan-016-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-016-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-016-004",
+          "text": "债权转让生效后，受让人取得与债权有关的从权利，有权以自己名义向债务人主张权利",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-005",
+          "text": "债务人可以对受让人主张其对原债权人的抗辩",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-016-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-016-001",
+        "evidence-civil-loan-016-002",
+        "evidence-civil-loan-016-003"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-016-003",
+      "case_id": "civil-loan-016",
+      "title": "债权转让后合同履行地应如何确定",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-016-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-016-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-016-006",
+          "text": "合同履行地应依据被转让的基础合同（原借贷合同）确定，而非依据债权转让协议确定",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-016-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-007",
+          "text": "基础合同中约定了合同履行地或争议解决条款",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-016-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-008",
+          "text": "基础合同未约定履行地的，应按照法定规则以原合同当事人确定合同履行地",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-016-003",
+        "burden-civil-loan-016-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-016-002",
+        "evidence-civil-loan-016-004"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-016-004",
+      "case_id": "civil-loan-016",
+      "title": "债务人管辖利益保护——债权转让不应损害债务人程序权利",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-016-003",
+      "related_claim_ids": [],
+      "related_defense_ids": [
+        "defense-civil-loan-016-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-016-009",
+          "text": "债权转让是原债权人与受让人之间的法律行为，债务人并未参与该行为的意思表示",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-010",
+          "text": "债务人的管辖利益属于法定程序权利，不应因未经其同意的债权转让行为而受到不利变更",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-011",
+          "text": "如允许以债权受让人住所地确定管辖，将导致债权人通过转让债权选择管辖法院，损害债务人利益",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-016-005"
+      ],
+      "evidence_ids": [],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-016-005",
+      "case_id": "civil-loan-016",
+      "title": "受诉法院对本案是否享有管辖权",
+      "issue_type": "procedural",
+      "parent_issue_id": "issue-civil-loan-016-003",
+      "related_claim_ids": [],
+      "related_defense_ids": [
+        "defense-civil-loan-016-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-016-012",
+          "text": "按照基础合同确定的合同履行地不在受诉法院辖区范围内",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-016-004",
+            "evidence-civil-loan-016-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-013",
+          "text": "被告住所地亦不在受诉法院辖区范围内",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-016-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-016-014",
+          "text": "受诉法院对本案不享有管辖权，应将案件移送有管辖权的法院",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-016-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-016-004",
+        "evidence-civil-loan-016-005"
+      ],
+      "status": "open"
+    }
+  ]
+}

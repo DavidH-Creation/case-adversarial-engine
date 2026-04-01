@@ -1,0 +1,211 @@
+{
+  "case_id": "civil-loan-011",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-011-001",
+      "case_id": "civil-loan-011",
+      "title": "金融借款合同的效力及借款人违约事实认定",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-011-001"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-011-001",
+          "text": "银行与借款人签订金融借款合同，约定借款金额、期限、利率等条款",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-011-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-011-002",
+          "text": "银行已按合同约定发放贷款",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-011-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-011-003",
+          "text": "借款人到期未按约偿还借款本息，构成违约",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-011-003"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-011-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-011-001",
+        "evidence-civil-loan-011-002",
+        "evidence-civil-loan-011-003"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-011-002",
+      "case_id": "civil-loan-011",
+      "title": "海域使用权抵押及股权质押的效力认定",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-011-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-011-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-011-004",
+          "text": "借款人以海域使用权为借款合同设定抵押担保，并办理抵押登记",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-011-004"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-011-005",
+          "text": "借款人股东以其持有的股权为借款合同设定质押担保，并办理质押登记",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-011-005"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-011-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-011-004",
+        "evidence-civil-loan-011-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-011-003",
+      "case_id": "civil-loan-011",
+      "title": "收购承诺的法律性质——增信措施还是独立合同义务",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-011-003"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-011-002",
+        "defense-civil-loan-011-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-011-006",
+          "text": "担保人向银行出具书面承诺：借款人未按约还款时，将以不低于未获清偿借款本息的价格收购抵押物和质物",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-011-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-011-007",
+          "text": "该收购承诺的目的在于提高抵押物和质物的变现能力，为银行债权提供增信",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-011-006",
+            "evidence-civil-loan-011-007"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-011-008",
+          "text": "收购承诺的履行条件取决于主债务人是否违约，具有从属性和补充性",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-011-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-011-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-011-006",
+        "evidence-civil-loan-011-007"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-011-004",
+      "case_id": "civil-loan-011",
+      "title": "收购承诺是否应认定为非典型保证",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-011-003",
+      "related_claim_ids": [
+        "claim-civil-loan-011-003"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-011-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-011-009",
+          "text": "收购承诺实质上是担保人以自身信用为主债务提供担保，符合保证的核心特征",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-011-010",
+          "text": "收购承诺虽不采用典型保证合同形式，但具有从属性、补充性、单务性等保证基本属性",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-011-011",
+          "text": "依据《民法典》担保司法解释第36条，第三人提供的增信措施具有担保功能的，可参照保证规则处理",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-011-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-011-006"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-011-005",
+      "case_id": "civil-loan-011",
+      "title": "担保人承担补充赔偿责任的范围与顺序",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-011-004",
+      "related_claim_ids": [
+        "claim-civil-loan-011-004"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-011-004"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-011-012",
+          "text": "依据《民法典》担保司法解释第36条第4款，非典型保证人仅对主债务人、抵押人、出质人、保证人均不能清偿的部分承担补充赔偿责任",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-011-013",
+          "text": "补充赔偿责任的适用要求债权人先穷尽对主债务人及其他担保人的追索",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-011-005"
+      ],
+      "evidence_ids": [],
+      "status": "open"
+    }
+  ]
+}

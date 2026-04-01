@@ -1,0 +1,77 @@
+{
+  "case_id": "civil-loan-001",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-001-001",
+      "case_id": "civil-loan-001",
+      "issue_id": "issue-civil-loan-001-001",
+      "burden_party_id": "party-civil-loan-001-003",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-001-003: 新贷款项实际用于偿还旧贷本息，资金流向可追溯",
+      "legal_basis": "《担保法司法解释》第39条第1款。保证人主张借新还旧以免除保证责任的，应首先证明借新还旧事实成立。根据《民事诉讼法》第67条\"谁主张、谁举证\"原则，保证人对此免责事由承担举证责任。",
+      "shift_condition": "保证人提交新旧贷合同、银行流水等证明资金流向后，举证责任转移至债权人证明借款用途并非偿还旧贷或保证人知情。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-001-002",
+      "case_id": "civil-loan-001",
+      "issue_id": "issue-civil-loan-001-003",
+      "burden_party_id": "party-civil-loan-001-003",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-001-007: 保证人签订保证合同时不知道新贷的实际用途为偿还旧贷",
+      "legal_basis": "《担保法司法解释》第39条第1款。保证人主张免责的，应对\"不知道且不应当知道\"承担举证责任。",
+      "shift_condition": "保证人举证证明保证合同中载明的借款用途非偿还旧贷后，举证责任转移至债权人证明保证人知情。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-001-003",
+      "case_id": "civil-loan-001",
+      "issue_id": "issue-civil-loan-001-003",
+      "burden_party_id": "party-civil-loan-001-001",
+      "burden_type": "转移后举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-001-009: 保证人无从通过合理注意义务获知借新还旧的事实（反面：债权人主张保证人知情或应知情）",
+      "legal_basis": "保证人完成初步举证后，债权人如主张保证人知道或应当知道借新还旧事实，应举证证明。",
+      "shift_condition": "债权人举证证明保证人知情的，保证人免责抗辩不成立。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-001-004",
+      "case_id": "civil-loan-001",
+      "issue_id": "issue-civil-loan-001-004",
+      "burden_party_id": "party-civil-loan-001-003",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-001-012: 保证人基于对其他借款用途的信赖而提供担保的缔约基础不复存在，应免除保证责任",
+      "legal_basis": "《担保法司法解释》第39条第1款。保证人需说明其系基于对特定借款用途的信赖而提供担保。",
+      "shift_condition": "无需转移；此为保证人对自身免责法律构成要件的说明责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-001-005",
+      "case_id": "civil-loan-001",
+      "issue_id": "issue-civil-loan-001-005",
+      "burden_party_id": "party-civil-loan-001-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-001-013: 该保证人同时为旧贷和新贷提供了保证担保",
+      "legal_basis": "债权人主张同一保证人仍应承担保证责任的，应举证证明新旧贷保证人系同一主体。同一保证人时即使不知借新还旧目的，因担保风险总量未增加，仍应承担保证责任。",
+      "shift_condition": "债权人证明保证人身份同一性后，保证人如主张风险实质增加应自行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-001-006",
+      "case_id": "civil-loan-001",
+      "issue_id": "issue-civil-loan-001-006",
+      "burden_party_id": "party-civil-loan-001-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-001-016: 新贷借款合同合法有效；fp-civil-loan-001-017: 借款人到期未偿还新贷本息",
+      "legal_basis": "《民法典》第667条、第675条。原告（债权人）应举证证明借款合同成立生效、款项已交付、借款人逾期未还。",
+      "shift_condition": "原告完成举证后，如借款人主张合同无效或已还款，由借款人举证。",
+      "status": "active"
+    }
+  ]
+}

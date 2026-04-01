@@ -1,0 +1,38 @@
+{
+  "case_id": "civil-loan-001",
+  "case_slug": "civil-loan-001",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "借新还旧中保证人责任认定纠纷（（2018）苏民再316号）",
+  "description": "本案涉及以新贷偿还旧贷情形下保证人的责任认定。核心争点包括：借新还旧是否影响保证人责任；保证人是否知道或应当知道借款用途为偿还旧贷；新旧贷款系同一保证人时的特殊处理规则。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "agent-a-dual",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-001-001",
+      "name": "债权人（出借人）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-001-002",
+      "name": "借款人（债务人）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-001-003",
+      "name": "保证人",
+      "side": "defendant",
+      "role_code": "guarantor_agent"
+    }
+  ]
+}

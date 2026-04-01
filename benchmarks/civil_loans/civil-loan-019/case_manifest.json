@@ -1,0 +1,32 @@
+{
+  "case_id": "civil-loan-019",
+  "case_slug": "civil-loan-019",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "仅凭借条主张债权但无法证明实际交付的借贷纠纷（（1998）琼高法民终字第8号）",
+  "description": "出借人仅凭一张借条主张债权，无法证明借款来源和已实际交付的事实，且对借款交付时间、地点、数额、付款前现金保存方式等具体情况的陈述存在多处前后不一致，不足以认定借款事实存在，债权主张不予支持。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-019-001",
+      "name": "出借人（原告）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-019-002",
+      "name": "借款人（被告）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    }
+  ]
+}

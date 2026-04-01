@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-004",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-004-001",
+      "case_id": "civil-loan-004",
+      "issue_id": "issue-civil-loan-004-001",
+      "burden_party_id": "party-civil-loan-004-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-004-001: 债权人与债务人签订金融借款合同并实际发放贷款",
+      "legal_basis": "《民法典》第667条、第674条：借款合同是借款人向贷款人借款，到期返还借款并支付利息的合同。债权人主张借款合同关系成立，应举证证明合同签订及款项交付事实。",
+      "shift_condition": "债权人提交借款合同及放款凭证后，举证责任转移至债务人就合同效力或还款事实提出反驳。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-004-002",
+      "case_id": "civil-loan-004",
+      "issue_id": "issue-civil-loan-004-002",
+      "burden_party_id": "party-civil-loan-004-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-004-003: 担保人与债权人签订应收账款质押合同，合同系双方真实意思表示",
+      "legal_basis": "《民法典》第440条、第445条：债务人或者第三人有权处分的应收账款可以出质。质权自办理出质登记时设立。债权人主张质押合同成立，应举证证明合同签订事实。",
+      "shift_condition": "债权人提交质押合同原件后，担保人如主张合同无效或不成立，应提出相应抗辩证据。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-004-003",
+      "case_id": "civil-loan-004",
+      "issue_id": "issue-civil-loan-004-003",
+      "burden_party_id": "party-civil-loan-004-003",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "fp-civil-loan-004-005: 质押合同附件《应收账款确认函》存在伪造印章的犯罪事实，应导致质押合同不成立",
+      "legal_basis": "《最高人民法院关于在审理经济纠纷案件中涉及经济犯罪嫌疑若干问题的规定》第1条、第10条：同一公民、法人或其他经济组织因不同的法律事实，分别涉及经济纠纷和经济犯罪嫌疑的，经济纠纷案件和经济犯罪嫌疑案件应当分开审理。担保人主张刑事犯罪影响民事合同效力，应举证证明犯罪事实与合同成立之间存在因果关系。",
+      "shift_condition": "担保人证明印章伪造事实后，债权人应证明伪造印章的主体并非质押合同当事人，犯罪事实不影响合同成立。法院最终认定确认函确认方（第三方）与质押合同当事人无关，犯罪线索移送侦查机关，民事案件继续审理。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-004-004",
+      "case_id": "civil-loan-004",
+      "issue_id": "issue-civil-loan-004-004",
+      "burden_party_id": "party-civil-loan-004-003",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "fp-civil-loan-004-009: 本案应因涉嫌犯罪而中止审理（先刑后民）",
+      "legal_basis": "《民事诉讼法》第153条：本案是否必须以另一案的审理结果为依据而该案尚未审结的，中止诉讼。担保人主张先刑后民，须证明刑事案件结果构成本案民事审理的前提。",
+      "shift_condition": "担保人提出先刑后民的抗辩后，法院依职权审查刑民交叉关系。法院认定涉嫌犯罪事实的主体（第三方）并非本案当事人，刑事结果不构成本案民事审理的前提，驳回中止审理的请求。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-004-005",
+      "case_id": "civil-loan-004",
+      "issue_id": "issue-civil-loan-004-005",
+      "burden_party_id": "party-civil-loan-004-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-004-010: 质押合同约定出质人在质权未设立或无效时承担连带保证责任，且债务人已违约",
+      "legal_basis": "《民法典》第688条：连带责任保证的债务人不履行到期债务或者发生当事人约定的情形时，债权人可以请求债务人履行债务，也可以请求保证人在其保证范围内承担保证责任。债权人主张担保人承担连带保证责任，应证明保证条款有效及主债务人违约事实。",
+      "shift_condition": "债权人提交质押合同（含连带保证条款）及违约证明后，担保人如主张免除保证责任，应举证证明存在法定或约定的免责事由。",
+      "status": "active"
+    }
+  ]
+}

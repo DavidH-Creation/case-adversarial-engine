@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-006",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-006-001",
+      "case_id": "civil-loan-006",
+      "issue_id": "issue-civil-loan-006-001",
+      "burden_party_id": "party-civil-loan-006-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-006-001: 原告与被告之间签订了借款合同，约定了借款金额、利率、还款期限等主要条款；fp-civil-loan-006-002: 原告已将借款资金通过银行转账方式交付给被告",
+      "legal_basis": "根据《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》第二条，出借人向人民法院提起民间借贷诉讼时，应当提供借据、收据、欠条等债权凭证以及其他能够证明借贷法律关系存在的证据。出借人须举证证明借贷合意及款项交付两个要件。",
+      "shift_condition": "原告提交借款合同及银行转账凭证后，初步证明借贷关系成立。被告如否认借贷关系，须举证证明款项系其他法律关系（如投资、赠与等）而非借款。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-006-002",
+      "case_id": "civil-loan-006",
+      "issue_id": "issue-civil-loan-006-002",
+      "burden_party_id": "party-civil-loan-006-002",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-006-003: 借款人在放款日前或同日向出借人支付了名义利息；fp-civil-loan-006-004: 借款人支付该款项时尚未实际占有借款资金，不具备利息支付的前提条件",
+      "legal_basis": "根据《合同法》第二百条：'借款的利息不得预先在本金中扣除。利息预先在本金中扣除的，应当按照实际借款数额返还借款并计算利息。'被告方主张存在砍头息的，须举证证明在放款前/同日已支付利息，且该支付不具备利息给付的前提（即借款人尚未实际占有和使用借款资金）。",
+      "shift_condition": "被告提交放款日前/同日支付利息的银行转账凭证后，举证责任转移至原告方。原告须证明该款项系正常利息支付而非预扣利息（如证明借款人已实际使用借款资金后自愿提前支付利息）。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-006-003",
+      "case_id": "civil-loan-006",
+      "issue_id": "issue-civil-loan-006-003",
+      "burden_party_id": "party-civil-loan-006-002",
+      "burden_type": "转移后举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-006-006: 合同约定借款本金与出借人实际交付金额之间存在差额；fp-civil-loan-006-007: 应当将实际出借的金额认定为本金",
+      "legal_basis": "根据《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》第二十七条：'借据、收据、欠条等债权凭证载明的借款金额，一般认定为本金。预先在本金中扣除利息的，人民法院应当将实际出借的金额认定为本金。'被告主张实际本金低于合同约定金额的，须提供银行流水等证据证明资金往来的真实情况。",
+      "shift_condition": "被告举证放款日前/同日回付利息的银行凭证后，法院应结合放款转账凭证、利息回付凭证综合认定实际出借本金。原告如主张合同约定金额即为实际本金，须对差额部分作出合理解释。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-006-004",
+      "case_id": "civil-loan-006",
+      "issue_id": "issue-civil-loan-006-004",
+      "burden_party_id": "party-civil-loan-006-002",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-006-008: 出借人以合同约定的借款金额为基数计算利息，构成重复计息或高于实际出借本金计息",
+      "legal_basis": "利息的支付应以借款人实际占有借款为前提（《合同法》第二百条立法本意）。出借人以虚高本金为基数计算利息的，借款人有权要求以实际出借本金为基数重新计算。根据《民间借贷司法解释》第二十七条精神，法院有权依职权对利息计算基数进行审查和调整。",
+      "shift_condition": "被告提出利息计算基数异议后，原告须说明利息计算依据及合理性。法院可依据查明的实际出借金额，依职权调整利息计算基数。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-006-005",
+      "case_id": "civil-loan-006",
+      "issue_id": "issue-civil-loan-006-005",
+      "burden_party_id": "party-civil-loan-006-002",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-006-011: 出借人通过预先收取利息的方式，使借款人承担了超出实际借款金额的利息负担，实质上谋取了不当利益",
+      "legal_basis": "根据《合同法》第二百条及《民间借贷司法解释》第二十七条的立法目的，上述规定旨在防止出借人利用资金优势地位，假借利息名义谋取不当利益。不论出借人以何种手段谋取不当利益，均应以是否符合利息取得的前提和支付条件进行认定。借款人可从借款过程、资金流向、利息计算方式等方面综合举证证明出借人存在不当利益。",
+      "shift_condition": "被告举证出借人存在预先扣息等行为后，法院应综合审查交易过程。原告如主张其利息收取合法合理，须对资金流向及利息支付的时间节点作出合理解释。",
+      "status": "active"
+    }
+  ]
+}

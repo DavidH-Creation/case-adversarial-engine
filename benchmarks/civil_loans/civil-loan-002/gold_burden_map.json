@@ -1,0 +1,113 @@
+{
+  "case_id": "civil-loan-002",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-002-001",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-001",
+      "burden_party_id": "party-civil-loan-002-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-002-001: 债权人与债务人之间签订了借款合同，约定了借款金额、利率及还款期限",
+      "legal_basis": "《民法典》第667条：借款合同是借款人向贷款人借款，到期返还借款并支付利息的合同。债权人主张借贷关系成立，应对借款合同的存在及生效承担举证责任。",
+      "shift_condition": "债权人提交借款合同原件及银行放款凭证后，如债务人对合同效力提出抗辩，由债务人举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-002-002",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-002",
+      "burden_party_id": "party-civil-loan-002-003",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-002-004: 法院已依法宣告担保人为限制民事行为能力人",
+      "legal_basis": "《民法典》第24条：不能辨认或者不能完全辨认自己行为的成年人，其利害关系人或者有关组织，可以向人民法院申请认定该成年人为无民事行为能力人或者限制民事行为能力人。担保人一方主张行为能力欠缺，应举证提交法院宣告裁定。",
+      "shift_condition": "担保人提交法院宣告裁定书后，举证责任转移至债权人就裁定效力或宣告时间提出反驳。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-002-003",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-003",
+      "burden_party_id": "party-civil-loan-002-003",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-002-006: 签署巨额担保协议的行为与担保人的智力、精神健康状况不相适应",
+      "legal_basis": "《民法典》第145条第1款：限制民事行为能力人实施的纯获利益的民事法律行为或者与其年龄、智力、精神健康状况相适应的民事法律行为有效；实施的其他民事法律行为经法定代理人同意或者追认后有效。担保人一方应证明签署担保协议超出其行为能力范围。",
+      "shift_condition": "担保人一方证明担保行为与其精神健康状况不相适应后，如债权人主张该行为属于限制行为能力人可独立实施的行为，由债权人举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-002-004",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-003",
+      "burden_party_id": "party-civil-loan-002-003",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-002-007: 担保人的法定代理人拒绝追认该担保合同",
+      "legal_basis": "《民法典》第145条第1款：限制民事行为能力人实施的其他民事法律行为经法定代理人同意或者追认后有效。担保人一方应证明法定代理人已拒绝追认。",
+      "shift_condition": "无。法定代理人明确拒绝追认后，合同效力归于无效，不存在进一步举证责任转移。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-002-005",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-004",
+      "burden_party_id": "party-civil-loan-002-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-002-008: 债权人主张担保人对担保合同无效存在过错，应证明担保人对担保行为具有识别能力",
+      "legal_basis": "《担保法》第5条第2款：担保合同被确认无效后，债务人、担保人、债权人有过错的，应当根据其过错各自承担相应的民事责任。主张他方有过错者承担举证责任。本案中，担保人因欠缺行为能力对担保行为的性质及后果不具有识别能力，不存在过错。",
+      "shift_condition": "如债权人无法证明担保人有过错，则不得依据《担保法司法解释》第7条推定担保人承担连带赔偿责任。因担保人行为能力欠缺导致的合同无效，过错推定规则不适用。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-002-006",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-005",
+      "burden_party_id": "party-civil-loan-002-003",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-002-010: 债权人在接受担保时未尽合理审查义务，未核实担保人的行为能力状况",
+      "legal_basis": "《民法典》第500条（缔约过失责任）及诚实信用原则。担保人一方主张债权人在缔约过程中存在过错（未尽审查义务），应就债权人的过错事实承担初步举证责任。",
+      "shift_condition": "担保人一方初步证明债权人未尽审查义务后，举证责任转移至债权人证明其已尽合理注意义务。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-002-007",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-006",
+      "burden_party_id": "party-civil-loan-002-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-002-012: 债权人主张担保合同无效后担保人应承担赔偿责任",
+      "legal_basis": "《担保法司法解释》第7条：主合同有效而担保合同无效，债权人无过错的，担保人与债务人对主合同债权人的经济损失承担连带赔偿责任。债权人主张适用该条，需证明自身无过错。但本案中担保人因欠缺行为能力而合同无效，该条的过错推定前提不成立。",
+      "shift_condition": "如法院认定担保人无过错（因行为能力欠缺），则《担保法司法解释》第7条不适用，债权人应依据《担保法》第5条第2款按各方实际过错分担责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-002-008",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-006",
+      "burden_party_id": "party-civil-loan-002-003",
+      "burden_type": "转移后举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "fp-civil-loan-002-013: 担保人因不具有行为能力而对担保合同无效不具有过错，不应承担连带赔偿责任",
+      "legal_basis": "《担保法》第5条第2款赔偿责任以过错为基础。担保人因欠缺行为能力，对提供担保的性质及后果不具有识别能力，不存在过错，担保合同无效亦非因担保人过错所致。担保人对此承担说明责任。",
+      "shift_condition": "无进一步转移。担保人证明自身无过错后，由法院依据各方过错程度确定责任分担比例。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-002-009",
+      "case_id": "civil-loan-002",
+      "issue_id": "issue-civil-loan-002-007",
+      "burden_party_id": "party-civil-loan-002-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-002-014: 债务人未按借款合同约定按期偿还借款本金及利息",
+      "legal_basis": "《民法典》第675条：借款人应当按照约定的期限返还借款。债权人主张债务人违约，应证明借款到期及催告事实。",
+      "shift_condition": "债权人证明借款到期后，如债务人主张已还款或存在免责事由，由债务人举证。",
+      "status": "active"
+    }
+  ]
+}

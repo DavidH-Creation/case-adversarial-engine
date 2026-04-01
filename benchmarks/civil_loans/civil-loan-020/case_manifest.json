@@ -1,0 +1,38 @@
+{
+  "case_id": "civil-loan-020",
+  "case_slug": "civil-loan-020",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "债权转让诉讼中披露视为通知及原审原告诉讼地位纠纷（（2019）最高法民终506号）",
+  "description": "债权人转让债权未通知债务人，但在诉讼中披露相关信息的，应当视为转让债权的通知行为。根据原合同法第80条第1款，债务人在二审中得知案涉债权转让时，该转让始对其发生效力。争议的民事权利义务在二审中发生转移，根据民诉法司法解释第249条，不影响原债权人作为原审原告的诉讼主体资格和诉讼地位。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-020-001",
+      "name": "原债权人（原告）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-020-002",
+      "name": "债务人（被告）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-020-003",
+      "name": "债权受让人",
+      "side": "plaintiff",
+      "role_code": "assignee_agent"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "case_id": "civil-loan-010",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-010-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-010-001",
+      "evidence_ids": ["evidence-civil-loan-010-001", "evidence-civil-loan-010-002"],
+      "content": "借款合同在约定借款利率之外，另行约定借款人须支付服务费、咨询费、管理费等多项费用。从费用收取方式看，部分费用在放款时直接从借款本金中预扣，借款人实际到手金额低于合同约定的借款本金。该等费用系借款人为获取借款必须支付的成本，出借人未能举证证明其实际提供了独立的咨询、管理等服务，因此在性质上与借款利率无异。"
+    },
+    {
+      "note_id": "note-civil-loan-010-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-010-002",
+      "evidence_ids": ["evidence-civil-loan-010-003", "evidence-civil-loan-010-004"],
+      "content": "将合同约定的利息、逾期利息、违约金与服务费、咨询费、管理费合并计算后，借款人承担的综合年化成本远超民间借贷利率保护上限（合同成立时一年期LPR的四倍）。还款流水显示出借人将借款人的还款分别计入利息和各项费用科目，实质上通过费用名目拆分的方式规避利率上限，属于变相获取高息。超出利率上限的部分不应获得法律保护，已支付的超出部分可冲抵本金。"
+    },
+    {
+      "note_id": "note-civil-loan-010-003",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-010-003",
+      "evidence_ids": ["evidence-civil-loan-010-001"],
+      "content": "借款合同同时约定了逾期利息条款和违约金条款。逾期利息按逾期天数和约定利率计算，违约金按固定比例计算。两项费用均因借款人迟延还款而触发，在功能上具有同质性，均属于对出借人因借款人违约所受损失的补偿。根据司法解释规定，两者应合并计算，总额不得超过合同成立时一年期LPR的四倍。"
+    },
+    {
+      "note_id": "note-civil-loan-010-004",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-010-004",
+      "evidence_ids": ["evidence-civil-loan-010-005", "evidence-civil-loan-010-006"],
+      "content": "律师费与服务费、咨询费、管理费在法律性质上存在根本区别。服务费等系借款人为获得借款的必然成本，无论借款人是否违约均须支付；律师费系出借人因借款人违约后提起诉讼的或然支出，借款人如约履行还款义务则不产生律师费。律师费不属于出借人因借贷关系获得的金钱利益，而是因维权诉讼产生的损失和支出。因此，律师费不应归入利率上限审查范围，而应作为违约损害赔偿独立审查。"
+    },
+    {
+      "note_id": "note-civil-loan-010-005",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-010-005",
+      "evidence_ids": ["evidence-civil-loan-010-001", "evidence-civil-loan-010-005", "evidence-civil-loan-010-006"],
+      "content": "借款合同明确约定借款人违约时应承担出借人为实现债权支出的律师费。出借人提交了律师代理合同、律师费发票及转账凭证，证据链完整，可证明律师费已实际发生。法院对律师费合理性的审查应结合当地律师收费标准、案件标的额及复杂程度综合判断。"
+    },
+    {
+      "note_id": "note-civil-loan-010-006",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-010-001",
+      "evidence_ids": [],
+      "content": "代理出借人一方时，应尽量避免在借款合同中设置服务费、咨询费、管理费等可能被认定为变相利息的费用名目。如确需收取此类费用，须确保有真实的服务内容与之对应，并保留服务合同、服务记录等独立证据。代理借款人一方时，应重点收集费用从本金中预扣的证据，以及出借人未提供实际服务的相关事实，主张将全部费用合并计入利率进行审查。"
+    },
+    {
+      "note_id": "note-civil-loan-010-007",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-010-004",
+      "evidence_ids": [],
+      "content": "本案确立的律师费性质区分规则具有重要的实务指引价值。借款人抗辩时不应将律师费与服务费等混为一谈地主张均属变相高利，这一策略通常不会获得法院支持。出借人主张律师费时，须完整保留律师代理合同、发票和支付凭证三件套，同时注意律师费金额应与当地收费标准和案件规模相适应，过高的律师费可能被法院依职权调减。对于系列案件批量委托律师的情形，应注意单案律师费分摊的合理性问题。"
+    }
+  ]
+}

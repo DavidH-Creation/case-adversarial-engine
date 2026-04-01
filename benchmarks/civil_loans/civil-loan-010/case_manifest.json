@@ -1,0 +1,35 @@
+{
+  "case_id": "civil-loan-010",
+  "case_slug": "civil-loan-010",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "民间借贷变相高利认定及律师费性质区分纠纷（（2021）最高法民申1140号）",
+  "case_number": "（2021）最高法民申1140号",
+  "court": "最高人民法院",
+  "cause_of_action": "借款合同纠纷",
+  "description": "本案涉及民间借贷中变相高利的认定标准及律师费等诉讼支出的性质区分。核心争点包括：借款合同中约定的服务费、咨询费、管理费等费用是否实质上属于借款人为获得借款支付的成本，应与利息合并计算并受利率保护上限约束；律师费、诉讼费用等因借款人违约而产生的维权支出是否属于出借人获得的金钱利益，是否应归入利率上限审查范围。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-010-001",
+      "name": "出借人/原告",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-010-002",
+      "name": "借款人/被告",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "case_id": "civil-loan-003",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-003-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-003-002",
+      "evidence_ids": ["evidence-civil-loan-003-003", "evidence-civil-loan-003-005"],
+      "content": "还款协议使用'代为偿还'措辞，结合债权人未免除原债务人义务且明确不认可债务转移的陈述，法院认定该协议性质为债务加入而非债务转移。债务加入的认定核心在于：原借款合同未变更、债权人未作免责意思表示。"
+    },
+    {
+      "note_id": "note-civil-loan-003-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-003-003",
+      "evidence_ids": ["evidence-civil-loan-003-003"],
+      "content": "'代为偿还'在语义上是中性表述，既可解释为代替清偿（导致债务转移），也可解释为加入清偿（导致债务加入）。在存在歧义时，结合合同目的解释原则和保护债权人利益原则，应从严解释，不宜当然推定为债务转移。推定为债务加入更有利于保障债权人的完整追索权。"
+    },
+    {
+      "note_id": "note-civil-loan-003-003",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-003-004",
+      "evidence_ids": ["evidence-civil-loan-003-004"],
+      "content": "债务加入并未改变原借款合同的主体和内容，仅是在原债务关系上增加了一个新的清偿义务人。因此原保证合同的基础——即担保的主债务——并未发生实质变化，保证人的担保责任不受影响。这与债务转移情形不同，债务转移可能触发《民法典》第697条保证人免责条款。"
+    },
+    {
+      "note_id": "note-civil-loan-003-004",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-003-002",
+      "evidence_ids": [],
+      "content": "实务中区分债务加入与债务转移的关键判断标准：（1）是否有债权人明确免除原债务人义务的意思表示——有则为债务转移，无则倾向债务加入；（2）原借款合同内容是否发生变更；（3）各方签订协议时的真实意思表示。律师代理此类案件应注意在协议中明确约定究竟是'并存的债务承担'还是'免责的债务承担'，避免歧义。"
+    },
+    {
+      "note_id": "note-civil-loan-003-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-003-004",
+      "evidence_ids": ["evidence-civil-loan-003-003", "evidence-civil-loan-003-004"],
+      "content": "从债权人角度，债务加入是最有利的结果——既保留对原债务人的追索权，又增加了第三人作为新的清偿主体，且原保证人的保证责任不受影响。代理债权人时，应注意在诉讼中明确主张：（1）不同意免除原债务人义务；（2）不认可债务已转移；（3）主张第三人构成债务加入。同时应避免在还款协议或沟通中出现任何可能被解读为同意债务转移的表述。"
+    },
+    {
+      "note_id": "note-civil-loan-003-006",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-003-002",
+      "evidence_ids": [],
+      "content": "《民法典》第552条对债务加入进行了明确规定，相比此前司法实践中依据合同法基本原则和类推适用的做法，提供了更为清晰的法律依据。但需注意，民法典施行前发生的民事法律事实引起的案件仍适用当时的法律。本案（2019年判决）适用的是民法通则及合同法的相关规定，但裁判逻辑与民法典第552条的立法精神一致。"
+    },
+    {
+      "note_id": "note-civil-loan-003-007",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-003-005",
+      "evidence_ids": ["evidence-civil-loan-003-001", "evidence-civil-loan-003-003", "evidence-civil-loan-003-004"],
+      "content": "法院最终认定：第三人构成债务加入，应与债务人对债权人承担连带清偿义务；连带责任保证人的保证责任不因债务加入而免除，仍应按原保证合同承担连带保证责任。即债权人可同时向债务人、第三人（债务加入人）和连带责任保证人主张权利。"
+    }
+  ]
+}

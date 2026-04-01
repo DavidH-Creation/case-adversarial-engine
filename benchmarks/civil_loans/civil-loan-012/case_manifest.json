@@ -1,0 +1,35 @@
+{
+  "case_id": "civil-loan-012",
+  "case_slug": "civil-loan-012",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "case_number": "（2021）最高法民再37号",
+  "court": "最高人民法院",
+  "cause_of_action": "民间借贷纠纷",
+  "title": "民间借贷原告主体资格与立案审查标准纠纷（（2021）最高法民再37号）",
+  "description": "1.借款合同签订人依据借款合同提起诉讼的，具备原告主体资格。法院在立案受理阶段只需审查原告是否提交了证明借贷法律关系存在的证据，出借人经济状况、款项来源等均属实体审查范畴。2.《民间借贷规定》第2条第2款中关于债权人资格抗辩的适用前提为债权凭证没有载明债权人。如果债权凭证明确载明原告的债权人身份，应进行实体审理，不应以原告非实际借款人为由驳回起诉。3.上级法院指令审理后，下级法院不得变更裁判理由再次驳回起诉。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-012-001",
+      "name": "债权人/原告",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-012-002",
+      "name": "借款人/被告",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    }
+  ]
+}

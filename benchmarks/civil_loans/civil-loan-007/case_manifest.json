@@ -1,0 +1,38 @@
+{
+  "case_id": "civil-loan-007",
+  "case_slug": "civil-loan-007",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "保证期间届满后保证人不良信用记录删除纠纷（（2022）豫1727民初2523号）",
+  "description": "本案涉及保证期间届满后保证人请求删除不良信用记录的纠纷。核心争点包括：债权人是否在保证期间内向保证人主张过保证责任；保证期间届满后保证人保证责任是否免除；不良信用记录司法化程序的启动条件（过错责任原则）；以及保证人在无过错情况下是否有权请求金融机构删除不良信用记录。法院认定债权人未在保证期间内向保证人主张保证责任，保证责任因此免除，保证人对此无过错，故支持保证人删除不良信用记录的诉请。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-007-001",
+      "name": "债权人/金融机构（被告）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-007-002",
+      "name": "保证人（原告）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-007-003",
+      "name": "借款人/债务人",
+      "side": "third_party",
+      "role_code": "borrower_agent"
+    }
+  ]
+}

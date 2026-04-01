@@ -1,0 +1,38 @@
+{
+  "case_id": "civil-loan-016",
+  "case_slug": "civil-loan-016",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "债权转让后合同履行地与管辖确定纠纷（（2019）沪0107民初13686号）",
+  "description": "债权转让后，债权受让人起诉原债务人的，合同履行地应当依据被转让的基础合同确定。债权受让人虽享有原合同债权人的权利，但债务人的利益（包括管辖利益）不应因债权转让行为而遭受损害，合同履行地与案件管辖法院仍应按照原合同和原合同当事人确定。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-016-001",
+      "name": "债权受让人（原告）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-016-002",
+      "name": "债务人（被告）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-016-003",
+      "name": "原债权人",
+      "side": "third_party",
+      "role_code": "original_creditor_agent"
+    }
+  ]
+}

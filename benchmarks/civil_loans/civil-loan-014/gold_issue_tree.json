@@ -1,0 +1,225 @@
+{
+  "case_id": "civil-loan-014",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-014-001",
+      "case_id": "civil-loan-014",
+      "title": "债权人对一人公司是否享有合法到期债权",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-014-001"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-014-001",
+          "text": "债权人与一人公司之间存在合法有效的借贷关系",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-001",
+            "evidence-civil-loan-014-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-014-002",
+          "text": "借款已实际交付且到期未偿还",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-002",
+            "evidence-civil-loan-014-003"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-014-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-014-001",
+        "evidence-civil-loan-014-002",
+        "evidence-civil-loan-014-003"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-014-002",
+      "case_id": "civil-loan-014",
+      "title": "被告公司是否属于一人有限责任公司",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-014-002"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-014-003",
+          "text": "被告公司的工商登记信息显示仅有一名股东，属于一人有限责任公司",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-014-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-014-004"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-014-003",
+      "case_id": "civil-loan-014",
+      "title": "一人公司股东是否能证明公司财产独立于股东个人财产（财产混同认定）",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-014-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-014-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-014-004",
+          "text": "股东未能提交经审计的公司年度财务会计报告以证明财产独立",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-014-005",
+          "text": "公司账户与股东个人账户之间存在频繁的资金往来，难以区分公司财产与个人财产",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-014-006",
+          "text": "公司未建立独立规范的财务制度或财务制度形同虚设",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-005"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-014-003",
+        "burden-civil-loan-014-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-014-005",
+        "evidence-civil-loan-014-006"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-014-004",
+      "case_id": "civil-loan-014",
+      "title": "举证责任倒置规则的适用（《公司法》第六十三条）",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-014-003",
+      "related_claim_ids": [
+        "claim-civil-loan-014-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-014-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-014-007",
+          "text": "依据《公司法》第六十三条，一人有限责任公司的股东不能证明公司财产独立于股东自己的财产的，应当对公司债务承担连带责任",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-014-008",
+          "text": "债权人无需举证证明财产混同，举证责任由被告股东承担（举证责任倒置）",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-014-003"
+      ],
+      "evidence_ids": [],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-014-005",
+      "case_id": "civil-loan-014",
+      "title": "股东缺席审判的法律后果",
+      "issue_type": "procedural",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-014-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-014-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-014-009",
+          "text": "股东经法院合法传唤后未到庭应诉亦未委托代理人出庭",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-007"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-014-010",
+          "text": "股东未到庭应诉视为放弃质证和抗辩权利，应承担相应不利后果",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-007"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-014-011",
+          "text": "在举证责任倒置的情形下，股东缺席进一步导致其无法完成证明公司财产独立的举证义务",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-014-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-014-007"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-014-006",
+      "case_id": "civil-loan-014",
+      "title": "股东对公司债务承担连带责任的范围",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-014-002"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-014-012",
+          "text": "股东应对公司全部到期债务（含本金、利息、违约金等）承担连带清偿责任",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-014-001",
+            "evidence-civil-loan-014-003"
+          ]
+        }
+      ],
+      "burden_ids": [],
+      "evidence_ids": [
+        "evidence-civil-loan-014-001",
+        "evidence-civil-loan-014-003"
+      ],
+      "status": "open"
+    }
+  ]
+}

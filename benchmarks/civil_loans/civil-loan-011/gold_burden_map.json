@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-011",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-011-001",
+      "case_id": "civil-loan-011",
+      "issue_id": "issue-civil-loan-011-001",
+      "burden_party_id": "party-civil-loan-011-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-011-001: 银行与借款人签订金融借款合同；fp-civil-loan-011-002: 银行已发放贷款；fp-civil-loan-011-003: 借款人逾期未还",
+      "legal_basis": "《民法典》第667条、第675条。银行作为原告应举证证明借款合同成立生效、款项已交付、借款人逾期未还。",
+      "shift_condition": "银行完成初步举证后，如借款人主张已还款或合同无效，由借款人承担举证责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-011-002",
+      "case_id": "civil-loan-011",
+      "issue_id": "issue-civil-loan-011-002",
+      "burden_party_id": "party-civil-loan-011-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-011-004: 海域使用权抵押已办理登记；fp-civil-loan-011-005: 股权质押已办理登记",
+      "legal_basis": "《民法典》第395条、第440条、第402条、第443条。抵押权自登记时设立，质权自登记时设立。银行主张行使抵押权和质权的，应举证证明抵押和质押已依法设立。",
+      "shift_condition": "银行提交抵押登记及质押登记证明后，如对方主张登记存在瑕疵或担保物权无效，由对方承担举证责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-011-003",
+      "case_id": "civil-loan-011",
+      "issue_id": "issue-civil-loan-011-003",
+      "burden_party_id": "party-civil-loan-011-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-011-006: 担保人出具收购承诺函；fp-civil-loan-011-007: 收购承诺系增信措施",
+      "legal_basis": "银行主张担保人承担责任的，应首先证明收购承诺的存在及其增信性质。需提交收购承诺函原件及授信审批中对收购承诺的增信定位说明。",
+      "shift_condition": "银行举证证明收购承诺存在后，担保人如主张该承诺不具有担保性质或系独立的商事交易安排，应自行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-011-004",
+      "case_id": "civil-loan-011",
+      "issue_id": "issue-civil-loan-011-004",
+      "burden_party_id": "party-civil-loan-011-001",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-011-009: 收购承诺实质上以担保人自身信用为主债务提供担保，符合保证核心特征",
+      "legal_basis": "《民法典》担保司法解释第36条。银行主张收购承诺构成非典型保证，应说明该承诺具有从属性、补充性等保证属性，法院依法进行法律定性。",
+      "shift_condition": "法院认定收购承诺构成非典型保证后，担保人如主张不应适用保证规则，由担保人承担举证和论证责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-011-005",
+      "case_id": "civil-loan-011",
+      "issue_id": "issue-civil-loan-011-005",
+      "burden_party_id": "party-civil-loan-011-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-011-012: 主债务人、抵押人、出质人、保证人均不能清偿时，非典型保证人应承担补充赔偿责任",
+      "legal_basis": "《民法典》担保司法解释第36条第4款。银行主张担保人承担补充赔偿责任的，应证明已穷尽对主债务人及其他担保人的追偿，仍有未获清偿的债权余额。",
+      "shift_condition": "银行证明其他责任主体不能清偿后，担保人如主张银行未尽追索义务或债权已获足额清偿，由担保人举证。",
+      "status": "active"
+    }
+  ]
+}

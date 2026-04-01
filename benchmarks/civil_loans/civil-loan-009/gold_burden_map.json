@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-009",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-009-001",
+      "case_id": "civil-loan-009",
+      "issue_id": "issue-civil-loan-009-001",
+      "burden_party_id": "party-civil-loan-009-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-009-002: 债权人在接受担保时应审查公司章程中关于对外担保的决策权限规定",
+      "legal_basis": "《民法典》第504条、《公司法》第16条、《最高人民法院关于适用〈中华人民共和国民法典〉有关担保制度的解释》第7条。债权人主张担保合同对公司发生效力的，应举证证明其在订立担保合同时已对公司章程、决议等文件进行了合理审查。",
+      "shift_condition": "债权人提交审查记录后，担保人公司如主张审查不充分应具体说明不足之处并举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-009-002",
+      "case_id": "civil-loan-009",
+      "issue_id": "issue-civil-loan-009-001",
+      "burden_party_id": "party-civil-loan-009-003",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-009-004: 债权人未审查或未充分审查担保决议等相关文件",
+      "legal_basis": "担保人公司主张担保合同对其不发生效力的，应举证证明债权人未尽合理审查义务，包括债权人未要求公司提供决议文件、未核查决议内容与章程的一致性等。",
+      "shift_condition": "担保人公司举证证明债权人未审查后，债权人应反证其已尽合理审查义务。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-009-003",
+      "case_id": "civil-loan-009",
+      "issue_id": "issue-civil-loan-009-002",
+      "burden_party_id": "party-civil-loan-009-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-009-005: 债权人未尽合理审查义务的，担保合同对公司不产生效力",
+      "legal_basis": "《最高人民法院关于适用〈中华人民共和国民法典〉有关担保制度的解释》第7条。相对人非善意的，担保合同对公司不发生效力。善意的判断标准为债权人是否对公司决议进行了合理审查。",
+      "shift_condition": "如认定债权人非善意，担保合同对公司不发生效力。债权人如有其他善意依据应另行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-009-004",
+      "case_id": "civil-loan-009",
+      "issue_id": "issue-civil-loan-009-003",
+      "burden_party_id": "party-civil-loan-009-001",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-009-007: 担保人公司在诉讼中未对担保合同效力提出异议",
+      "legal_basis": "法院依职权审查担保合同效力不以当事人提出异议为前提。理由：（1）公司诉讼代表人的意思不能等同于公司整体及全部股东意思；（2）查明案件基本事实是法院职责；（3）依职权审查有助于保护未参加诉讼的中小股东权益。",
+      "shift_condition": "无需转移。法院对担保合同效力的审查系依职权进行，不因当事人是否提出异议而免除。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-009-005",
+      "case_id": "civil-loan-009",
+      "issue_id": "issue-civil-loan-009-005",
+      "burden_party_id": "party-civil-loan-009-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-009-013: 借款合同合法有效；fp-civil-loan-009-014: 借款人到期未偿还借款本息",
+      "legal_basis": "《民法典》第667条、第675条。原告（债权人）应举证证明借款合同成立生效、借款已实际交付、借款人逾期未还。",
+      "shift_condition": "原告完成举证后，如借款人主张合同无效或已还款，由借款人举证。",
+      "status": "active"
+    }
+  ]
+}

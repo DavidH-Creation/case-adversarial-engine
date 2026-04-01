@@ -1,0 +1,44 @@
+{
+  "case_id": "civil-loan-003",
+  "case_slug": "civil-loan-003",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "（2019）粤52民终421号借款合同纠纷——第三人代偿构成债务加入而非债务转移",
+  "description": "广东省揭阳市中级人民法院二审案件。核心争点为：第三人以自己名义与债权人签订还款协议，约定分期代为偿还债务人所欠借款及利息，该行为构成债务加入还是债务转移。法院认定：（1）'代为偿还'一词不能当然说明债务已转移；（2）在未改变原借款合同内容且债权人未明确表示免除原债务人清偿义务的情况下，应认定为债务加入；（3）债务加入不影响原担保责任的承担，第三人应与债务人、连带责任保证人共同向债权人承担清偿义务。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "agent-b-dual",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-003-001",
+      "name": "债权人（原告/被上诉人）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-003-002",
+      "name": "债务人/借款人（被告/上诉人）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-003-003",
+      "name": "第三人（债务加入人）",
+      "side": "defendant",
+      "role_code": "debt_joinder_agent"
+    },
+    {
+      "party_id": "party-civil-loan-003-004",
+      "name": "连带责任保证人",
+      "side": "defendant",
+      "role_code": "guarantor_agent"
+    }
+  ]
+}

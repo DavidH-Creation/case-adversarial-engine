@@ -1,0 +1,206 @@
+{
+  "case_id": "civil-loan-013",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-013-001",
+      "case_id": "civil-loan-013",
+      "title": "债权人是否已依法向清算组申报债权",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-013-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-013-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-013-001",
+          "text": "被清算公司已进入清算程序，法院已指定清算组",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-013-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-013-002",
+          "text": "清算组已依法通知债权人申报债权或已进行公告",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-013-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-013-003",
+          "text": "债权人在规定期限内向清算组申报了债权",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-013-003"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-013-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-013-001",
+        "evidence-civil-loan-013-002",
+        "evidence-civil-loan-013-003"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-013-002",
+      "case_id": "civil-loan-013",
+      "title": "清算组对债权人申报的债权是否予以确认",
+      "issue_type": "factual",
+      "parent_issue_id": "issue-civil-loan-013-001",
+      "related_claim_ids": [
+        "claim-civil-loan-013-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-013-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-013-004",
+          "text": "清算组对债权人申报的债权不予确认或怠于核定处理",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-013-004",
+            "evidence-civil-loan-013-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-013-005",
+          "text": "如清算组对债权进行核定确认，则债权人无需通过诉讼程序确认债权",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-013-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-013-004",
+        "evidence-civil-loan-013-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-013-003",
+      "case_id": "civil-loan-013",
+      "title": "清算组不予确认或怠于处理时债权人是否有权提起诉讼",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-013-002",
+      "related_claim_ids": [
+        "claim-civil-loan-013-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-013-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-013-006",
+          "text": "清算组不予确认债权时，债权人有权向法院提起债权确认诉讼",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-013-007",
+          "text": "清算组怠于核定处理（既不确认也不明确否认）时，债权人同样有权提起诉讼以保护自身权利",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-013-008",
+          "text": "债权人提起诉讼是对清算程序中债权确认机制的司法救济，不以清算组明确作出否认决定为前提",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-013-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-013-004",
+        "evidence-civil-loan-013-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-013-004",
+      "case_id": "civil-loan-013",
+      "title": "强制清算中债权确认诉讼的管辖法院",
+      "issue_type": "procedural",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-013-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-013-004"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-013-009",
+          "text": "强制清算中的债权确认诉讼由受理强制清算申请的法院管辖",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-013-010",
+          "text": "管辖集中原则旨在保障清算程序的统一性和效率",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-013-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-013-001"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-013-005",
+      "case_id": "civil-loan-013",
+      "title": "债权的真实性、合法性及金额认定",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-013-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-013-005"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-013-011",
+          "text": "债权人与被清算公司之间存在合法有效的债权债务关系",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-013-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-013-012",
+          "text": "债权金额经核算明确，包括本金及利息",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-013-006",
+            "evidence-civil-loan-013-007"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-013-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-013-006",
+        "evidence-civil-loan-013-007"
+      ],
+      "status": "open"
+    }
+  ]
+}

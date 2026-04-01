@@ -1,0 +1,177 @@
+{
+  "case_id": "civil-loan-017",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-017-001",
+      "case_id": "civil-loan-017",
+      "title": "合同中预先约定债权转让后由受让人住所地法院管辖的条款是否有效",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-017-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-017-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-017-001",
+          "text": "原始借款合同中包含管辖约定条款，约定债权转让后争议由受让人住所地法院管辖",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-017-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-017-002",
+          "text": "该管辖条款系合同当事人为第三方（即未来不确定的债权受让方）涉诉而约定的协议管辖",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-017-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-017-003",
+          "text": "债权受让方在合同订立时不确定，亦不可能参与缔结该协议管辖条款",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-017-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-017-001"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-017-002",
+      "case_id": "civil-loan-017",
+      "title": "受让方所在地是否属于订立合同时与争议有实际联系的地点",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-017-001",
+      "related_claim_ids": [
+        "claim-civil-loan-017-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-017-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-017-004",
+          "text": "《民事诉讼法》第35条规定协议管辖须选择与争议有实际联系地点的法院",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-017-005",
+          "text": "合同订立时债权受让方尚不存在或不确定，其住所地在订立合同时与争议不具有实际联系",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-017-002",
+            "evidence-civil-loan-017-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-017-006",
+          "text": "与争议有实际联系的地点应限于被告住所地、合同履行地、合同签订地、原告住所地、标的物所在地等法定地点",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-017-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-017-002",
+        "evidence-civil-loan-017-003"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-017-003",
+      "case_id": "civil-loan-017",
+      "title": "债权转让后案件管辖应如何确定",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-017-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-017-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-017-007",
+          "text": "债权已从原出借人转让至原告（受让人），债权转让通知已送达被告",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-017-004",
+            "evidence-civil-loan-017-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-017-008",
+          "text": "预先约定的受让人住所地管辖条款无效后，应回归法定管辖或原合同中其他有效的管辖约定",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-017-009",
+          "text": "债权转让不影响原合同中其他有效管辖条款对受让人的约束力",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-017-001"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-017-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-017-001",
+        "evidence-civil-loan-017-004",
+        "evidence-civil-loan-017-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-017-004",
+      "case_id": "civil-loan-017",
+      "title": "借款合同的效力及被告还款义务",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-017-003"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-017-010",
+          "text": "原借款合同系双方真实意思表示，合法有效",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-017-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-017-011",
+          "text": "债务人到期未偿还借款本息，构成违约",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-017-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-017-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-017-001",
+        "evidence-civil-loan-017-006"
+      ],
+      "status": "open"
+    }
+  ]
+}

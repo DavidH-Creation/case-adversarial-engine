@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-015",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-015-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-015-003",
+      "evidence_ids": ["evidence-civil-loan-015-005", "evidence-civil-loan-015-006"],
+      "content": "清算不能连带责任的认定需严格审查四层要件：（1）主要财产、账册、重要文件确已灭失——不能仅凭公司歇业或查无下落即认定；（2）灭失必然导致无法清算——若公司本身无资产，即使账册灭失也可能完成清算，不必然构成\"无法清算\"；（3）灭失系股东怠于履行义务导致——需存在因果关系；（4）各股东的过错程度——不能对所有股东一概而论。"
+    },
+    {
+      "note_id": "note-civil-loan-015-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-015-006",
+      "evidence_ids": ["evidence-civil-loan-015-008", "evidence-civil-loan-015-009"],
+      "content": "小股东免责事由的审查应综合考量：（1）持股比例与表决权——小股东是否有能力单独推动清算；（2）是否实际参与经营管理——未参与经营的股东对财产和账册的保管通常无直接控制力；（3）是否曾积极催促清算——有书面催促记录且能证明送达效果的，更容易获得免责认定；（4）对账册灭失是否有过错——如小股东从未掌管公司账册，则难以归责。但需注意：单纯的持股比例低或未参与经营不能当然免责，还需证明积极作为。"
+    },
+    {
+      "note_id": "note-civil-loan-015-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-015-004",
+      "evidence_ids": [],
+      "content": "代理债权人的实务建议：（1）先通过执行程序穷尽对公司的执行，取得\"终本\"裁定后再起诉股东；（2）在执行程序中申请法院调查公司财产线索，获取财产灭失的客观证据；（3）注意收集股东怠于清算的时间线证据（吊销日期与起诉日期之间的间隔）。代理股东的实务建议：（1）如收到吊销通知应立即组织清算，保留清算启动的全部书面记录；（2）小股东应在吊销后及时向大股东或公司发出书面催促清算函并保留送达凭证；（3）如确有账册保管困难应及时向法院申请强制清算。"
+    },
+    {
+      "note_id": "note-civil-loan-015-004",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-015-005",
+      "evidence_ids": ["evidence-civil-loan-015-007"],
+      "content": "大股东承担连带责任的法理基础：作为公司控股股东或实际控制人，大股东对公司日常经营管理行使实际控制权，对公司财产和账册负有保管和管理义务。公司被吊销后，大股东怠于组织清算的行为构成对公司法上清算义务的违反。该义务违反与公司财产、账册灭失之间通常存在较强的因果关系推定。"
+    },
+    {
+      "note_id": "note-civil-loan-015-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-015-001",
+      "evidence_ids": ["evidence-civil-loan-015-001", "evidence-civil-loan-015-002"],
+      "content": "以清算不能连带责任起诉股东前，应确保基础债权已有生效法律文书确认。如基础债权尚在争议中，建议先确认债权后再追究股东清算责任。同时关注诉讼时效：债权人知道或应当知道公司无法清算之日起算诉讼时效，通常以终本裁定送达或公司吊销登记公示日为起算点。"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "case_id": "civil-loan-009",
+  "case_slug": "civil-loan-009",
+  "case_type": "civil",
+  "civil_subtype": "金融借款合同",
+  "title": "公司对外担保效力及法院依职权审查纠纷（（2021）京0102民初7664号）",
+  "description": "本案涉及公司对外提供担保的效力认定及法院依职权审查义务。核心争点包括：债权人对公司章程及担保决议的合理审查义务；担保人未对担保合同效力提出异议时法院是否仍应依职权审查；公司在诉讼中未提出异议是否等同于公司整体及全部股东同意担保；法院依职权审查对保护中小股东权益的意义。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "agent-a-dual",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-009-001",
+      "name": "债权人（原告）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-009-002",
+      "name": "借款人（债务人）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-009-003",
+      "name": "担保人公司",
+      "side": "defendant",
+      "role_code": "guarantor_agent"
+    }
+  ]
+}

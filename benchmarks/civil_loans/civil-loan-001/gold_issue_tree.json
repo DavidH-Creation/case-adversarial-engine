@@ -1,0 +1,264 @@
+{
+  "case_id": "civil-loan-001",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-001-001",
+      "case_id": "civil-loan-001",
+      "title": "本案是否构成\"以新贷偿还旧贷\"（借新还旧事实认定）",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-001-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-001-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-001",
+          "text": "债权人与借款人之间存在旧贷借款关系且旧贷尚未清偿",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-001",
+            "evidence-civil-loan-001-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-002",
+          "text": "债权人与借款人又订立新的借款合同（新贷）",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-003",
+          "text": "新贷款项实际用于偿还旧贷本息，资金流向可追溯",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-004",
+            "evidence-civil-loan-001-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-004",
+          "text": "主合同当事人（债权人与借款人）之间就以新贷偿还旧贷存在合意或协议",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-003",
+            "evidence-civil-loan-001-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-001-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-001-001",
+        "evidence-civil-loan-001-002",
+        "evidence-civil-loan-001-003",
+        "evidence-civil-loan-001-004",
+        "evidence-civil-loan-001-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-001-002",
+      "case_id": "civil-loan-001",
+      "title": "\"以新贷偿还旧贷\"是否要求新贷与旧贷借款人为同一民事主体",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-001-001",
+      "related_claim_ids": [
+        "claim-civil-loan-001-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-001-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-005",
+          "text": "《担保法司法解释》第39条第1款规定的\"以新贷偿还旧贷\"系就借款用途对保证人利益影响所作规定，不以新旧贷借款人同一为要件",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-006",
+          "text": "保证人不承担责任的原因是\"偿还旧贷\"增加代偿风险，而非主体是否同一",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [],
+      "evidence_ids": [],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-001-003",
+      "case_id": "civil-loan-001",
+      "title": "保证人对借新还旧事实是否知道或应当知道",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-001-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-001-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-007",
+          "text": "保证人签订保证合同时不知道新贷的实际用途为偿还旧贷",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-006",
+            "evidence-civil-loan-001-007"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-008",
+          "text": "保证人基于对新贷系用于生产经营等其他用途的信赖而提供担保",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-009",
+          "text": "保证人无从通过合理注意义务获知借新还旧的事实（不应当知道）",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-007"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-001-002",
+        "burden-civil-loan-001-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-001-006",
+        "evidence-civil-loan-001-007"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-001-004",
+      "case_id": "civil-loan-001",
+      "title": "不知情保证人是否应免除保证责任（《担保法司法解释》第39条第1款的适用）",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-001-003",
+      "related_claim_ids": [
+        "claim-civil-loan-001-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-001-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-010",
+          "text": "借款用途是保证人据以判断借款人还款能力、决定是否提供担保的重要甚至关键考虑因素",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-011",
+          "text": "为\"偿还旧贷\"目的的借款提供保证，客观上增加保证人代主债务人承担还款责任的发生风险",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-012",
+          "text": "保证人基于对其他借款用途的信赖而提供担保的缔约基础不复存在，应免除保证责任",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-001-004"
+      ],
+      "evidence_ids": [],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-001-005",
+      "case_id": "civil-loan-001",
+      "title": "新贷与旧贷系同一保证人时，保证人是否仍应承担保证责任",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-001-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-001-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-013",
+          "text": "该保证人同时为旧贷和新贷提供了保证担保",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-008",
+            "evidence-civil-loan-001-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-014",
+          "text": "借新还旧导致旧贷主合同及保证合同权利义务终止，保证人不再承担旧贷保证责任",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-015",
+          "text": "对新旧贷同一保证人而言，其风险总量并未因借新还旧而增加，仍应承担新贷保证责任",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-001-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-001-006",
+        "evidence-civil-loan-001-008"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-001-006",
+      "case_id": "civil-loan-001",
+      "title": "新贷借款合同的效力与借款人还款义务",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-001-001"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-001-016",
+          "text": "新贷借款合同系双方当事人真实意思表示，合法有效",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-001-017",
+          "text": "借款人到期未偿还新贷本息，构成违约",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-001-009"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-001-006"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-001-003",
+        "evidence-civil-loan-001-009"
+      ],
+      "status": "open"
+    }
+  ]
+}

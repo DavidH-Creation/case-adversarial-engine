@@ -1,0 +1,35 @@
+{
+  "case_id": "civil-loan-013",
+  "case_slug": "civil-loan-013",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "case_number": "（2023）闽01民再76号",
+  "court": "福建省福州市中级人民法院",
+  "cause_of_action": "债权确认纠纷",
+  "title": "公司清算中债权人诉讼权利保护纠纷（（2023）闽01民再76号）",
+  "description": "公司进入清算程序，债权人向清算组申报债权后，如清算组对其债权进行核定确认则无需导入诉讼程序。但如清算组不予确认或怠于处理，债权人有权提起诉讼。强制清算中，债权人确认诉讼由受理强制清算申请的法院管辖。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-013-001",
+      "name": "债权人/原告",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-013-002",
+      "name": "被清算公司/被告",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    }
+  ]
+}

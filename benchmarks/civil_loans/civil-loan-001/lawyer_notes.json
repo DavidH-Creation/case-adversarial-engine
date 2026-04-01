@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-001",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-001-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-001-001",
+      "evidence_ids": ["evidence-civil-loan-001-001", "evidence-civil-loan-001-002", "evidence-civil-loan-001-003"],
+      "content": "借新还旧事实的认定主要依据：（1）新旧借款合同的时间衔接关系；（2）银行资金流水显示新贷发放后直接或间接用于清偿旧贷；（3）旧贷在新贷发放同日或近日被结清。三者互相印证可高度盖然性地认定借新还旧事实。"
+    },
+    {
+      "note_id": "note-civil-loan-001-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-001-002",
+      "evidence_ids": ["evidence-civil-loan-001-004", "evidence-civil-loan-001-005"],
+      "content": "保证人是否知道借款用途为偿还旧贷，通常从以下几方面推断：（1）保证合同中是否载明借款用途；（2）保证人与借款人之间的关系密切程度；（3）保证人是否参与了借新还旧的商议过程；（4）保证人同时担保新旧贷款本身可能构成知情推定。本案中保证人为新旧贷款同一保证人，这一身份重合使其免责抗辩力度减弱。"
+    },
+    {
+      "note_id": "note-civil-loan-001-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-001-003",
+      "evidence_ids": [],
+      "content": "实务中借新还旧案件保证人免责的关键在于'不知道且不应当知道'的举证。建议保证人方：（1）收集证据证明保证合同中约定的借款用途非偿还旧贷；（2）证明其未参与借新还旧协商。建议债权人方：（1）在保证合同中明确告知借款用途；（2）保留保证人知悉借新还旧的证据（书面确认、会议纪要等）。"
+    },
+    {
+      "note_id": "note-civil-loan-001-004",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-001-004",
+      "evidence_ids": ["evidence-civil-loan-001-004", "evidence-civil-loan-001-006"],
+      "content": "本案核心裁判要旨：新旧贷款系同一保证人时，即使保证人不知道借新还旧事实，仍应承担新贷的保证责任。理由：借新还旧使旧贷保证责任终止，保证人实际上因此减轻了义务；对同一保证人而言，为新贷承担保证不增加其实质风险。"
+    },
+    {
+      "note_id": "note-civil-loan-001-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-001-005",
+      "evidence_ids": [],
+      "content": "本案确立了借新还旧认定不以新旧贷借款人主体同一为前提的规则。实务启示：即使新贷借款人与旧贷借款人不同（如关联公司之间的债务重组），只要新贷款实际用于偿还旧贷，仍构成借新还旧，适用《担保法司法解释》第39条的保证人保护规则。"
+    }
+  ]
+}

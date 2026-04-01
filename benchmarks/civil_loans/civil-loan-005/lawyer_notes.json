@@ -1,0 +1,54 @@
+{
+  "case_id": "civil-loan-005",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-005-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-005-001",
+      "evidence_ids": ["evidence-civil-loan-005-001", "evidence-civil-loan-005-002"],
+      "content": "农村信用社章程及登记资料明确其为合作金融组织，非公司法人。《公司法》第142条关于公司不得接受本公司股份质押的限制不适用于农信社。质押合同未违反效力性强制性规定，应认定有效。"
+    },
+    {
+      "note_id": "note-civil-loan-005-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-005-002",
+      "evidence_ids": ["evidence-civil-loan-005-003", "evidence-civil-loan-005-004"],
+      "content": "农信社股金不属于工商登记范围的股权出质，不能要求出质人在工商部门办理出质登记。交付股金证使权利凭证移转占有，冻结止付登记使出质股金丧失流通性，两者结合实现了权利质权的占有+公示功能，可认定质权已设立。该认定路径突破了形式登记主义，采实质公示标准。"
+    },
+    {
+      "note_id": "note-civil-loan-005-003",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-005-003",
+      "evidence_ids": ["evidence-civil-loan-005-005"],
+      "content": "农信社改制为农商行属于组织形式变更，权利义务由农商行承继。改制导致股金转化为股权，质押标的形态发生变化。但质权作为从权利随主债权转移，改制本身不导致质权消灭。关键在于判断具体贷款属于何种类型以确定主债权是否存续。"
+    },
+    {
+      "note_id": "note-civil-loan-005-004",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-005-004",
+      "evidence_ids": ["evidence-civil-loan-005-006", "evidence-civil-loan-005-007", "evidence-civil-loan-005-008"],
+      "content": "借新还旧使旧贷主债权因清偿而消灭，新贷形成新的主债权。根据担保从属性，旧贷质权随旧贷主债权消灭。但存在例外：若原出质人明确同意为新贷继续提供担保（如签署新质押合同或书面承诺），则质权可在新贷上延续。此处需审查是否存在evidence-civil-loan-005-008所述的继续担保文件。"
+    },
+    {
+      "note_id": "note-civil-loan-005-005",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-005-005",
+      "evidence_ids": ["evidence-civil-loan-005-009"],
+      "content": "循环贷款系在约定额度内反复借用，贷款展期系延长还款期限，两者均不产生新的主债权。主债权同一性未中断，质权依从属性原理继续有效，无需重新办理登记手续。区分借新还旧与循环贷款/展期的核心在于旧贷是否因清偿而消灭。"
+    },
+    {
+      "note_id": "note-civil-loan-005-006",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-005-002",
+      "evidence_ids": [],
+      "content": "实务中农信社股金质押的设立方式缺乏统一规范，各地做法不一。本案确立了'交付股金证+冻结止付'的设立标准，对类似纠纷具有参考价值。代理此类案件时，应重点收集股金证交付记录和冻结止付手续，确保证据链完整。"
+    },
+    {
+      "note_id": "note-civil-loan-005-007",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-005-003",
+      "evidence_ids": [],
+      "content": "农信社改制后的担保纠纷中，区分借新还旧、循环贷款、贷款展期三种情形至关重要，直接决定质权存废。代理债权人一方时，应尽量收集证据证明贷款属于循环贷款或展期性质；代理担保人一方时，则应主张系借新还旧且担保人未同意继续担保。改制过程中的股金转股权文件、贷款台账、合同条款措辞均为关键证据。"
+    }
+  ]
+}

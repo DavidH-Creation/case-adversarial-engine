@@ -1,0 +1,159 @@
+{
+  "case_id": "civil-loan-003",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-003-001",
+      "case_id": "civil-loan-003",
+      "title": "原借款合同关系是否成立及借款本息数额的确定",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-003-001"],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-003-001",
+          "text": "债权人与债务人之间存在合法有效的借款合同关系，借款金额及利息约定明确",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-001"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-002",
+          "text": "债务人未按约定期限偿还借款本息，构成违约",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-001", "evidence-civil-loan-003-002"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-003-001"],
+      "evidence_ids": ["evidence-civil-loan-003-001", "evidence-civil-loan-003-002"],
+      "status": "resolved"
+    },
+    {
+      "issue_id": "issue-civil-loan-003-002",
+      "case_id": "civil-loan-003",
+      "title": "第三人与债权人签订的还款协议的法律性质认定（债务加入还是债务转移）",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-003-002"],
+      "related_defense_ids": ["defense-civil-loan-003-001"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-003-003",
+          "text": "第三人以自己名义与债权人签订还款协议，约定分期代为偿还债务人所欠借款及利息",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-004",
+          "text": "还款协议使用了'代为偿还'的表述，而非'承担全部债务'或'替代债务人'",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-005",
+          "text": "原借款合同的内容并未因还款协议的签订而发生变更",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-001", "evidence-civil-loan-003-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-006",
+          "text": "债权人没有明确表示免除原债务人的清偿义务",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-005"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-007",
+          "text": "债权人明确表示不认可债务已经转移",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-005"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-003-002", "burden-civil-loan-003-003"],
+      "evidence_ids": ["evidence-civil-loan-003-001", "evidence-civil-loan-003-003", "evidence-civil-loan-003-005"],
+      "status": "resolved"
+    },
+    {
+      "issue_id": "issue-civil-loan-003-003",
+      "case_id": "civil-loan-003",
+      "title": "'代为偿还'一词能否当然认定为债务转移",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-003-002",
+      "related_claim_ids": [],
+      "related_defense_ids": ["defense-civil-loan-003-001"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-003-008",
+          "text": "'代为偿还'在文义上既可理解为债务加入也可理解为债务转移，不能仅凭该措辞当然认定债务已转移",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-003"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-003-004"],
+      "evidence_ids": ["evidence-civil-loan-003-003"],
+      "status": "resolved"
+    },
+    {
+      "issue_id": "issue-civil-loan-003-004",
+      "case_id": "civil-loan-003",
+      "title": "债务加入是否影响原担保人的连带保证责任",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-003-003"],
+      "related_defense_ids": ["defense-civil-loan-003-002"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-003-009",
+          "text": "连带责任保证人为原借款合同提供了保证担保",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-004"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-010",
+          "text": "债务加入并未改变原借款合同的内容，原担保合同的基础未发生变化",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-001", "evidence-civil-loan-003-004"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-011",
+          "text": "第三人债务加入后，应与债务人、连带责任保证人共同向债权人承担清偿义务",
+          "status": "verified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-003-005"],
+      "evidence_ids": ["evidence-civil-loan-003-004"],
+      "status": "resolved"
+    },
+    {
+      "issue_id": "issue-civil-loan-003-005",
+      "case_id": "civil-loan-003",
+      "title": "各责任主体的清偿义务范围及分担",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-003-001", "claim-civil-loan-003-002", "claim-civil-loan-003-003"],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-003-012",
+          "text": "债务人作为原借款合同的借款人，负有直接偿还义务",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-001"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-013",
+          "text": "第三人因债务加入成为共同债务人，与原债务人并列承担清偿义务",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-003-014",
+          "text": "连带责任保证人仍应按照原保证合同约定承担连带保证责任",
+          "status": "verified",
+          "linked_evidence_ids": ["evidence-civil-loan-003-004"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-003-006"],
+      "evidence_ids": ["evidence-civil-loan-003-001", "evidence-civil-loan-003-003", "evidence-civil-loan-003-004"],
+      "status": "resolved"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-014",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-014-001",
+      "case_id": "civil-loan-014",
+      "issue_id": "issue-civil-loan-014-001",
+      "burden_party_id": "party-civil-loan-014-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-014-001: 债权人与一人公司之间存在合法有效的借贷关系；fp-civil-loan-014-002: 借款已实际交付且到期未偿还",
+      "legal_basis": "《民法典》第六百六十七条、第六百七十五条。原告应举证证明借款合同成立生效、款项已交付、借款人逾期未还。",
+      "shift_condition": "原告完成举证后，如被告主张合同无效或已清偿，由被告承担反证责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-014-002",
+      "case_id": "civil-loan-014",
+      "issue_id": "issue-civil-loan-014-002",
+      "burden_party_id": "party-civil-loan-014-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-014-003: 被告公司的工商登记信息显示仅有一名股东，属于一人有限责任公司",
+      "legal_basis": "债权人主张适用《公司法》第六十三条举证责任倒置的前提是证明被告公司系一人有限责任公司。",
+      "shift_condition": "债权人提交工商登记信息证明公司为一人公司后，举证责任转移至股东证明财产独立。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-014-003",
+      "case_id": "civil-loan-014",
+      "issue_id": "issue-civil-loan-014-003",
+      "burden_party_id": "party-civil-loan-014-003",
+      "burden_type": "举证责任倒置",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-014-004: 股东应证明公司财产独立于股东个人财产（财产无混同）",
+      "legal_basis": "《公司法》第六十三条：一人有限责任公司的股东不能证明公司财产独立于股东自己的财产的，应当对公司债务承担连带责任。该条款实行举证责任倒置，由股东证明财产独立而非由债权人证明财产混同。",
+      "shift_condition": "股东提交经审计的年度财务会计报告等充分证据证明财产独立的，举证责任转回债权人就财产混同的具体主张进行举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-014-004",
+      "case_id": "civil-loan-014",
+      "issue_id": "issue-civil-loan-014-003",
+      "burden_party_id": "party-civil-loan-014-003",
+      "burden_type": "法定举证义务",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-014-006: 公司已建立独立规范的财务制度，公司财务与股东个人财务完全分离",
+      "legal_basis": "《公司法》第六十二条：一人有限责任公司应当在每一会计年度终了时编制财务会计报告，并经会计师事务所审计。未履行该法定义务本身构成不利推定。",
+      "shift_condition": "无；该义务为法定义务，股东未能提交审计报告的，法院可直接推定财产混同成立。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-014-005",
+      "case_id": "civil-loan-014",
+      "issue_id": "issue-civil-loan-014-005",
+      "burden_party_id": "party-civil-loan-014-003",
+      "burden_type": "不利后果承担",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-014-009: 股东经法院合法传唤后未到庭应诉亦未委托代理人出庭",
+      "legal_basis": "《民事诉讼法》第一百四十七条。被告经传票传唤，无正当理由拒不到庭的，可以缺席判决。缺席方视为放弃质证和抗辩权利，应承担不利后果。在举证责任倒置案件中，缺席使股东彻底丧失反证机会。",
+      "shift_condition": "无转移；缺席本身即产生不利推定效果，视为股东无法证明财产独立。",
+      "status": "active"
+    }
+  ]
+}

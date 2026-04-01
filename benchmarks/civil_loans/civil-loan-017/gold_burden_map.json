@@ -1,0 +1,53 @@
+{
+  "case_id": "civil-loan-017",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-017-001",
+      "case_id": "civil-loan-017",
+      "issue_id": "issue-civil-loan-017-001",
+      "burden_party_id": "party-civil-loan-017-002",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-017-002: 该管辖条款系合同当事人为第三方（即未来不确定的债权受让方）涉诉而约定的协议管辖",
+      "legal_basis": "《民事诉讼法》第35条。被告提出管辖权异议的，应举证证明协议管辖条款不符合法定要件。被告主张管辖条款无效时，须说明该条款系为不确定第三方约定管辖、受让方未参与缔结。",
+      "shift_condition": "被告举证管辖条款指向不确定第三方后，原告如主张条款有效，应举证证明受让方住所地与争议有实际联系。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-017-002",
+      "case_id": "civil-loan-017",
+      "issue_id": "issue-civil-loan-017-002",
+      "burden_party_id": "party-civil-loan-017-001",
+      "burden_type": "转移后举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-017-005: 合同订立时债权受让方尚不存在或不确定，其住所地在订立合同时与争议不具有实际联系",
+      "legal_basis": "《民事诉讼法》第35条。协议管辖约定的法院须为与争议有实际联系地点的法院。原告主张受让人住所地法院有管辖权的，应证明该地点属于法定的\"实际联系地点\"。",
+      "shift_condition": "原告无法证明受让方住所地在合同订立时与争议有实际联系的，该管辖约定应认定无效。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-017-003",
+      "case_id": "civil-loan-017",
+      "issue_id": "issue-civil-loan-017-003",
+      "burden_party_id": "party-civil-loan-017-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-017-007: 债权已从原出借人转让至原告（受让人），债权转让通知已送达被告",
+      "legal_basis": "《民法典》第546条。债权人转让债权须通知债务人，未经通知的该转让对债务人不发生效力。原告应举证证明债权转让成立及已通知债务人。",
+      "shift_condition": "原告完成举证后，如被告主张未收到通知或转让无效，由被告举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-017-004",
+      "case_id": "civil-loan-017",
+      "issue_id": "issue-civil-loan-017-004",
+      "burden_party_id": "party-civil-loan-017-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-017-010: 原借款合同合法有效；fp-civil-loan-017-011: 债务人到期未偿还借款本息",
+      "legal_basis": "《民法典》第667条、第675条。原告作为债权受让人主张还款请求权的，应举证证明原借款合同成立生效、款项已交付、债务人逾期未还、债权转让合法有效。",
+      "shift_condition": "原告完成举证后，如被告主张合同无效或已清偿，由被告举证。",
+      "status": "active"
+    }
+  ]
+}

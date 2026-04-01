@@ -1,0 +1,61 @@
+{
+  "case_id": "civil-loan-002",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-002-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-002-002",
+      "evidence_ids": ["evidence-civil-loan-002-003", "evidence-civil-loan-002-004"],
+      "content": "法院宣告限制行为能力裁定书与阿尔茨海默病医学诊断证明共同构成担保人行为能力状态的完整证据链。裁定书为生效法律文书，具有法律既判力；医学诊断提供了裁定的事实基础。两者结合足以认定担保人在签署担保协议时为限制民事行为能力人。"
+    },
+    {
+      "note_id": "note-civil-loan-002-002",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-002-003",
+      "evidence_ids": ["evidence-civil-loan-002-005", "evidence-civil-loan-002-006", "evidence-civil-loan-002-007"],
+      "content": "担保合同无效的认定需满足三个层次的事实要件：（1）担保协议客观存在且系担保人签署；（2）签署巨额担保协议超出限制行为能力人的行为能力范围——司法精神鉴定意见证明担保人对该行为性质及后果不具有识别能力；（3）法定代理人明确拒绝追认。三项证据形成完整链条，足以认定担保合同无效。"
+    },
+    {
+      "note_id": "note-civil-loan-002-003",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-002-004",
+      "evidence_ids": ["evidence-civil-loan-002-004", "evidence-civil-loan-002-006"],
+      "content": "本案确立了一项重要裁判规则：《担保法司法解释》第7条规定'主合同有效而担保合同无效，债权人无过错的，担保人与债务人承担连带赔偿责任'的前提是推定担保人对合同无效具有过错。当担保合同无效系因担保人欠缺行为能力所致时，该过错推定的逻辑基础不存在——担保人对担保行为的性质及后果根本不具有识别能力，无法构成法律上的'过错'。因此，该条不能机械适用于行为能力欠缺导致的担保合同无效情形。"
+    },
+    {
+      "note_id": "note-civil-loan-002-004",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-002-006",
+      "evidence_ids": ["evidence-civil-loan-002-008", "evidence-civil-loan-002-009"],
+      "content": "担保合同无效后的责任分担应回归《担保法》第5条第2款的过错责任原则。在担保人无过错的前提下，核心问题转化为债权人与债务人之间的过错认定与分担：如债权人在接受担保时已知或应知担保人为限制行为能力人仍接受担保，则债权人存在重大过错，应自行承担因担保无效而增加的风险；如债权人确不知情且已尽合理审查义务，则债务人对未告知担保人真实状况承担主要过错责任。"
+    },
+    {
+      "note_id": "note-civil-loan-002-005",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-002-003",
+      "evidence_ids": [],
+      "content": "本案体现了我国民法行为能力制度的价值取向：在保护限制行为能力人利益与保护交易相对人信赖利益之间，制度构造优先保护前者。仅在法定情形下（如善意取得规则）才保护后者。这一价值位阶在担保合同效力认定中具有直接适用意义——即使债权人对担保人行为能力状况不知情，也不能因信赖利益而使无效的担保合同获得效力。"
+    },
+    {
+      "note_id": "note-civil-loan-002-006",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-002-005",
+      "evidence_ids": [],
+      "content": "实务建议（债权人代理律师视角）：金融机构或个人在接受保证担保时，应建立担保人行为能力审查机制，特别是对高龄担保人。建议在签约前核查担保人是否存在法院行为能力宣告记录，必要时要求担保人提供近期体检报告或精神状态评估证明。签约过程应全程录音录像，以证明签约过程中担保人的精神状态表现。"
+    },
+    {
+      "note_id": "note-civil-loan-002-007",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-002-004",
+      "evidence_ids": [],
+      "content": "实务建议（担保人代理律师视角）：如发现担保人系限制行为能力人或存在认知障碍，应尽早申请法院行为能力宣告并取得裁定书。同时应及时通过法定代理人出具拒绝追认声明，防止因沉默被认定为默示追认。在诉讼中应重点论证担保人对担保合同无效不具有过错，阻断《担保法司法解释》第7条连带赔偿责任的适用。"
+    },
+    {
+      "note_id": "note-civil-loan-002-008",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-002-006",
+      "evidence_ids": ["evidence-civil-loan-002-006"],
+      "content": "司法精神医学鉴定是本案的关键证据环节。建议在诉讼早期即申请司法鉴定，鉴定事项应明确包括：（1）担保人签署担保协议时的精神状态；（2）担保人对担保行为性质和后果的识别能力；（3）担保人当前的认知功能状态。鉴定时间节点的选择尤为重要——需证明签约时（而非鉴定时）的行为能力状态，可能需要回溯性评估。"
+    }
+  ]
+}

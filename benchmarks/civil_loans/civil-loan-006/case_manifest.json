@@ -1,0 +1,32 @@
+{
+  "case_id": "civil-loan-006",
+  "case_slug": "civil-loan-006",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "砍头息认定与实际出借本金确定纠纷（（2014）长民二（商）初字第2459号）",
+  "description": "本案涉及借款人在放款日前或同日支付的利息是否构成“砍头息”的认定问题。核心争点包括：借贷关系是否成立及合同效力；出借人是否在放款日前/同日扣除利息构成砍头息；实际出借本金金额如何认定；利息应以实际出借本金为基数计算；出借人是否利用资金优势地位假借利息名义谋取不当利益。法院依据《合同法》第二百条及《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》第二十七条，认定预先扣除利息的应将实际出借金额认定为本金。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-006-001",
+      "name": "出借人/原告",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-006-002",
+      "name": "借款人/被告",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    }
+  ]
+}

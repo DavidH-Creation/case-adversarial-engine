@@ -1,0 +1,41 @@
+{
+  "case_id": "civil-loan-005",
+  "case_slug": "civil-loan-005",
+  "case_type": "civil",
+  "civil_subtype": "借款合同纠纷",
+  "title": "农信社股金质押效力及改制后质权存续纠纷（（2022）赣民再114号）",
+  "case_number": "（2022）赣民再114号",
+  "court": "江西省高级人民法院",
+  "cause_of_action": "借款合同纠纷",
+  "description": "本案涉及农村信用社股金质押的效力认定及改制后质权存续问题。核心争点包括：农信社接受本单位股金作为质押标的是否有效；股金出质不属于工商登记范围时，交付股金证并办理冻结止付是否足以设立质权；农信社改制为农商行后，原股金质权在借新还旧、循环贷款、贷款展期三种情形下的存续规则。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "agent-b-dual",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-005-001",
+      "name": "债权人/农村信用社（改制后农商行）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-005-002",
+      "name": "借款人/债务人",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-005-003",
+      "name": "出质人/担保人",
+      "side": "defendant",
+      "role_code": "pledgor_agent"
+    }
+  ]
+}

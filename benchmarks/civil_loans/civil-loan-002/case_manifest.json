@@ -1,0 +1,38 @@
+{
+  "case_id": "civil-loan-002",
+  "case_slug": "civil-loan-002",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "限制行为能力人担保合同效力及无效后责任分担（（2020）最高法民终881号）",
+  "description": "最高人民法院二审案件。核心争点包括：（1）已被宣告为限制行为能力人的阿尔茨海默患者签署巨额担保协议是否有效——法院认定该行为与担保人智力、精神健康状况不相适应，且法定代理人拒绝追认，担保合同无效；（2）担保合同无效时《担保法司法解释》第7条的过错推定规则是否适用——法院认定因担保人欠缺行为能力而不具有过错，合同无效亦非因担保人过错所致，不适用该条连带赔偿责任；（3）担保合同无效后的责任分担——应依据《担保法》第5条第2款按各方实际过错分担责任，担保人无过错的不承担赔偿责任。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "agent-b-dual",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-002-001",
+      "name": "债权人（原告/上诉人）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-002-002",
+      "name": "借款人/债务人（被告/被上诉人）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-002-003",
+      "name": "担保人（限制行为能力人/阿尔茨海默患者）",
+      "side": "defendant",
+      "role_code": "guarantor_agent"
+    }
+  ]
+}

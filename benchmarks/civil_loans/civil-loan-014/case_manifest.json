@@ -1,0 +1,38 @@
+{
+  "case_id": "civil-loan-014",
+  "case_slug": "civil-loan-014",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "title": "一人公司股东财产混同连带责任纠纷（（2020）京02民再151号）",
+  "description": "一人公司股东如不能证明公司财产独立于股东自己的财产的，需对公司债务承担连带责任。债权人以一人公司的股东与公司存在财产混同为由起诉要求股东对公司债务承担连带责任，应实行举证责任倒置，由被告股东对个人财产与公司财产之间不存在混同承担举证责任。股东经合法传唤未到庭应诉应承担不利后果。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-014-001",
+      "name": "债权人（原告）",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-014-002",
+      "name": "一人公司（被告）",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-014-003",
+      "name": "股东（被告）",
+      "side": "defendant",
+      "role_code": "shareholder_agent"
+    }
+  ]
+}

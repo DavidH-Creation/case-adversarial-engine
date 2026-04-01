@@ -1,0 +1,235 @@
+{
+  "case_id": "civil-loan-018",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-018-001",
+      "case_id": "civil-loan-018",
+      "title": "刘某某等个人的借款行为是否构成对项目部所属公司的表见代理",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-018-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-018-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-018-001",
+          "text": "刘某某等个人以自己名义而非以项目部或公司名义签订借款合同",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-002",
+          "text": "借款合同中仅指向刘某某等具体个人作为借款人，未载明项目部或所属公司",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-003",
+          "text": "刘某某等个人不持有项目部所属公司的授权委托书或其他授权文件",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-005"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-018-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-018-001",
+        "evidence-civil-loan-018-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-018-002",
+      "case_id": "civil-loan-018",
+      "title": "出借人（建筑公司）是否属于善意相对人",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-018-001",
+      "related_claim_ids": [
+        "claim-civil-loan-018-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-018-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-018-004",
+          "text": "出借人系从事建设行业的专业公司，应当清楚工程转包中存在实际施工人的情形",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-005",
+          "text": "出借人作为建筑行业从业者，具有区分项目部与实际施工人个人的专业能力和注意义务",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-003"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-006",
+          "text": "出借人在出借资金时未尽到合理审查义务，未核实借款人是否获得项目部所属公司授权",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-004"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-018-002",
+        "burden-civil-loan-018-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-018-003",
+        "evidence-civil-loan-018-004"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-018-003",
+      "case_id": "civil-loan-018",
+      "title": "借款主体的认定——借款关系是否成立于出借人与刘某某等个人之间",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-018-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-018-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-018-007",
+          "text": "借款合同的签约主体为出借人与刘某某等个人，合同文本明确记载借款人为个人",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-008",
+          "text": "借款资金实际交付给刘某某等个人，资金流水指向个人账户",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-009",
+          "text": "借款合同中的内容难以表明出借人系向项目部出借资金",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-001"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-018-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-018-001",
+        "evidence-civil-loan-018-002"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-018-004",
+      "case_id": "civil-loan-018",
+      "title": "表见代理构成要件中的权利外观是否具备",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-018-001",
+      "related_claim_ids": [
+        "claim-civil-loan-018-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-018-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-018-010",
+          "text": "刘某某等个人是否具有使出借人合理相信其有权代表项目部所属公司的权利外观",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-005",
+            "evidence-civil-loan-018-006"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-011",
+          "text": "合同缔结过程中未使用项目部印章、介绍信或公司授权书等权利外观要素",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-001",
+            "evidence-civil-loan-018-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-012",
+          "text": "借款履行过程中资金流向、利息支付等均指向个人而非项目部或公司",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-002"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-018-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-018-001",
+        "evidence-civil-loan-018-002",
+        "evidence-civil-loan-018-005",
+        "evidence-civil-loan-018-006"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-018-005",
+      "case_id": "civil-loan-018",
+      "title": "刘某某等个人是否应承担借款偿还责任",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-018-002"
+      ],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-018-013",
+          "text": "表见代理不成立时，借款合同效力仅及于签约当事人，刘某某等个人应作为借款人承担还款责任",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-018-014",
+          "text": "刘某某等个人到期未偿还借款本息，构成违约",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-018-007"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-018-006"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-018-001",
+        "evidence-civil-loan-018-007"
+      ],
+      "status": "open"
+    }
+  ]
+}

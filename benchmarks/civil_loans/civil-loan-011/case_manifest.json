@@ -1,0 +1,41 @@
+{
+  "case_id": "civil-loan-011",
+  "case_slug": "civil-loan-011",
+  "case_type": "civil",
+  "civil_subtype": "民间借贷",
+  "case_number": "（2020）鲁72民初2175号",
+  "court": "青岛海事法院",
+  "cause_of_action": "金融借款合同纠纷",
+  "title": "非典型保证认定与增信措施法律性质纠纷（（2020）鲁72民初2175号）",
+  "description": "金融借款合同中，借款人以海域使用权设定抵押，借款人股东以股权设定质押，担保人向银行出具承诺：借款人未按约还款时，将以不低于未获清偿借款本息的价格收购抵押物和质物。该承诺实系提高抵押物和质物变现能力的增信措施，具有担保性质，应认定为非典型保证。可依据《民法典》担保司法解释第36条第4款，判令担保人对主债务人、抵押人、出质人、保证人均不能清偿的部分承担补充赔偿责任。",
+  "benchmark_version": "v0.5",
+  "created_at": "2026-04-01",
+  "annotator": "dual-confirmed",
+  "source_materials_dir": "source_materials",
+  "gold_files": {
+    "issue_tree": "gold_issue_tree.json",
+    "evidence_index": "gold_evidence_index.json",
+    "burden_map": "gold_burden_map.json",
+    "lawyer_notes": "lawyer_notes.json"
+  },
+  "parties": [
+    {
+      "party_id": "party-civil-loan-011-001",
+      "name": "银行/债权人",
+      "side": "plaintiff",
+      "role_code": "plaintiff_agent"
+    },
+    {
+      "party_id": "party-civil-loan-011-002",
+      "name": "借款人",
+      "side": "defendant",
+      "role_code": "defendant_agent"
+    },
+    {
+      "party_id": "party-civil-loan-011-003",
+      "name": "担保人（出具收购承诺）",
+      "side": "defendant",
+      "role_code": "guarantor_agent"
+    }
+  ]
+}

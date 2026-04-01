@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-010",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-010-001",
+      "case_id": "civil-loan-010",
+      "issue_id": "issue-civil-loan-010-001",
+      "burden_party_id": "party-civil-loan-010-002",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-010-002: 服务费、咨询费、管理费等费用实质上是借款人为获得借款而支付的成本，性质上与利率无异",
+      "legal_basis": "借款人主张合同约定的服务费、咨询费、管理费等属于变相利息的，须证明该等费用系为获得借款而支付的成本，出借人未实际提供独立的对价服务。根据《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》第二十五条，人民法院应当将服务费等其他费用与利息合并审查，防止变相规避利率保护上限。",
+      "shift_condition": "被告方举证证明费用名目与借款行为直接关联、出借人未提供对价服务后，出借人如主张费用系独立服务对价，须举证证明实际提供了相应服务内容。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-010-002",
+      "case_id": "civil-loan-010",
+      "issue_id": "issue-civil-loan-010-002",
+      "burden_party_id": "party-civil-loan-010-002",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-010-004: 将借款合同约定的利息、逾期利息、违约金与服务费、咨询费、管理费合并计算后，总成本折算年利率超过民间借贷利率保护上限",
+      "legal_basis": "借款人主张综合借款成本超过利率保护上限的，须提交利率计算明细及相应还款凭证。根据《民间借贷司法解释》第二十五条，出借人请求借款人按照合同约定利率支付利息的，人民法院应予支持，但约定的利率超过合同成立时一年期贷款市场报价利率四倍的除外。法院可依职权对综合成本进行核算。",
+      "shift_condition": "借款人提交计算明细及还款流水后，出借人如对计算结果有异议，须提出具体的计算错误或遗漏依据。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-010-003",
+      "case_id": "civil-loan-010",
+      "issue_id": "issue-civil-loan-010-003",
+      "burden_party_id": "party-civil-loan-010-002",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-010-007: 逾期利息和违约金在功能上均属于出借人因借款人违约获得的金钱利益，应与利息合并受利率上限约束",
+      "legal_basis": "根据《民间借贷司法解释》第二十九条，出借人与借款人既约定了逾期利率，又约定了违约金或者其他费用，出借人可以选择主张逾期利息、违约金或者其他费用，也可以一并主张，但总计超过合同成立时一年期贷款市场报价利率四倍的部分，人民法院不予支持。",
+      "shift_condition": "借款人证明逾期利息与违约金并存并主张合并审查后，出借人如主张两者性质不同不应合并，须举证说明违约金具有独立于逾期利息的功能。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-010-004",
+      "case_id": "civil-loan-010",
+      "issue_id": "issue-civil-loan-010-004",
+      "burden_party_id": "party-civil-loan-010-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "fp-civil-loan-010-008: 律师费系出借人因借款人未按约偿还借款，为维护自身合法权益进行诉讼而产生的支出和损失",
+      "legal_basis": "出借人主张律师费不应归入利率上限审查范围的，须证明律师费系因借款人违约导致诉讼而实际产生的合理支出，不属于出借人因借贷关系获得的金钱利益。律师费具有或然性（借款人如约履行则不产生），不属于借款人为获得借款而支付的必然成本，性质上不同于服务费等变相利息。",
+      "shift_condition": "出借人提交律师代理合同、发票及支付凭证后，如被告主张律师费属于变相利息或金额不合理，由被告举证证明。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-010-005",
+      "case_id": "civil-loan-010",
+      "issue_id": "issue-civil-loan-010-005",
+      "burden_party_id": "party-civil-loan-010-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "fp-civil-loan-010-012: 出借人实际支出的律师费金额合理，与案件标的额及复杂程度相适应",
+      "legal_basis": "出借人请求借款人承担律师费的，除须证明合同有明确约定外，还须证明律师费已实际发生且金额合理。合理性的判断参考当地律师收费标准、案件标的额、案件复杂程度等因素。法院有权对明显过高的律师费予以调减。",
+      "shift_condition": "出借人提交律师费支出凭证后，被告如主张金额不合理，须提供当地收费标准等反证。法院可依职权调整。",
+      "status": "active"
+    }
+  ]
+}

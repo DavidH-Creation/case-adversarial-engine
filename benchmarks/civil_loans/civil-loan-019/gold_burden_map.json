@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-019",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-019-001",
+      "case_id": "civil-loan-019",
+      "issue_id": "issue-civil-loan-019-001",
+      "burden_party_id": "party-civil-loan-019-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-019-001: 出借人主张的借款已经实际交付给借款人",
+      "legal_basis": "《民事诉讼法》第67条\"谁主张、谁举证\"原则及《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》第16条。出借人主张借贷关系成立的，应对借贷合意和款项交付承担举证责任。仅有借条而无其他交付凭证时，应进一步审查款项交付事实。",
+      "shift_condition": "出借人提交借条并对交付事实作出合理说明后，若借款人仅作简单否认而未提出反证，可能转移至借款人说明借条来源。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-019-002",
+      "case_id": "civil-loan-019",
+      "issue_id": "issue-civil-loan-019-001",
+      "burden_party_id": "party-civil-loan-019-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-019-002: 出借人具有与借款金额相匹配的资金来源和出借能力",
+      "legal_basis": "《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》第16条第2款。在被告抗辩借款未实际交付的情况下，法院应审查出借人的经济能力、资金来源等。",
+      "shift_condition": "出借人充分证明资金来源后，举证责任不再转移。如不能证明，则结合其他证据综合判断借贷事实是否存在。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-019-003",
+      "case_id": "civil-loan-019",
+      "issue_id": "issue-civil-loan-019-002",
+      "burden_party_id": "party-civil-loan-019-001",
+      "burden_type": "说明责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-019-004: 借条系借款人真实签署且借款已实际履行",
+      "legal_basis": "借条作为民间借贷的常见债权凭证，在对方当事人否认借款交付时，持有借条一方应就借条的形成过程及款项交付的具体情况作出合理说明。",
+      "shift_condition": "出借人对借条形成及交付作出完整合理说明后，借款人如坚持否认则应说明借条的其他成因。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-019-004",
+      "case_id": "civil-loan-019",
+      "issue_id": "issue-civil-loan-019-003",
+      "burden_party_id": "party-civil-loan-019-002",
+      "burden_type": "转移后举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "fp-civil-loan-019-012: 出借人的陈述存在多处前后不一致，严重削弱其主张的可信度",
+      "legal_basis": "《民事诉讼法》及相关司法解释。被告对出借人陈述不一致之处进行质证，通过比对一审、二审庭审笔录中原告陈述的差异来动摇原告主张的可信度。",
+      "shift_condition": "被告成功指出出借人多处陈述矛盾后，出借人需对矛盾之处作出合理解释；不能合理解释的，法院可据此否定其主张。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-019-005",
+      "case_id": "civil-loan-019",
+      "issue_id": "issue-civil-loan-019-004",
+      "burden_party_id": "party-civil-loan-019-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-019-009: 出借人能够说明借款资金的具体来源渠道",
+      "legal_basis": "《最高人民法院关于审理民间借贷案件适用法律若干问题的规定》第16条。大额现金借贷应审查出借人的资金来源。出借人主张以现金方式交付大额借款的，应对资金来源、取款记录等作出合理说明。",
+      "shift_condition": "出借人提供银行取现记录、收入证明等证据证明资金来源后，该项举证完成。否则法院可推定出借人缺乏出借能力。",
+      "status": "active"
+    }
+  ]
+}

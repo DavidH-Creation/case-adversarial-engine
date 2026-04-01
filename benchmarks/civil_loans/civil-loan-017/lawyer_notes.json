@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-017",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-017-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-017-001",
+      "evidence_ids": ["evidence-civil-loan-017-001"],
+      "content": "合同中预先约定\"债权转让后由受让人住所地法院管辖\"的条款，本质上是合同当事人为未来不确定的第三方（债权受让人）涉诉而单方面约定的管辖安排。由于债权受让方在合同订立时身份不确定，不可能参与缔结该管辖条款，该条款不具有协议管辖的双方合意基础。"
+    },
+    {
+      "note_id": "note-civil-loan-017-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-017-002",
+      "evidence_ids": ["evidence-civil-loan-017-002", "evidence-civil-loan-017-003"],
+      "content": "《民事诉讼法》第35条所称\"与争议有实际联系的地点\"应以合同订立时的客观事实为判断基准，包括被告住所地、合同履行地、合同签订地、原告住所地、标的物所在地等。因债权受让方在合同签订时不确定，其住所地在订立合同时不属于与争议有实际联系的地点，不满足协议管辖的法定要件。"
+    },
+    {
+      "note_id": "note-civil-loan-017-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-017-003",
+      "evidence_ids": [],
+      "content": "实务中债权转让后的管辖确定建议：（1）受让人起诉时不应仅依据预先约定的管辖条款向自身住所地法院起诉；（2）应审查原合同中是否有其他有效的管辖约定（如约定被告住所地或合同履行地法院管辖）；（3）如无有效协议管辖，应依法定管辖向被告住所地或合同履行地法院起诉。"
+    },
+    {
+      "note_id": "note-civil-loan-017-004",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-017-001",
+      "evidence_ids": [],
+      "content": "对于批量债权收购方（如资产管理公司）的实务提示：（1）不应在格式合同中设置预先约定受让人住所地管辖的条款，法院倾向于认定此类条款无效；（2）收购债权后应重新评估管辖问题，必要时与债务人另行签订管辖约定；（3）此类条款无效不影响原合同其他管辖约定的效力。"
+    },
+    {
+      "note_id": "note-civil-loan-017-005",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-017-004",
+      "evidence_ids": ["evidence-civil-loan-017-004", "evidence-civil-loan-017-005", "evidence-civil-loan-017-006"],
+      "content": "管辖问题属于程序性争议，不影响实体权利义务的认定。即使管辖条款被认定无效导致案件移送，债权受让人对债务人的实体请求权（要求偿还借款本息）仍然存在，债权转让的效力不受影响。"
+    }
+  ]
+}

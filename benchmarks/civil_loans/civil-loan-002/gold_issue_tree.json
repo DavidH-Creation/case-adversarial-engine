@@ -1,0 +1,193 @@
+{
+  "case_id": "civil-loan-002",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-002-001",
+      "case_id": "civil-loan-002",
+      "title": "主借款合同的效力认定",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-002-001"],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-002-001",
+          "text": "债权人与债务人之间签订了借款合同，约定了借款金额、利率及还款期限",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-001"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-002-002",
+          "text": "借款合同系双方真实意思表示，内容不违反法律强制性规定",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-001", "evidence-civil-loan-002-002"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-002-001"],
+      "evidence_ids": ["evidence-civil-loan-002-001", "evidence-civil-loan-002-002"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-002-002",
+      "case_id": "civil-loan-002",
+      "title": "担保人是否为限制民事行为能力人",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [],
+      "related_defense_ids": ["defense-civil-loan-002-001"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-002-003",
+          "text": "担保人被诊断患有阿尔茨海默病",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-002-004",
+          "text": "法院已依法宣告担保人为限制民事行为能力人",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-004"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-002-002"],
+      "evidence_ids": ["evidence-civil-loan-002-003", "evidence-civil-loan-002-004"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-002-003",
+      "case_id": "civil-loan-002",
+      "title": "担保合同的效力——限制行为能力人签署巨额担保协议是否有效",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-002-002"],
+      "related_defense_ids": ["defense-civil-loan-002-001", "defense-civil-loan-002-002"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-002-005",
+          "text": "担保人在已被宣告为限制行为能力人后签署了巨额债务担保协议",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-005", "evidence-civil-loan-002-004"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-002-006",
+          "text": "签署巨额担保协议的行为与担保人的智力、精神健康状况不相适应",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-003", "evidence-civil-loan-002-006"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-002-007",
+          "text": "担保人的法定代理人拒绝追认该担保合同",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-007"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-002-003", "burden-civil-loan-002-004"],
+      "evidence_ids": [
+        "evidence-civil-loan-002-003",
+        "evidence-civil-loan-002-004",
+        "evidence-civil-loan-002-005",
+        "evidence-civil-loan-002-006",
+        "evidence-civil-loan-002-007"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-002-004",
+      "case_id": "civil-loan-002",
+      "title": "担保合同无效后担保人是否存在过错",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-002-003",
+      "related_claim_ids": ["claim-civil-loan-002-003"],
+      "related_defense_ids": ["defense-civil-loan-002-003"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-002-008",
+          "text": "担保人因欠缺行为能力，对提供担保行为的性质及后果不具有识别能力",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-003", "evidence-civil-loan-002-006"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-002-009",
+          "text": "担保合同无效系因担保人行为能力欠缺所致，非因担保人过错所致",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-004", "evidence-civil-loan-002-006"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-002-005"],
+      "evidence_ids": ["evidence-civil-loan-002-003", "evidence-civil-loan-002-004", "evidence-civil-loan-002-006"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-002-005",
+      "case_id": "civil-loan-002",
+      "title": "债权人在担保合同缔约过程中是否存在过错",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-002-003",
+      "related_claim_ids": [],
+      "related_defense_ids": ["defense-civil-loan-002-004"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-002-010",
+          "text": "债权人在接受担保时未尽合理审查义务，未核实担保人的行为能力状况",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-008"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-002-011",
+          "text": "债权人知道或应当知道担保人存在认知障碍仍接受其担保",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-008", "evidence-civil-loan-002-009"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-002-006"],
+      "evidence_ids": ["evidence-civil-loan-002-008", "evidence-civil-loan-002-009"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-002-006",
+      "case_id": "civil-loan-002",
+      "title": "担保合同无效后各方责任分担",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-002-003"],
+      "related_defense_ids": ["defense-civil-loan-002-003", "defense-civil-loan-002-004"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-002-012",
+          "text": "依据《担保法》第5条第2款及《担保法司法解释》第7条，担保合同无效后应根据各方过错分担责任",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-002-013",
+          "text": "担保人因不具有行为能力而对担保合同无效不具有过错，不应依据《担保法司法解释》第7条承担连带赔偿责任",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-004", "evidence-civil-loan-002-006"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-002-007", "burden-civil-loan-002-008"],
+      "evidence_ids": ["evidence-civil-loan-002-004", "evidence-civil-loan-002-006", "evidence-civil-loan-002-008"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-002-007",
+      "case_id": "civil-loan-002",
+      "title": "债务人的还款义务及违约责任",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-002-001",
+      "related_claim_ids": ["claim-civil-loan-002-001"],
+      "related_defense_ids": [],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-002-014",
+          "text": "债务人未按借款合同约定按期偿还借款本金及利息",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-002-001", "evidence-civil-loan-002-010"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-002-009"],
+      "evidence_ids": ["evidence-civil-loan-002-001", "evidence-civil-loan-002-010"],
+      "status": "open"
+    }
+  ]
+}

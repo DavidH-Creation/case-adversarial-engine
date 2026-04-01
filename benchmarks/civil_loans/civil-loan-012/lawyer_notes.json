@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-012",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-012-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-012-001",
+      "evidence_ids": ["evidence-civil-loan-012-001"],
+      "content": "本案核心程序争点：原告作为借款合同的签订方，持合同起诉即具备原告主体资格。法院在立案阶段仅需审查原告是否与案件有直接利害关系，借款合同明确载明原告为出借人即满足这一条件。原告的经济能力、款项是否实际来源于原告等问题均属于实体审理的范畴。"
+    },
+    {
+      "note_id": "note-civil-loan-012-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-012-002",
+      "evidence_ids": ["evidence-civil-loan-012-001", "evidence-civil-loan-012-002"],
+      "content": "立案登记制改革后，法院对起诉的审查应当以形式审查为原则。将出借人经济状况、出借能力、款项来源纳入立案审查范围，实质上违反了立案登记制的基本精神，构成以实体审查取代形式审查。即使法院在立案后发现借贷关系可能不真实，也应通过实体审理作出判决，而非回转到驳回起诉。"
+    },
+    {
+      "note_id": "note-civil-loan-012-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-012-003",
+      "evidence_ids": ["evidence-civil-loan-012-003"],
+      "content": "《民间借贷规定》第2条第2款的适用需注意其前提条件：仅适用于债权凭证没有载明债权人的情形（如仅有借条而无合同、或借条上未写明出借人）。实务中被告常混淆使用该条款，在债权凭证已载明债权人的情况下仍主张原告不具有债权人资格——此时法院不应适用该条款驳回起诉，而应进入实体审理阶段审查债权的真实性。"
+    },
+    {
+      "note_id": "note-civil-loan-012-004",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-012-004",
+      "evidence_ids": ["evidence-civil-loan-012-004", "evidence-civil-loan-012-005"],
+      "content": "本案存在严重的程序违法：上级法院已裁定撤销驳回起诉裁定并指令下级法院审理，下级法院却以变更后的不同理由再次驳回起诉。这种做法实质上是以变更裁判理由的方式规避上级法院的指令，违反了审级监督制度。上级法院的指令审理裁定意味着对原告起诉条件的肯定性判断，下级法院应当按照指令进行实体审理。"
+    },
+    {
+      "note_id": "note-civil-loan-012-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-012-005",
+      "evidence_ids": [],
+      "content": "实务建议：（1）对原告方：起诉时确保借款合同或债权凭证明确载明出借人身份，同时准备款项交付的初步证据（转账凭证等），以满足立案形式审查要求；（2）对被告方：如欲质疑原告的债权人资格，应在实体审理阶段提出并举证，而非试图通过程序抗辩阻止案件进入实体审理；（3）对法院：严格区分立案形式审查与实体审查的界限，不应将实体争议作为驳回起诉的理由。"
+    }
+  ]
+}

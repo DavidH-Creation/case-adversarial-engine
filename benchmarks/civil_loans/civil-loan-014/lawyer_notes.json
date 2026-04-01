@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-014",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-014-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-014-003",
+      "evidence_ids": ["evidence-civil-loan-014-005", "evidence-civil-loan-014-006"],
+      "content": "一人公司财产混同认定的核心在于举证责任倒置。依据《公司法》第六十三条，不是由债权人举证证明财产混同，而是由股东举证证明财产独立。股东需提交经审计的公司年度财务会计报告等证据。本案股东既未提交审计报告也未到庭应诉，法院可直接推定财产混同成立。"
+    },
+    {
+      "note_id": "note-civil-loan-014-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-014-005",
+      "evidence_ids": ["evidence-civil-loan-014-007"],
+      "content": "股东经合法传唤缺席审判在举证责任倒置案件中具有双重不利效果：（1）程序上，视为放弃质证、答辩权利，法院可缺席判决；（2）实体上，在本应由股东承担举证责任的情况下，缺席使其彻底丧失举证机会，法院将直接采信债权人的主张。这一双重不利后果在再审程序中同样适用。"
+    },
+    {
+      "note_id": "note-civil-loan-014-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-014-003",
+      "evidence_ids": [],
+      "content": "代理债权人诉一人公司案件的实务要点：（1）首先通过工商登记确认目标公司确为一人有限责任公司；（2）在诉讼请求中同时列公司和股东为共同被告；（3）在诉状中明确援引《公司法》第六十三条主张举证责任倒置；（4）可申请法院调取公司与股东的银行流水作为辅证。代理股东方：（1）务必到庭应诉，缺席将直接导致败诉；（2）提前准备好经审计的年度财务报告；（3）如存在合理的公司与股东之间的资金往来，应准备借贷合同、股东会决议等证据说明资金往来的正当性。"
+    },
+    {
+      "note_id": "note-civil-loan-014-004",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-014-004",
+      "evidence_ids": [],
+      "content": "《公司法》第六十三条的举证责任倒置规则是一人公司制度的核心风险防范机制。与一般民事诉讼\"谁主张谁举证\"原则不同，该条款要求股东主动证明公司财产独立。这一制度设计的立法目的在于：一人公司缺少其他股东的相互监督，股东滥用法人独立地位和有限责任的可能性更高，故需通过倒置举证责任来保护债权人利益。"
+    },
+    {
+      "note_id": "note-civil-loan-014-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-014-006",
+      "evidence_ids": ["evidence-civil-loan-014-001", "evidence-civil-loan-014-003"],
+      "content": "连带责任的范围应注意：股东的连带责任范围与公司对债权人的债务范围一致，包括借款本金、利息、违约金以及诉讼费用等。实务中债权人应在诉状中明确列明各项请求金额的计算依据。再审案件中应特别关注原审认定的债务金额是否正确。"
+    }
+  ]
+}

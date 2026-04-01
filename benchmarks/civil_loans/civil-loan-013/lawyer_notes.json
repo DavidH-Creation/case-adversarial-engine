@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-013",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-013-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-013-002",
+      "evidence_ids": ["evidence-civil-loan-013-004", "evidence-civil-loan-013-005"],
+      "content": "清算程序中债权确认的核心路径：（1）清算组核定确认——无需诉讼；（2）清算组不予确认——债权人可起诉；（3）清算组怠于处理——同样可起诉。本案的关键认定在于，法院不应要求债权人必须取得清算组的明确否认决定才能起诉，怠于处理本身即构成诉讼的正当事由。"
+    },
+    {
+      "note_id": "note-civil-loan-013-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-013-003",
+      "evidence_ids": ["evidence-civil-loan-013-003", "evidence-civil-loan-013-005"],
+      "content": "清算组怠于处理债权申报的认定标准：债权人已向清算组申报债权并催告核定，清算组在合理期限内（通常为收到催告后30日）既未确认也未明确否认，应视为怠于处理。此时债权人的诉讼权利不应因清算组的不作为而受损。法院应当受理债权人的债权确认之诉，保障其获得司法救济的权利。"
+    },
+    {
+      "note_id": "note-civil-loan-013-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-013-001",
+      "evidence_ids": ["evidence-civil-loan-013-003"],
+      "content": "实务建议——债权人在公司清算中的权利保护策略：（1）及时申报债权并保留送达回执等申报证据；（2）密切关注清算组的债权核定进度，必要时书面催告并保留送达凭证；（3）如清算组怠于处理，及时向受理清算申请的法院提起债权确认诉讼；（4）注意强制清算的管辖集中原则，避免向错误法院起诉导致时间浪费。"
+    },
+    {
+      "note_id": "note-civil-loan-013-004",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-013-004",
+      "evidence_ids": ["evidence-civil-loan-013-001"],
+      "content": "强制清算中债权确认诉讼的管辖集中原则：受理强制清算申请的法院对清算过程中产生的债权确认纠纷具有专属管辖权。这一规则基于清算程序统一性的考量——受理清算的法院最熟悉公司资产负债状况，能够在债权确认与清算分配之间保持协调一致。"
+    },
+    {
+      "note_id": "note-civil-loan-013-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-013-005",
+      "evidence_ids": ["evidence-civil-loan-013-006", "evidence-civil-loan-013-007"],
+      "content": "债权确认诉讼中的实体审查要点：（1）基础法律关系的真实性——合同是否真实签订和履行；（2）债权是否已过诉讼时效——清算公告的发布可能影响时效中断认定；（3）利息和违约金的计算是否符合法律规定；（4）是否存在债权已部分或全部清偿的情形。建议债权人在起诉时一并提交完整的债权计算明细和支持性凭证。"
+    }
+  ]
+}

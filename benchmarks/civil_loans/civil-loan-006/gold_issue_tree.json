@@ -1,0 +1,141 @@
+{
+  "case_id": "civil-loan-006",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-006-001",
+      "case_id": "civil-loan-006",
+      "title": "借贷关系是否成立及借款合同效力",
+      "issue_type": "legal",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-006-001"],
+      "related_defense_ids": ["defense-civil-loan-006-001"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-006-001",
+          "text": "原告与被告之间签订了借款合同，约定了借款金额、利率、还款期限等主要条款",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-001"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-006-002",
+          "text": "原告已将借款资金通过银行转账方式交付给被告，借款合同已实际履行",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-001", "evidence-civil-loan-006-002"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-006-001"],
+      "evidence_ids": ["evidence-civil-loan-006-001", "evidence-civil-loan-006-002"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-006-002",
+      "case_id": "civil-loan-006",
+      "title": "出借人是否在放款日前或同日扣除利息（砍头息事实认定）",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-006-002"],
+      "related_defense_ids": ["defense-civil-loan-006-002"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-006-003",
+          "text": "借款人在放款日前或同日向出借人支付了款项，该款项名义上为利息",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-006-004",
+          "text": "借款人支付上述款项时尚未实际占有借款资金或仅刚收到资金，不具备利息支付的前提条件",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-002", "evidence-civil-loan-006-003"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-006-005",
+          "text": "出借人通过要求借款人在放款前/同日支付利息的方式，实质上预先扣除了本金中的利息部分",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-003", "evidence-civil-loan-006-005"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-006-002"],
+      "evidence_ids": ["evidence-civil-loan-006-002", "evidence-civil-loan-006-003", "evidence-civil-loan-006-005"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-006-003",
+      "case_id": "civil-loan-006",
+      "title": "实际出借本金金额如何认定",
+      "issue_type": "mixed",
+      "parent_issue_id": "issue-civil-loan-006-002",
+      "related_claim_ids": ["claim-civil-loan-006-003"],
+      "related_defense_ids": ["defense-civil-loan-006-003"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-006-006",
+          "text": "合同约定借款本金与出借人实际交付金额之间存在差额，差额部分即为预先扣除的利息",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-001", "evidence-civil-loan-006-002", "evidence-civil-loan-006-005"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-006-007",
+          "text": "根据《合同法》第二百条，预先在本金中扣除利息的，应当将实际出借的金额认定为本金",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-002", "evidence-civil-loan-006-003"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-006-003"],
+      "evidence_ids": ["evidence-civil-loan-006-001", "evidence-civil-loan-006-002", "evidence-civil-loan-006-003", "evidence-civil-loan-006-005"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-006-004",
+      "case_id": "civil-loan-006",
+      "title": "利息计算方式是否合法（应以实际出借本金为基数）",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-006-003",
+      "related_claim_ids": ["claim-civil-loan-006-004"],
+      "related_defense_ids": ["defense-civil-loan-006-004"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-006-008",
+          "text": "出借人以合同约定的借款金额（而非实际出借金额）为基数计算利息，构成重复计息或高于实际出借本金计息",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-005"]
+        },
+        {
+          "proposition_id": "fp-civil-loan-006-009",
+          "text": "利息的支付应以借款人实际占有借款为前提，利息基数应为实际出借本金金额",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-004", "evidence-civil-loan-006-005"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-006-004"],
+      "evidence_ids": ["evidence-civil-loan-006-004", "evidence-civil-loan-006-005"],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-006-005",
+      "case_id": "civil-loan-006",
+      "title": "出借人是否利用资金优势地位假借利息名义谋取不当利益",
+      "issue_type": "mixed",
+      "parent_issue_id": null,
+      "related_claim_ids": ["claim-civil-loan-006-005"],
+      "related_defense_ids": ["defense-civil-loan-006-005"],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-006-010",
+          "text": "出借人在借贷关系中处于资金优势地位，借款人因资金需求处于弱势地位",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-006-011",
+          "text": "出借人通过预先收取利息的方式，使借款人承担了超出实际借款金额的利息负担，实质上谋取了不当利益",
+          "status": "unverified",
+          "linked_evidence_ids": ["evidence-civil-loan-006-003", "evidence-civil-loan-006-005", "evidence-civil-loan-006-006"]
+        }
+      ],
+      "burden_ids": ["burden-civil-loan-006-005"],
+      "evidence_ids": ["evidence-civil-loan-006-003", "evidence-civil-loan-006-005", "evidence-civil-loan-006-006"],
+      "status": "open"
+    }
+  ]
+}

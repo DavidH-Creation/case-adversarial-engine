@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-020",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-020-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-020-001",
+      "evidence_ids": ["evidence-civil-loan-020-003", "evidence-civil-loan-020-004", "evidence-civil-loan-020-005"],
+      "content": "本案的核心事实特征在于：原债权人转让债权后未通过传统方式（书面函件、邮件等）通知债务人，而是在诉讼过程中通过提交证据和庭审陈述的方式使债务人知悉转让事实。最高法认定此种诉讼中的披露构成有效的债权转让通知。"
+    },
+    {
+      "note_id": "note-civil-loan-020-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-020-002",
+      "evidence_ids": ["evidence-civil-loan-020-005"],
+      "content": "原合同法第80条第1款仅要求债权人\"通知\"债务人，未对通知的具体形式作出限制。从立法目的看，通知的核心功能在于使债务人知悉债权转让的事实以便其向正确的债权人履行债务。诉讼中的披露同样能实现此目的，且在诉讼场景中债务人知悉的确定性甚至高于诉讼外的书面通知。因此认定诉讼中披露构成有效通知具有充分的法理基础。"
+    },
+    {
+      "note_id": "note-civil-loan-020-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-020-003",
+      "evidence_ids": [],
+      "content": "实务建议：（1）债权转让方应尽量在诉讼前完成通知程序，保留通知送达的证据（EMS回执、公证送达等），避免产生不必要的程序争议；（2）即使诉讼中通知可构成有效通知，但因生效时点较晚（二审才知悉），可能导致利息计算、诉讼时效等方面产生争议；（3）债务人方遇到诉讼中才披露的转让应立即提出程序性抗辩，要求法院审查原告主体资格。"
+    },
+    {
+      "note_id": "note-civil-loan-020-004",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-020-004",
+      "evidence_ids": ["evidence-civil-loan-020-002", "evidence-civil-loan-020-006"],
+      "content": "关于原债权人诉讼主体资格的裁判要旨：根据民诉法司法解释第249条，诉讼中争议的民事权利义务发生转移的，不影响当事人的诉讼主体资格和诉讼地位。本案中债权转让发生在诉讼过程中（对债务人的效力在二审才产生），属于典型的\"诉讼中权利义务转移\"情形，原债权人继续以原审原告身份参加诉讼完全合法。"
+    },
+    {
+      "note_id": "note-civil-loan-020-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-020-004",
+      "evidence_ids": [],
+      "content": "本案确立的规则对债权转让与诉讼衔接具有重要指导意义：（1）受让人可以申请以无独立请求权第三人身份参加诉讼或另行起诉；（2）判决生效后受让人可依据转让协议申请变更执行当事人；（3）实务中建议受让人在发现转让人已起诉的情况下及时介入诉讼，通过追加当事人或提交书面意见的方式保障自身权利。"
+    }
+  ]
+}

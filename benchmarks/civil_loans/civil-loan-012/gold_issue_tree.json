@@ -1,0 +1,220 @@
+{
+  "case_id": "civil-loan-012",
+  "issues": [
+    {
+      "issue_id": "issue-civil-loan-012-001",
+      "case_id": "civil-loan-012",
+      "title": "借款合同签订人是否具备原告主体资格",
+      "issue_type": "procedural",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-012-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-012-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-012-001",
+          "text": "原告作为借款合同的签订方（出借人一方），依据该借款合同提起诉讼",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-012-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-002",
+          "text": "借款合同中明确载明原告为出借人/债权人",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-012-001"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-012-001"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-012-001"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-012-002",
+      "case_id": "civil-loan-012",
+      "title": "立案受理阶段的审查标准——形式审查与实体审查的界限",
+      "issue_type": "procedural",
+      "parent_issue_id": "issue-civil-loan-012-001",
+      "related_claim_ids": [
+        "claim-civil-loan-012-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-012-001"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-012-003",
+          "text": "立案受理阶段法院仅需审查原告是否提交了证明借贷法律关系存在的初步证据",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-004",
+          "text": "出借人经济状况、款项来源、实际出借能力等属于实体审查范畴，不应在立案阶段审查",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-005",
+          "text": "以原告不具备出借能力或款项来源不明为由驳回起诉，属于将实体审查前置，违反诉讼程序",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-012-002"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-012-001",
+        "evidence-civil-loan-012-002"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-012-003",
+      "case_id": "civil-loan-012",
+      "title": "《民间借贷规定》第2条第2款关于债权人资格抗辩的适用条件",
+      "issue_type": "legal",
+      "parent_issue_id": "issue-civil-loan-012-001",
+      "related_claim_ids": [
+        "claim-civil-loan-012-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-012-002"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-012-006",
+          "text": "《民间借贷规定》第2条第2款关于\"被告提出原告不具有债权人资格\"的抗辩，其适用前提为债权凭证没有载明债权人",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-007",
+          "text": "本案债权凭证（借款合同）明确载明原告为债权人，不符合上述条款的适用前提",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-012-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-008",
+          "text": "债权凭证载明债权人的情况下，被告关于原告非实际出借人的主张应通过实体审理解决，不得据此驳回起诉",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-012-003"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-012-001",
+        "evidence-civil-loan-012-003"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-012-004",
+      "case_id": "civil-loan-012",
+      "title": "上级法院指令审理后下级法院能否变更理由再次驳回起诉",
+      "issue_type": "procedural",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-012-002"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-012-003"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-012-009",
+          "text": "上级法院已裁定撤销驳回起诉裁定并指令下级法院审理",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-012-004"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-010",
+          "text": "下级法院在接受指令后变更裁判理由再次作出驳回起诉裁定",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-012-005"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-011",
+          "text": "下级法院变更理由再次驳回起诉违反上下级法院审级监督关系，应予纠正",
+          "status": "unverified",
+          "linked_evidence_ids": []
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-012-004"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-012-004",
+        "evidence-civil-loan-012-005"
+      ],
+      "status": "open"
+    },
+    {
+      "issue_id": "issue-civil-loan-012-005",
+      "case_id": "civil-loan-012",
+      "title": "借贷法律关系是否真实存在（实体争点）",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [
+        "claim-civil-loan-012-001"
+      ],
+      "related_defense_ids": [
+        "defense-civil-loan-012-004"
+      ],
+      "fact_propositions": [
+        {
+          "proposition_id": "fp-civil-loan-012-012",
+          "text": "原告与被告之间签订了借款合同，约定借款金额、利率、期限等",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-012-001"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-013",
+          "text": "原告已实际交付借款（或主张已交付借款）",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-012-002"
+          ]
+        },
+        {
+          "proposition_id": "fp-civil-loan-012-014",
+          "text": "被告到期未偿还借款本息",
+          "status": "unverified",
+          "linked_evidence_ids": [
+            "evidence-civil-loan-012-006"
+          ]
+        }
+      ],
+      "burden_ids": [
+        "burden-civil-loan-012-005"
+      ],
+      "evidence_ids": [
+        "evidence-civil-loan-012-001",
+        "evidence-civil-loan-012-002",
+        "evidence-civil-loan-012-006"
+      ],
+      "status": "open"
+    }
+  ]
+}

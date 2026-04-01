@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-005",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-005-001",
+      "case_id": "civil-loan-005",
+      "issue_id": "issue-civil-loan-005-001",
+      "burden_party_id": "party-civil-loan-005-003",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-005-002: 质押合同以农信社本单位股金为标的，不违反法律、行政法规的强制性规定",
+      "legal_basis": "出质人/被告方抗辩质押合同无效的，须举证证明该合同违反法律、行政法规的效力性强制性规定。农村信用社不属于公司法人，其接受股金质押不适用公司法关于公司不得接受本公司股份质押的限制（《公司法》第142条）。",
+      "shift_condition": "被告方如主张质押合同违反强制性规定，须明确指出具体法律条文；原告方举证农信社非公司法人性质即可反驳。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-005-002",
+      "case_id": "civil-loan-005",
+      "issue_id": "issue-civil-loan-005-002",
+      "burden_party_id": "party-civil-loan-005-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-005-004: 出质人向质权人交付了股金证，且办理了冻结止付登记手续，出质股金不能再流通",
+      "legal_basis": "农信社股金不属于工商登记的股权出质范围。根据《物权法》第226条及权利质权的一般规则，质权人须证明已通过适当方式（交付权利凭证+公示替代措施）设立质权。交付股金证+冻结止付登记可构成有效的质权设立方式。",
+      "shift_condition": "原告提交股金证交付凭证及冻结止付登记后，如被告主张质权未设立，由被告举证证明交付或冻结存在瑕疵。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-005-003",
+      "case_id": "civil-loan-005",
+      "issue_id": "issue-civil-loan-005-003",
+      "burden_party_id": "party-civil-loan-005-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-005-005: 借款期限持续至农信社改制后，农信社股金转变为农商行股权",
+      "legal_basis": "改制后农商行作为权利义务承继主体，须证明改制事实及股金转股权的对应关系，以确立其主张质权存续的基础。银监部门批复及工商变更登记可证明改制法律关系。",
+      "shift_condition": "原告证明改制事实后，被告如主张改制导致质权消灭，须举证证明质权存续的法律障碍。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-005-004",
+      "case_id": "civil-loan-005",
+      "issue_id": "issue-civil-loan-005-004",
+      "burden_party_id": "party-civil-loan-005-002",
+      "burden_type": "抗辩举证责任",
+      "proof_standard": "优势证据",
+      "fact_proposition": "fp-civil-loan-005-007: 借新还旧导致主债权消灭，根据担保从属性原理，旧贷股金质权随之消灭",
+      "legal_basis": "借款人/被告方主张质权因借新还旧而消灭的，须证明新贷实质用于偿还旧贷（构成借新还旧），从而主债权消灭、质权随之消灭。原告方如主张例外（担保人同意继续担保），须提交担保人的书面同意或新质押合同。",
+      "shift_condition": "被告证明借新还旧事实后，举证责任转移至原告证明担保人同意继续为新贷提供担保。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-005-005",
+      "case_id": "civil-loan-005",
+      "issue_id": "issue-civil-loan-005-005",
+      "burden_party_id": "party-civil-loan-005-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-005-009: 循环贷款和贷款展期情形下主债权并未消灭，仅是期限变更或额度循环使用",
+      "legal_basis": "原告方主张贷款系循环贷款或展期（而非借新还旧）的，须提交循环贷款额度协议或展期协议，证明主债权同一性未中断。循环贷款与展期不产生新的主债权，原质权依从属性原理继续有效。",
+      "shift_condition": "原告提交循环贷款/展期协议后，被告如主张实质为借新还旧，须举证证明旧贷已清偿且新贷构成独立债权。",
+      "status": "active"
+    }
+  ]
+}

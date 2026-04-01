@@ -1,0 +1,65 @@
+{
+  "case_id": "civil-loan-016",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-016-001",
+      "case_id": "civil-loan-016",
+      "issue_id": "issue-civil-loan-016-001",
+      "burden_party_id": "party-civil-loan-016-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-016-001: 债权转让协议合法有效；fp-civil-loan-016-002: 被转让的债权不属于不得转让类型；fp-civil-loan-016-003: 债权转让已通知债务人",
+      "legal_basis": "《民法典》第五百四十五条、第五百四十六条。债权人转让债权需不违反法律规定、合同约定及债权性质限制，且应通知债务人。受让人应举证证明转让合法有效并已通知债务人。",
+      "shift_condition": "受让人完成举证后，如债务人主张债权转让无效或通知未送达，由债务人承担反证责任。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-016-002",
+      "case_id": "civil-loan-016",
+      "issue_id": "issue-civil-loan-016-002",
+      "burden_party_id": "party-civil-loan-016-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-016-004: 债权转让生效后受让人取得原合同项下债权，有权以自己名义向债务人主张",
+      "legal_basis": "《民法典》第五百四十七条。债权人转让债权的，受让人取得与债权有关的从权利。受让人应提交基础合同和转让协议证明其权利来源。",
+      "shift_condition": "受让人完成举证后，债务人可对受让人主张其对原债权人享有的一切抗辩（《民法典》第五百四十八条）。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-016-003",
+      "case_id": "civil-loan-016",
+      "issue_id": "issue-civil-loan-016-003",
+      "burden_party_id": "party-civil-loan-016-002",
+      "burden_type": "管辖权异议举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-016-006: 合同履行地应依据基础合同确定；fp-civil-loan-016-012: 基础合同确定的履行地不在受诉法院辖区",
+      "legal_basis": "《民事诉讼法》第一百三十条。当事人对管辖权有异议的，应当在提交答辩状期间提出。债务人提出管辖权异议的，应举证说明受诉法院不具有管辖权。",
+      "shift_condition": "债务人提交基础合同及住所地证明后，由原告反驳管辖权异议的合理性。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-016-004",
+      "case_id": "civil-loan-016",
+      "issue_id": "issue-civil-loan-016-003",
+      "burden_party_id": "party-civil-loan-016-001",
+      "burden_type": "反驳举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-016-007: 基础合同中约定了合同履行地在受诉法院辖区（如受让人主张受诉法院有管辖权）",
+      "legal_basis": "原告如主张受诉法院有管辖权，应举证证明基础合同约定的合同履行地在受诉法院辖区，或被告住所地在受诉法院辖区。不能以受让人住所地作为确定管辖的连接点。",
+      "shift_condition": "原告如能证明基础合同约定的履行地在受诉法院辖区，管辖权异议不成立。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-016-005",
+      "case_id": "civil-loan-016",
+      "issue_id": "issue-civil-loan-016-005",
+      "burden_party_id": "party-civil-loan-016-002",
+      "burden_type": "程序性举证责任",
+      "proof_standard": "形式审查",
+      "fact_proposition": "fp-civil-loan-016-012: 基础合同确定的合同履行地不在受诉法院辖区；fp-civil-loan-016-013: 被告住所地亦不在受诉法院辖区",
+      "legal_basis": "《民事诉讼法》第二十四条。因合同纠纷提起的诉讼，由被告住所地或者合同履行地人民法院管辖。债务人应举证证明该两项管辖连接点均不在受诉法院辖区。管辖权异议阶段采形式审查标准。",
+      "shift_condition": "债务人初步证明后，法院依职权审查管辖权并作出裁定。",
+      "status": "active"
+    }
+  ]
+}

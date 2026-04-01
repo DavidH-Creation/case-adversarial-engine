@@ -1,0 +1,40 @@
+{
+  "case_id": "civil-loan-018",
+  "notes": [
+    {
+      "note_id": "note-civil-loan-018-001",
+      "statement_class": "fact",
+      "issue_id": "issue-civil-loan-018-001",
+      "evidence_ids": ["evidence-civil-loan-018-001", "evidence-civil-loan-018-005"],
+      "content": "表见代理的认定应当结合合同缔结与履行中的各种因素综合判定。本案中借款合同的签约主体、合同文本载明内容均指向刘某某等个人，而非项目部或所属公司，缺乏代理权外观的基本要素。项目部所属公司亦未出具任何授权文件，刘某某等个人系以自己名义借款。"
+    },
+    {
+      "note_id": "note-civil-loan-018-002",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-018-002",
+      "evidence_ids": ["evidence-civil-loan-018-003", "evidence-civil-loan-018-004"],
+      "content": "善意相对人的认定应考虑交易主体的专业背景和行业认知。出借人作为从事建设行业的建筑公司，应当清楚工程转包实务中普遍存在实际施工人的情形，应当知道借款人可能并非项目部的代理人而是实际施工人个人。其未核实借款人的代理资格即出借资金，难以认定为善意且无过失。"
+    },
+    {
+      "note_id": "note-civil-loan-018-003",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-018-003",
+      "evidence_ids": [],
+      "content": "建设工程领域借款纠纷中借款主体认定的实务建议：（1）出借人在出借前应核实借款人身份，要求提供公司授权委托书、营业执照等；（2）借款合同应明确记载借款人为公司或项目部并加盖公章，仅有个人签名的合同难以认定公司为借款主体；（3）资金应汇入公司或项目部账户而非个人账户，否则资金流向指向个人。"
+    },
+    {
+      "note_id": "note-civil-loan-018-004",
+      "statement_class": "inference",
+      "issue_id": "issue-civil-loan-018-004",
+      "evidence_ids": ["evidence-civil-loan-018-001", "evidence-civil-loan-018-002", "evidence-civil-loan-018-006"],
+      "content": "权利外观的判断应从合同缔结和履行两个维度综合分析：（1）缔约维度——合同是否使用了公司名称、印章或授权文件；（2）履行维度——资金流向、利息支付等是否指向公司账户。本案中两个维度均指向个人而非公司，不存在足以使合理第三人相信行为人有代理权的权利外观。"
+    },
+    {
+      "note_id": "note-civil-loan-018-005",
+      "statement_class": "experience_advice",
+      "issue_id": "issue-civil-loan-018-005",
+      "evidence_ids": [],
+      "content": "表见代理不成立时，借款合同效力仅及于签约当事人。对出借人的实务启示：（1）虽然无法追究项目部所属公司的还款责任，但仍可向刘某某等签约个人主张借款返还；（2）实际施工人个人的偿债能力通常有限，故出借前的主体审查至关重要；（3）如有证据证明资金确实用于工程项目，可另行考虑不当得利等请求权基础。"
+    }
+  ]
+}

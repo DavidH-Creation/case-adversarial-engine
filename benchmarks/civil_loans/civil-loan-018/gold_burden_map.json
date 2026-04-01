@@ -1,0 +1,77 @@
+{
+  "case_id": "civil-loan-018",
+  "burdens": [
+    {
+      "burden_id": "burden-civil-loan-018-001",
+      "case_id": "civil-loan-018",
+      "issue_id": "issue-civil-loan-018-001",
+      "burden_party_id": "party-civil-loan-018-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-018-001: 刘某某等个人以自己名义而非以项目部或公司名义签订借款合同",
+      "legal_basis": "《民法典》第172条。主张表见代理的一方应举证证明行为人的行为构成有权代理的外观。原告主张项目部所属公司承担还款责任的，应首先证明刘某某等个人的借款行为构成表见代理。",
+      "shift_condition": "原告提供初步证据证明表见代理外观后，被代理人（项目部所属公司）应举证证明原告非善意或不构成表见代理。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-018-002",
+      "case_id": "civil-loan-018",
+      "issue_id": "issue-civil-loan-018-002",
+      "burden_party_id": "party-civil-loan-018-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-018-004: 出借人系善意相对人，有理由相信刘某某等个人有代理权",
+      "legal_basis": "《民法典》第172条。表见代理的构成要求相对人善意且无过失。出借人需证明其有理由相信行为人有代理权，且已尽到合理审查义务。",
+      "shift_condition": "出借人完成善意举证后，被代理人可举证证明出借人具有过失或明知无权代理。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-018-003",
+      "case_id": "civil-loan-018",
+      "issue_id": "issue-civil-loan-018-002",
+      "burden_party_id": "party-civil-loan-018-003",
+      "burden_type": "转移后举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-018-005: 出借人作为建筑行业从业者，具有区分项目部与实际施工人个人的专业能力和注意义务",
+      "legal_basis": "项目部所属公司主张出借人非善意相对人的，应举证证明出借人因其行业背景和专业知识具有更高的审查义务，应当知道刘某某等个人可能为实际施工人而非公司代理人。",
+      "shift_condition": "项目部所属公司完成举证后，出借人如主张已尽合理注意义务，应提供具体的审查行为证据。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-018-004",
+      "case_id": "civil-loan-018",
+      "issue_id": "issue-civil-loan-018-003",
+      "burden_party_id": "party-civil-loan-018-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-018-007: 借款合同的签约主体为出借人与刘某某等个人；fp-civil-loan-018-008: 借款资金实际交付给个人账户",
+      "legal_basis": "《民法典》第667条、第675条。原告主张借款返还请求权的，应举证证明借款合同成立、款项已交付、借款人逾期未还。",
+      "shift_condition": "原告完成举证后，如被告主张已还款或合同无效，由被告举证。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-018-005",
+      "case_id": "civil-loan-018",
+      "issue_id": "issue-civil-loan-018-004",
+      "burden_party_id": "party-civil-loan-018-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-018-010: 刘某某等个人具有使出借人合理相信其有权代表项目部所属公司的权利外观",
+      "legal_basis": "《民法典》第172条。表见代理要求行为人具有代理权的外观，包括但不限于使用公司印章、持有授权文件、以公司名义签约等。主张表见代理的一方应对权利外观的存在承担举证责任。",
+      "shift_condition": "原告提供权利外观证据后，被代理人应举证证明该外观不成立或系伪造。",
+      "status": "active"
+    },
+    {
+      "burden_id": "burden-civil-loan-018-006",
+      "case_id": "civil-loan-018",
+      "issue_id": "issue-civil-loan-018-005",
+      "burden_party_id": "party-civil-loan-018-001",
+      "burden_type": "初始举证责任",
+      "proof_standard": "高度盖然性",
+      "fact_proposition": "fp-civil-loan-018-013: 表见代理不成立时，刘某某等个人应作为借款人承担还款责任；fp-civil-loan-018-014: 刘某某等个人到期未偿还借款本息",
+      "legal_basis": "《民法典》第171条第1款。行为人无权代理且不构成表见代理的，由行为人承担责任。出借人向刘某某等个人主张还款的，应举证证明借款合同关系成立及违约事实。",
+      "shift_condition": "原告完成举证后，如被告主张已还款或存在其他抗辩，由被告举证。",
+      "status": "active"
+    }
+  ]
+}
