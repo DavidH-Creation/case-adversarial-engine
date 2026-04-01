@@ -252,8 +252,12 @@ class TestWriteV3ReportMd:
             case_id="case-test",
             run_id="run-test",
             layer1=Layer1Cover(
-                cover_summary=CoverSummary(neutral_conclusion="Test"),
-                scenario_tree_summary="若条件A成立则X；若不成立则Y",
+                cover_summary=CoverSummary(
+                    neutral_conclusion="Test",
+                    blocking_conditions=[
+                        "若条件A成立则X；若不成立则Y",
+                    ],
+                ),
             ),
             layer2=Layer2Core(),
             layer3=Layer3Perspective(),
@@ -264,7 +268,7 @@ class TestWriteV3ReportMd:
         with tempfile.TemporaryDirectory() as tmpdir:
             p = write_v3_report_md(Path(tmpdir), report, case_data, no_redact=True)
             content = p.read_text(encoding="utf-8")
-            # In the scenario tree summary and other narrative, there should be no probabilities
+            # Blocking conditions use if-then format without probabilities
             assert "若条件A成立则X" in content
 
     @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")

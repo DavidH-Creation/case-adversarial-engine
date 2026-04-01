@@ -3,9 +3,15 @@
 
 全文强制标注：「事实」「推断」「假设」「观点」「建议」
 Every section/paragraph must carry one of these tags.
+
+Also provides ID humanization utilities (humanize_id, humanize_text)
+for converting internal IDs (issue-xxx-001, evidence-plaintiff-003, etc.)
+to human-readable Chinese labels in report output.
 """
 
 from __future__ import annotations
+
+import re
 
 from engines.report_generation.v3.models import SectionTag
 
@@ -45,3 +51,187 @@ def statement_class_to_tag(statement_class: str) -> SectionTag:
     return _STATEMENT_CLASS_TO_TAG.get(
         statement_class.strip().lower(), SectionTag.inference
     )
+
+
+# ---------------------------------------------------------------------------
+# ID humanization
+# ---------------------------------------------------------------------------
+
+# ID patterns for humanization
+# Issue IDs: issue-{slug}-{number} where slug may contain hyphens
+_ISSUE_ID_RE = re.compile(r"issue-[a-z0-9]+(?:-[a-z0-9]+)*-(\d{3})")
+_EVIDENCE_ID_RE = re.compile(r"evidence-(plaintiff|defendant)-(\d{3})")
+# Fact IDs: FACT-NNN or fact-{slug}-NNN
+_FACT_ID_RE = re.compile(r"FACT-(\d{3})")
+_FACT_SLUG_RE = re.compile(r"fact-[a-z0-9]+(?:-[a-z0-9]+)*-(\d{3})")
+_COND_ID_RE = re.compile(r"COND-(\d{3})")
+# Party IDs: party-{role}-{name}
+_PARTY_ID_RE = re.compile(r"party-(plaintiff|defendant)-[a-z]+")
+
+# Party label mapping
+_PARTY_LABELS = {
+    "plaintiff": "原告",
+    "defendant": "被告",
+}
+
+# Internal field values that should be humanized
+_FIELD_VALUE_MAP = {
+    "supplement_evidence": "建议补强证据",
+    "reassess": "建议重新评估",
+    "proponent_strength=weak": "举证方举证较为薄弱",
+    "proponent_strength=strong": "举证方举证较为充分",
+    "proponent_strength=moderate": "举证方举证强度一般",
+}
+
+
+def humanize_id(raw_id: str, context: dict[str, str] | None = None) -> str:
+    """Convert internal IDs to human-readable form.
+
+    Args:
+        raw_id: The raw internal ID string
+        context: Optional dict mapping raw IDs to human-readable titles.
+                 Example: {"issue-xxx-001": "借贷关系是否成立",
+                          "evidence-plaintiff-003": "银行转账电子回单"}
+
+    Returns:
+        Human-readable string. If ID is not recognized, returns raw_id unchanged.
+    """
+    # Try context lookup first (most accurate)
+    if context and raw_id in context:
+        return context[raw_id]
+
+    # Issue ID pattern: issue-{slug}-{number}
+    m = _ISSUE_ID_RE.match(raw_id)
+    if m:
+        num = int(m.group(1))
+        title = context.get(raw_id, "") if context else ""
+        if title:
+            return f"争点{_chinese_numeral(num)}：{title}"
+        return f"争点{_chinese_numeral(num)}"
+
+    # Evidence ID pattern: evidence-{party}-{number}
+    m = _EVIDENCE_ID_RE.match(raw_id)
+    if m:
+        party = _PARTY_LABELS.get(m.group(1), m.group(1))
+        num = int(m.group(2))
+        title = context.get(raw_id, "") if context else ""
+        if title:
+            return f"{party}证据{num}（{title}）"
+        return f"{party}证据{num}"
+
+    # Fact ID pattern: FACT-{number}
+    m = _FACT_ID_RE.match(raw_id)
+    if m:
+        num = int(m.group(1))
+        return f"事实{num}"
+
+    # Fact slug pattern: fact-{slug}-{number}
+    m = _FACT_SLUG_RE.match(raw_id)
+    if m:
+        # Extract the descriptive slug (between "fact-" and "-NNN")
+        slug = raw_id[5 : -(len(m.group(1)) + 1)]  # strip "fact-" prefix and "-NNN" suffix
+        return slug.replace("-", " ")
+
+    # Conditional node pattern: COND-{number}
+    m = _COND_ID_RE.match(raw_id)
+    if m:
+        num = int(m.group(1))
+        return f"条件{num}"
+
+    # Party ID pattern: party-{role}-{name}
+    m = _PARTY_ID_RE.match(raw_id)
+    if m:
+        party = _PARTY_LABELS.get(m.group(1), m.group(1))
+        return party
+
+    return raw_id
+
+
+def humanize_field_value(raw_value: str) -> str:
+    """Convert internal field enum values to natural language.
+
+    Args:
+        raw_value: The raw field value string
+
+    Returns:
+        Human-readable string.
+    """
+    return _FIELD_VALUE_MAP.get(raw_value, raw_value)
+
+
+def humanize_text(text: str, context: dict[str, str] | None = None) -> str:
+    """Replace all internal IDs and field values in a text string.
+
+    Scans text for known ID patterns and replaces them with human-readable form.
+    Also removes [来源:对抗分析] markers.
+
+    Args:
+        text: The raw text potentially containing internal IDs
+        context: Optional dict mapping raw IDs to human-readable titles
+
+    Returns:
+        Text with IDs replaced by human-readable equivalents.
+    """
+    # Remove [来源:对抗分析] markers
+    result = re.sub(r"\[来源:对抗分析\]\s*", "", text)
+
+    # Replace issue IDs (hyphenated slugs like issue-loan-agreement-validity-001)
+    def _replace_issue(m: re.Match[str]) -> str:
+        return humanize_id(m.group(0), context)
+    result = re.sub(r"issue-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}", _replace_issue, result)
+
+    # Replace evidence IDs
+    def _replace_evidence(m: re.Match[str]) -> str:
+        return humanize_id(m.group(0), context)
+    result = re.sub(r"evidence-(?:plaintiff|defendant)-\d{3}", _replace_evidence, result)
+
+    # Replace FACT IDs (both FACT-NNN and fact-slug-NNN forms)
+    def _replace_fact(m: re.Match[str]) -> str:
+        return humanize_id(m.group(0), context)
+    result = re.sub(r"FACT-\d{3}", _replace_fact, result)
+    result = re.sub(r"fact-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}", _replace_fact, result)
+
+    # Replace party IDs (party-plaintiff-wang → 原告方)
+    def _replace_party(m: re.Match[str]) -> str:
+        return humanize_id(m.group(0), context)
+    result = re.sub(r"party-(?:plaintiff|defendant)-[a-z]+", _replace_party, result)
+
+    # Replace internal field values
+    for raw, human in _FIELD_VALUE_MAP.items():
+        result = result.replace(raw, human)
+
+    return result
+
+
+def build_humanize_context(issue_tree=None, evidence_index=None) -> dict[str, str]:
+    """Build a context dict for humanize_id from issue tree and evidence index.
+
+    Args:
+        issue_tree: IssueTree with .issues list
+        evidence_index: EvidenceIndex with .evidence list
+
+    Returns:
+        Dict mapping raw IDs to titles
+    """
+    ctx: dict[str, str] = {}
+
+    if issue_tree:
+        for issue in issue_tree.issues:
+            ctx[issue.issue_id] = issue.title
+
+    if evidence_index:
+        for ev in evidence_index.evidence:
+            ctx[ev.evidence_id] = ev.title
+
+    return ctx
+
+
+def _chinese_numeral(n: int) -> str:
+    """Convert small integer to Chinese numeral string for display."""
+    _NUMERALS = "零一二三四五六七八九十"
+    if 1 <= n <= 10:
+        return _NUMERALS[n]
+    if 11 <= n <= 19:
+        return f"十{_NUMERALS[n - 10]}" if n > 10 else "十"
+    # Fallback for larger numbers
+    return str(n)

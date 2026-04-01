@@ -6,7 +6,11 @@ from engines.report_generation.v3.models import (
     ConditionalNode,
     ConditionalScenarioTree,
     CoverSummary,
+    EvidenceBasicCard,
     EvidenceBattleCard,
+    EvidenceKeyCard,
+    EvidencePriority,
+    EvidencePriorityCard,
     EvidenceRiskLevel,
     EvidenceTrafficLight,
     FactBaseEntry,
@@ -20,6 +24,7 @@ from engines.report_generation.v3.models import (
     PerspectivePlaintiffSummary,
     PerspectiveOutput,
     SectionTag,
+    TimelineEvent,
 )
 
 
@@ -199,3 +204,214 @@ class TestPerspectiveOutput:
                 layer3=Layer3Perspective(),
                 layer4=Layer4Appendix(),
             )
+
+    def test_action_oriented_fields(self):
+        """V3.1 action-oriented fields work."""
+        output = PerspectiveOutput(
+            perspective="plaintiff",
+            evidence_supplement_checklist=["获取借条原件", "传唤证人C"],
+            cross_examination_points=["质疑录音合法性"],
+            trial_questions=["问被告：账户何时交给老庄？"],
+            contingency_plans=["若录音被采信→追加老庄为被告"],
+            over_assertion_boundaries=["不建议坚持面对面场景"],
+        )
+        assert len(output.evidence_supplement_checklist) == 2
+        assert len(output.cross_examination_points) == 1
+        assert len(output.trial_questions) == 1
+        assert len(output.contingency_plans) == 1
+        assert len(output.over_assertion_boundaries) == 1
+
+
+# ── V3.1 New Models ──────────────────────────────────────────────
+
+
+class TestEvidencePriority:
+    def test_priority_values(self):
+        assert EvidencePriority.core == "核心证据"
+        assert EvidencePriority.supporting == "辅助证据"
+        assert EvidencePriority.background == "背景证据"
+
+
+class TestEvidencePriorityCard:
+    def test_create(self):
+        card = EvidencePriorityCard(
+            evidence_id="EV001",
+            title="银行转账回单",
+            priority=EvidencePriority.core,
+            reason="控制争点一结果",
+            controls_issue_ids=["ISS001"],
+        )
+        assert card.priority == EvidencePriority.core
+        assert len(card.controls_issue_ids) == 1
+
+    def test_defaults(self):
+        card = EvidencePriorityCard(
+            evidence_id="EV002",
+            title="身份信息",
+            priority=EvidencePriority.background,
+            reason="仅提供上下文",
+        )
+        assert card.controls_issue_ids == []
+
+
+class TestEvidenceBasicCard:
+    def test_four_fields(self):
+        card = EvidenceBasicCard(
+            evidence_id="EV001",
+            q1_what="银行转账凭证 — documentary类证据",
+            q2_target="服务争点二（款项交付），支持原告",
+            q3_key_risk="极低——银行系统生成的客观记录",
+            q4_best_attack="不否认转账事实，但主张转账≠借款交付",
+        )
+        assert card.priority == EvidencePriority.supporting  # default
+        assert card.tag == SectionTag.inference
+
+    def test_with_priority(self):
+        card = EvidenceBasicCard(
+            evidence_id="EV001",
+            q1_what="test",
+            q2_target="test",
+            q3_key_risk="test",
+            q4_best_attack="test",
+            priority=EvidencePriority.background,
+        )
+        assert card.priority == EvidencePriority.background
+
+
+class TestEvidenceKeyCard:
+    def test_six_fields(self):
+        card = EvidenceKeyCard(
+            evidence_id="EV001",
+            q1_what="录音光盘",
+            q2_target="服务争点一+争点四，支持被告",
+            q3_key_risk="录制合法性存疑",
+            q4_best_attack="质疑录音合法性（未经同意录音）",
+            q5_reinforce="提供录音完整版 + 申请声纹鉴定",
+            q6_failure_impact="若录音被排除：被告核心证据链断裂",
+            priority=EvidencePriority.core,
+        )
+        assert card.priority == EvidencePriority.core
+        assert card.q5_reinforce != ""
+        assert card.q6_failure_impact != ""
+
+    def test_inherits_basic(self):
+        """EvidenceKeyCard is a subclass of EvidenceBasicCard."""
+        card = EvidenceKeyCard(
+            evidence_id="EV001",
+            q1_what="test",
+            q2_target="test",
+            q3_key_risk="test",
+            q4_best_attack="test",
+            q5_reinforce="test",
+            q6_failure_impact="test",
+        )
+        assert isinstance(card, EvidenceBasicCard)
+
+
+class TestTimelineEvent:
+    def test_create(self):
+        event = TimelineEvent(
+            date="2025-01-10",
+            event="原告银行转账10万元至小陈账户",
+            source="evidence-plaintiff-003",
+        )
+        assert event.tag == SectionTag.fact
+        assert event.disputed is False
+
+    def test_disputed(self):
+        event = TimelineEvent(
+            date="2025-01-10 21:11",
+            event="小陈打车离开",
+            source="evidence-defendant-006",
+            disputed=True,
+        )
+        assert event.disputed is True
+
+
+class TestIssueMapCardTree:
+    def test_root_issue(self):
+        card = IssueMapCard(
+            issue_id="ISS001",
+            issue_title="借贷关系是否成立",
+            plaintiff_thesis="存在借贷关系",
+            defendant_thesis="不存在借贷关系",
+            depth=0,
+        )
+        assert card.parent_issue_id is None
+        assert card.depth == 0
+
+    def test_child_issue(self):
+        card = IssueMapCard(
+            issue_id="ISS002",
+            issue_title="借贷合意是否存在",
+            parent_issue_id="ISS001",
+            depth=1,
+            plaintiff_thesis="合意存在",
+            defendant_thesis="合意不存在",
+        )
+        assert card.parent_issue_id == "ISS001"
+        assert card.depth == 1
+
+
+class TestCoverSummaryV31:
+    def test_winning_move(self):
+        cs = CoverSummary(
+            neutral_conclusion="被告证据优势明显",
+            winning_move="录音证据（被告证据7）",
+            blocking_conditions=["录音真实性与合法性", "滴滴记录完整性"],
+        )
+        assert cs.winning_move != ""
+        assert len(cs.blocking_conditions) == 2
+
+    def test_backward_compat(self):
+        """Old plaintiff/defendant summaries still work."""
+        ps = PerspectivePlaintiffSummary(
+            top3_strengths=["s1"], top2_dangers=["d1"], top3_actions=["a1"],
+        )
+        cs = CoverSummary(
+            neutral_conclusion="Test",
+            plaintiff_summary=ps,
+        )
+        assert cs.plaintiff_summary is not None
+        assert cs.winning_move == ""
+
+
+class TestLayer1CoverV31:
+    def test_with_timeline_and_priorities(self):
+        layer1 = Layer1Cover(
+            cover_summary=CoverSummary(neutral_conclusion="Test"),
+            timeline=[
+                TimelineEvent(date="2025-01-10", event="转账"),
+                TimelineEvent(date="2025-01-11", event="催款"),
+            ],
+            evidence_priorities=[
+                EvidencePriorityCard(
+                    evidence_id="EV001",
+                    title="录音",
+                    priority=EvidencePriority.core,
+                    reason="控制争点一",
+                ),
+            ],
+        )
+        assert len(layer1.timeline) == 2
+        assert len(layer1.evidence_priorities) == 1
+        assert layer1.evidence_traffic_lights == []  # backward compat default
+
+
+class TestLayer2CoreV31:
+    def test_evidence_cards(self):
+        layer2 = Layer2Core(
+            evidence_cards=[
+                EvidenceBasicCard(
+                    evidence_id="EV001",
+                    q1_what="test",
+                    q2_target="test",
+                    q3_key_risk="test",
+                    q4_best_attack="test",
+                ),
+            ],
+            unified_electronic_strategy="申请司法鉴定确认数据完整性",
+        )
+        assert len(layer2.evidence_cards) == 1
+        assert layer2.unified_electronic_strategy != ""
+        assert layer2.evidence_battle_matrix == []  # backward compat default

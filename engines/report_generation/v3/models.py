@@ -1,8 +1,19 @@
 """
-V3 四层报告数据模型 / V3 4-Layer Report Data Models.
+V3.1 四层报告数据模型 / V3.1 4-Layer Report Data Models.
 
 所有报告产物的 Pydantic 模型定义。
 每个模型对应报告架构中的一个组件。
+
+V3.1 变更:
+- 新增 EvidencePriority 枚举（核心/辅助/背景）
+- 新增 EvidencePriorityCard（证据优先级分层卡）
+- 新增 EvidenceBasicCard / EvidenceKeyCard（双层证据卡，替代七问矩阵）
+- 新增 TimelineEvent（时间线事件节点）
+- CoverSummary 增加 winning_move / blocking_conditions
+- IssueMapCard 增加 parent_issue_id / depth（树状争点）
+- Layer1Cover 增加 timeline / evidence_priorities
+- Layer2Core 增加 evidence_cards / unified_electronic_strategy
+- PerspectiveOutput 改为动作方案（补证清单/质证要点/庭审发问等）
 """
 
 from __future__ import annotations
@@ -31,19 +42,31 @@ class SectionTag(str, Enum):
 
 # ---------------------------------------------------------------------------
 # 证据风险红绿灯 / Evidence risk traffic light
+# DEPRECATED in V3.1: replaced by EvidencePriority + EvidencePriorityCard.
+# Kept for backward compatibility only.
 # ---------------------------------------------------------------------------
 
 
+# DEPRECATED: replaced by EvidencePriority in V3.1
 class EvidenceRiskLevel(str, Enum):
-    """证据稳定性分级。颜色仅代表证据稳定性，不代表立场。"""
+    """证据稳定性分级。颜色仅代表证据稳定性，不代表立场。
+
+    .. deprecated:: V3.1
+        Use :class:`EvidencePriority` instead.
+    """
 
     green = "green"    # 第三方可核实（银行流水、公证文书等）
     yellow = "yellow"  # 截图/单方提供（微信截图、短信等）
     red = "red"        # 争议+敏感（录音合法性存疑、复印件无原件等）
 
 
+# DEPRECATED: replaced by EvidencePriorityCard in V3.1
 class EvidenceTrafficLight(BaseModel):
-    """单条证据的风险红绿灯评估。"""
+    """单条证据的风险红绿灯评估。
+
+    .. deprecated:: V3.1
+        Use :class:`EvidencePriorityCard` instead.
+    """
 
     evidence_id: str
     title: str
@@ -52,20 +75,101 @@ class EvidenceTrafficLight(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# V3.1 证据优先级 / Evidence priority system
+# ---------------------------------------------------------------------------
+
+
+class EvidencePriority(str, Enum):
+    """证据优先级分层。"""
+
+    core = "核心证据"        # Controls outcome of L1 issue
+    supporting = "辅助证据"  # Corroborates core evidence
+    background = "背景证据"  # Context only
+
+
+class EvidencePriorityCard(BaseModel):
+    """证据优先级分层卡。"""
+
+    evidence_id: str
+    title: str
+    priority: EvidencePriority
+    reason: str = Field(description="分层理由")
+    controls_issue_ids: list[str] = Field(
+        default_factory=list,
+        description="控制哪些争点的结果（仅核心证据）",
+    )
+
+
+# ---------------------------------------------------------------------------
+# V3.1 双层证据卡 / Two-tier evidence cards
+# ---------------------------------------------------------------------------
+
+
+class EvidenceBasicCard(BaseModel):
+    """基础证据卡（所有证据）-- 4 字段。"""
+
+    evidence_id: str
+    q1_what: str = Field(description="① 这是什么证据")
+    q2_target: str = Field(
+        description="② 服务争点 / 证明命题 / 支持方向（合并原 Q2+Q3）",
+    )
+    q3_key_risk: str = Field(description="③ 关键风险")
+    q4_best_attack: str = Field(description="④ 对方最佳攻击点")
+    priority: EvidencePriority = EvidencePriority.supporting
+    tag: SectionTag = SectionTag.inference
+
+
+class EvidenceKeyCard(EvidenceBasicCard):
+    """关键证据卡（核心证据）-- 增加 2 字段。"""
+
+    q5_reinforce: str = Field(description="⑤ 如何加固")
+    q6_failure_impact: str = Field(
+        description="⑥ 失效影响（哪些结论需重算）",
+    )
+
+
+# ---------------------------------------------------------------------------
+# V3.1 时间线 / Timeline
+# ---------------------------------------------------------------------------
+
+
+class TimelineEvent(BaseModel):
+    """案件时间线事件节点。"""
+
+    date: str = Field(description="日期（YYYY-MM-DD 或自然语言）")
+    event: str = Field(description="事件描述")
+    source: str = Field(default="", description="来源证据 ID 或 'case_data'")
+    disputed: bool = Field(default=False, description="该事件是否存在争议")
+    tag: SectionTag = SectionTag.fact
+
+
+# ---------------------------------------------------------------------------
 # Layer 1: Cover Summary (封面摘要层)
 # ---------------------------------------------------------------------------
 
 
+# DEPRECATED in V3.1: plaintiff/defendant summaries moved to Layer 3 exclusively
 class PerspectivePlaintiffSummary(BaseModel):
-    """原告视角摘要。"""
+    """原告视角摘要。
+
+    .. deprecated:: V3.1
+        Moved to Layer 3 exclusively. Kept in CoverSummary for backward
+        compatibility only.
+    """
 
     top3_strengths: list[str] = Field(min_length=1, max_length=5, description="三大优势")
     top2_dangers: list[str] = Field(min_length=1, max_length=3, description="两大危险")
     top3_actions: list[str] = Field(min_length=1, max_length=5, description="三项立即行动")
 
 
+# DEPRECATED in V3.1: plaintiff/defendant summaries moved to Layer 3 exclusively
 class PerspectiveDefendantSummary(BaseModel):
-    """被告视角摘要。"""
+    """被告视角摘要。
+
+    .. deprecated:: V3.1
+        Moved to Layer 3 exclusively. Kept in CoverSummary for backward
+        compatibility only.
+    """
 
     top3_defenses: list[str] = Field(min_length=1, max_length=5, description="三大防线")
     plaintiff_likely_supplement: list[str] = Field(
@@ -77,23 +181,45 @@ class PerspectiveDefendantSummary(BaseModel):
 
 
 class CoverSummary(BaseModel):
-    """封面摘要（Layer 1B）—— perspective 驱动的摘要。"""
+    """封面摘要（Layer 1B）。"""
 
     neutral_conclusion: str = Field(description="一句话中立结论 「事实」")
-    plaintiff_summary: Optional[PerspectivePlaintiffSummary] = None
-    defendant_summary: Optional[PerspectiveDefendantSummary] = None
+    winning_move: str = Field(
+        default="",
+        description="胜负手：决定案件走向的关键证据/争点",
+    )
+    blocking_conditions: list[str] = Field(
+        default_factory=list,
+        description="阻断条件：哪些事实翻转会改变结论",
+    )
+    # DEPRECATED: plaintiff_summary and defendant_summary moved to Layer 3 exclusively
+    plaintiff_summary: Optional[PerspectivePlaintiffSummary] = Field(
+        default=None,
+    )  # DEPRECATED: Moved to Layer 3
+    defendant_summary: Optional[PerspectiveDefendantSummary] = Field(
+        default=None,
+    )  # DEPRECATED: Moved to Layer 3
 
 
 class Layer1Cover(BaseModel):
     """Layer 1: 封面摘要层。"""
 
     cover_summary: CoverSummary
+    timeline: list[TimelineEvent] = Field(
+        default_factory=list,
+        description="案件时间线（最少 5 节点）",
+    )
     scenario_tree_summary: str = Field(
         default="", description="条件场景树摘要（if-then 格式，无百分比）「推断」"
     )
-    evidence_traffic_lights: list[EvidenceTrafficLight] = Field(
-        default_factory=list, description="证据风险红绿灯 「事实」"
+    evidence_priorities: list[EvidencePriorityCard] = Field(
+        default_factory=list,
+        description="证据优先级分层（替代红绿灯）",
     )
+    # DEPRECATED: replaced by evidence_priorities
+    evidence_traffic_lights: list[EvidenceTrafficLight] = Field(
+        default_factory=list,
+    )  # DEPRECATED: Use evidence_priorities instead
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +228,7 @@ class Layer1Cover(BaseModel):
 
 
 class FactBaseEntry(BaseModel):
-    """事实底座条目 —— 仅限无争议的客观事实，不含法律推断。"""
+    """事实底座条目 -- 仅限无争议的客观事实，不含法律推断。"""
 
     fact_id: str
     description: str
@@ -111,10 +237,18 @@ class FactBaseEntry(BaseModel):
 
 
 class IssueMapCard(BaseModel):
-    """争点地图卡片 —— 固定模板，每个争点一张卡。"""
+    """争点地图卡片 -- 支持树状结构。"""
 
     issue_id: str
     issue_title: str
+    parent_issue_id: Optional[str] = Field(
+        default=None,
+        description="父争点 ID，None 表示 L1 根节点",
+    )
+    depth: int = Field(
+        default=0,
+        description="层级深度：0=L1 根争点, 1+=子争点",
+    )
     plaintiff_thesis: str = Field(description="原告主张")
     defendant_thesis: str = Field(description="被告主张")
     decisive_evidence: list[str] = Field(
@@ -124,13 +258,18 @@ class IssueMapCard(BaseModel):
         default_factory=list, description="当前缺口"
     )
     outcome_sensitivity: str = Field(
-        default="", description="结果敏感度：该争点翻转对最终结果的影响"
+        default="", description="结果敏感度"
     )
     tag: SectionTag = SectionTag.inference
 
 
+# DEPRECATED in V3.1: replaced by EvidenceBasicCard / EvidenceKeyCard
 class EvidenceBattleCard(BaseModel):
-    """证据作战矩阵卡片 —— 每条证据的七问。"""
+    """证据作战矩阵卡片 -- 每条证据的七问。
+
+    .. deprecated:: V3.1
+        Use :class:`EvidenceBasicCard` / :class:`EvidenceKeyCard` instead.
+    """
 
     evidence_id: str
     q1_what: str = Field(description="1. 这是什么证据")
@@ -149,7 +288,7 @@ class EvidenceBattleCard(BaseModel):
 
 
 class ConditionalNode(BaseModel):
-    """条件场景树节点 —— 二元条件分支（是/否），不使用概率百分比。"""
+    """条件场景树节点 -- 二元条件分支（是/否），不使用概率百分比。"""
 
     node_id: str
     condition: str = Field(description="条件问题（如'录音是否被采信？'）")
@@ -170,7 +309,7 @@ class ConditionalNode(BaseModel):
 
 
 class ConditionalScenarioTree(BaseModel):
-    """条件场景树 —— 替代概率式裁判路径树。"""
+    """条件场景树 -- 替代概率式裁判路径树。"""
 
     tree_id: str
     case_id: str
@@ -182,12 +321,23 @@ class ConditionalScenarioTree(BaseModel):
 
 
 class Layer2Core(BaseModel):
-    """Layer 2: 中立对抗内核层。完全中立，不受 perspective 影响。"""
+    """Layer 2: 中立对抗内核层。"""
 
     fact_base: list[FactBaseEntry] = Field(default_factory=list)
     issue_map: list[IssueMapCard] = Field(default_factory=list)
-    evidence_battle_matrix: list[EvidenceBattleCard] = Field(default_factory=list)
+    evidence_cards: list[EvidenceBasicCard] = Field(
+        default_factory=list,
+        description="双层证据卡（基础卡+关键卡混合列表）",
+    )
+    unified_electronic_strategy: str = Field(
+        default="",
+        description="统一电子证据补强策略",
+    )
     scenario_tree: Optional[ConditionalScenarioTree] = None
+    # DEPRECATED: replaced by evidence_cards
+    evidence_battle_matrix: list[EvidenceBattleCard] = Field(
+        default_factory=list,
+    )  # DEPRECATED: Use evidence_cards instead
 
 
 # ---------------------------------------------------------------------------
@@ -196,42 +346,64 @@ class Layer2Core(BaseModel):
 
 
 class PerspectiveOutput(BaseModel):
-    """角色化输出 —— --perspective 驱动的策略层。"""
+    """角色化输出 -- 纯动作方案。"""
 
     perspective: Literal["plaintiff", "defendant", "neutral"] = Field(
         default="neutral",
         description="视角：plaintiff / defendant / neutral",
     )
 
-    # plaintiff 视角字段
-    top_claims: list[str] = Field(default_factory=list, description="三大诉请")
-    defendant_attack_chains: list[str] = Field(
-        default_factory=list, description="被告攻击链预警"
+    # V3.1 action-oriented fields
+    evidence_supplement_checklist: list[str] = Field(
+        default_factory=list, description="补证清单"
     )
-    evidence_to_supplement: list[str] = Field(
-        default_factory=list, description="需补强证据清单"
+    cross_examination_points: list[str] = Field(
+        default_factory=list, description="质证要点"
     )
-    trial_sequence: list[str] = Field(
-        default_factory=list, description="庭审举证顺序建议"
+    trial_questions: list[str] = Field(
+        default_factory=list, description="庭审发问"
     )
-    claims_to_abandon: list[str] = Field(
-        default_factory=list, description="应放弃的诉请"
+    contingency_plans: list[str] = Field(
+        default_factory=list, description="应对预案"
+    )
+    over_assertion_boundaries: list[str] = Field(
+        default_factory=list, description="过度主张边界"
+    )
+    unified_electronic_evidence_strategy: str = Field(
+        default="", description="统一电子证据补强策略"
     )
 
-    # defendant 视角字段
-    top_defenses: list[str] = Field(default_factory=list, description="三大防线")
+    # DEPRECATED: analysis-based fields from V3.0 (kept for backward compat)
+    top_claims: list[str] = Field(
+        default_factory=list,
+    )  # DEPRECATED: Use evidence_supplement_checklist etc.
+    defendant_attack_chains: list[str] = Field(
+        default_factory=list,
+    )  # DEPRECATED: Moved to cross_examination_points
+    evidence_to_supplement: list[str] = Field(
+        default_factory=list,
+    )  # DEPRECATED: Use evidence_supplement_checklist
+    trial_sequence: list[str] = Field(
+        default_factory=list,
+    )  # DEPRECATED: Use trial_questions
+    claims_to_abandon: list[str] = Field(
+        default_factory=list,
+    )  # DEPRECATED: Use over_assertion_boundaries
+    top_defenses: list[str] = Field(
+        default_factory=list,
+    )  # DEPRECATED: Use cross_examination_points etc.
     plaintiff_supplement_prediction: list[str] = Field(
-        default_factory=list, description="原告可能补强方向"
-    )
+        default_factory=list,
+    )  # DEPRECATED: Use contingency_plans
     evidence_to_challenge_first: list[str] = Field(
-        default_factory=list, description="优先质证目标"
-    )
+        default_factory=list,
+    )  # DEPRECATED: Use cross_examination_points
     motions_to_file: list[str] = Field(
-        default_factory=list, description="应提交的动议"
-    )
+        default_factory=list,
+    )  # DEPRECATED: Use contingency_plans
     over_assertion_warnings: list[str] = Field(
-        default_factory=list, description="过度主张警告"
-    )
+        default_factory=list,
+    )  # DEPRECATED: Use over_assertion_boundaries
 
 
 class Layer3Perspective(BaseModel):

@@ -11,8 +11,237 @@ Layer 4: 附录层 / Appendix Layer.
 
 from __future__ import annotations
 
-from engines.report_generation.v3.models import Layer4Appendix, SectionTag
+import re
+
+from engines.report_generation.v3.models import Layer4Appendix, SectionTag, TimelineEvent
 from engines.report_generation.v3.tag_system import format_tag
+
+# ---------------------------------------------------------------------------
+# Date extraction regexes
+# ---------------------------------------------------------------------------
+
+_DATE_CN_RE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日")
+_DATE_ISO_RE = re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})")
+_TIME_CN_RE = re.compile(r"(\d{1,2})[时:](\d{1,2})[分]?")
+
+
+# ---------------------------------------------------------------------------
+# Timeline auto-generation
+# ---------------------------------------------------------------------------
+
+
+def _extract_date_from_match(
+    match: re.Match, pattern_type: str,
+) -> str:
+    """Normalize a date regex match to YYYY-MM-DD format."""
+    year, month, day = match.group(1), match.group(2), match.group(3)
+    return f"{int(year):04d}-{int(month):02d}-{int(day):02d}"
+
+
+def _extract_events_from_text(
+    text: str,
+    source: str,
+    disputed: bool = False,
+) -> list[TimelineEvent]:
+    """Extract timeline events from a text string using date regexes.
+
+    For each date found, take up to 30 chars before and after the match
+    as context to form the event description.
+    """
+    if not text:
+        return []
+
+    events: list[TimelineEvent] = []
+    seen_positions: set[int] = set()
+
+    for pattern, ptype in [(_DATE_CN_RE, "cn"), (_DATE_ISO_RE, "iso")]:
+        for m in pattern.finditer(text):
+            # Deduplicate overlapping matches at same position
+            if m.start() in seen_positions:
+                continue
+            seen_positions.add(m.start())
+
+            date_str = _extract_date_from_match(m, ptype)
+
+            # Extract surrounding context (30 chars each side)
+            ctx_start = max(0, m.start() - 30)
+            ctx_end = min(len(text), m.end() + 30)
+            context = text[ctx_start:ctx_end].strip()
+            # Clean up: collapse whitespace, remove newlines
+            context = re.sub(r"\s+", " ", context)
+
+            # Check for time pattern immediately after the date
+            time_suffix = ""
+            after_date = text[m.end() : m.end() + 10]
+            time_match = _TIME_CN_RE.search(after_date)
+            if time_match:
+                hour, minute = int(time_match.group(1)), int(time_match.group(2))
+                if 0 <= hour <= 23 and 0 <= minute <= 59:
+                    time_suffix = f" {hour:02d}:{minute:02d}"
+
+            events.append(
+                TimelineEvent(
+                    date=date_str + time_suffix,
+                    event=context,
+                    source=source,
+                    disputed=disputed,
+                ),
+            )
+
+    return events
+
+
+def auto_generate_timeline(
+    case_data: dict,
+    evidence_index=None,
+    issue_tree=None,
+) -> list[TimelineEvent]:
+    """Auto-generate case timeline from all available sources.
+
+    Sources (in priority order):
+    1. case_data["timeline"] -- explicit timeline entries
+    2. case_data["summary"] -- extract dates via regex
+    3. Evidence summaries -- extract dates via regex
+    4. Evidence titles -- extract dates via regex
+    5. Evidence metadata -- transfer dates, filing dates
+
+    Returns a sorted, deduplicated list of :class:`TimelineEvent`.
+    If fewer than 5 events are found, generic placeholder events
+    (e.g. filing date) are appended from ``case_data``.
+    """
+    events: list[TimelineEvent] = []
+
+    # ----- Source 1: explicit timeline entries -----
+    raw_timeline = case_data.get("timeline", [])
+    for entry in raw_timeline:
+        if isinstance(entry, dict):
+            events.append(
+                TimelineEvent(
+                    date=entry.get("date", ""),
+                    event=entry.get("description", entry.get("event", "")),
+                    source="case_data",
+                    disputed=bool(entry.get("disputed", False)),
+                ),
+            )
+        elif isinstance(entry, (list, tuple)) and len(entry) >= 2:
+            events.append(
+                TimelineEvent(
+                    date=str(entry[0]),
+                    event=str(entry[1]),
+                    source="case_data",
+                ),
+            )
+
+    # ----- Source 2: case_data summary text -----
+    summary_text = case_data.get("summary", "")
+    if isinstance(summary_text, list):
+        summary_text = "\n".join(str(s) for s in summary_text)
+    if summary_text:
+        events.extend(
+            _extract_events_from_text(summary_text, source="case_data"),
+        )
+
+    # ----- Sources 3-5: evidence index -----
+    if evidence_index is not None:
+        ev_list = getattr(evidence_index, "evidence", [])
+        for ev in ev_list:
+            ev_id = getattr(ev, "evidence_id", "unknown")
+            is_disputed = bool(getattr(ev, "challenged_by_party_ids", None))
+
+            # Source 3: evidence summary
+            ev_summary = getattr(ev, "summary", "")
+            if ev_summary:
+                events.extend(
+                    _extract_events_from_text(ev_summary, source=ev_id, disputed=is_disputed),
+                )
+
+            # Source 4: evidence title
+            ev_title = getattr(ev, "title", "")
+            if ev_title:
+                events.extend(
+                    _extract_events_from_text(ev_title, source=ev_id, disputed=is_disputed),
+                )
+
+    # ----- Deduplication -----
+    seen: set[tuple[str, str]] = set()
+    unique_events: list[TimelineEvent] = []
+    for evt in events:
+        # Dedup key: (date, first 20 chars of event text)
+        key = (evt.date, evt.event[:20])
+        if key not in seen:
+            seen.add(key)
+            unique_events.append(evt)
+
+    # ----- Sort by date ascending (YYYY-MM-DD string sort) -----
+    unique_events.sort(key=lambda e: e.date)
+
+    # ----- Ensure minimum 5 entries -----
+    if len(unique_events) < 5:
+        # Try to add generic events from case_data metadata
+        filing_date = case_data.get("filing_date", "")
+        if filing_date and ("filing_date", filing_date[:20]) not in seen:
+            unique_events.append(
+                TimelineEvent(
+                    date=filing_date,
+                    event="案件立案",
+                    source="case_data",
+                ),
+            )
+            seen.add(("filing_date", filing_date[:20]))
+
+        acceptance_date = case_data.get("acceptance_date", "")
+        if acceptance_date and ("acceptance_date", acceptance_date[:20]) not in seen:
+            unique_events.append(
+                TimelineEvent(
+                    date=acceptance_date,
+                    event="法院受理",
+                    source="case_data",
+                ),
+            )
+            seen.add(("acceptance_date", acceptance_date[:20]))
+
+        hearing_date = case_data.get("hearing_date", "")
+        if hearing_date and ("hearing_date", hearing_date[:20]) not in seen:
+            unique_events.append(
+                TimelineEvent(
+                    date=hearing_date,
+                    event="开庭审理",
+                    source="case_data",
+                ),
+            )
+            seen.add(("hearing_date", hearing_date[:20]))
+
+        mediation_date = case_data.get("mediation_date", "")
+        if mediation_date and ("mediation_date", mediation_date[:20]) not in seen:
+            unique_events.append(
+                TimelineEvent(
+                    date=mediation_date,
+                    event="调解",
+                    source="case_data",
+                ),
+            )
+            seen.add(("mediation_date", mediation_date[:20]))
+
+        judgment_date = case_data.get("judgment_date", "")
+        if judgment_date and ("judgment_date", judgment_date[:20]) not in seen:
+            unique_events.append(
+                TimelineEvent(
+                    date=judgment_date,
+                    event="判决下达",
+                    source="case_data",
+                ),
+            )
+            seen.add(("judgment_date", judgment_date[:20]))
+
+        # Re-sort after adding generic events
+        unique_events.sort(key=lambda e: e.date)
+
+    return unique_events
+
+
+# ---------------------------------------------------------------------------
+# Layer 4 builder
+# ---------------------------------------------------------------------------
 
 
 def build_layer4(
@@ -22,19 +251,32 @@ def build_layer4(
     issue_tree,
     amount_report=None,
     case_data: dict | None = None,
+    timeline_events: list[TimelineEvent] | None = None,
 ) -> Layer4Appendix:
     """Build Layer 4 appendix.
 
     All content in this layer is perspective-independent.
+
+    If *timeline_events* is provided, those events are rendered directly.
+    Otherwise, :func:`auto_generate_timeline` is called to extract events
+    from *case_data* and *evidence_index*.
     """
+    cd = case_data or {}
+
     # Adversarial transcripts
     transcripts_md = _render_adversarial_transcripts(adversarial_result)
 
     # Evidence index
     evidence_md = _render_evidence_index(evidence_index)
 
-    # Timeline
-    timeline_md = _render_timeline(case_data or {})
+    # Timeline — use provided events or auto-generate
+    if timeline_events is None:
+        timeline_events = auto_generate_timeline(
+            cd,
+            evidence_index=evidence_index,
+            issue_tree=issue_tree,
+        )
+    timeline_md = _render_timeline(cd, timeline_events=timeline_events)
 
     # Amount calculation
     amount_md = _render_amount_calculation(amount_report)
@@ -83,15 +325,38 @@ def _render_evidence_index(evidence_index) -> str:
     return "\n".join(lines)
 
 
-def _render_timeline(case_data: dict) -> str:
-    """Render case timeline from case_data events."""
+def _render_timeline(
+    case_data: dict,
+    timeline_events: list[TimelineEvent] | None = None,
+) -> str:
+    """Render case timeline.
+
+    When *timeline_events* are provided (auto-generated or explicit),
+    render a richer table with source and disputed columns.  Otherwise
+    fall back to the original ``case_data["timeline"]`` dict/tuple format.
+    """
+    # ----- New path: structured TimelineEvent objects -----
+    if timeline_events:
+        lines: list[str] = [
+            "| 日期 | 事件 | 来源 | 争议 |",
+            "|------|------|------|------|",
+        ]
+        for evt in timeline_events:
+            disputed_marker = "\u26a0\ufe0f" if evt.disputed else ""
+            lines.append(
+                f"| {evt.date} | {evt.event} | {evt.source} | {disputed_marker} |",
+            )
+        return "\n".join(lines)
+
+    # ----- Legacy fallback: raw case_data dicts/tuples -----
     events = case_data.get("timeline", [])
     if not events:
         return "*暂无时间线数据。*"
 
-    lines: list[str] = []
-    lines.append("| 日期 | 事件 |")
-    lines.append("|------|------|")
+    lines = [
+        "| 日期 | 事件 |",
+        "|------|------|",
+    ]
     for event in events:
         if isinstance(event, dict):
             lines.append(f"| {event.get('date', '?')} | {event.get('description', '?')} |")

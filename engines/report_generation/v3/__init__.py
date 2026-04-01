@@ -12,7 +12,11 @@ from engines.report_generation.v3.models import (
     ConditionalNode,
     ConditionalScenarioTree,
     CoverSummary,
+    EvidenceBasicCard,
     EvidenceBattleCard,
+    EvidenceKeyCard,
+    EvidencePriority,
+    EvidencePriorityCard,
     EvidenceRiskLevel,
     EvidenceTrafficLight,
     FactBaseEntry,
@@ -26,13 +30,18 @@ from engines.report_generation.v3.models import (
     PerspectivePlaintiffSummary,
     PerspectiveOutput,
     SectionTag,
+    TimelineEvent,
 )
 
 __all__ = [
     "ConditionalNode",
     "ConditionalScenarioTree",
     "CoverSummary",
+    "EvidenceBasicCard",
     "EvidenceBattleCard",
+    "EvidenceKeyCard",
+    "EvidencePriority",
+    "EvidencePriorityCard",
     "EvidenceRiskLevel",
     "EvidenceTrafficLight",
     "FactBaseEntry",
@@ -46,4 +55,5 @@ __all__ = [
     "PerspectivePlaintiffSummary",
     "PerspectiveOutput",
     "SectionTag",
+    "TimelineEvent",
 ]

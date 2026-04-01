@@ -11,12 +11,17 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from engines.report_generation.v3.evidence_classifier import classify_all_evidence_priority
 from engines.report_generation.v3.layer1_cover import build_layer1, render_layer1_md
 from engines.report_generation.v3.layer2_core import build_layer2, render_layer2_md
 from engines.report_generation.v3.layer3_perspective import build_layer3, render_layer3_md
-from engines.report_generation.v3.layer4_appendix import build_layer4, render_layer4_md
-from engines.report_generation.v3.models import FourLayerReport, SectionTag
-from engines.report_generation.v3.tag_system import format_tag
+from engines.report_generation.v3.layer4_appendix import (
+    auto_generate_timeline,
+    build_layer4,
+    render_layer4_md,
+)
+from engines.report_generation.v3.models import EvidenceBasicCard, FourLayerReport, SectionTag
+from engines.report_generation.v3.tag_system import format_tag, humanize_text
 
 
 def build_four_layer_report(
@@ -64,6 +69,18 @@ def build_four_layer_report(
         decision_tree, issue_tree, evidence_index
     )
 
+    # Build timeline ONCE and share across Layer 1 and Layer 4
+    timeline_events = auto_generate_timeline(
+        case_data, evidence_index=evidence_index, issue_tree=issue_tree,
+    )
+
+    # Build evidence priorities ONCE and share across layers
+    evidence_priorities = classify_all_evidence_priority(
+        evidence_index.evidence if evidence_index else [],
+        issue_tree,
+        ranked_issues=ranked_issues,
+    )
+
     # Build each layer
     layer1 = build_layer1(
         adversarial_result=adversarial_result,
@@ -73,6 +90,8 @@ def build_four_layer_report(
         exec_summary=exec_summary,
         action_rec=action_rec,
         attack_chain=attack_chain,
+        evidence_priorities=evidence_priorities,
+        timeline=timeline_events,
         perspective=perspective,
     )
 
@@ -94,6 +113,9 @@ def build_four_layer_report(
         defense_chain=defense_chain,
         exec_summary=exec_summary,
         hearing_order=hearing_order,
+        evidence_cards=layer2.evidence_cards,
+        unified_electronic_strategy=layer2.unified_electronic_strategy,
+        scenario_tree=scenario_tree,
         perspective=perspective,
     )
 
@@ -103,6 +125,7 @@ def build_four_layer_report(
         issue_tree=issue_tree,
         amount_report=amount_report,
         case_data=case_data,
+        timeline_events=timeline_events,
     )
 
     return FourLayerReport(
@@ -175,8 +198,16 @@ def write_v3_report_md(
     lines.append("---")
     lines.append("")
 
+    # Build humanize context from report data for ID→label conversion
+    humanize_ctx: dict[str, str] = {}
+    for card in report.layer2.issue_map:
+        humanize_ctx[card.issue_id] = card.issue_title
+    for ecard in report.layer2.evidence_cards:
+        if isinstance(ecard, EvidenceBasicCard):
+            humanize_ctx[ecard.evidence_id] = ecard.q1_what[:30] if ecard.q1_what else ""
+
     # Layer 2
-    lines.extend(render_layer2_md(report.layer2))
+    lines.extend(render_layer2_md(report.layer2, humanize_ctx=humanize_ctx))
     lines.append("---")
     lines.append("")
 
@@ -189,6 +220,8 @@ def write_v3_report_md(
     lines.extend(render_layer4_md(report.layer4))
 
     content = "\n".join(lines)
+    # Humanize internal IDs throughout the report (especially Layer 4 appendix)
+    content = humanize_text(content, context=humanize_ctx)
     if not no_redact:
         content = redact_text(content, party_names=party_names or None)
     p.write_text(content, encoding="utf-8")
