@@ -5,3 +5,13 @@ outputs/
 .claude/worktrees/
 *.log
 workspaces/
+
+# gstack vendored skills — exclude large/generated files
+.claude/skills/gstack/bin/gstack-global-discover
+.claude/skills/gstack/node_modules/
+.claude/skills/gstack/browse/dist/
+.claude/skills/gstack/design/dist/
+.claude/skills/gstack/.agents/
+.claude/skills/gstack/.factory/
+.claude/skills/gstack/.gstack/
+.claude/skills/gstack/.gstack-worktrees/
