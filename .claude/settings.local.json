@@ -18,7 +18,14 @@
       "Bash(python -c \"from engines.report_generation.generator import append_document_draft_sections; from engines.report_generation.docx_generator import generate_docx_report; print\\(''Integrations OK''\\)\")",
       "Bash(python -m pytest api/tests/test_analysis_endpoints.py::TestIterProgressReplay -v)",
       "Bash(python -m pytest api/tests/test_analysis_endpoints.py -v)",
-      "Bash(python -m pytest --co -q)"
+      "Bash(python -m pytest --co -q)",
+      "Bash(xargs git:*)",
+      "Bash(for b:*)",
+      "Bash(do echo:*)",
+      "Bash(git log:*)",
+      "Bash(done)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)"
     ]
   }
 }
