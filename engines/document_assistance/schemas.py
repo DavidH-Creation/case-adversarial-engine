@@ -13,9 +13,43 @@ from __future__ import annotations
 
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from engines.shared.models import EvidenceIndex, IssueTree
+
+
+# ---------------------------------------------------------------------------
+# 编号条目模型 / Numbered item model
+# ---------------------------------------------------------------------------
+
+
+class NumberedItem(BaseModel):
+    """带序号的文书条目。
+    A numbered document item with seq and text.
+    """
+
+    seq: int = Field(description="序号 / Sequence number")
+    text: str = Field(description="内容 / Content text")
+
+
+def _normalize_numbered_items(v: list) -> list[dict]:
+    """Accept both list[str] and list[dict{seq, text}], normalize to list[dict].
+
+    - str items are auto-wrapped: ``{"seq": i, "text": item}``
+    - dict items are passed through as-is
+    - NumberedItem instances are converted to dict via model_dump
+    """
+    result = []
+    for i, item in enumerate(v, 1):
+        if isinstance(item, str):
+            result.append({"seq": i, "text": item})
+        elif isinstance(item, NumberedItem):
+            result.append({"seq": item.seq, "text": item.text})
+        elif isinstance(item, dict):
+            result.append(item)
+        else:
+            result.append({"seq": i, "text": str(item)})
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -29,13 +63,13 @@ class PleadingDraft(BaseModel):
     """
 
     header: str = Field(description="文书标题及案件基本信息行 / Document title and case info line")
-    fact_narrative_items: list[str] = Field(
-        description="事实陈述条目列表（每条一句，按时间或逻辑顺序排列）/ Fact narrative items"
+    fact_narrative_items: list[NumberedItem] = Field(
+        description="事实陈述条目列表（每条含 seq 序号和 text 内容）/ Fact narrative items"
     )
-    legal_claim_items: list[str] = Field(
+    legal_claim_items: list[NumberedItem] = Field(
         description="法律依据及请求权基础条目 / Legal basis and cause-of-action items"
     )
-    prayer_for_relief_items: list[str] = Field(
+    prayer_for_relief_items: list[NumberedItem] = Field(
         description="具体诉讼请求条目 / Specific prayer-for-relief items"
     )
     evidence_ids_cited: list[str] = Field(
@@ -46,6 +80,13 @@ class PleadingDraft(BaseModel):
         description="攻击链策略依据；OptimalAttackChain 不可用时标记 'unavailable' / Attack chain basis",
     )
 
+    @field_validator(
+        "fact_narrative_items", "legal_claim_items", "prayer_for_relief_items", mode="before"
+    )
+    @classmethod
+    def _normalize_items(cls, v: list) -> list[dict]:
+        return _normalize_numbered_items(v)
+
 
 class DefenseStatement(BaseModel):
     """答辩状骨架 — 被告方使用。
@@ -53,18 +94,25 @@ class DefenseStatement(BaseModel):
     """
 
     header: str = Field(description="文书标题及案件基本信息行 / Document title and case info line")
-    denial_items: list[str] = Field(
+    denial_items: list[NumberedItem] = Field(
         description="逐项否认原告主张的条目 / Items denying plaintiff's claims"
     )
-    defense_claim_items: list[str] = Field(
+    defense_claim_items: list[NumberedItem] = Field(
         description="实质性抗辩主张条目（至少 1 条回应原告核心主张）/ Substantive defense claim items"
     )
-    counter_prayer_items: list[str] = Field(
+    counter_prayer_items: list[NumberedItem] = Field(
         description="被告反请求或要求驳回原告诉请的条目 / Counter-prayer or dismissal request items"
     )
     evidence_ids_cited: list[str] = Field(
         description="文书中引用的证据 ID 列表（强制非空）/ Evidence IDs cited (mandatory non-empty)"
     )
+
+    @field_validator(
+        "denial_items", "defense_claim_items", "counter_prayer_items", mode="before"
+    )
+    @classmethod
+    def _normalize_items(cls, v: list) -> list[dict]:
+        return _normalize_numbered_items(v)
 
 
 class CrossExaminationOpinionItem(BaseModel):

@@ -520,7 +520,8 @@ def append_document_draft_sections(
                 ]:
                     items = getattr(content, field, [])
                     if items:
-                        body_parts.append(f"【{label}】" + "；".join(items))
+                        texts = [getattr(it, "text", str(it)) for it in items]
+                        body_parts.append(f"【{label}】" + "；".join(texts))
 
             elif doc_type == "defense":
                 for field, label in [
@@ -530,7 +531,8 @@ def append_document_draft_sections(
                 ]:
                     items = getattr(content, field, [])
                     if items:
-                        body_parts.append(f"【{label}】" + "；".join(items))
+                        texts = [getattr(it, "text", str(it)) for it in items]
+                        body_parts.append(f"【{label}】" + "；".join(texts))
 
             elif doc_type == "cross_exam":
                 items_list = getattr(content, "items", [])

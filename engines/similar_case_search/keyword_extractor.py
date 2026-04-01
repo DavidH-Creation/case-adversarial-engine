@@ -24,6 +24,16 @@ _SYSTEM_PROMPT = """\
 3. 识别主要争议焦点
 4. 列出相关法条
 5. 生成 3-8 个搜索关键词，覆盖案由、核心事实、法律要点
+
+你必须以严格 JSON 格式输出，不得包含任何 Markdown 标记、代码块或其他非 JSON 内容。
+输出格式示例：
+{
+  "cause_of_action": "民间借贷纠纷",
+  "legal_relations": ["借贷关系", "担保关系"],
+  "dispute_focuses": ["借款合意是否成立", "还款金额争议"],
+  "relevant_statutes": ["《民法典》第六百七十五条"],
+  "search_terms": ["民间借贷", "借条", "还款期限"]
+}
 """
 
 _TOOL_SCHEMA: dict = {

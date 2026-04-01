@@ -959,13 +959,17 @@ def _render_document_drafts(doc, document_drafts: list) -> None:
         doc.add_paragraph()
 
 
-def _render_list_section(doc, label: str, items: list[str]) -> None:
-    """渲染一个有序列表章节（标签 + 条目列表）。"""
+def _render_list_section(doc, label: str, items: list) -> None:
+    """渲染一个有序列表章节（标签 + 条目列表）。
+
+    items may be list[str] (legacy) or list[NumberedItem] (seq+text).
+    """
     if not items:
         return
     doc.add_heading(label, level=3)
     for item in items:
-        _bullet(doc, item, size=SZ_NORMAL, color=CLR_BODY)
+        text = getattr(item, "text", str(item))
+        _bullet(doc, text, size=SZ_NORMAL, color=CLR_BODY)
 
 
 def _render_similar_cases(doc, similar_cases: list) -> None:
