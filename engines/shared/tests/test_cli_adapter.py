@@ -261,7 +261,9 @@ class TestCodexCLIClient:
         assert "exec" in cmd
 
     @pytest.mark.asyncio
-    async def test_passes_model_flag(self, client: CodexCLIClient) -> None:
+    async def test_ignores_caller_model_kwarg(self, client: CodexCLIClient) -> None:
+        """Default client (no _default_model) should omit -m flag entirely,
+        regardless of the model kwarg passed by the caller."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"ok", b""))
@@ -270,11 +272,29 @@ class TestCodexCLIClient:
             patch("shutil.which", return_value="/usr/bin/codex"),
             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
         ):
-            await client.create_message(system="s", user="u", model="gpt-5")
+            await client.create_message(system="s", user="u", model="claude-sonnet-4-6")
+
+        cmd = list(mock_exec.call_args[0])
+        assert "-m" not in cmd
+        assert "claude-sonnet-4-6" not in cmd
+
+    @pytest.mark.asyncio
+    async def test_passes_constructor_model_flag(self) -> None:
+        """Client with explicit model should pass -m flag."""
+        client = CodexCLIClient(timeout=10.0, model="gpt-5.4")
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.communicate = AsyncMock(return_value=(b"ok", b""))
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/codex"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
+            await client.create_message(system="s", user="u")
 
         cmd = list(mock_exec.call_args[0])
         assert "-m" in cmd
-        assert "gpt-5" in cmd
+        assert "gpt-5.4" in cmd
 
     @pytest.mark.asyncio
     async def test_empty_system_skips_system_wrapper(self, client: CodexCLIClient) -> None:

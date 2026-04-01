@@ -153,10 +153,13 @@ class ClaudeCLIClient:
 
         self._last_usage = None
         stdout, stderr, rc = await self._invoke(resolved_bin, system=system, user=user, model=model)
+        stderr_text = stderr.decode(errors="replace")
+        if stderr_text.strip():
+            _sdk_logger.debug("claude stderr:\n%s", stderr_text[:2000])
+
         if rc == 0:
             return stdout.decode(errors="replace").strip()
 
-        stderr_text = stderr.decode(errors="replace")
         raise CLICallError("claude", rc, stderr_text)
 
     async def _invoke(
@@ -216,15 +219,27 @@ class CodexCLIClient:
     Codex CLI 没有 system prompt flag，system 内容被前置到 prompt 中。
     Codex CLI has no system-prompt flag — system content is prepended to the prompt.
 
+    模型选择策略 / Model selection strategy:
+    - 仅使用构造时显式指定的 ``model`` 参数（通过 ``-m`` flag）。
+    - 若未指定，省略 ``-m``，让 codex 使用自身 config 中的默认模型。
+    - **忽略** ``create_message(model=...)`` 传入的模型名——该参数通常来自
+      Claude 侧的 RoundConfig，不适用于 Codex/OpenAI 后端。
+    - Only uses the ``model`` explicitly passed at construction time (via -m flag).
+    - If omitted, skips -m and lets codex use its own configured default.
+    - **Ignores** the ``model`` kwarg from ``create_message``—that value
+      typically originates from Claude-side RoundConfig and is invalid for
+      the Codex/OpenAI backend.
+
     CLI 调用格式 / CLI invocation::
 
-        codex exec -m {model}   # prompt via stdin to avoid Windows 8191-char limit
+        codex exec [-m {model}]   # prompt via stdin to avoid Windows 8191-char limit
         stdin: "[SYSTEM]\\n{system}\\n[/SYSTEM]\\n\\n{user}"
 
     Args:
         timeout:  每次调用的最长等待秒数 / Max seconds per call (default 120)
         cli_bin:  CLI 可执行文件名，默认 "codex" / CLI binary name (default "codex")
-        model:    传递给 codex 的模型名（via -m flag）/ Model passed via -m flag
+        model:    传递给 codex 的模型名（via -m flag），None 则使用 codex 自身默认
+                  Model passed via -m flag; None lets codex use its own default.
     """
 
     def __init__(
@@ -254,6 +269,9 @@ class CodexCLIClient:
         system 与 user 合并为单一 prompt 传入。
         system and user are merged into a single prompt.
 
+        注意：``model`` 参数被忽略，仅使用构造时指定的模型。
+        Note: the ``model`` kwarg is ignored; only the constructor model is used.
+
         Raises:
             CLINotFoundError: codex 不在 PATH 中
             CLICallError:     进程以非零状态退出
@@ -269,19 +287,20 @@ class CodexCLIClient:
 
         # Codex 不支持独立 system prompt flag，将 system 嵌入 prompt 头部
         # Codex has no separate system-prompt flag; embed system at the top
-        effective_model = self._default_model or model
         if system:
             full_prompt = f"[SYSTEM]\n{system}\n[/SYSTEM]\n\n{user}"
         else:
             full_prompt = user
 
         cmd = [resolved_codex, "exec"]
-        if effective_model:
-            cmd += ["-m", effective_model]
+        if self._default_model:
+            cmd += ["-m", self._default_model]
 
         # Windows 上 .cmd/.bat 文件需要通过 cmd /c 执行
         if sys.platform == "win32" and resolved_codex.lower().endswith((".cmd", ".bat")):
             cmd = ["cmd", "/c"] + cmd
+
+        _sdk_logger.debug("codex cmd: %s", cmd)
 
         # 通过 stdin 传 prompt 以避免 Windows cmd.exe 8191 字符行长限制
         # Pass prompt via stdin to avoid Windows cmd.exe 8191-char command-line limit
@@ -303,8 +322,13 @@ class CodexCLIClient:
                 f"codex CLI 调用超时（>{self._timeout}s） / codex CLI timed out (>{self._timeout}s)"
             )
 
-        if proc.returncode != 0:
-            raise CLICallError("codex", proc.returncode, stderr.decode(errors="replace"))
+        stderr_text = stderr.decode(errors="replace")
+        if stderr_text.strip():
+            _sdk_logger.debug("codex stderr:\n%s", stderr_text[:2000])
+
+        rc = proc.returncode or 0
+        if rc != 0:
+            raise CLICallError("codex", rc, stderr_text)
 
         return stdout.decode(errors="replace").strip()
 
