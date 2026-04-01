@@ -1049,3 +1049,429 @@ def _render_similar_cases(doc, similar_cases: list) -> None:
             _styled(doc, f"案例库链接：{url}", size=SZ_EVIDENCE, color=CLR_GRAY)
 
         doc.add_paragraph()  # 案例间间隔
+
+
+# ---------------------------------------------------------------------------
+# V3 四层报告 DOCX 生成器 / V3 4-Layer Report DOCX Generator
+# ---------------------------------------------------------------------------
+
+_TRAFFIC_LIGHT_EMOJI: dict[str, str] = {
+    "green": "🟢",
+    "yellow": "🟡",
+    "red": "🔴",
+}
+
+
+def generate_docx_v3_report(
+    *,
+    output_dir: Path,
+    report_v3: dict,
+    similar_cases: list | None = None,
+    filename: str | None = None,
+) -> Path:
+    """生成 V3 四层架构 Word 报告。
+
+    Args:
+        output_dir:    输出目录
+        report_v3:     FourLayerReport 序列化 dict（来自 report_v3.json）
+        similar_cases: RankedCase 序列化 dict 列表（可选）
+        filename:      自定义文件名（默认 "对抗分析报告_v3.docx"）
+
+    Returns:
+        生成的 docx 文件路径
+    """
+    doc = Document()
+    style = doc.styles["Normal"]
+    style.font.name = FONT_NAME
+    style.font.size = Emu(SZ_NORMAL)
+
+    layer1 = report_v3.get("layer1", {})
+    layer2 = report_v3.get("layer2", {})
+    layer3 = report_v3.get("layer3", {})
+    layer4 = report_v3.get("layer4", {})
+    perspective = report_v3.get("perspective", "neutral")
+
+    _render_v3_title(doc, report_v3)
+    _render_disclaimer(doc)
+    _render_v3_layer1(doc, layer1, perspective)
+    _render_v3_layer2(doc, layer2)
+    _render_v3_layer3(doc, layer3, perspective)
+    _render_v3_layer4(doc, layer4)
+    if similar_cases:
+        _render_similar_cases(doc, similar_cases)
+
+    if filename is None:
+        filename = "对抗分析报告_v3.docx"
+    dest = output_dir / filename
+    doc.save(str(dest))
+    return dest
+
+
+def _render_v3_title(doc, report_v3: dict) -> None:
+    """V3 封面标题块。"""
+    case_id = report_v3.get("case_id", "")
+    run_id = report_v3.get("run_id", "")
+    perspective = report_v3.get("perspective", "neutral")
+    perspective_label = {
+        "plaintiff": "原告视角",
+        "defendant": "被告视角",
+        "neutral": "中立双视角",
+    }.get(perspective, "中立双视角")
+
+    p0 = doc.add_paragraph()
+    _add_run(p0, "对抗分析报告（V3 四层架构）", bold=True, size=SZ_TITLE, color=CLR_TITLE_DARK)
+
+    p1 = doc.add_paragraph()
+    _add_run(p1, f"Case ID: {case_id}  |  Run ID: {run_id}", size=SZ_NORMAL, color=CLR_GRAY)
+
+    p2 = doc.add_paragraph()
+    _add_run(p2, f"视角: {perspective_label}  |  报告版本: V3 四层架构", size=SZ_NORMAL, color=CLR_GRAY)
+    doc.add_paragraph()
+
+
+def _render_v3_layer1(doc, layer1: dict, perspective: str) -> None:
+    """一、封面摘要 「事实」"""
+    doc.add_heading("一、封面摘要 「事实」", level=1)
+
+    cover_summary = layer1.get("cover_summary", {})
+
+    # A. 中立结论摘要
+    doc.add_heading("A. 中立结论摘要 「推断」", level=2)
+    neutral = cover_summary.get("neutral_conclusion", "")
+    if neutral:
+        p = doc.add_paragraph()
+        _add_run(p, neutral, bold=True, size=SZ_BODY, color=CLR_BODY)
+    doc.add_paragraph()
+
+    # B-1. 原告视角
+    plaintiff_summary = cover_summary.get("plaintiff_summary") or {}
+    if plaintiff_summary:
+        doc.add_heading("B-1. 原告视角 「建议」", level=2)
+        for i, s in enumerate(plaintiff_summary.get("top3_strengths", []), 1):
+            p = doc.add_paragraph()
+            _add_run(p, f"优势{i}: ", bold=True, size=SZ_BODY, color=CLR_GREEN)
+            _add_run(p, s, size=SZ_BODY, color=CLR_BODY)
+        for i, d in enumerate(plaintiff_summary.get("top2_dangers", []), 1):
+            p = doc.add_paragraph()
+            _add_run(p, f"危险{i}: ", bold=True, size=SZ_BODY, color=CLR_RED)
+            _add_run(p, d, size=SZ_BODY, color=CLR_BODY)
+        doc.add_paragraph()
+
+    # B-2. 被告视角
+    defendant_summary = cover_summary.get("defendant_summary") or {}
+    if defendant_summary:
+        doc.add_heading("B-2. 被告视角 「建议」", level=2)
+        for i, d in enumerate(defendant_summary.get("top3_defenses", []), 1):
+            p = doc.add_paragraph()
+            _add_run(p, f"防线{i}: ", bold=True, size=SZ_BODY, color=CLR_BLUE)
+            _add_run(p, d, size=SZ_BODY, color=CLR_BODY)
+        visible_supp = _filter_uuids(defendant_summary.get("plaintiff_likely_supplement", []))
+        if visible_supp:
+            _styled(doc, "原告可能补强方向：", bold=True, size=SZ_RISK, color=CLR_ORANGE)
+            for s in visible_supp:
+                _bullet(doc, s, size=SZ_RISK, color=CLR_BODY)
+        visible_order = _filter_uuids(defendant_summary.get("optimal_attack_order", []))
+        if visible_order:
+            p = doc.add_paragraph()
+            _add_run(p, "最优攻击顺序：", bold=True, size=SZ_RISK, color=CLR_RED)
+            _add_run(p, " → ".join(visible_order), size=SZ_RISK, color=CLR_BODY)
+        doc.add_paragraph()
+
+    # C. 条件场景摘要
+    scenario_summary = layer1.get("scenario_tree_summary", "")
+    if scenario_summary:
+        doc.add_heading("C. 条件场景摘要 「推断」", level=2)
+        # Split on ；to render each condition as a bullet
+        conditions = [c.strip() for c in scenario_summary.replace("；", ";").split(";") if c.strip()]
+        for cond in conditions:
+            _bullet(doc, cond, size=SZ_BODY, color=CLR_BODY)
+        doc.add_paragraph()
+
+    # D. 证据风险红绿灯
+    traffic_lights = layer1.get("evidence_traffic_lights", [])
+    if traffic_lights:
+        doc.add_heading("D. 证据风险红绿灯 「事实」", level=2)
+        table = doc.add_table(rows=1, cols=4)
+        table.style = "Light Grid Accent 1"
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        hdr = table.rows[0].cells
+        hdr[0].text = "证据 ID"
+        hdr[1].text = "标题"
+        hdr[2].text = "风险"
+        hdr[3].text = "理由"
+        for tl in traffic_lights:
+            if isinstance(tl, dict):
+                ev_id = tl.get("evidence_id", "")
+                title = tl.get("title", "")
+                risk = str(tl.get("risk_level", "yellow"))
+                reason = tl.get("reason", "")
+            else:
+                ev_id = getattr(tl, "evidence_id", "")
+                title = getattr(tl, "title", "")
+                risk = str(getattr(tl, "risk_level", "yellow"))
+                reason = getattr(tl, "reason", "")
+            row = table.add_row().cells
+            row[0].text = ev_id
+            row[1].text = title
+            row[2].text = _TRAFFIC_LIGHT_EMOJI.get(risk, "🟡")
+            row[3].text = reason
+        _set_table_font(table)
+        doc.add_paragraph()
+
+
+def _render_v3_layer2(doc, layer2: dict) -> None:
+    """二、中立对抗内核 「事实」"""
+    doc.add_heading("二、中立对抗内核 「事实」", level=1)
+
+    # 2.1 事实底座
+    doc.add_heading("2.1 事实底座 「事实」", level=2)
+    fact_base = layer2.get("fact_base", [])
+    if fact_base:
+        for entry in fact_base:
+            if isinstance(entry, dict):
+                desc = entry.get("description", "")
+                sources = entry.get("source_evidence_ids", [])
+            else:
+                desc = getattr(entry, "description", "")
+                sources = getattr(entry, "source_evidence_ids", [])
+            p = doc.add_paragraph()
+            _add_run(p, "• ", bold=True, size=SZ_BODY, color=CLR_BLUE)
+            _add_run(p, desc, size=SZ_BODY, color=CLR_BODY)
+            if sources:
+                _styled(doc, f"  来源证据: {', '.join(sources)}", size=SZ_EVIDENCE, color=CLR_GRAY)
+    else:
+        _styled(doc, "暂无双方均认可的无争议事实。", size=SZ_NORMAL, color=CLR_GRAY)
+    doc.add_paragraph()
+
+    # 2.2 争点地图
+    doc.add_heading("2.2 争点地图 「推断」", level=2)
+    issue_map = layer2.get("issue_map", [])
+    for card in issue_map:
+        if isinstance(card, dict):
+            issue_id = card.get("issue_id", "")
+            issue_title = card.get("issue_title", "")
+            plaintiff_thesis = card.get("plaintiff_thesis", "")
+            defendant_thesis = card.get("defendant_thesis", "")
+            decisive_evidence = card.get("decisive_evidence", [])
+            current_gaps = card.get("current_gaps", [])
+            outcome_sensitivity = card.get("outcome_sensitivity", "")
+        else:
+            issue_id = getattr(card, "issue_id", "")
+            issue_title = getattr(card, "issue_title", "")
+            plaintiff_thesis = getattr(card, "plaintiff_thesis", "")
+            defendant_thesis = getattr(card, "defendant_thesis", "")
+            decisive_evidence = getattr(card, "decisive_evidence", [])
+            current_gaps = getattr(card, "current_gaps", [])
+            outcome_sensitivity = getattr(card, "outcome_sensitivity", "")
+
+        doc.add_heading(f"{issue_id}: {issue_title}", level=3)
+        table = doc.add_table(rows=1, cols=2)
+        table.style = "Light Grid Accent 1"
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        hdr = table.rows[0].cells
+        hdr[0].text = "字段"
+        hdr[1].text = "内容"
+        fields = [
+            ("原告主张", plaintiff_thesis[:500] + ("..." if len(plaintiff_thesis) > 500 else "")),
+            ("被告主张", defendant_thesis[:500] + ("..." if len(defendant_thesis) > 500 else "")),
+            ("决定性证据", ", ".join(decisive_evidence)),
+            ("当前缺口", " | ".join(current_gaps) if current_gaps else "暂无"),
+            ("结果敏感度", outcome_sensitivity),
+        ]
+        for label, value in fields:
+            row = table.add_row().cells
+            row[0].text = label
+            row[1].text = value or "—"
+        _set_table_font(table)
+        doc.add_paragraph()
+
+    # 2.3 证据作战矩阵
+    evidence_battle_matrix = layer2.get("evidence_battle_matrix", [])
+    if evidence_battle_matrix:
+        doc.add_heading("2.3 证据作战矩阵 「推断」", level=2)
+        for card in evidence_battle_matrix:
+            if isinstance(card, dict):
+                ev_id = card.get("evidence_id", "")
+                risk = str(card.get("risk_level", "yellow"))
+                q1 = card.get("q1_what", "")
+                q2 = card.get("q2_proves", "")
+                q3 = card.get("q3_direction", "")
+                q4 = card.get("q4_risks", "")
+                q5 = card.get("q5_opponent_attack", "")
+                q6 = card.get("q6_reinforce", "")
+                q7 = card.get("q7_failure_impact", "")
+            else:
+                ev_id = getattr(card, "evidence_id", "")
+                risk = str(getattr(card, "risk_level", "yellow"))
+                q1 = getattr(card, "q1_what", "")
+                q2 = getattr(card, "q2_proves", "")
+                q3 = getattr(card, "q3_direction", "")
+                q4 = getattr(card, "q4_risks", "")
+                q5 = getattr(card, "q5_opponent_attack", "")
+                q6 = getattr(card, "q6_reinforce", "")
+                q7 = getattr(card, "q7_failure_impact", "")
+
+            emoji = _TRAFFIC_LIGHT_EMOJI.get(risk, "🟡")
+            p = doc.add_paragraph()
+            _add_run(p, f"{ev_id} {emoji}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+            table = doc.add_table(rows=7, cols=2)
+            table.style = "Light Grid Accent 1"
+            table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            questions = [
+                ("1. 这是什么证据", q1),
+                ("2. 证明什么命题", q2),
+                ("3. 证明方向", q3),
+                ("4. 四性风险", q4),
+                ("5. 对方如何攻击", q5),
+                ("6. 如何加固", q6),
+                ("7. 失败影响", q7),
+            ]
+            for i, (label, val) in enumerate(questions):
+                table.rows[i].cells[0].text = label
+                table.rows[i].cells[1].text = val or "—"
+            _set_table_font(table)
+            doc.add_paragraph()
+
+
+def _render_v3_layer3(doc, layer3: dict, perspective: str) -> None:
+    """三、角色化输出 「建议」"""
+    doc.add_heading("三、角色化输出 「建议」", level=1)
+
+    outputs = layer3.get("outputs", [])
+    for output in outputs:
+        if isinstance(output, dict):
+            pov = output.get("perspective", "neutral")
+            top_claims = output.get("top_claims", [])
+            defendant_attack_chains = output.get("defendant_attack_chains", [])
+            evidence_to_supplement = output.get("evidence_to_supplement", [])
+            trial_sequence = output.get("trial_sequence", [])
+            claims_to_abandon = output.get("claims_to_abandon", [])
+            top_defenses = output.get("top_defenses", [])
+            plaintiff_supplement_prediction = output.get("plaintiff_supplement_prediction", [])
+            evidence_to_challenge_first = output.get("evidence_to_challenge_first", [])
+            motions_to_file = output.get("motions_to_file", [])
+            over_assertion_warnings = output.get("over_assertion_warnings", [])
+        else:
+            pov = getattr(output, "perspective", "neutral")
+            top_claims = getattr(output, "top_claims", [])
+            defendant_attack_chains = getattr(output, "defendant_attack_chains", [])
+            evidence_to_supplement = getattr(output, "evidence_to_supplement", [])
+            trial_sequence = getattr(output, "trial_sequence", [])
+            claims_to_abandon = getattr(output, "claims_to_abandon", [])
+            top_defenses = getattr(output, "top_defenses", [])
+            plaintiff_supplement_prediction = getattr(output, "plaintiff_supplement_prediction", [])
+            evidence_to_challenge_first = getattr(output, "evidence_to_challenge_first", [])
+            motions_to_file = getattr(output, "motions_to_file", [])
+            over_assertion_warnings = getattr(output, "over_assertion_warnings", [])
+
+        if pov == "plaintiff":
+            doc.add_heading("原告策略 「建议」", level=2)
+            if top_claims:
+                doc.add_heading("三大诉请", level=3)
+                for i, claim in enumerate(top_claims, 1):
+                    p = doc.add_paragraph()
+                    _add_run(p, f"{i}. ", bold=True, size=SZ_BODY, color=CLR_BLUE)
+                    _add_run(p, claim, size=SZ_BODY, color=CLR_BODY)
+            if defendant_attack_chains:
+                doc.add_heading("被告攻击链预警 「推断」", level=3)
+                for warning in defendant_attack_chains:
+                    _bullet(doc, warning, size=SZ_BODY, color=CLR_ORANGE)
+            if evidence_to_supplement:
+                doc.add_heading("需补强证据清单 「建议」", level=3)
+                for i, ev in enumerate(_filter_uuids(evidence_to_supplement), 1):
+                    p = doc.add_paragraph()
+                    _add_run(p, f"{i}. ", bold=True, size=SZ_NORMAL, color=CLR_GRAY)
+                    _add_run(p, ev, size=SZ_NORMAL, color=CLR_BODY)
+            if trial_sequence:
+                doc.add_heading("庭审举证顺序建议 「建议」", level=3)
+                for i, step in enumerate(trial_sequence, 1):
+                    p = doc.add_paragraph()
+                    _add_run(p, f"{i}. ", bold=True, size=SZ_NORMAL, color=CLR_GRAY)
+                    _add_run(p, step, size=SZ_NORMAL, color=CLR_BODY)
+            if claims_to_abandon:
+                doc.add_heading("应放弃诉请 「建议」", level=3)
+                for item in claims_to_abandon:
+                    _bullet(doc, item, size=SZ_NORMAL, color=CLR_RED)
+            doc.add_paragraph()
+
+        elif pov == "defendant":
+            doc.add_heading("被告策略 「建议」", level=2)
+            if top_defenses:
+                doc.add_heading("三大防线", level=3)
+                for i, defense in enumerate(top_defenses, 1):
+                    p = doc.add_paragraph()
+                    _add_run(p, f"{i}. ", bold=True, size=SZ_BODY, color=CLR_BLUE)
+                    _add_run(p, defense, size=SZ_BODY, color=CLR_BODY)
+            if plaintiff_supplement_prediction:
+                doc.add_heading("原告可能补强方向 「推断」", level=3)
+                for item in _filter_uuids(plaintiff_supplement_prediction):
+                    _bullet(doc, item, size=SZ_NORMAL, color=CLR_ORANGE)
+            if evidence_to_challenge_first:
+                doc.add_heading("优先质证目标 「建议」", level=3)
+                for item in evidence_to_challenge_first:
+                    _bullet(doc, item, size=SZ_NORMAL, color=CLR_RED)
+            if motions_to_file:
+                doc.add_heading("应提交动议 「建议」", level=3)
+                for item in motions_to_file:
+                    _bullet(doc, item, size=SZ_NORMAL, color=CLR_BODY)
+            if over_assertion_warnings:
+                doc.add_heading("过度主张警告 「观点」", level=3)
+                for item in over_assertion_warnings:
+                    _bullet(doc, item, size=SZ_NORMAL, color=CLR_RED)
+            doc.add_paragraph()
+
+
+def _render_v3_layer4(doc, layer4: dict) -> None:
+    """四、附录 「事实」"""
+    doc.add_heading("四、附录 「事实」", level=1)
+
+    transcripts = layer4.get("adversarial_transcripts_md", "")
+    if transcripts:
+        doc.add_heading("4.1 三轮对抗辩论记录", level=2)
+        _render_md_as_text(doc, transcripts)
+        doc.add_paragraph()
+
+    evidence_index = layer4.get("evidence_index_md", "")
+    if evidence_index:
+        doc.add_heading("4.2 证据索引表", level=2)
+        _render_md_as_text(doc, evidence_index)
+        doc.add_paragraph()
+
+    timeline = layer4.get("timeline_md", "")
+    if timeline:
+        doc.add_heading("4.3 案件时间线", level=2)
+        _render_md_as_text(doc, timeline)
+        doc.add_paragraph()
+
+    glossary = layer4.get("glossary_md", "")
+    if glossary:
+        doc.add_heading("4.4 术语表", level=2)
+        _render_md_as_text(doc, glossary)
+        doc.add_paragraph()
+
+    amount_calc = layer4.get("amount_calculation_md", "")
+    if amount_calc:
+        doc.add_heading("4.5 金额计算明细", level=2)
+        _render_md_as_text(doc, amount_calc)
+        doc.add_paragraph()
+
+
+def _render_md_as_text(doc, md_text: str) -> None:
+    """将 Markdown 文本简单渲染为 DOCX 段落（剥离标记符，保留结构）。"""
+    import re as _re
+
+    for line in md_text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped == "---":
+            doc.add_paragraph()
+            continue
+        # Headings
+        m = _re.match(r"^(#{1,4})\s+(.*)", stripped)
+        if m:
+            level = min(len(m.group(1)), 4)
+            doc.add_heading(m.group(2).strip(), level=level)
+            continue
+        # Bold lines like **agent_name** — description
+        clean = _re.sub(r"\*\*(.+?)\*\*", r"\1", stripped)
+        clean = _re.sub(r"\*(.+?)\*", r"\1", clean)
+        _styled(doc, clean, size=SZ_EVIDENCE, color=CLR_BODY)
