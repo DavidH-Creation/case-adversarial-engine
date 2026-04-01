@@ -24,13 +24,10 @@ SYSTEM_PROMPT = """\
 - key_evidence_ids：**仅包含支持本路径结论的证据** ID 列表（只引用已知的 evidence_id）
 - counter_evidence_ids：**与本路径结论相悖的证据** ID 列表——即那些挑战、反驳或削弱本路径结论的证据（只引用已知的 evidence_id，可为空列表）
 - possible_outcome：本路径下法院可能的裁判结果（具体到诉请支持情况，不超过 200 字）
-- confidence_interval：置信度区间（lower/upper，均为 [0,1] 之间的浮点数；若系统提示标注 verdict_block_active=true，则此字段设为 null）
 - path_notes：路径说明或注意事项（可为空字符串）
 - admissibility_gate：本路径成立的前提——哪些证据必须被法庭采信（evidence_id 列表）
 - result_scope：裁判范围标签列表（可多选：principal / interest / penalty / liability_allocation / credibility / attorney_fee / costs）
 - fallback_path_id：若本路径关键证据未被采信或争点结论不利，降级到哪条路径的 path_id（最后一条路径可为空字符串）
-- probability：本路径在当前证据状态下的触发概率（0.0-1.0 浮点数）；综合评估以下因素：① 支撑证据数量与质量（直接证据 vs 间接证据）；② 关键阻断条件能否被满足；③ 法律先例与裁判口径的对齐度；④ 争点树中高影响力争点的分布
-- probability_rationale：概率评估依据（1-2 句话，说明主要支撑因素和制约因素）
 - party_favored：本路径结果对哪方更有利，枚举值之一：plaintiff（对原告有利）/ defendant（对被告有利）/ neutral（中性）
 
 ## 证据极性规则（Evidence Polarity）—— 最高优先级
@@ -48,7 +45,6 @@ SYSTEM_PROMPT = """\
 
 - 每条 path 的 trigger_issue_ids 必须包含至少 1 个 issue_id — 空列表 = 无效路径
 - 每条 path 的 key_evidence_ids 必须包含至少 1 个 evidence_id — 空列表 = 无效路径
-- 若 verdict_block_active=false，每条 path 必须给出 confidence_interval（lower/upper 均为浮点数）
 - 不得返回 trigger_issue_ids: [] 或 key_evidence_ids: [] 的路径
 
 示例（借款人主体争议案，原告有利路径）：
@@ -78,7 +74,6 @@ SYSTEM_PROMPT = """\
 - paths 数量必须在 3-6 条之间
 - 所有 issue_id 只能引用争点树中已知的 issue_id
 - 所有 evidence_id 只能引用已进入庭审的证据（已由系统过滤，直接使用证据索引中的 evidence_id 即可）
-- 若 verdict_block_active=true，所有 paths 的 confidence_interval 必须设为 null
 - 不得输出超出上述字段之外的自由评论
 
 ## 民间借贷案件参考路径结构
@@ -120,10 +115,7 @@ SYSTEM_PROMPT = """\
       "result_scope": ["principal", "interest"],
       "fallback_path_id": "path-C",
       "possible_outcome": "全额支持原告——认定借贷关系成立，判令被告偿还借款本金及利息",
-      "confidence_interval": {"lower": 0.3, "upper": 0.6},
       "path_notes": "依赖原告转账凭证与借贷合意的直接证据；counter_evidence_ids 中的被告证据系对本路径结论的反驳",
-      "probability": 0.45,
-      "probability_rationale": "原告持有直接转账凭证（直接证据），但借贷合意缺少书面合同支撑（制约因素），综合评估概率中等偏下。",
       "party_favored": "plaintiff"
     }
   ],
@@ -153,18 +145,12 @@ def build_user_prompt(
     check = amount_report.consistency_check_result
 
     # 金额一致性状态块
-    verdict_note = (
-        "注意：verdict_block_active=True，所有 paths 的 confidence_interval 必须设为 null。"
-        if check.verdict_block_active
-        else ""
-    )
     amount_block = f"""\
 【金额一致性状态】
 - verdict_block_active: {check.verdict_block_active}
 - principal_base_unique: {check.principal_base_unique}
 - all_repayments_attributed: {check.all_repayments_attributed}
-- unresolved_conflicts 数量: {len(check.unresolved_conflicts)} 条
-{verdict_note}"""
+- unresolved_conflicts 数量: {len(check.unresolved_conflicts)} 条"""
 
     # 争点树摘要（展示已排序的争点，包含评分信息）
     issues_lines = []

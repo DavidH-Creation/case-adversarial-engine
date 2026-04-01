@@ -273,23 +273,20 @@ class TestVerdictBlockSuppression:
             )
 
     @pytest.mark.asyncio
-    async def test_verdict_block_inactive_preserves_confidence_interval(self):
-        """verdict_block_active=False → confidence_interval 保留。"""
+    async def test_verdict_block_inactive_confidence_interval_none(self):
+        """v3: confidence_interval は verdict_block_active に関わらず常に None（偽精度排除）。"""
         generator = _make_generator(_llm_response(3, with_confidence=True))
         result = await generator.generate(_make_input(verdict_block_active=False))
 
-        assert all(p.confidence_interval is not None for p in result.paths)
+        assert all(p.confidence_interval is None for p in result.paths)
 
     @pytest.mark.asyncio
-    async def test_verdict_block_inactive_null_confidence_gets_fallback(self):
-        """verdict_block_active=False 时 LLM 返回 null confidence → 合成宽区间 (0.1, 0.9)。"""
+    async def test_verdict_block_inactive_null_confidence_also_none(self):
+        """v3: LLM が confidence_interval を返さない場合も None のまま（フォールバック不要）。"""
         generator = _make_generator(_llm_response(3, with_confidence=False))
         result = await generator.generate(_make_input(verdict_block_active=False))
 
-        for p in result.paths:
-            assert p.confidence_interval is not None
-            assert p.confidence_interval.lower == pytest.approx(0.1)
-            assert p.confidence_interval.upper == pytest.approx(0.9)
+        assert all(p.confidence_interval is None for p in result.paths)
 
 
 class TestPathCountHandling:
@@ -624,11 +621,11 @@ class TestLLMFailureHandling:
 
 
 class TestConfidenceIntervalValidation:
-    """置信度区间有效性校验。"""
+    """置信度区間バリデーション（v3: CI は常に None）。"""
 
     @pytest.mark.asyncio
-    async def test_invalid_confidence_lower_gt_upper_gets_fallback(self):
-        """lower > upper 时无效 CI 被替换为宽区间 fallback (0.1, 0.9)。"""
+    async def test_confidence_interval_always_none_regardless_of_llm_input(self):
+        """v3: LLM が無効な confidence_interval を返しても常に None（偽精度排除）。"""
         response = json.dumps(
             {
                 "paths": [
@@ -641,7 +638,7 @@ class TestConfidenceIntervalValidation:
                         "confidence_interval": {
                             "lower": 0.8,
                             "upper": 0.2,
-                        },  # invalid: lower > upper
+                        },  # invalid: lower > upper — ignored anyway in v3
                         "path_notes": "",
                     }
                 ],
@@ -650,14 +647,11 @@ class TestConfidenceIntervalValidation:
         )
         result = await _make_generator(response).generate(_make_input(verdict_block_active=False))
 
-        ci = result.paths[0].confidence_interval
-        assert ci is not None
-        assert ci.lower == pytest.approx(0.1)
-        assert ci.upper == pytest.approx(0.9)
+        assert result.paths[0].confidence_interval is None
 
     @pytest.mark.asyncio
-    async def test_valid_confidence_interval_preserved(self):
-        """有效的置信度区间（lower <= upper）被保留。"""
+    async def test_valid_confidence_interval_also_none(self):
+        """v3: 有効な CI でも None になる（偽精度排除）。"""
         response = json.dumps(
             {
                 "paths": [
@@ -676,10 +670,7 @@ class TestConfidenceIntervalValidation:
         )
         result = await _make_generator(response).generate(_make_input(verdict_block_active=False))
 
-        ci = result.paths[0].confidence_interval
-        assert ci is not None
-        assert ci.lower == pytest.approx(0.3)
-        assert ci.upper == pytest.approx(0.7)
+        assert result.paths[0].confidence_interval is None
 
 
 class TestGeneratorMetadata:
@@ -873,8 +864,8 @@ class TestPathProbabilityRanking:
         return json.dumps({"paths": paths, "blocking_conditions": []}, ensure_ascii=False)
 
     @pytest.mark.asyncio
-    async def test_most_likely_path_is_highest_probability(self):
-        """most_likely_path 应指向概率最高的路径。"""
+    async def test_most_likely_path_is_first_ranked(self):
+        """v3: most_likely_path は新ソート（plaintiff優先→証拠数→path_id）の先頭パス。"""
         response = self._llm_response_with_probabilities(
             [
                 {"path_id": "path-A", "probability": 0.3, "party_favored": "plaintiff"},
@@ -884,11 +875,12 @@ class TestPathProbabilityRanking:
         )
         result = await _make_generator(response).generate(_make_input())
 
-        assert result.most_likely_path == "path-B"
+        # plaintiff paths rank first → path-A
+        assert result.most_likely_path == "path-A"
 
     @pytest.mark.asyncio
-    async def test_plaintiff_best_path_is_highest_probability_plaintiff_path(self):
-        """plaintiff_best_path 应是 plaintiff 路径中概率最高的。"""
+    async def test_plaintiff_best_path_is_first_plaintiff_in_ranked_order(self):
+        """v3: plaintiff_best_path は ranked リスト中の最初の plaintiff パス。"""
         response = self._llm_response_with_probabilities(
             [
                 {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
@@ -898,11 +890,12 @@ class TestPathProbabilityRanking:
         )
         result = await _make_generator(response).generate(_make_input())
 
-        assert result.plaintiff_best_path == "path-C"
+        # Both path-A and path-C are plaintiff; equal evidence count → alphabetical → path-A first
+        assert result.plaintiff_best_path == "path-A"
 
     @pytest.mark.asyncio
-    async def test_defendant_best_path_is_highest_probability_defendant_path(self):
-        """defendant_best_path 应是 defendant 路径中概率最高的。"""
+    async def test_defendant_best_path_is_first_defendant_in_ranked_order(self):
+        """v3: defendant_best_path は ranked リスト中の最初の defendant パス。"""
         response = self._llm_response_with_probabilities(
             [
                 {"path_id": "path-A", "probability": 0.4, "party_favored": "plaintiff"},
@@ -912,11 +905,12 @@ class TestPathProbabilityRanking:
         )
         result = await _make_generator(response).generate(_make_input())
 
+        # path-B and path-C both defendant; equal evidence → alphabetical → path-B first
         assert result.defendant_best_path == "path-B"
 
     @pytest.mark.asyncio
-    async def test_path_ranking_sorted_by_probability_descending(self):
-        """path_ranking 按概率降序排列。"""
+    async def test_path_ranking_sorted_by_party_then_evidence_then_id(self):
+        """v3: path_ranking は plaintiff→defendant→neutral、次に証拠数降順、次に path_id 昇順。"""
         response = self._llm_response_with_probabilities(
             [
                 {"path_id": "path-A", "probability": 0.2, "party_favored": "plaintiff"},
@@ -927,9 +921,10 @@ class TestPathProbabilityRanking:
         result = await _make_generator(response).generate(_make_input())
 
         assert len(result.path_ranking) == 3
-        probs = [r.probability for r in result.path_ranking]
-        assert probs == sorted(probs, reverse=True)
-        assert result.path_ranking[0].path_id == "path-B"
+        # plaintiff first, then defendant, then neutral
+        assert result.path_ranking[0].path_id == "path-A"
+        assert result.path_ranking[1].path_id == "path-B"
+        assert result.path_ranking[2].path_id == "path-C"
 
     @pytest.mark.asyncio
     async def test_path_ranking_contains_correct_party_favored(self):
@@ -960,8 +955,8 @@ class TestPathProbabilityRanking:
         assert result.plaintiff_best_path is None
 
     @pytest.mark.asyncio
-    async def test_path_probability_rationale_preserved(self):
-        """probability_rationale 字段被保留到 DecisionPath。"""
+    async def test_path_probability_rationale_always_empty(self):
+        """v3: probability_rationale は常に空文字列（偽精度排除）。"""
         response = self._llm_response_with_probabilities(
             [
                 {
@@ -975,7 +970,7 @@ class TestPathProbabilityRanking:
         result = await _make_generator(response).generate(_make_input())
 
         assert len(result.paths) == 1
-        assert result.paths[0].probability_rationale == "直接转账凭证支撑，主体认定清晰"
+        assert result.paths[0].probability_rationale == ""
 
     @pytest.mark.asyncio
     async def test_party_favored_normalised_to_known_values(self):
@@ -1043,8 +1038,8 @@ class TestPathProbabilityRanking:
 
     @pytest.mark.asyncio
     async def test_compute_path_ranking_static_method_directly(self):
-        """直接测试 _compute_path_ranking 静态方法。"""
-        from engines.shared.models import DecisionPath, ConfidenceInterval
+        """v3: _compute_path_ranking — plaintiff paths rank before defendant paths."""
+        from engines.shared.models import DecisionPath
 
         paths = [
             DecisionPath(
@@ -1064,11 +1059,12 @@ class TestPathProbabilityRanking:
         ]
         ranking = DecisionPathTreeGenerator._compute_path_ranking(paths)
 
-        assert ranking["most_likely_path"] == "p2"
+        # plaintiff-favored path ranks first regardless of old probability values
+        assert ranking["most_likely_path"] == "p1"
         assert ranking["plaintiff_best_path"] == "p1"
         assert ranking["defendant_best_path"] == "p2"
-        assert ranking["path_ranking"][0].path_id == "p2"
-        assert ranking["path_ranking"][1].path_id == "p1"
+        assert ranking["path_ranking"][0].path_id == "p1"
+        assert ranking["path_ranking"][1].path_id == "p2"
 
 
 class TestOpusStyleNormalization:

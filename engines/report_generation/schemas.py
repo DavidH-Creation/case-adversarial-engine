@@ -75,6 +75,65 @@ class IssueEvidenceDefenseMatrix(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# 证据作战矩阵 / Evidence Battle Matrix (7-question per evidence, Layer 2.3)
+# ---------------------------------------------------------------------------
+
+
+class EvidenceBattleRow(BaseModel):
+    """证据作战矩阵单行：一条证据与7个核心问题的答案。
+    One evidence piece evaluated across 7 fixed questions.
+    """
+
+    evidence_id: str
+    evidence_title: str
+    target_issue_labels: list[str] = Field(default_factory=list)
+    owner: str = ""                      # owner_party_id
+    admissibility: str = ""             # admissibility_status.value
+    opposition_challenges: list[str] = Field(default_factory=list)
+    corroboration_count: int = 0        # count of evidences sharing same target issues
+    stability_light: str = ""           # 🟢 绿 / 🟡 黄 / 🔴 红
+    path_dependency_count: int = 0      # count of decision paths citing this evidence
+
+
+class EvidenceBattleMatrix(BaseModel):
+    """证据作战矩阵：每条证据7问分析。
+    Evidence battle matrix: 7-question analysis per evidence piece.
+    """
+
+    rows: list[EvidenceBattleRow] = Field(default_factory=list)
+    total_evidence: int = 0
+    green_count: int = 0
+    yellow_count: int = 0
+    red_count: int = 0
+
+
+# ---------------------------------------------------------------------------
+# 角色化视角 / Perspective (F1)
+# ---------------------------------------------------------------------------
+
+
+class Perspective(str, Enum):
+    """报告视角 / Report perspective."""
+
+    PLAINTIFF = "plaintiff"
+    DEFENDANT = "defendant"
+    JUDGE = "judge"
+    NEUTRAL = "neutral"
+
+
+class PerspectiveCard(BaseModel):
+    """角色化视角卡片（Layer 1 Block B + Layer 3 的数据源）。
+    Perspective card: data source for Layer 1 Block B and Layer 3 role output.
+    """
+
+    perspective: Perspective
+    top_strengths: list[str] = Field(default_factory=list)   # max 3
+    top_dangers: list[str] = Field(default_factory=list)     # max 2
+    priority_actions: list[str] = Field(default_factory=list)  # max 3
+    relevant_paths: list[str] = Field(default_factory=list)  # path_ids
+
+
+# ---------------------------------------------------------------------------
 # 结构化输出路径 / Structured outcome paths
 # ---------------------------------------------------------------------------
 

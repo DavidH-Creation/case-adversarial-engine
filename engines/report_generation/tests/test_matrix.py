@@ -23,7 +23,8 @@ import pytest
 from engines.report_generation.issue_evidence_defense_matrix import (
     _safe_enum_value,
     build_issue_evidence_defense_matrix,
-    render_matrix_markdown,
+    render_issue_matrix_markdown,
+    render_matrix_markdown,  # backward-compat alias — keep for existing tests
 )
 from engines.report_generation.schemas import (
     IssueEvidenceDefenseMatrix,

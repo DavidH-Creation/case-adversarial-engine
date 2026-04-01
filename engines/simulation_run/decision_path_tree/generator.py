@@ -781,33 +781,17 @@ class DecisionPathTreeGenerator:
                     item.path_id,
                 )
 
-            # confidence_interval 处理：
-            # - verdict_block_active=True → 强制 None
-            # - verdict_block_active=False 且 LLM 未提供 → 合成宽区间（bug fix）
-            # - verdict_block_active=False 且 LLM 提供 → 校验后使用
+            # confidence_interval and probability are no longer populated (v3):
+            # fake precision removed. Fields stay in schema for backward compat
+            # but are always None/0.0 going forward.
             ci: ConfidenceInterval | None = None
-            if verdict_block_active:
-                ci = None
-            elif item.confidence_interval is not None:
-                try:
-                    ci = ConfidenceInterval(
-                        lower=item.confidence_interval.lower,
-                        upper=item.confidence_interval.upper,
-                    )
-                except Exception:  # noqa: BLE001
-                    ci = ConfidenceInterval(lower=0.1, upper=0.9)
-            else:
-                # Bug fix: LLM 未返回 confidence_interval 但 verdict_block 未激活
-                # 合成宽区间作为 "不确定" 信号
-                ci = ConfidenceInterval(lower=0.1, upper=0.9)
 
             # v1.5: 新字段清洗
             clean_gate = [e for e in item.admissibility_gate if e in known_evidence_ids]
             clean_scope = [s for s in item.result_scope if s in _VALID_RESULT_SCOPES]
             fallback = item.fallback_path_id if item.fallback_path_id else None
 
-            # v1.6: probability — clamp to [0, 1]; default 0.5 if missing
-            probability = max(0.0, min(1.0, item.probability))
+            probability = 0.0  # deprecated — not populated from LLM (v3)
 
             # v1.6: party_favored — normalise to known values
             raw_party = (item.party_favored or "").strip().lower()
@@ -832,7 +816,7 @@ class DecisionPathTreeGenerator:
                     result_scope=clean_scope,
                     fallback_path_id=fallback,
                     probability=probability,
-                    probability_rationale=item.probability_rationale,
+                    probability_rationale="",  # deprecated (v3)
                     party_favored=party_favored,
                 )
             )
@@ -902,7 +886,12 @@ class DecisionPathTreeGenerator:
 
     @staticmethod
     def _compute_path_ranking(paths: list[DecisionPath]) -> dict:
-        """从已处理的路径列表计算概率排名比较结果。
+        """从已处理的路径列表计算路径排序结果（v3：不再使用 probability）。
+
+        Sort criteria (stable, deterministic):
+          1. party_favored order: plaintiff(0) < defendant(1) < neutral(2)
+          2. len(key_evidence_ids) descending (more evidence = more grounded)
+          3. path_id alphabetical for tie-breaking
 
         Returns a dict with:
             most_likely_path, plaintiff_best_path, defendant_best_path, path_ranking
@@ -915,8 +904,16 @@ class DecisionPathTreeGenerator:
                 "path_ranking": [],
             }
 
-        # Sort by probability descending
-        ranked = sorted(paths, key=lambda p: p.probability, reverse=True)
+        _PARTY_ORDER = {"plaintiff": 0, "defendant": 1, "neutral": 2}
+
+        ranked = sorted(
+            paths,
+            key=lambda p: (
+                _PARTY_ORDER.get(p.party_favored, 9),
+                -len(p.key_evidence_ids),
+                p.path_id,
+            ),
+        )
 
         most_likely_path = ranked[0].path_id
 
@@ -929,7 +926,7 @@ class DecisionPathTreeGenerator:
         path_ranking = [
             PathRankingItem(
                 path_id=p.path_id,
-                probability=p.probability,
+                probability=0.0,  # deprecated (v3) — kept for backward compat
                 party_favored=p.party_favored,
                 key_conditions=[p.trigger_condition] if p.trigger_condition else [],
             )

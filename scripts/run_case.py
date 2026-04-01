@@ -324,6 +324,8 @@ def _write_md(
     evidence_gaps=None,
     no_redact: bool = False,
     with_mediation: bool = False,
+    perspective: str | None = None,
+    evidence_index=None,
 ) -> Path:
     from engines.shared.disclaimer_templates import DISCLAIMER_MD
     from engines.shared.pii_redactor import redact_text
@@ -345,6 +347,27 @@ def _write_md(
         f"**Generated**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
         "",
     ]
+
+    # Layer 1 Block B — perspective card (only when --perspective is set)
+    _persp_card = None
+    if perspective:
+        from engines.report_generation.perspective_summary import (
+            build_perspective_card,
+            render_layer1_block_b,
+        )
+        from engines.report_generation.schemas import Perspective as _Perspective
+        try:
+            _persp_enum = _Perspective(perspective)
+            _persp_card = build_perspective_card(
+                _persp_enum,
+                result,
+                decision_path_tree=decision_tree,
+                action_recommendations=getattr(action_rec, "action_items", None),
+            )
+            lines += ["## 视角摘要 / Perspective Summary", ""]
+            lines.append(render_layer1_block_b(_persp_card))
+        except (ValueError, Exception):
+            pass  # Unknown perspective value — skip silently
 
     # Action priority list (top of report)
     _action_items: list[str] = []
@@ -464,7 +487,7 @@ def _write_md(
             )
         lines.append("")
 
-    # Decision path tree
+    # Decision path tree (Layer 2.4 — conditional scenario tree, no fake probabilities)
     if decision_tree:
         lines += ["## Decision Path Tree", ""]
         for path in decision_tree.paths:
@@ -473,9 +496,8 @@ def _write_md(
             lines.append(f"**Issues**: {', '.join(path.trigger_issue_ids)}")
             lines.append(f"**Key Evidence**: {', '.join(path.key_evidence_ids)}")
             lines.append(f"**Outcome**: {path.possible_outcome}")
-            if path.confidence_interval:
-                ci = path.confidence_interval
-                lines.append(f"**Confidence**: {ci.lower:.0%} ~ {ci.upper:.0%}")
+            if getattr(path, "fallback_path_id", None):
+                lines.append(f"**Fallback**: {path.fallback_path_id}")
             if path.path_notes:
                 lines.append(f"**Notes**: {path.path_notes}")
             lines.append("")
@@ -484,6 +506,20 @@ def _write_md(
             for bc in decision_tree.blocking_conditions:
                 lines.append(f"- **{bc.condition_id}**: {bc.description}")
             lines.append("")
+
+    # Layer 2.3 — Evidence battle matrix (7 questions per evidence)
+    if evidence_index:
+        from engines.report_generation.evidence_battle_matrix import (
+            build_evidence_battle_matrix,
+            render_evidence_battle_matrix_markdown,
+        )
+        _battle_matrix = build_evidence_battle_matrix(
+            evidence_index,
+            issue_tree=issue_tree,
+            decision_path_tree=decision_tree,
+        )
+        if _battle_matrix:
+            lines += [render_evidence_battle_matrix_markdown(_battle_matrix), ""]
 
     # Mediation range (only when --with-mediation is set)
     med_range = compute_mediation_range(amount_report, decision_tree) if with_mediation else None
@@ -626,6 +662,16 @@ def _write_md(
         else:
             lines.append(f"**Critical evidence gaps**: {exec_summary.critical_evidence_gaps}")
         lines.append("")
+
+    # Layer 3 — full role-based output (only when --perspective is set)
+    if _persp_card is not None:
+        from engines.report_generation.perspective_summary import render_layer3
+        from engines.report_generation.schemas import Perspective as _PerspectiveL3
+        try:
+            _persp_enum_l3 = _PerspectiveL3(perspective)
+            lines += [render_layer3(_persp_card, _persp_enum_l3)]
+        except (ValueError, Exception):
+            pass
 
     content = "\n".join(lines)
     if not no_redact:
@@ -1142,6 +1188,7 @@ async def main(
     model_config: str | None = None,
     max_tokens_per_output: int = 2000,
     with_mediation: bool = False,
+    perspective: str | None = None,
 ) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
@@ -1502,6 +1549,8 @@ async def main(
                 evidence_gaps=artifacts.get("evidence_gaps"),
                 no_redact=no_redact,
                 with_mediation=with_mediation,
+                perspective=perspective,
+                evidence_index=ev_index,
             )
             ckpt.save(STEP_OUTPUTS, {"result_json": str(jp), "report_md": str(mp)})
             reporter.on_step_complete(4, "Write Outputs")
@@ -1778,6 +1827,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Include mediation range analysis in report (default: off)",
     )
+    parser.add_argument(
+        "--perspective",
+        choices=["plaintiff", "defendant", "judge", "neutral"],
+        default=None,
+        help="Add role-based perspective output to report (Layer 1 Block B + Layer 3)",
+    )
     args = parser.parse_args()
     _pipeline_cfg = _load_pipeline_config()
     # CLI flags take priority; config.yaml provides defaults for unset toggles
@@ -1811,6 +1866,7 @@ if __name__ == "__main__":
                 model_config=args.model_config,
                 max_tokens_per_output=_max_tokens,
                 with_mediation=args.with_mediation,
+                perspective=args.perspective,
             )
         )
     except CLINotFoundError as e:

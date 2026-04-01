@@ -11,10 +11,10 @@ Pure data transformation, no LLM calls.
 Usage:
     from engines.report_generation.issue_evidence_defense_matrix import (
         build_issue_evidence_defense_matrix,
-        render_matrix_markdown,
+        render_issue_matrix_markdown,
     )
     matrix = build_issue_evidence_defense_matrix(issue_tree, evidence_index, defense_chain)
-    md = render_matrix_markdown(matrix)
+    md = render_issue_matrix_markdown(matrix)
 """
 
 from __future__ import annotations
@@ -112,7 +112,7 @@ def build_issue_evidence_defense_matrix(
     )
 
 
-def render_matrix_markdown(matrix: IssueEvidenceDefenseMatrix) -> str:
+def render_issue_matrix_markdown(matrix: IssueEvidenceDefenseMatrix) -> str:
     """渲染矩阵为 Markdown 表格。
     Render matrix as a Markdown table.
 
@@ -140,3 +140,7 @@ def _safe_enum_value(val: Any) -> str:
     if val is None:
         return ""
     return val.value if hasattr(val, "value") else str(val)
+
+
+# Backward-compat alias — prefer render_issue_matrix_markdown in new code
+render_matrix_markdown = render_issue_matrix_markdown
