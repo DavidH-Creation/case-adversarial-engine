@@ -1,0 +1,82 @@
+[
+  {
+    "case_number": "（2024）最高法民再1号",
+    "court": "最高人民法院",
+    "cause_of_action": "民间借贷纠纷",
+    "keywords": ["民间借贷", "利率上限", "LPR四倍", "保护上限"],
+    "summary": "关于民间借贷利率保护上限适用标准的认定，明确以一年期LPR的四倍为标准。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2024-zgf-mr-00001"
+  },
+  {
+    "case_number": "（2024）京01民终2388号",
+    "court": "北京市第一中级人民法院",
+    "cause_of_action": "民间借贷纠纷",
+    "keywords": ["民间借贷", "借条真实性", "转账凭证", "举证责任"],
+    "summary": "出借人仅凭借条主张债权，在借款人否认实际收款的情况下，出借人需提供转账记录等辅助证据证明款项已实际交付。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2024-bj01-mz-02388"
+  },
+  {
+    "case_number": "（2023）沪02民终5612号",
+    "court": "上海市第二中级人民法院",
+    "cause_of_action": "民间借贷纠纷",
+    "keywords": ["民间借贷", "套路贷", "虚假诉讼", "合同无效"],
+    "summary": "出借方通过虚增借款金额、制造资金走账假象等方式实施套路贷，相关借款合同因违反公序良俗而被认定无效。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2023-sh02-mz-05612"
+  },
+  {
+    "case_number": "（2024）粤03民初1047号",
+    "court": "广东省第三中级人民法院",
+    "cause_of_action": "买卖合同纠纷",
+    "keywords": ["买卖合同", "货物质量", "违约责任", "减价赔偿"],
+    "summary": "买方以货物质量不符合约定为由拒绝付款，法院认定货物确存在质量缺陷，支持买方减价并主张违约损害赔偿。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2024-gd03-mc-01047"
+  },
+  {
+    "case_number": "（2023）京02民终8821号",
+    "court": "北京市第二中级人民法院",
+    "cause_of_action": "买卖合同纠纷",
+    "keywords": ["买卖合同", "所有权保留", "货款追偿", "先诉抗辩"],
+    "summary": "出卖方在合同中约定所有权保留条款，买方未付清货款时出卖方有权取回标的物，法院确认所有权保留条款合法有效。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2023-bj02-mz-08821"
+  },
+  {
+    "case_number": "（2024）沪01民终3304号",
+    "court": "上海市第一中级人民法院",
+    "cause_of_action": "房屋租赁合同纠纷",
+    "keywords": ["房屋租赁", "提前解除", "违约金", "装修损失"],
+    "summary": "承租人未到期单方解除租赁合同，出租人有权主张违约金并要求赔偿因装修改造形成的实际损失。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2024-sh01-mz-03304"
+  },
+  {
+    "case_number": "（2024）粤01民终9156号",
+    "court": "广东省第一中级人民法院",
+    "cause_of_action": "劳动争议",
+    "keywords": ["劳动争议", "违法解除", "赔偿金", "竞业限制"],
+    "summary": "用人单位以劳动者违反竞业限制为由解除劳动合同，但未依约支付竞业限制补偿金，解除行为被认定为违法，应支付赔偿金。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2024-gd01-mz-09156"
+  },
+  {
+    "case_number": "（2023）最高法民申4782号",
+    "court": "最高人民法院",
+    "cause_of_action": "离婚纠纷",
+    "keywords": ["离婚纠纷", "夫妻共同债务", "单方举债", "第三人善意"],
+    "summary": "夫妻一方为满足家庭日常生活以外的个人需要所负债务，另一方事后明确表示不予追认的，不应认定为夫妻共同债务。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2023-zgf-ms-04782"
+  },
+  {
+    "case_number": "（2024）沪03民初672号",
+    "court": "上海市第三中级人民法院",
+    "cause_of_action": "建设工程合同纠纷",
+    "keywords": ["建设工程", "工程款", "优先受偿权", "黑白合同"],
+    "summary": "施工方依据中标合同主张工程款优先受偿权，另行签订的阴阳合同中低于中标价的约定对施工方不具有约束力。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2024-sh03-mc-00672"
+  },
+  {
+    "case_number": "（2023）京03民终1199号",
+    "court": "北京市第三中级人民法院",
+    "cause_of_action": "民间借贷纠纷",
+    "keywords": ["民间借贷", "名义股东", "借贷关系认定", "隐名投资"],
+    "summary": "当事人以股权转让款名义转账，但双方实质约定为借贷关系并附有还款期限和利息，法院依据实质审查原则认定为借贷。",
+    "url": "https://rmfyalk.court.gov.cn/ws/detail/2023-bj03-mz-01199"
+  }
+]
