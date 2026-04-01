@@ -82,6 +82,15 @@ def classify_evidence_risk(
             reason="证据已被质证且可采性评分低",
         )
 
+    # Challenged evidence is yellow at best, regardless of type or source
+    if is_challenged:
+        return EvidenceTrafficLight(
+            evidence_id=evidence_id,
+            title=title,
+            risk_level=EvidenceRiskLevel.yellow,
+            reason=f"证据已被质证，最高黄灯（可采性: {admissibility_score:.0%}）",
+        )
+
     if admissibility_score < 0.3:
         return EvidenceTrafficLight(
             evidence_id=evidence_id,
@@ -141,14 +150,6 @@ def classify_evidence_risk(
         )
 
     # Default: yellow (conservative)
-    if is_challenged:
-        return EvidenceTrafficLight(
-            evidence_id=evidence_id,
-            title=title,
-            risk_level=EvidenceRiskLevel.red,
-            reason="证据已被对方质证",
-        )
-
     return EvidenceTrafficLight(
         evidence_id=evidence_id,
         title=title,

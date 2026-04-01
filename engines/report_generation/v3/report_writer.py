@@ -59,7 +59,7 @@ def build_four_layer_report(
         build_scenario_tree_from_decision_paths,
     )
 
-    # Build conditional scenario tree from decision_tree
+    # Build conditional scenario tree ONCE and share across layers
     scenario_tree = build_scenario_tree_from_decision_paths(
         decision_tree, issue_tree, evidence_index
     )
@@ -81,8 +81,8 @@ def build_four_layer_report(
         evidence_index=evidence_index,
         adversarial_result=adversarial_result,
         ranked_issues=ranked_issues,
-        decision_tree=decision_tree,
         attack_chain=attack_chain,
+        scenario_tree=scenario_tree,
     )
 
     layer3 = build_layer3(

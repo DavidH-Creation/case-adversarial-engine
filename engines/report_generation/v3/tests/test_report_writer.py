@@ -144,6 +144,8 @@ class TestTagSystem:
         assert statement_class_to_tag("fact") == SectionTag.fact
         assert statement_class_to_tag("inference") == SectionTag.inference
         assert statement_class_to_tag("assumption") == SectionTag.assumption
+        assert statement_class_to_tag("opinion") == SectionTag.opinion
+        assert statement_class_to_tag("recommendation") == SectionTag.recommendation
         assert statement_class_to_tag("unknown") == SectionTag.inference  # fallback
 
 
@@ -264,6 +266,29 @@ class TestWriteV3ReportMd:
             content = p.read_text(encoding="utf-8")
             # In the scenario tree summary and other narrative, there should be no probabilities
             assert "若条件A成立则X" in content
+
+    @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
+    @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
+    def test_neutral_conclusion_tagged_as_inference(self, _mock_redact):
+        """overall_assessment is an inference, not a fact."""
+        report = FourLayerReport(
+            report_id="rpt-test",
+            case_id="case-test",
+            run_id="run-test",
+            layer1=Layer1Cover(
+                cover_summary=CoverSummary(neutral_conclusion="Test conclusion"),
+            ),
+            layer2=Layer2Core(),
+            layer3=Layer3Perspective(),
+            layer4=Layer4Appendix(),
+        )
+        case_data = {"case_type": "civil_loan", "parties": {}}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = write_v3_report_md(Path(tmpdir), report, case_data, no_redact=True)
+            content = p.read_text(encoding="utf-8")
+            # The neutral conclusion section should be tagged as inference
+            assert "中立结论摘要 「推断」" in content
 
     def test_serializable_to_json(self):
         """Verify the FourLayerReport is fully JSON-serializable."""

@@ -39,7 +39,9 @@ def build_issue_map(
     """
     cards: list[IssueMapCard] = []
 
-    # Build lookup maps from adversarial result
+    # Build lookup maps from adversarial result.
+    # Source: adversarial debate analysis — theses are presented neutrally
+    # (both sides) with explicit source attribution.
     plaintiff_args: dict[str, str] = {}
     defendant_args: dict[str, str] = {}
 
@@ -96,11 +98,21 @@ def build_issue_map(
             if action_val in ("supplement_evidence", "reassess"):
                 gaps.append(f"建议行动: {action_val}")
 
+        # Source-attribute theses: if from adversarial debate, mark as such
+        p_thesis = plaintiff_args.get(issue.issue_id, "")
+        d_thesis = defendant_args.get(issue.issue_id, "")
+        p_thesis_attributed = (
+            f"[来源:对抗分析] {p_thesis}" if p_thesis else "（待补充原告主张）"
+        )
+        d_thesis_attributed = (
+            f"[来源:对抗分析] {d_thesis}" if d_thesis else "（待补充被告主张）"
+        )
+
         cards.append(IssueMapCard(
             issue_id=issue.issue_id,
             issue_title=issue.title,
-            plaintiff_thesis=plaintiff_args.get(issue.issue_id, "（待补充原告主张）"),
-            defendant_thesis=defendant_args.get(issue.issue_id, "（待补充被告主张）"),
+            plaintiff_thesis=p_thesis_attributed,
+            defendant_thesis=d_thesis_attributed,
             decisive_evidence=issue.evidence_ids[:5] if issue.evidence_ids else [],
             current_gaps=gaps,
             outcome_sensitivity=sensitivity,

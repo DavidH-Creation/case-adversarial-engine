@@ -76,6 +76,35 @@ class TestBuildScenarioTree:
         node_ids = {n.node_id for n in result.nodes}
         assert result.root_node_id in node_ids
 
+    def test_tree_is_not_flat_linked_list(self):
+        """Verify the tree uses binary branching, not a flat linked list."""
+        dt = MagicMock()
+        dt.tree_id = "tree-003"
+        dt.case_id = "case-001"
+        dt.blocking_conditions = []
+
+        # Create 3 paths — enough to detect branching vs linked list
+        paths = []
+        for i in range(3):
+            p = MagicMock()
+            p.trigger_condition = f"条件{i+1}"
+            p.possible_outcome = f"结果{i+1}"
+            p.key_evidence_ids = [f"EV{i+1:03d}"]
+            paths.append(p)
+        dt.paths = paths
+
+        result = build_scenario_tree_from_decision_paths(dt, MagicMock(), MagicMock())
+        assert result is not None
+
+        # In a binary tree with 3 paths, the root should have BOTH
+        # yes_child_id and no_child_id (not just chaining via no_child_id)
+        node_map = {n.node_id: n for n in result.nodes}
+        root = node_map[result.root_node_id]
+        has_yes_branch = root.yes_child_id is not None or root.yes_outcome is not None
+        has_no_branch = root.no_child_id is not None or root.no_outcome is not None
+        assert has_yes_branch, "Root should have a yes branch"
+        assert has_no_branch, "Root should have a no branch"
+
     def test_empty_paths(self):
         dt = MagicMock()
         dt.tree_id = "tree-empty"

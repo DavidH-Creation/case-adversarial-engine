@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -198,7 +198,7 @@ class Layer2Core(BaseModel):
 class PerspectiveOutput(BaseModel):
     """角色化输出 —— --perspective 驱动的策略层。"""
 
-    perspective: str = Field(
+    perspective: Literal["plaintiff", "defendant", "neutral"] = Field(
         default="neutral",
         description="视角：plaintiff / defendant / neutral",
     )
@@ -268,7 +268,7 @@ class FourLayerReport(BaseModel):
     report_id: str
     case_id: str
     run_id: str
-    perspective: str = Field(
+    perspective: Literal["plaintiff", "defendant", "neutral"] = Field(
         default="neutral", description="报告视角：plaintiff / defendant / neutral"
     )
     layer1: Layer1Cover
