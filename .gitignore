@@ -3,5 +3,6 @@
 *.pyc
 outputs/
 .claude/worktrees/
+.claude/skills/gstack/
 *.log
 workspaces/
