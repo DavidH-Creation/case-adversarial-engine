@@ -14,6 +14,8 @@ Usage:
     python scripts/eval_benchmark.py --all          # run all 20 cases
     python scripts/eval_benchmark.py --hard         # run hardest 5 cases
     python scripts/eval_benchmark.py --cases civil-loan-002 --model claude-sonnet-4-6
+    python scripts/eval_benchmark.py --hard --matcher llm-judge  # semantic matching via LLM
+    python scripts/eval_benchmark.py --hard --match-only --matcher llm-judge  # re-score cached output
 """
 
 from __future__ import annotations
@@ -93,6 +95,70 @@ def _compute_f1(precision: float, recall: float) -> float:
 
 
 # ---------------------------------------------------------------------------
+# LLM-as-judge matching
+# ---------------------------------------------------------------------------
+
+_JUDGE_MODEL = "claude-haiku-4-5-20251001"
+
+# Common Chinese stop/function characters — excluded from keyword pre-filter
+_STOP_CHARS = set("的是否为在与之其等了而但和或因由对于中有被所以得不也将")
+
+
+def _extract_content_chars(text: str) -> set[str]:
+    """Extract meaningful CJK characters, filtering stop chars and punctuation."""
+    return {c for c in text if '\u4e00' <= c <= '\u9fff' and c not in _STOP_CHARS}
+
+
+def _has_keyword_overlap(a: str, b: str, min_overlap: int = 2) -> bool:
+    """Quick pre-filter: skip LLM call if texts share fewer than min_overlap content chars."""
+    chars_a = _extract_content_chars(a)
+    chars_b = _extract_content_chars(b)
+    return len(chars_a & chars_b) >= min_overlap
+
+
+def _get_judge_client():
+    """Return the resolved path to the claude CLI binary for LLM-judge calls."""
+    import shutil
+    resolved = shutil.which("claude")
+    if not resolved:
+        raise CLINotFoundError("claude CLI not found — needed for --matcher llm-judge")
+    return resolved
+
+
+def _llm_judge_match(a: str, b: str, claude_bin: str) -> bool:
+    """Call claude CLI (sync subprocess) to judge semantic equivalence of two legal issues."""
+    import subprocess
+    prompt = (
+        "以下两个法律争点描述是否指向同一个争议焦点？只回答 YES 或 NO。\n"
+        f"争点A: {a}\n争点B: {b}"
+    )
+    cmd = [claude_bin, "--print", "--output-format", "text", "--model", _JUDGE_MODEL]
+    if sys.platform == "win32" and claude_bin.lower().endswith((".cmd", ".bat")):
+        cmd = ["cmd", "/c"] + cmd
+    result = subprocess.run(
+        cmd, input=prompt, capture_output=True, text=True, timeout=60, encoding="utf-8",
+    )
+    if result.returncode != 0:
+        return False
+    return "YES" in result.stdout.strip().upper()
+
+
+def _best_match_llm(query: str, candidates: list[str], client) -> bool:
+    """Check if query semantically matches any candidate (keyword pre-filter + LLM judge)."""
+    for c in candidates:
+        if not _has_keyword_overlap(query, c):
+            continue
+        if _llm_judge_match(query, c, client):
+            return True
+    # Fallback: if keyword filter skipped all candidates, try the best bigram candidate
+    if candidates:
+        best_idx = max(range(len(candidates)), key=lambda i: _bigram_jaccard(query, candidates[i]))
+        if _llm_judge_match(query, candidates[best_idx], client):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Gold data loaders
 # ---------------------------------------------------------------------------
 
@@ -110,6 +176,23 @@ def load_gold_issues(case_dir: Path) -> list[dict]:
 
 def load_manifest(case_dir: Path) -> dict:
     return json.loads((case_dir / "case_manifest.json").read_text(encoding="utf-8"))
+
+
+def save_engine_output(case_dir: Path, evidence_dicts: list[dict], issue_dicts: list[dict]) -> None:
+    """Persist engine output for later --match-only re-evaluation."""
+    out = {"evidence": evidence_dicts, "issues": issue_dicts}
+    (case_dir / "engine_output.json").write_text(
+        json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8",
+    )
+
+
+def load_engine_output(case_dir: Path) -> tuple[list[dict], list[dict]] | None:
+    """Load previously saved engine output. Returns None if not found."""
+    path = case_dir / "engine_output.json"
+    if not path.exists():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return data.get("evidence", []), data.get("issues", [])
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +257,8 @@ def build_synthetic_claims(manifest: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def compute_evidence_metrics(
-    extracted: list, gold: list[dict], threshold: float = 0.25
+    extracted: list, gold: list[dict], threshold: float = 0.25,
+    matcher: str = "bigram", judge_client=None,
 ) -> dict:
     """Compare extracted Evidence objects to gold evidence dicts."""
     gold_titles = [e.get("title", "") for e in gold]
@@ -185,16 +269,22 @@ def compute_evidence_metrics(
     ext_summaries = [getattr(e, "summary", "") or "" for e in extracted]
     ext_texts = [f"{t} {s}" for t, s in zip(ext_titles, ext_summaries)]
 
-    # Recall: for each gold item, is there a matching extracted item?
-    recall_hits = sum(
-        1 for g in gold_texts if _best_match(g, ext_texts, threshold) >= threshold
-    )
-    recall = recall_hits / len(gold_texts) if gold_texts else 1.0
+    if matcher == "llm-judge" and judge_client is not None:
+        recall_hits = sum(
+            1 for g in gold_texts if _best_match_llm(g, ext_texts, judge_client)
+        )
+        precision_hits = sum(
+            1 for e in ext_texts if _best_match_llm(e, gold_texts, judge_client)
+        )
+    else:
+        recall_hits = sum(
+            1 for g in gold_texts if _best_match(g, ext_texts, threshold) >= threshold
+        )
+        precision_hits = sum(
+            1 for e in ext_texts if _best_match(e, gold_texts, threshold) >= threshold
+        )
 
-    # Precision: for each extracted item, is there a matching gold item?
-    precision_hits = sum(
-        1 for e in ext_texts if _best_match(e, gold_texts, threshold) >= threshold
-    )
+    recall = recall_hits / len(gold_texts) if gold_texts else 1.0
     precision = precision_hits / len(ext_texts) if ext_texts else 0.0
 
     return {
@@ -208,7 +298,10 @@ def compute_evidence_metrics(
     }
 
 
-def compute_issue_metrics(extracted_issues: list[dict], gold: list[dict], threshold: float = 0.25) -> dict:
+def compute_issue_metrics(
+    extracted_issues: list[dict], gold: list[dict], threshold: float = 0.25,
+    matcher: str = "bigram", judge_client=None,
+) -> dict:
     """Compare extracted IssueTree issues to gold issue dicts."""
     gold_titles = [i.get("title", "") for i in gold]
 
@@ -222,14 +315,22 @@ def compute_issue_metrics(extracted_issues: list[dict], gold: list[dict], thresh
         else:
             ext_titles.append(str(issue))
 
-    recall_hits = sum(
-        1 for g in gold_titles if _best_match(g, ext_titles, threshold) >= threshold
-    )
-    recall = recall_hits / len(gold_titles) if gold_titles else 1.0
+    if matcher == "llm-judge" and judge_client is not None:
+        recall_hits = sum(
+            1 for g in gold_titles if _best_match_llm(g, ext_titles, judge_client)
+        )
+        precision_hits = sum(
+            1 for e in ext_titles if _best_match_llm(e, gold_titles, judge_client)
+        )
+    else:
+        recall_hits = sum(
+            1 for g in gold_titles if _best_match(g, ext_titles, threshold) >= threshold
+        )
+        precision_hits = sum(
+            1 for e in ext_titles if _best_match(e, gold_titles, threshold) >= threshold
+        )
 
-    precision_hits = sum(
-        1 for e in ext_titles if _best_match(e, gold_titles, threshold) >= threshold
-    )
+    recall = recall_hits / len(gold_titles) if gold_titles else 1.0
     precision = precision_hits / len(ext_titles) if ext_titles else 0.0
 
     return {
@@ -247,8 +348,15 @@ def compute_issue_metrics(extracted_issues: list[dict], gold: list[dict], thresh
 # Single-case evaluation
 # ---------------------------------------------------------------------------
 
-async def eval_case(case_id: str, model: str, verbose: bool = True) -> dict:
-    """Run EvidenceIndexer + IssueExtractor on a single benchmark case."""
+async def eval_case(
+    case_id: str, model: str, verbose: bool = True,
+    matcher: str = "bigram", judge_client=None, match_only: bool = False,
+) -> dict:
+    """Run EvidenceIndexer + IssueExtractor on a single benchmark case.
+
+    When match_only=True, skip engine calls and load saved engine_output.json
+    to re-evaluate with a different matcher.
+    """
     case_dir = BENCHMARKS_DIR / case_id
     if not case_dir.exists():
         raise FileNotFoundError(f"Case directory not found: {case_dir}")
@@ -262,7 +370,6 @@ async def eval_case(case_id: str, model: str, verbose: bool = True) -> dict:
         print(f"[{case_id}] {manifest.get('title', '')}")
         print(f"  Gold: {len(gold_evidence)} evidence, {len(gold_issues)} issues")
 
-    llm_client = ClaudeCLIClient(timeout=300.0)
     result: dict = {
         "case_id": case_id,
         "title": manifest.get("title", ""),
@@ -270,6 +377,41 @@ async def eval_case(case_id: str, model: str, verbose: bool = True) -> dict:
         "gold_issue_count": len(gold_issues),
         "error": None,
     }
+
+    # --match-only path: load cached engine output
+    if match_only:
+        saved = load_engine_output(case_dir)
+        if saved is None:
+            result["error"] = "No saved engine_output.json — run without --match-only first"
+            if verbose:
+                print(f"  SKIP: {result['error']}")
+            return result
+
+        saved_evidence, saved_issues = saved
+        if verbose:
+            print(f"  [match-only] Loaded {len(saved_evidence)} evidence, {len(saved_issues)} issues from cache")
+
+        from types import SimpleNamespace
+        ev_metrics = compute_evidence_metrics(
+            [SimpleNamespace(**d) for d in saved_evidence],
+            gold_evidence, matcher=matcher, judge_client=judge_client,
+        )
+        result["evidence_metrics"] = ev_metrics
+
+        issue_metrics = compute_issue_metrics(
+            saved_issues, gold_issues, matcher=matcher, judge_client=judge_client,
+        )
+        result["issue_metrics"] = issue_metrics
+
+        if verbose:
+            print(f"  Evidence  Recall={ev_metrics['recall']:.1%}  Precision={ev_metrics['precision']:.1%}  F1={ev_metrics['f1']:.1%}")
+            print(f"  Issues    Recall={issue_metrics['recall']:.1%}  Precision={issue_metrics['precision']:.1%}  F1={issue_metrics['f1']:.1%}")
+            print(f"  Gold issues:      {[i.get('title','') for i in gold_issues]}")
+            print(f"  Extracted issues: {[i.get('title','') for i in saved_issues]}")
+        return result
+
+    # Full engine run path
+    llm_client = ClaudeCLIClient(timeout=300.0)
 
     # --- Phase 1: Evidence Indexing ---
     if verbose:
@@ -286,7 +428,9 @@ async def eval_case(case_id: str, model: str, verbose: bool = True) -> dict:
             owner_party_id=party_id,
             case_slug=case_id,
         )
-        ev_metrics = compute_evidence_metrics(extracted_evidence, gold_evidence)
+        ev_metrics = compute_evidence_metrics(
+            extracted_evidence, gold_evidence, matcher=matcher, judge_client=judge_client,
+        )
         result["evidence_metrics"] = ev_metrics
         if verbose:
             print(f"  [Phase 1] Extracted {len(extracted_evidence)} evidence items")
@@ -323,7 +467,9 @@ async def eval_case(case_id: str, model: str, verbose: bool = True) -> dict:
             case_slug=case_id,
         )
         extracted_issues = issue_tree.issues if hasattr(issue_tree, "issues") else []
-        issue_metrics = compute_issue_metrics(extracted_issues, gold_issues)
+        issue_metrics = compute_issue_metrics(
+            extracted_issues, gold_issues, matcher=matcher, judge_client=judge_client,
+        )
         result["issue_metrics"] = issue_metrics
         if verbose:
             print(f"  [Phase 2] Extracted {len(extracted_issues)} issues")
@@ -334,8 +480,22 @@ async def eval_case(case_id: str, model: str, verbose: bool = True) -> dict:
             print(f"  Extracted issues: {ext_titles}")
     except Exception as exc:
         result["issue_error"] = str(exc)
+        extracted_issues = []
         if verbose:
             print(f"  [Phase 2] ERROR: {exc}")
+
+    # Save engine output for future --match-only runs
+    issue_save = []
+    for iss in extracted_issues:
+        if hasattr(iss, "title"):
+            issue_save.append({"title": iss.title or ""})
+        elif isinstance(iss, dict):
+            issue_save.append({"title": iss.get("title", "")})
+        else:
+            issue_save.append({"title": str(iss)})
+    save_engine_output(case_dir, evidence_dicts, issue_save)
+    if verbose:
+        print(f"  [Saved] engine_output.json → {case_dir}")
 
     return result
 
@@ -352,6 +512,10 @@ async def main() -> None:
     group.add_argument("--all", action="store_true", help="Evaluate all 20 cases")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Model name (default: {DEFAULT_MODEL})")
     parser.add_argument("--output-dir", type=Path, default=_PROJECT_ROOT / "outputs" / "benchmark_eval")
+    parser.add_argument("--matcher", choices=["bigram", "llm-judge"], default="bigram",
+                        help="Matching algorithm: bigram (fast, literal) or llm-judge (semantic, uses API)")
+    parser.add_argument("--match-only", action="store_true",
+                        help="Skip engine runs; re-evaluate saved engine_output.json with chosen --matcher")
     parser.add_argument("--quiet", action="store_true", help="Suppress per-case verbose output")
     args = parser.parse_args()
 
@@ -365,14 +529,24 @@ async def main() -> None:
     else:
         cases = HARD_CASES  # default: hard 5
 
+    # Initialize LLM judge client if needed
+    judge_client = None
+    if args.matcher == "llm-judge":
+        judge_client = _get_judge_client()
+
     print(f"\nBenchmark Evaluation — {len(cases)} cases")
     print(f"Model: {args.model}")
+    print(f"Matcher: {args.matcher}" + (" (match-only)" if args.match_only else ""))
     print(f"Cases: {', '.join(cases)}")
 
     results = []
     for case_id in cases:
         try:
-            r = await eval_case(case_id, model=args.model, verbose=not args.quiet)
+            r = await eval_case(
+                case_id, model=args.model, verbose=not args.quiet,
+                matcher=args.matcher, judge_client=judge_client,
+                match_only=args.match_only,
+            )
             results.append(r)
         except FileNotFoundError as e:
             print(f"  SKIP: {e}")
@@ -414,6 +588,7 @@ async def main() -> None:
     out_data = {
         "timestamp": ts,
         "model": args.model,
+        "matcher": args.matcher,
         "cases": cases,
         "results": results,
         "aggregate": {
