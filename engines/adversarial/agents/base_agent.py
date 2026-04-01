@@ -165,7 +165,10 @@ class BasePartyAgent:
             except Exception as e:
                 _last_exc = e
                 _error_hint = "LLM 调用异常，请重试"
-                print(f"  [retry {attempt}/{self._config.max_retries}] LLM error: {type(e).__name__}: {e}")
+                import logging as _logging
+                _logging.getLogger(__name__).error(
+                    "LLM call attempt %d failed: %s: %s", attempt, type(e).__name__, e
+                )
                 continue
 
             try:
