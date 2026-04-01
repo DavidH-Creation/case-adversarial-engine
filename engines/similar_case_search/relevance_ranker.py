@@ -25,6 +25,22 @@ _SYSTEM_PROMPT = """\
 
 每个维度评分 0.0-1.0，并给出综合评分 (overall) 和简要分析。
 按综合评分从高到低排序输出。
+
+你必须以严格 JSON 格式输出，不得包含任何 Markdown 标记、代码块、表格或其他非 JSON 内容。
+输出格式示例：
+{
+  "ranked_cases": [
+    {
+      "case_number": "（2021）京02民终1234号",
+      "fact_similarity": 0.8,
+      "legal_relation_similarity": 0.7,
+      "dispute_focus_similarity": 0.6,
+      "judgment_reference_value": 0.75,
+      "overall": 0.72,
+      "analysis": "该案与本案均涉及民间借贷中的借款主体争议..."
+    }
+  ]
+}
 """
 
 _TOOL_SCHEMA: dict = {
@@ -145,7 +161,7 @@ class RelevanceRanker:
             if text:
                 parts.append(f"抗辩：{text}")
 
-        parts.append("\n## 候选类案\n")
+        parts.append("\n## 候选类案（请以严格 JSON 格式输出评估结果，不要使用 Markdown）\n")
         for i, entry in enumerate(candidates, 1):
             parts.append(
                 f"{i}. 案号：{entry.case_number}\n"
