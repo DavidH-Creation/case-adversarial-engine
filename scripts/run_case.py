@@ -123,6 +123,9 @@ from engines.pretrial_conference.conference_engine import PretrialConferenceEngi
 from engines.pretrial_conference.schemas import PretrialConferenceResult
 from engines.shared.evidence_state_machine import EvidenceStateMachine
 from engines.shared.progress_reporter import CLIProgressReporter
+from engines.similar_case_search.keyword_extractor import KeywordExtractor
+from engines.similar_case_search.local_search import LocalCaseSearcher
+from engines.similar_case_search.relevance_ranker import RelevanceRanker
 
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -1142,6 +1145,7 @@ async def main(
     model_config: str | None = None,
     max_tokens_per_output: int = 2000,
     with_mediation: bool = False,
+    with_similar_cases: bool = False,
     perspective: str = "neutral",
 ) -> None:
     case_file = Path(case_path)
@@ -1521,6 +1525,35 @@ async def main(
             reporter.on_error(4, str(_e))
             raise
 
+    # Step 4.5: Similar case search (optional)
+    similar_cases_data = None
+    if with_similar_cases:
+        print("\n[Step 4.5] Searching for similar cases...")
+        try:
+            kw_extractor = KeywordExtractor(
+                llm_client=claude,
+                model=selector.select("keyword_extractor"),
+            )
+            case_keywords = await kw_extractor.extract(case_data)
+            print(f"  关键词: {', '.join(case_keywords.search_terms)}")
+
+            searcher = LocalCaseSearcher()
+            candidates = searcher.search(case_keywords, max_results=20)
+            print(f"  匹配到 {len(candidates)} 条候选案例")
+
+            if candidates:
+                ranker = RelevanceRanker(
+                    llm_client=claude,
+                    model=selector.select("relevance_ranker"),
+                )
+                ranked = await ranker.rank(case_data, candidates)
+                similar_cases_data = [
+                    json.loads(rc.model_dump_json()) for rc in ranked[:10]
+                ]
+                print(f"  排序完成，取 top {len(similar_cases_data)} 条")
+        except Exception as e:
+            print(f"  [Warning] Similar case search failed: {e}")
+
     # Step 5: Generate Word document
     if _should_skip(STEP_DOCX, last_completed):
         print("\n[Step 5] Skipped (checkpoint)")
@@ -1552,6 +1585,7 @@ async def main(
                 exec_summary=_artifact_dicts.get("exec_summary"),
                 amount_report=_artifact_dicts.get("amount_report"),
                 action_rec=artifacts.get("action_rec"),
+                similar_cases=similar_cases_data,
             )
             print(f"  Word report: {docx_path}")
             reporter.on_step_complete(5, "Generate DOCX")
@@ -1791,6 +1825,11 @@ if __name__ == "__main__":
         help="Include mediation range analysis in report (default: off)",
     )
     parser.add_argument(
+        "--with-similar-cases",
+        action="store_true",
+        help="Search for similar cases in local index and include in report (default: off)",
+    )
+    parser.add_argument(
         "--perspective",
         choices=["plaintiff", "defendant", "neutral"],
         default="neutral",
@@ -1829,6 +1868,7 @@ if __name__ == "__main__":
                 model_config=args.model_config,
                 max_tokens_per_output=_max_tokens,
                 with_mediation=args.with_mediation,
+                with_similar_cases=args.with_similar_cases,
                 perspective=args.perspective,
             )
         )
