@@ -17,19 +17,25 @@ def extract_fact_base(
 ) -> list[FactBaseEntry]:
     """Extract undisputed objective facts from case data.
 
+    IMPORTANT: "unchallenged" ≠ "undisputed". A fact is only undisputed if:
+    - BOTH sides acknowledge/reference it, OR
+    - It is objectively verifiable (bank records, official documents with
+      third-party confirmation such as court/notary/government stamps)
+
     Strategy:
-    1. Evidence with no challenges → fact about its existence
-    2. FactPropositions with status='supported' → established facts
-    3. Transfer records / bank records → financial facts
-    4. Identity information → party facts
+    1. Third-party verifiable evidence (bank/notary/court) → objective facts
+    2. Evidence referenced by BOTH parties → mutually acknowledged facts
+    3. FactPropositions with status='undisputed' → established facts
+    4. Bank transfer records from metadata → financial facts
 
     Args:
         issue_tree: IssueTree from pipeline
         evidence_index: EvidenceIndex from pipeline
-        adversarial_result: AdversarialResult (optional, for conflict filtering)
+        adversarial_result: AdversarialResult (optional, for conflict filtering
+                           and mutual-reference detection)
 
     Returns:
-        List of FactBaseEntry representing undisputed facts
+        List of FactBaseEntry representing truly undisputed facts
     """
     facts: list[FactBaseEntry] = []
     fact_counter = 0
@@ -42,27 +48,65 @@ def extract_fact_base(
                 getattr(conflict, "evidence_ids", [])
             )
 
-    # 1. Extract facts from unchallenged evidence
+    # Collect evidence IDs referenced by BOTH sides (mutually acknowledged)
+    mutually_referenced: set[str] = set()
+    if adversarial_result:
+        plaintiff_ev: set[str] = set()
+        defendant_ev: set[str] = set()
+        for arg in (getattr(adversarial_result, "plaintiff_best_arguments", None) or []):
+            plaintiff_ev.update(getattr(arg, "supporting_evidence_ids", []))
+        if adversarial_result.summary:
+            for arg in (adversarial_result.summary.plaintiff_strongest_arguments or []):
+                plaintiff_ev.update(getattr(arg, "supporting_evidence_ids", []))
+        for arg in (getattr(adversarial_result, "defendant_best_defenses", None) or []):
+            defendant_ev.update(getattr(arg, "supporting_evidence_ids", []))
+        if adversarial_result.summary:
+            for arg in (adversarial_result.summary.defendant_strongest_defenses or []):
+                defendant_ev.update(getattr(arg, "supporting_evidence_ids", []))
+        mutually_referenced = plaintiff_ev & defendant_ev
+
+    # Third-party verifiable source keywords
+    _verifiable_sources = {
+        "银行", "bank", "公证", "notary", "法院", "court",
+        "工商", "税务", "公安",
+    }
+
+    def _is_third_party_verifiable(ev) -> bool:
+        """Check if evidence is objectively verifiable by a third party."""
+        source_lower = (ev.source + " " + ev.title).lower()
+        return any(kw in source_lower for kw in _verifiable_sources)
+
+    # 1. Extract facts from third-party verifiable OR mutually acknowledged evidence
     for ev in evidence_index.evidence:
         is_challenged = bool(getattr(ev, "challenged_by_party_ids", []))
         if is_challenged or ev.evidence_id in disputed_ev_ids:
             continue
 
-        # Documentary and bank records are typically undisputed facts
         ev_type = ev.evidence_type.value if hasattr(ev.evidence_type, "value") else str(ev.evidence_type)
-        if ev_type in ("documentary", "physical"):
+        is_verifiable = (
+            _is_third_party_verifiable(ev)
+            and ev_type in ("documentary", "physical")
+        )
+        is_mutual = ev.evidence_id in mutually_referenced
+
+        if is_verifiable or is_mutual:
             fact_counter += 1
+            source_note = "第三方可核实" if is_verifiable else "双方均引用"
             facts.append(FactBaseEntry(
                 fact_id=f"FACT-{fact_counter:03d}",
-                description=f"{ev.title}：{ev.summary[:200]}",
+                description=f"{ev.title}：{ev.summary[:200]}（{source_note}）",
                 source_evidence_ids=[ev.evidence_id],
                 tag=SectionTag.fact,
             ))
 
-    # 2. Extract from supported fact propositions
+    # 2. Extract from fact propositions only if truly undisputed
     for issue in issue_tree.issues:
         for prop in getattr(issue, "fact_propositions", []):
-            if hasattr(prop, "status") and prop.status.value == "supported":
+            prop_status = ""
+            if hasattr(prop, "status"):
+                prop_status = prop.status.value if hasattr(prop.status, "value") else str(prop.status)
+            # Only "undisputed" or "supported" with linked evidence that is mutually referenced
+            if prop_status == "undisputed":
                 fact_counter += 1
                 facts.append(FactBaseEntry(
                     fact_id=f"FACT-{fact_counter:03d}",
@@ -70,20 +114,31 @@ def extract_fact_base(
                     source_evidence_ids=getattr(prop, "linked_evidence_ids", []),
                     tag=SectionTag.fact,
                 ))
+            elif prop_status == "supported":
+                linked = set(getattr(prop, "linked_evidence_ids", []))
+                if linked and linked & mutually_referenced:
+                    fact_counter += 1
+                    facts.append(FactBaseEntry(
+                        fact_id=f"FACT-{fact_counter:03d}",
+                        description=prop.text,
+                        source_evidence_ids=getattr(prop, "linked_evidence_ids", []),
+                        tag=SectionTag.fact,
+                    ))
 
     # 3. Extract financial transfer facts from evidence metadata
     for ev in evidence_index.evidence:
         metadata = getattr(ev, "metadata", {}) or {}
         doc_type = metadata.get("document_type", "")
         if doc_type in ("bank_transfer_records", "payment_records"):
-            # Already covered in step 1, but ensure transfer details captured
             if not any(ev.evidence_id in f.source_evidence_ids for f in facts):
-                fact_counter += 1
-                facts.append(FactBaseEntry(
-                    fact_id=f"FACT-{fact_counter:03d}",
-                    description=f"转账记录：{ev.summary[:200]}",
-                    source_evidence_ids=[ev.evidence_id],
-                    tag=SectionTag.fact,
-                ))
+                # Only include if not disputed
+                if ev.evidence_id not in disputed_ev_ids:
+                    fact_counter += 1
+                    facts.append(FactBaseEntry(
+                        fact_id=f"FACT-{fact_counter:03d}",
+                        description=f"转账记录：{ev.summary[:200]}（银行记录）",
+                        source_evidence_ids=[ev.evidence_id],
+                        tag=SectionTag.fact,
+                    ))
 
     return facts

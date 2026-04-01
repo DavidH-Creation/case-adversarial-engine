@@ -41,11 +41,17 @@ def build_layer3(
     if perspective in ("plaintiff", "neutral"):
         outputs.append(_build_plaintiff_output(
             adversarial_result, action_rec, attack_chain, hearing_order,
+            issue_tree=issue_tree,
+            evidence_index=evidence_index,
+            exec_summary=exec_summary,
         ))
 
     if perspective in ("defendant", "neutral"):
         outputs.append(_build_defendant_output(
             adversarial_result, attack_chain, defense_chain, action_rec,
+            issue_tree=issue_tree,
+            evidence_index=evidence_index,
+            exec_summary=exec_summary,
         ))
 
     return Layer3Perspective(outputs=outputs)
@@ -53,6 +59,7 @@ def build_layer3(
 
 def _build_plaintiff_output(
     adversarial_result, action_rec, attack_chain, hearing_order,
+    *, issue_tree=None, evidence_index=None, exec_summary=None,
 ) -> PerspectiveOutput:
     """Build plaintiff perspective output."""
     output = PerspectiveOutput(perspective="plaintiff")
@@ -73,10 +80,20 @@ def _build_plaintiff_output(
                 warning += f" → 应对: {node.counter_measure}"
             output.defendant_attack_chains.append(warning)
 
-    # Evidence to supplement
+    # Evidence to supplement — ground with actual evidence from evidence_index
     if action_rec:
         for esp in (getattr(action_rec, "evidence_supplement_priorities", None) or [])[:5]:
             output.evidence_to_supplement.append(str(esp))
+    elif evidence_index:
+        # Fallback: identify weak evidence that needs supplementation
+        for ev in evidence_index.evidence:
+            adm = getattr(ev, "admissibility_score", 1.0)
+            if adm < 0.7 and getattr(ev, "owner_party_id", "") != "":
+                output.evidence_to_supplement.append(
+                    f"{ev.evidence_id}: {ev.title}（可采性 {adm:.0%}，需补强）"
+                )
+            if len(output.evidence_to_supplement) >= 5:
+                break
 
     # Trial sequence
     if hearing_order:
@@ -85,18 +102,24 @@ def _build_plaintiff_output(
                 f"{getattr(item, 'order', '?')}. {getattr(item, 'description', str(item))}"
             )
 
-    # Claims to abandon
+    # Claims to abandon — ground with issue_tree data
     if action_rec:
         for ab in (getattr(action_rec, "claims_to_abandon", None) or []):
             output.claims_to_abandon.append(
                 f"{ab.claim_id}: {ab.abandon_reason}"
             )
 
+    # Ground with exec_summary immediate actions if available
+    if exec_summary and not output.evidence_to_supplement:
+        for action in (getattr(exec_summary, "top3_immediate_actions", None) or [])[:3]:
+            output.evidence_to_supplement.append(str(action))
+
     return output
 
 
 def _build_defendant_output(
     adversarial_result, attack_chain, defense_chain, action_rec,
+    *, issue_tree=None, evidence_index=None, exec_summary=None,
 ) -> PerspectiveOutput:
     """Build defendant perspective output."""
     output = PerspectiveOutput(perspective="defendant")
@@ -116,7 +139,7 @@ def _build_defendant_output(
                 f"原告可能补强: {esp}"
             )
 
-    # Evidence to challenge first
+    # Evidence to challenge first — ground with evidence_index
     if attack_chain:
         order = getattr(attack_chain, "recommended_order", [])
         for target_id in order[:3]:
@@ -126,6 +149,16 @@ def _build_defendant_output(
                         f"{target_id}: {node.attack_description}"
                     )
                     break
+    elif evidence_index:
+        # Fallback: identify opponent evidence with low admissibility to challenge
+        for ev in evidence_index.evidence:
+            adm = getattr(ev, "admissibility_score", 1.0)
+            if adm < 0.7:
+                output.evidence_to_challenge_first.append(
+                    f"{ev.evidence_id}: {ev.title}（可采性 {adm:.0%}，优先质证）"
+                )
+            if len(output.evidence_to_challenge_first) >= 3:
+                break
 
     # Defense chain motions
     if defense_chain:
@@ -134,12 +167,18 @@ def _build_defendant_output(
                 f"{getattr(step, 'step_id', '?')}: {getattr(step, 'description', str(step))}"
             )
 
-    # Over-assertion warnings
+    # Over-assertion warnings — ground with issue_tree data
     if adversarial_result:
-        # Unresolved issues where defendant's position is weak
         for issue_id in (adversarial_result.unresolved_issues or [])[:3]:
+            # Enrich with issue title from issue_tree
+            issue_title = ""
+            if issue_tree:
+                for iss in issue_tree.issues:
+                    if iss.issue_id == issue_id:
+                        issue_title = f"「{iss.title}」"
+                        break
             output.over_assertion_warnings.append(
-                f"争点 {issue_id} 尚未解决，避免过度主张"
+                f"争点 {issue_id}{issue_title} 尚未解决，避免过度主张"
             )
 
     return output

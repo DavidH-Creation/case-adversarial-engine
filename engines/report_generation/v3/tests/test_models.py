@@ -178,3 +178,24 @@ class TestPerspectiveOutput:
             motions_to_file=["motion1"],
         )
         assert output.perspective == "defendant"
+
+    def test_invalid_perspective_rejected(self):
+        """Perspective must be Literal['plaintiff','defendant','neutral']."""
+        with pytest.raises(Exception):
+            PerspectiveOutput(perspective="judge")
+
+    def test_report_invalid_perspective_rejected(self):
+        """FourLayerReport.perspective must be Literal type."""
+        with pytest.raises(Exception):
+            FourLayerReport(
+                report_id="rpt-001",
+                case_id="case-001",
+                run_id="run-001",
+                perspective="judge",
+                layer1=Layer1Cover(
+                    cover_summary=CoverSummary(neutral_conclusion="Test"),
+                ),
+                layer2=Layer2Core(),
+                layer3=Layer3Perspective(),
+                layer4=Layer4Appendix(),
+            )

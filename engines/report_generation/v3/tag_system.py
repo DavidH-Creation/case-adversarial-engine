@@ -17,6 +17,8 @@ _STATEMENT_CLASS_TO_TAG = {
     "fact": SectionTag.fact,
     "inference": SectionTag.inference,
     "assumption": SectionTag.assumption,
+    "opinion": SectionTag.opinion,
+    "recommendation": SectionTag.recommendation,
 }
 
 

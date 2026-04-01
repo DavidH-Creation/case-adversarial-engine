@@ -19,7 +19,6 @@ from engines.report_generation.v3.models import (
     SectionTag,
 )
 from engines.report_generation.v3.scenario_tree import (
-    build_scenario_tree_from_decision_paths,
     render_scenario_tree_text,
 )
 from engines.report_generation.v3.tag_system import format_tag
@@ -31,31 +30,29 @@ def build_layer2(
     evidence_index,
     adversarial_result=None,
     ranked_issues=None,
-    decision_tree=None,
     attack_chain=None,
+    scenario_tree=None,
 ) -> Layer2Core:
     """Build Layer 2 neutral adversarial core.
 
     All content in this layer is completely neutral and perspective-independent.
+    The scenario_tree should be pre-built by the caller (report_writer) to
+    avoid duplicate construction.
     """
-    # 2.1 Fact base
+    # 2.1 Fact base — adversarial_result used ONLY for dispute detection
     fact_base = extract_fact_base(issue_tree, evidence_index, adversarial_result)
 
-    # 2.2 Issue map
+    # 2.2 Issue map — presents BOTH sides neutrally with source attribution
     issue_map = build_issue_map(
         issue_tree, adversarial_result, ranked_issues, attack_chain
     )
 
-    # 2.3 Evidence battle matrix
+    # 2.3 Evidence battle matrix — neutral analysis of evidence stability
     evidence_matrix = build_evidence_battle_matrix(
         evidence_index, issue_tree, attack_chain
     )
 
-    # 2.4 Conditional scenario tree
-    scenario_tree = build_scenario_tree_from_decision_paths(
-        decision_tree, issue_tree, evidence_index
-    )
-
+    # 2.4 Conditional scenario tree — pre-built, passed in from caller
     return Layer2Core(
         fact_base=fact_base,
         issue_map=issue_map,

@@ -96,9 +96,27 @@ class TestClassifyEvidenceRisk:
         )
         assert result.risk_level == EvidenceRiskLevel.green
 
+    def test_challenged_high_admissibility_is_yellow_not_green(self):
+        """Challenged evidence must be yellow at best, even with high admissibility."""
+        result = classify_evidence_risk(
+            "EV008", "银行转账记录", "documentary", "银行流水",
+            is_challenged=True,
+            admissibility_score=0.9,
+        )
+        assert result.risk_level == EvidenceRiskLevel.yellow
+
+    def test_challenged_medium_admissibility_is_yellow(self):
+        """Challenged evidence with score >= 0.5 should be yellow, not green."""
+        result = classify_evidence_risk(
+            "EV009", "合同原件", "documentary", "公证处",
+            is_challenged=True,
+            admissibility_score=0.6,
+        )
+        assert result.risk_level == EvidenceRiskLevel.yellow
+
     def test_unknown_defaults_to_yellow(self):
         result = classify_evidence_risk(
-            "EV008", "其他证据", "other", "其他来源"
+            "EV010", "其他证据", "other", "其他来源"
         )
         assert result.risk_level == EvidenceRiskLevel.yellow
 

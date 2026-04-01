@@ -200,7 +200,7 @@ def render_layer1_md(layer1: Layer1Cover, perspective: str = "neutral") -> list[
     lines: list[str] = []
 
     # A. Neutral conclusion
-    lines.append(f"## A. 中立结论摘要 {format_tag(SectionTag.fact)}")
+    lines.append(f"## A. 中立结论摘要 {format_tag(SectionTag.inference)}")
     lines.append("")
     lines.append(f"> {layer1.cover_summary.neutral_conclusion}")
     lines.append("")

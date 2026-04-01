@@ -49,7 +49,7 @@ def build_scenario_tree_from_decision_paths(
         node_counter += 1
         return f"COND-{node_counter:03d}"
 
-    # Build condition nodes from blocking conditions first
+    # Build condition nodes from blocking conditions (sequential gates)
     blocking_nodes: list[str] = []
     for bc in (decision_tree.blocking_conditions or []):
         node_id = _next_id()
@@ -60,54 +60,68 @@ def build_scenario_tree_from_decision_paths(
         ))
         blocking_nodes.append(node_id)
 
-    # Build leaf nodes from decision paths
-    path_outcomes: list[tuple[str, str, str]] = []  # (node_id, trigger, outcome)
-    for path in (decision_tree.paths or []):
+    # Build a proper binary tree from decision paths instead of a flat linked list.
+    # Uses recursive binary partitioning: the middle path becomes the root,
+    # left paths form the yes-subtree, right paths form the no-subtree.
+    paths = list(decision_tree.paths or [])
+
+    def _build_binary_subtree(path_list: list) -> Optional[str]:
+        """Recursively build a balanced binary subtree from paths."""
+        if not path_list:
+            return None
+
+        if len(path_list) == 1:
+            p = path_list[0]
+            node_id = _next_id()
+            nodes.append(ConditionalNode(
+                node_id=node_id,
+                condition=p.trigger_condition,
+                yes_outcome=p.possible_outcome,
+                no_outcome="条件不成立，结果不确定",
+                related_evidence_ids=p.key_evidence_ids or [],
+            ))
+            return node_id
+
+        mid = len(path_list) // 2
+        pivot = path_list[mid]
+        left_paths = path_list[:mid]
+        right_paths = path_list[mid + 1:]
+
         node_id = _next_id()
+
+        # Build subtrees first so they get their node IDs
+        yes_child = _build_binary_subtree(left_paths)
+        no_child = _build_binary_subtree(right_paths)
+
         nodes.append(ConditionalNode(
             node_id=node_id,
-            condition=path.trigger_condition,
-            yes_outcome=path.possible_outcome,
-            no_outcome=None,  # will be linked to fallback or next path
-            related_evidence_ids=path.key_evidence_ids or [],
+            condition=pivot.trigger_condition,
+            yes_outcome=pivot.possible_outcome if yes_child is None else None,
+            yes_child_id=yes_child,
+            no_child_id=no_child,
+            no_outcome=None if no_child else "条件均不成立，结果不确定",
+            related_evidence_ids=pivot.key_evidence_ids or [],
         ))
-        path_outcomes.append((node_id, path.trigger_condition, path.possible_outcome))
+        return node_id
 
-    # Link paths: chain them so that "no" on one path leads to the next path's condition
-    for i in range(len(path_outcomes) - 1):
-        current_id = path_outcomes[i][0]
-        next_id = path_outcomes[i + 1][0]
-        # Find the node and set its no_child_id
-        for node in nodes:
-            if node.node_id == current_id:
-                node.no_child_id = next_id
-                break
+    path_root_id = _build_binary_subtree(paths)
 
-    # Last path's "no" gets a default unfavorable outcome
-    if path_outcomes:
-        last_id = path_outcomes[-1][0]
-        for node in nodes:
-            if node.node_id == last_id and node.no_outcome is None:
-                node.no_outcome = "条件均不成立，结果不确定"
-                break
-
-    # Link blocking conditions to first path
-    if blocking_nodes and path_outcomes:
+    # Link blocking conditions to path tree
+    if blocking_nodes:
         for i, bc_id in enumerate(blocking_nodes):
             for node in nodes:
                 if node.node_id == bc_id:
-                    # If blocking condition is met → uncertain; if not → proceed to paths
                     node.yes_outcome = "存在阻断条件，无法形成稳定判断"
                     if i + 1 < len(blocking_nodes):
                         node.no_child_id = blocking_nodes[i + 1]
+                    elif path_root_id:
+                        node.no_child_id = path_root_id
                     else:
-                        node.no_child_id = path_outcomes[0][0]
+                        node.no_outcome = "无后续条件分支"
                     break
 
     # Determine root
-    root_id = blocking_nodes[0] if blocking_nodes else (
-        path_outcomes[0][0] if path_outcomes else ""
-    )
+    root_id = blocking_nodes[0] if blocking_nodes else (path_root_id or "")
 
     if not root_id:
         return None
