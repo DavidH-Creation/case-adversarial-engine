@@ -1223,7 +1223,7 @@ async def main(
             codex = claude
         else:
             print("\n[Config] Plaintiff/Evidence/Summary -> Claude  |  Defendant -> Codex")
-            codex = CodexCLIClient(timeout=600.0)
+            codex = CodexCLIClient(timeout=600.0, model="gpt-5.4")
 
     reporter = CLIProgressReporter(total_steps=5)
 
