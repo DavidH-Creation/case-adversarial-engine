@@ -25,7 +25,17 @@
       "Bash(git log:*)",
       "Bash(done)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(xargs -I{} git push origin --delete {})",
+      "Bash(git -C \"C:\\\\Users\\\\david\\\\dev\\\\case-adversarial-engine\" worktree list)",
+      "Bash(git -C \"C:\\\\Users\\\\david\\\\dev\\\\case-adversarial-engine\" stash list)",
+      "Read(//c/Users/david/dev/case-adversarial-engine/.claude/worktrees/practical-pasteur/benchmarks/civil_loans/**)",
+      "Bash(echo \"EXIT:$?\")",
+      "Read(//c/Users/david/dev/case-adversarial-engine/.claude/worktrees/goofy-boyd/benchmarks/civil_loans/**)",
+      "Bash(git -C \"C:\\\\Users\\\\david\\\\dev\\\\case-adversarial-engine\\\\.claude\\\\worktrees\\\\goofy-boyd\" status --short)",
+      "Bash(git -C \"C:\\\\Users\\\\david\\\\dev\\\\case-adversarial-engine\\\\.claude\\\\worktrees\\\\goofy-boyd\" log --oneline -5)",
+      "Bash(git -C \"C:\\\\Users\\\\david\\\\dev\\\\case-adversarial-engine\\\\.claude\\\\worktrees\\\\goofy-boyd\" branch --show-current)",
+      "Bash(git -C /c/Users/david/dev/case-adversarial-engine/.claude/worktrees/practical-pasteur status --short)"
     ]
   }
 }
