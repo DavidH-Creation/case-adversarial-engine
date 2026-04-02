@@ -237,13 +237,44 @@ class CaseStore:
 
         return record
 
+    def save_to_disk(self, case_id: str) -> bool:
+        """Atomically flush the in-memory record for *case_id* to case_meta.json.
+
+        Returns True on success, False when the case is unknown or has no
+        workspace_manager (e.g. workspace writes are disabled in tests).
+        """
+        with self._lock:
+            entry = self._cases.get(case_id)
+        if entry is None:
+            return False
+        record, _ = entry
+        wm = record.workspace_manager
+        if wm is None:
+            return False
+        try:
+            wm.save_case_meta(_record_to_meta(record))
+            return True
+        except Exception:
+            return False
+
+    def load_from_disk(self, case_id: str) -> Optional["CaseRecord"]:
+        """Public alias for _load_from_disk — reconstruct a CaseRecord from workspace.
+
+        Use this for explicit restart-recovery calls; the private _load_from_disk
+        is called automatically by get() on a cache miss.
+        """
+        return self._load_from_disk(case_id, self._workspaces_dir or _WORKSPACE_BASE)
+
     def evict_expired(self) -> int:
-        """清理过期条目，返回清理数量。"""
+        """清理过期条目，返回清理数量。保存最后状态到磁盘后再删除。"""
         now = time.time()
         with self._lock:
             expired = [k for k, (_, t) in self._cases.items() if now - t > self._ttl]
+        for k in expired:
+            self.save_to_disk(k)
+        with self._lock:
             for k in expired:
-                del self._cases[k]
+                self._cases.pop(k, None)
                 self._evicted.add(k)
             return len(expired)
 
@@ -263,6 +294,7 @@ def _record_to_meta(record: "CaseRecord") -> dict:
         "case_id": record.case_id,
         "status": record.status.value,
         "info": record.info,
+        "materials": record.materials,
         "analysis_data": record.analysis_data,
         "run_id": record.run_id,
         "artifact_names": list(record.artifacts.keys()),
@@ -351,6 +383,7 @@ def defenses_to_dicts(defenses: list[dict], case_id: str, defendant_id: str) -> 
 async def run_extraction(record: CaseRecord) -> None:
     """异步后台任务：索引证据 + 提取争点。"""
     record.status = CaseStatus.extracting
+    store.save_to_disk(record.case_id)
     try:
         info = record.info
         case_id = record.case_id
@@ -420,6 +453,7 @@ async def run_extraction(record: CaseRecord) -> None:
     except Exception as exc:
         record.status = CaseStatus.failed
         record.error = str(exc)
+        store.save_to_disk(record.case_id)
         record.log(f"[错误] 提取失败：{exc}")
     finally:
         record._signal_done()
@@ -541,6 +575,7 @@ async def run_analysis(record: CaseRecord) -> None:
     # 重置进度队列（extract 阶段的哨兵可能还在）
     record._progress_queue = asyncio.Queue()
     record.status = CaseStatus.analyzing
+    store.save_to_disk(record.case_id)
     try:
         info = record.info
         model = info.get("model", DEFAULT_MODEL)
@@ -717,10 +752,12 @@ async def run_analysis(record: CaseRecord) -> None:
 
         # Unit 6: persist durable state to workspace
         _persist_case_meta(record)
+        store.save_to_disk(record.case_id)
 
     except Exception as exc:
         record.status = CaseStatus.failed
         record.error = str(exc)
+        store.save_to_disk(record.case_id)
         record.log(f"[错误] 分析失败：{exc}")
     finally:
         record._signal_done()
