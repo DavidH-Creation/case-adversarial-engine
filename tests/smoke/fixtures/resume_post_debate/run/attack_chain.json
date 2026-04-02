@@ -1,0 +1,23 @@
+{
+  "chain_id": "chain-resume-smoke",
+  "case_id": "case-resume-smoke",
+  "run_id": "run-resume-smoke",
+  "owner_party_id": "D-001",
+  "top_attacks": [
+    {
+      "attack_node_id": "ATK-001",
+      "target_issue_id": "ISS-001",
+      "attack_description": "Argue that the transfer was a gift.",
+      "success_conditions": "Provide a coherent explanation of the relationship.",
+      "supporting_evidence_ids": [
+        "EV-001"
+      ],
+      "counter_measure": "Emphasize the text of the IOU and the transfer purpose.",
+      "adversary_pivot_strategy": "Attack the formation of the IOU instead."
+    }
+  ],
+  "recommended_order": [
+    "ATK-001"
+  ],
+  "created_at": "2026-04-02T16:39:18Z"
+}

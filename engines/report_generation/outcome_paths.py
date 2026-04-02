@@ -127,10 +127,6 @@ def _build_win_path(decision_tree: Any, verdict_block_active: bool) -> OutcomePa
     )
 
     risk_points: list[str] = []
-    if not verdict_block_active:
-        risk_points = [
-            rationale for p in win_paths if (rationale := _get_str(p, "probability_rationale"))
-        ]
 
     if not trigger_conditions:
         trigger_conditions = ["insufficient_data"]
@@ -163,10 +159,6 @@ def _build_lose_path(decision_tree: Any, verdict_block_active: bool) -> OutcomeP
     )
 
     risk_points: list[str] = []
-    if not verdict_block_active:
-        risk_points = [
-            rationale for p in lose_paths if (rationale := _get_str(p, "probability_rationale"))
-        ]
 
     if not trigger_conditions:
         trigger_conditions = ["insufficient_data"]

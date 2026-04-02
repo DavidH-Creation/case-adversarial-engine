@@ -37,7 +37,9 @@ from engines.report_generation.schemas import Perspective, PerspectiveCard
 
 
 def _make_argument(position: str, issue_id: str = "i-1") -> SimpleNamespace:
-    return SimpleNamespace(issue_id=issue_id, position=position, evidence_ids=["e-1"], reasoning="x")
+    return SimpleNamespace(
+        issue_id=issue_id, position=position, evidence_ids=["e-1"], reasoning="x"
+    )
 
 
 def _make_summary(

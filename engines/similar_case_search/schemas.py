@@ -2,6 +2,7 @@
 类案搜索数据模型。
 Similar case search data models.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator

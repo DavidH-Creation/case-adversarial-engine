@@ -93,9 +93,6 @@ def resolve_path(path_id: str, decision_tree: "Optional[DecisionPathTree]") -> s
         return path_id
     for path in decision_tree.paths:
         if path.path_id == path_id:
-            prob = path.probability
-            if prob is not None:
-                return f"{path.possible_outcome} ({prob:.0%})"
             return path.possible_outcome
     return path_id
 

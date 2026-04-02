@@ -51,33 +51,33 @@ def _make_evidence(
 
 class TestClassifyEvidenceRisk:
     def test_bank_record_is_green(self):
-        result = classify_evidence_risk(
-            "EV001", "银行转账记录", "documentary", "银行流水"
-        )
+        result = classify_evidence_risk("EV001", "银行转账记录", "documentary", "银行流水")
         assert result.risk_level == EvidenceRiskLevel.green
 
     def test_wechat_screenshot_is_yellow(self):
-        result = classify_evidence_risk(
-            "EV002", "微信聊天截图", "electronic_data", "微信"
-        )
+        result = classify_evidence_risk("EV002", "微信聊天截图", "electronic_data", "微信")
         assert result.risk_level == EvidenceRiskLevel.yellow
 
     def test_audio_recording_is_red(self):
-        result = classify_evidence_risk(
-            "EV003", "通话录音", "audio_visual", "手机录音"
-        )
+        result = classify_evidence_risk("EV003", "通话录音", "audio_visual", "手机录音")
         assert result.risk_level == EvidenceRiskLevel.red
 
     def test_copy_only_is_red(self):
         result = classify_evidence_risk(
-            "EV004", "合同复印件", "documentary", "复印件",
+            "EV004",
+            "合同复印件",
+            "documentary",
+            "复印件",
             is_copy_only=True,
         )
         assert result.risk_level == EvidenceRiskLevel.red
 
     def test_challenged_low_admissibility_is_red(self):
         result = classify_evidence_risk(
-            "EV005", "争议证据", "other", "unknown",
+            "EV005",
+            "争议证据",
+            "other",
+            "unknown",
             is_challenged=True,
             admissibility_score=0.3,
         )
@@ -85,21 +85,25 @@ class TestClassifyEvidenceRisk:
 
     def test_very_low_admissibility_is_red(self):
         result = classify_evidence_risk(
-            "EV006", "低可采性", "documentary", "unknown",
+            "EV006",
+            "低可采性",
+            "documentary",
+            "unknown",
             admissibility_score=0.2,
         )
         assert result.risk_level == EvidenceRiskLevel.red
 
     def test_notary_source_is_green(self):
-        result = classify_evidence_risk(
-            "EV007", "公证书", "other", "公证处"
-        )
+        result = classify_evidence_risk("EV007", "公证书", "other", "公证处")
         assert result.risk_level == EvidenceRiskLevel.green
 
     def test_challenged_high_admissibility_is_yellow_not_green(self):
         """Challenged evidence must be yellow at best, even with high admissibility."""
         result = classify_evidence_risk(
-            "EV008", "银行转账记录", "documentary", "银行流水",
+            "EV008",
+            "银行转账记录",
+            "documentary",
+            "银行流水",
             is_challenged=True,
             admissibility_score=0.9,
         )
@@ -108,16 +112,17 @@ class TestClassifyEvidenceRisk:
     def test_challenged_medium_admissibility_is_yellow(self):
         """Challenged evidence with score >= 0.5 should be yellow, not green."""
         result = classify_evidence_risk(
-            "EV009", "合同原件", "documentary", "公证处",
+            "EV009",
+            "合同原件",
+            "documentary",
+            "公证处",
             is_challenged=True,
             admissibility_score=0.6,
         )
         assert result.risk_level == EvidenceRiskLevel.yellow
 
     def test_unknown_defaults_to_yellow(self):
-        result = classify_evidence_risk(
-            "EV010", "其他证据", "other", "其他来源"
-        )
+        result = classify_evidence_risk("EV010", "其他证据", "other", "其他来源")
         assert result.risk_level == EvidenceRiskLevel.yellow
 
 

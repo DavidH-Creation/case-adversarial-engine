@@ -9,6 +9,7 @@ Keyword-based similar case search — local only, no LLM calls.
 若不指定 output_dir，自动选择 outputs/ 下最新的目录。
 If output_dir is omitted, the most recent directory under outputs/ is used.
 """
+
 from __future__ import annotations
 
 import json
@@ -53,6 +54,7 @@ DISPUTE_FOCUSES = [
 # ---------------------------------------------------------------------------
 # 搜索逻辑 / Search logic
 # ---------------------------------------------------------------------------
+
 
 def load_index(path: Path) -> list[dict]:
     raw = path.read_bytes().decode("utf-8")
@@ -102,6 +104,7 @@ def search_similar_cases(
 # ---------------------------------------------------------------------------
 # DOCX 插入 / DOCX insertion
 # ---------------------------------------------------------------------------
+
 
 def find_docx(output_dir: Path) -> Path | None:
     for f in output_dir.iterdir():
@@ -168,7 +171,12 @@ def insert_similar_cases_section(docx_path: Path, results: list[tuple[float, dic
         p.add_run(label)
         # Add hyperlink
         from docx.opc.part import Part
-        r_id = doc.part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
+
+        r_id = doc.part.relate_to(
+            url,
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+            is_external=True,
+        )
         hyperlink = OxmlElement("w:hyperlink")
         hyperlink.set(qn("r:id"), r_id)
         new_run = OxmlElement("w:r")
@@ -222,6 +230,7 @@ def insert_similar_cases_section(docx_path: Path, results: list[tuple[float, dic
 # ---------------------------------------------------------------------------
 # 主流程 / Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     # Determine output directory

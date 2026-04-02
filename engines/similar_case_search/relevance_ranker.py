@@ -2,6 +2,7 @@
 相关性排序器 — 用 LLM 对候选类案做语义相关性排序。
 Relevance ranker — uses LLM to rank candidate cases by semantic relevance.
 """
+
 from __future__ import annotations
 
 import logging
@@ -60,8 +61,15 @@ _TOOL_SCHEMA: dict = {
                     "overall": {"type": "number"},
                     "analysis": {"type": "string", "description": "相关性分析"},
                 },
-                "required": ["case_number", "fact_similarity", "legal_relation_similarity",
-                             "dispute_focus_similarity", "judgment_reference_value", "overall", "analysis"],
+                "required": [
+                    "case_number",
+                    "fact_similarity",
+                    "legal_relation_similarity",
+                    "dispute_focus_similarity",
+                    "judgment_reference_value",
+                    "overall",
+                    "analysis",
+                ],
             },
         }
     },
@@ -137,7 +145,9 @@ class RelevanceRanker:
         results.sort(key=lambda r: r.relevance.overall, reverse=True)
         return results
 
-    def _build_user_prompt(self, case_data: dict[str, Any], candidates: list[CaseIndexEntry]) -> str:
+    def _build_user_prompt(
+        self, case_data: dict[str, Any], candidates: list[CaseIndexEntry]
+    ) -> str:
         """构建用户提示词。"""
         parts: list[str] = ["## 当前案件信息\n"]
 

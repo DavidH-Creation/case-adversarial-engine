@@ -58,10 +58,20 @@ def case_with_materials(tmp_store):
     """A CaseRecord with plaintiff materials already added."""
     record = tmp_store.create(_CASE_INFO)
     record.materials["plaintiff"].append(
-        {"source_id": "src-001", "text": "loan agreement", "doc_type": "contract", "role": "plaintiff"}
+        {
+            "source_id": "src-001",
+            "text": "loan agreement",
+            "doc_type": "contract",
+            "role": "plaintiff",
+        }
     )
     record.materials["defendant"].append(
-        {"source_id": "src-002", "text": "repayment receipt", "doc_type": "receipt", "role": "defendant"}
+        {
+            "source_id": "src-002",
+            "text": "repayment receipt",
+            "doc_type": "receipt",
+            "role": "defendant",
+        }
     )
     return record, tmp_store
 
@@ -74,7 +84,9 @@ def case_with_materials(tmp_store):
 def test_record_to_meta_includes_materials(tmp_store):
     """_record_to_meta must serialize the materials field."""
     record = tmp_store.create(_CASE_INFO)
-    record.materials["plaintiff"].append({"source_id": "s1", "text": "abc", "doc_type": "x", "role": "plaintiff"})
+    record.materials["plaintiff"].append(
+        {"source_id": "s1", "text": "abc", "doc_type": "x", "role": "plaintiff"}
+    )
 
     meta = _record_to_meta(record)
 
@@ -196,7 +208,9 @@ def test_round_trip_save_load(tmp_store):
     """A save followed by load returns a record that matches the original."""
     record = tmp_store.create(_CASE_INFO)
     record.status = CaseStatus.extracted
-    record.materials["plaintiff"].append({"source_id": "rt-src", "text": "roundtrip", "doc_type": "x", "role": "plaintiff"})
+    record.materials["plaintiff"].append(
+        {"source_id": "rt-src", "text": "roundtrip", "doc_type": "x", "role": "plaintiff"}
+    )
     record.error = None
     record.run_id = None
 
@@ -235,7 +249,9 @@ def test_evict_expired_saves_before_eviction(tmp_store):
     """evict_expired must flush to disk before removing from memory."""
     record = tmp_store.create(_CASE_INFO)
     record.status = CaseStatus.analyzing
-    record.materials["plaintiff"].append({"source_id": "evict-src", "text": "evict test", "doc_type": "x", "role": "plaintiff"})
+    record.materials["plaintiff"].append(
+        {"source_id": "evict-src", "text": "evict test", "doc_type": "x", "role": "plaintiff"}
+    )
     case_id = record.case_id
 
     # Force immediate expiry by back-dating the entry
@@ -281,7 +297,12 @@ def test_run_extraction_saves_on_extracting_status(tmp_path):
     test_store = CaseStore(workspaces_dir=tmp_path / "workspaces")
     record = test_store.create(_CASE_INFO)
     record.materials["plaintiff"].append(
-        {"source_id": "ex-src", "text": "test material", "doc_type": "contract", "role": "plaintiff"}
+        {
+            "source_id": "ex-src",
+            "text": "test material",
+            "doc_type": "contract",
+            "role": "plaintiff",
+        }
     )
     case_id = record.case_id
 

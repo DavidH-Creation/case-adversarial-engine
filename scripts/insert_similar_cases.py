@@ -8,6 +8,7 @@ Usage:
 
 Default output_dir: outputs/20260330-123922  (relative to project root)
 """
+
 from __future__ import annotations
 
 import json

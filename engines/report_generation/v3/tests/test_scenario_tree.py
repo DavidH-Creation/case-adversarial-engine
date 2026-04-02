@@ -87,9 +87,9 @@ class TestBuildScenarioTree:
         paths = []
         for i in range(3):
             p = MagicMock()
-            p.trigger_condition = f"条件{i+1}"
-            p.possible_outcome = f"结果{i+1}"
-            p.key_evidence_ids = [f"EV{i+1:03d}"]
+            p.trigger_condition = f"条件{i + 1}"
+            p.possible_outcome = f"结果{i + 1}"
+            p.key_evidence_ids = [f"EV{i + 1:03d}"]
             paths.append(p)
         dt.paths = paths
 

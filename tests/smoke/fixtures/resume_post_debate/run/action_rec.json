@@ -1,0 +1,16 @@
+{
+  "recommendation_id": "rec-resume-smoke",
+  "case_id": "case-resume-smoke",
+  "run_id": "run-resume-smoke",
+  "recommended_claim_amendments": [],
+  "evidence_supplement_priorities": [
+    "Supplement proof of funds delivery"
+  ],
+  "trial_explanation_priorities": [],
+  "claims_to_abandon": [],
+  "created_at": "2026-04-02T16:39:18Z",
+  "plaintiff_action_plan": null,
+  "defendant_action_plan": null,
+  "case_dispute_category": null,
+  "strategic_headline": null
+}

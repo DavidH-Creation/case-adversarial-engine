@@ -115,7 +115,9 @@ class TestEvidenceStabilityLight:
 
     def test_red_conditions_take_priority_over_yellow_type(self) -> None:
         """excluded admissibility beats witness_statement type → red."""
-        ev = _make_evidence("e-1", evidence_type="witness_statement", admissibility_status="excluded")
+        ev = _make_evidence(
+            "e-1", evidence_type="witness_statement", admissibility_status="excluded"
+        )
         assert _evidence_stability_light(ev) == "🔴 红"
 
     def test_attacked_beats_yellow_type(self) -> None:
@@ -173,10 +175,12 @@ class TestBuildEvidenceBattleMatrix:
 
     def test_target_issue_labels_resolved_via_issue_tree(self) -> None:
         ev = _make_evidence("e-1", target_issue_ids=["i-1", "i-2"])
-        issue_tree = _make_issue_tree([
-            _make_issue("i-1", "借贷关系成立"),
-            _make_issue("i-2", "还款金额"),
-        ])
+        issue_tree = _make_issue_tree(
+            [
+                _make_issue("i-1", "借贷关系成立"),
+                _make_issue("i-2", "还款金额"),
+            ]
+        )
         matrix = build_evidence_battle_matrix(
             _make_evidence_index([ev]),
             issue_tree=issue_tree,
@@ -231,10 +235,12 @@ class TestBuildEvidenceBattleMatrix:
 
     def test_path_dependency_count_from_decision_path_tree(self) -> None:
         ev = _make_evidence("e-1")
-        path_tree = _make_decision_path_tree([
-            _make_path("path-A", ["e-1"]),
-            _make_path("path-B", ["e-1"]),
-        ])
+        path_tree = _make_decision_path_tree(
+            [
+                _make_path("path-A", ["e-1"]),
+                _make_path("path-B", ["e-1"]),
+            ]
+        )
         matrix = build_evidence_battle_matrix(
             _make_evidence_index([ev]),
             decision_path_tree=path_tree,
@@ -244,9 +250,11 @@ class TestBuildEvidenceBattleMatrix:
 
     def test_path_dependency_count_zero_when_not_cited(self) -> None:
         ev = _make_evidence("e-1")
-        path_tree = _make_decision_path_tree([
-            _make_path("path-A", ["e-other"]),
-        ])
+        path_tree = _make_decision_path_tree(
+            [
+                _make_path("path-A", ["e-other"]),
+            ]
+        )
         matrix = build_evidence_battle_matrix(
             _make_evidence_index([ev]),
             decision_path_tree=path_tree,

@@ -91,7 +91,10 @@ def _make_fake_result(case_id: str, run_id: str = "run-test-001"):
 def test_extract_endpoint_is_single_flight():
     test_store = CaseStore()
 
-    with patch.object(service_module, "store", test_store), patch.object(app_module, "store", test_store):
+    with (
+        patch.object(service_module, "store", test_store),
+        patch.object(app_module, "store", test_store),
+    ):
         client = TestClient(app_module.app)
         create_resp = client.post("/api/cases/", json=_CASE_INFO)
         case_id = create_resp.json()["case_id"]
@@ -117,7 +120,10 @@ def test_extract_endpoint_is_single_flight():
 def test_analyze_endpoint_is_single_flight():
     test_store = CaseStore()
 
-    with patch.object(service_module, "store", test_store), patch.object(app_module, "store", test_store):
+    with (
+        patch.object(service_module, "store", test_store),
+        patch.object(app_module, "store", test_store),
+    ):
         client = TestClient(app_module.app)
         create_resp = client.post("/api/cases/", json=_CASE_INFO)
         case_id = create_resp.json()["case_id"]
@@ -151,7 +157,10 @@ def test_analyze_endpoint_is_single_flight():
 def test_analysis_stream_replays_history_once():
     test_store = CaseStore()
 
-    with patch.object(service_module, "store", test_store), patch.object(app_module, "store", test_store):
+    with (
+        patch.object(service_module, "store", test_store),
+        patch.object(app_module, "store", test_store),
+    ):
         record = test_store.create(_CASE_INFO)
         record.status = CaseStatus.analyzing
         record.progress = ["step1", "step2"]
@@ -182,7 +191,10 @@ def test_reports_and_artifacts_survive_workspace_recovery(tmp_path):
         service_module._WORKSPACE_BASE = tmp_path / "workspaces" / "api"
         service_module._PROJECT_ROOT = tmp_path
 
-        with patch.object(service_module, "store", test_store), patch.object(app_module, "store", test_store):
+        with (
+            patch.object(service_module, "store", test_store),
+            patch.object(app_module, "store", test_store),
+        ):
             client = TestClient(app_module.app)
             create_resp = client.post("/api/cases/", json=_CASE_INFO)
             case_id = create_resp.json()["case_id"]
@@ -194,7 +206,9 @@ def test_reports_and_artifacts_survive_workspace_recovery(tmp_path):
 
             fake_result = _make_fake_result(case_id, run_id="run-recovery-001")
             with patch("api.service._run_rounds", new=AsyncMock(return_value=fake_result)):
-                with patch("api.service._generate_markdown_report", return_value="# persisted report"):
+                with patch(
+                    "api.service._generate_markdown_report", return_value="# persisted report"
+                ):
                     with patch(
                         "engines.report_generation.docx_generator.generate_docx_report",
                         side_effect=fake_docx_generator,
@@ -269,13 +283,16 @@ def test_scenario_service_reads_case_type_from_baseline_metadata(tmp_path):
     }
     simulator_instance.simulate = AsyncMock(return_value=fake_result)
 
-    with patch(
-        "engines.simulation_run.simulator.load_baseline",
-        return_value=(issue_tree, evidence_index, "run-baseline-001"),
-    ), patch(
-        "engines.simulation_run.simulator.ScenarioSimulator",
-        return_value=simulator_instance,
-    ) as simulator_cls:
+    with (
+        patch(
+            "engines.simulation_run.simulator.load_baseline",
+            return_value=(issue_tree, evidence_index, "run-baseline-001"),
+        ),
+        patch(
+            "engines.simulation_run.simulator.ScenarioSimulator",
+            return_value=simulator_instance,
+        ) as simulator_cls,
+    ):
         service = ScenarioService(outputs_dir)
         asyncio.run(
             service.run(

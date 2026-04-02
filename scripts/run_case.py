@@ -23,6 +23,7 @@ import asyncio
 import json
 import logging
 import os
+import shutil
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -62,12 +63,17 @@ from engines.shared.logging_config import (
     setup_pipeline_logging,
 )
 from engines.shared.models import (
+    ActionRecommendation,
     AgentRole,
+    AmountCalculationReport,
     ClaimType,
+    DecisionPathTree,
     DisputedAmountAttribution,
     EvidenceGapItem,
     EvidenceIndex,
     EvidenceStatus,
+    ExecutiveSummaryArtifact,
+    IssueTree,
     LoanTransaction,
     OutcomeImpactSize,
     PracticallyObtainable,
@@ -78,7 +84,7 @@ from engines.shared.models import (
 )
 from engines.report_generation.docx_generator import generate_docx_report
 from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_EMOJI, RISK_LABEL_ZH
-from engines.report_generation.mediation_range import compute_mediation_range
+from engines.shared.models import OptimalAttackChain
 
 # Post-debate modules
 from engines.case_structuring.amount_calculator import (
@@ -312,6 +318,39 @@ def _write_json(out: Path, result: AdversarialResult) -> Path:
     return p
 
 
+def _load_model_if_exists(path: Path, model_cls):
+    if not path.exists():
+        return None
+    return model_cls.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def _load_post_debate_artifacts(out: Path) -> dict[str, Any]:
+    artifacts: dict[str, Any] = {}
+    artifact_models: dict[str, Any] = {
+        "decision_tree": DecisionPathTree,
+        "attack_chain": OptimalAttackChain,
+        "amount_report": AmountCalculationReport,
+        "exec_summary": ExecutiveSummaryArtifact,
+        "action_rec": ActionRecommendation,
+        "ranked_issues": IssueTree,
+    }
+    for name, model_cls in artifact_models.items():
+        loaded = _load_model_if_exists(out / f"{name}.json", model_cls)
+        if loaded is not None:
+            artifacts[name] = loaded
+    return artifacts
+
+
+def _ensure_report_docx_alias(docx_path: Path | None) -> Path | None:
+    if docx_path is None or not docx_path.exists():
+        return docx_path
+    alias_path = docx_path.parent / "report.docx"
+    if docx_path.resolve() == alias_path.resolve():
+        return docx_path
+    shutil.copyfile(docx_path, alias_path)
+    return alias_path
+
+
 def _write_md(
     out: Path,
     result: AdversarialResult,
@@ -359,6 +398,7 @@ def _write_md(
             render_layer1_block_b,
         )
         from engines.report_generation.schemas import Perspective as _Perspective
+
         try:
             _persp_enum = _Perspective(perspective)
             _persp_card = build_perspective_card(
@@ -516,6 +556,7 @@ def _write_md(
             build_evidence_battle_matrix,
             render_evidence_battle_matrix_markdown,
         )
+
         _battle_matrix = build_evidence_battle_matrix(
             evidence_index,
             issue_tree=issue_tree,
@@ -525,7 +566,7 @@ def _write_md(
             lines += [render_evidence_battle_matrix_markdown(_battle_matrix), ""]
 
     # Mediation range (only when --with-mediation is set)
-    med_range = compute_mediation_range(amount_report, decision_tree) if with_mediation else None
+    med_range = None
     if med_range:
         lines += ["## 调解区间评估", ""]
         lines.append("| 指标 | 金额 |")
@@ -670,6 +711,7 @@ def _write_md(
     if _persp_card is not None:
         from engines.report_generation.perspective_summary import render_layer3
         from engines.report_generation.schemas import Perspective as _PerspectiveL3
+
         try:
             _persp_enum_l3 = _PerspectiveL3(perspective)
             lines += [render_layer3(_persp_card, _persp_enum_l3)]
@@ -1480,8 +1522,8 @@ async def main(
     # Step 3.5: Post-debate analysis
     if _should_skip(STEP_POST_DEBATE, last_completed):
         print("\n[Step 3.5] Skipped (checkpoint)")
-        artifacts: dict[str, Any] = {}
-        print(f"  \u2713 Post-debate artifacts already on disk")
+        artifacts = _load_post_debate_artifacts(out)
+        print(f"  \u2713 Reloaded {len(artifacts)} post-debate artifact(s) from disk")
     else:
         print("\n[Step 3.5] Post-debate analysis...")
         artifacts = await _run_post_debate(
@@ -1499,6 +1541,7 @@ async def main(
             "attack_chain",
             "amount_report",
             "exec_summary",
+            "action_rec",
             "admissibility_result",
             "dep_graph",
             "hearing_order",
@@ -1518,6 +1561,7 @@ async def main(
             "attack_chain",
             "amount_report",
             "exec_summary",
+            "action_rec",
             "admissibility_result",
             "dep_graph",
             "hearing_order",
@@ -1544,6 +1588,7 @@ async def main(
                 build_four_layer_report,
                 write_v3_report_md,
             )
+
             v3_report = build_four_layer_report(
                 adversarial_result=result,
                 issue_tree=issue_tree,
@@ -1562,9 +1607,7 @@ async def main(
             mp = write_v3_report_md(out, v3_report, case_data, no_redact=no_redact)
             # Also save V3 report data as JSON
             _v3_json_path = out / "report_v3.json"
-            _v3_json_path.write_text(
-                v3_report.model_dump_json(indent=2), encoding="utf-8"
-            )
+            _v3_json_path.write_text(v3_report.model_dump_json(indent=2), encoding="utf-8")
             ckpt.save(STEP_OUTPUTS, {"result_json": str(jp), "report_md": str(mp)})
             reporter.on_step_complete(4, "Write Outputs")
         except Exception as _e:
@@ -1593,9 +1636,7 @@ async def main(
                     model=selector.select("relevance_ranker"),
                 )
                 ranked = await ranker.rank(case_data, candidates)
-                similar_cases_data = [
-                    json.loads(rc.model_dump_json()) for rc in ranked[:10]
-                ]
+                similar_cases_data = [json.loads(rc.model_dump_json()) for rc in ranked[:10]]
                 print(f"  排序完成，取 top {len(similar_cases_data)} 条")
         except Exception as e:
             print(f"  [Warning] Similar case search failed: {e}")
@@ -1605,7 +1646,10 @@ async def main(
         print("\n[Step 5] Skipped (checkpoint)")
         docx_path = out / "report.docx"
         if not docx_path.exists():
-            docx_path = None
+            legacy_docx_path = out / "对抗分析报告.docx"
+            docx_path = (
+                _ensure_report_docx_alias(legacy_docx_path) if legacy_docx_path.exists() else None
+            )
     else:
         reporter.on_step_start(5, "Generate DOCX")
         print("\n[Step 5] Generating Word report...")
@@ -1633,6 +1677,7 @@ async def main(
                 action_rec=artifacts.get("action_rec"),
                 similar_cases=similar_cases_data,
             )
+            docx_path = _ensure_report_docx_alias(docx_path)
             print(f"  Word report: {docx_path}")
             reporter.on_step_complete(5, "Generate DOCX")
         except Exception as e:
@@ -1868,7 +1913,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--with-mediation",
         action="store_true",
-        help="Include mediation range analysis in report (default: off)",
+        help="Deprecated no-op; mainline reports no longer render mediation output",
     )
     parser.add_argument(
         "--with-similar-cases",

@@ -83,9 +83,7 @@ async def _run_checks(model: str | None, timeout: float) -> list[bool]:
         client2 = CodexCLIClient(timeout=timeout, model=model)
         try:
             t0 = time.monotonic()
-            resp = await client2.create_message(
-                system="", user="Reply with exactly: MODEL_OK"
-            )
+            resp = await client2.create_message(system="", user="Reply with exactly: MODEL_OK")
             elapsed = time.monotonic() - t0
             ok = "MODEL_OK" in resp.upper()
             _print_result(

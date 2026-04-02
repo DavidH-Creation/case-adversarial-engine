@@ -29,6 +29,8 @@ from engines.shared.models import (
     OptimalAttackChain,
     OutcomeImpact,
     OutcomeImpactSize,
+    DecisionPath,
+    DecisionPathTree,
     PracticallyObtainable,
     RecommendedAction,
     SupplementCost,
@@ -615,3 +617,38 @@ class TestCriticalEvidenceGaps:
         inp = _make_full_input(evidence_gap_items=[])
         result = self.summarizer.summarize(inp)
         assert result.critical_evidence_gaps == []
+
+
+class TestProbabilityFreeOutput:
+    def setup_method(self):
+        self.summarizer = ExecutiveSummarizer()
+
+    def test_internal_decision_summary_omits_probability_language(self):
+        decision_tree = DecisionPathTree(
+            tree_id="TREE-001",
+            case_id="CASE-001",
+            run_id="RUN-001",
+            paths=[
+                DecisionPath(
+                    path_id="PATH-001",
+                    trigger_condition="The defendant proves repayment",
+                    trigger_issue_ids=["ISS-001"],
+                    possible_outcome="Court rejects the claim",
+                    probability=0.76,
+                    probability_rationale="legacy only",
+                    party_favored="defendant",
+                )
+            ],
+            blocking_conditions=[],
+            most_likely_path="PATH-001",
+        )
+
+        inp = _make_full_input(decision_path_tree=decision_tree)
+        result = self.summarizer.summarize(inp)
+
+        assert result.internal_decision_summary is not None
+        rationale = result.internal_decision_summary.most_likely_winner_rationale
+        assert "概率" not in rationale
+        assert "%" not in rationale
+        assert "PATH-001" in rationale
+        assert "The defendant proves repayment" in rationale

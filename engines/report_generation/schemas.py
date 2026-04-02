@@ -87,12 +87,12 @@ class EvidenceBattleRow(BaseModel):
     evidence_id: str
     evidence_title: str
     target_issue_labels: list[str] = Field(default_factory=list)
-    owner: str = ""                      # owner_party_id
-    admissibility: str = ""             # admissibility_status.value
+    owner: str = ""  # owner_party_id
+    admissibility: str = ""  # admissibility_status.value
     opposition_challenges: list[str] = Field(default_factory=list)
-    corroboration_count: int = 0        # count of evidences sharing same target issues
-    stability_light: str = ""           # 🟢 绿 / 🟡 黄 / 🔴 红
-    path_dependency_count: int = 0      # count of decision paths citing this evidence
+    corroboration_count: int = 0  # count of evidences sharing same target issues
+    stability_light: str = ""  # 🟢 绿 / 🟡 黄 / 🔴 红
+    path_dependency_count: int = 0  # count of decision paths citing this evidence
 
 
 class EvidenceBattleMatrix(BaseModel):
@@ -127,8 +127,8 @@ class PerspectiveCard(BaseModel):
     """
 
     perspective: Perspective
-    top_strengths: list[str] = Field(default_factory=list)   # max 3
-    top_dangers: list[str] = Field(default_factory=list)     # max 2
+    top_strengths: list[str] = Field(default_factory=list)  # max 3
+    top_dangers: list[str] = Field(default_factory=list)  # max 2
     priority_actions: list[str] = Field(default_factory=list)  # max 3
     relevant_paths: list[str] = Field(default_factory=list)  # path_ids
 

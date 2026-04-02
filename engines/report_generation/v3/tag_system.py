@@ -48,9 +48,7 @@ def statement_class_to_tag(statement_class: str) -> SectionTag:
 
     Falls back to SectionTag.inference for unknown values.
     """
-    return _STATEMENT_CLASS_TO_TAG.get(
-        statement_class.strip().lower(), SectionTag.inference
-    )
+    return _STATEMENT_CLASS_TO_TAG.get(statement_class.strip().lower(), SectionTag.inference)
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +71,9 @@ _PATH_NUM_RE = re.compile(r"path-(\d{3})")
 # Blocking condition IDs: bc-NNN or BC-NNN
 _BC_ID_RE = re.compile(r"[Bb][Cc]-(\d{3})")
 # Missing issue IDs: missing-issue-{slug}-NNN[-party-{role}-{name}]
-_MISSING_ISSUE_RE = re.compile(r"missing-issue-[a-z0-9]+(?:-[a-z0-9]+)*-(\d{3})(?:-party-(?:plaintiff|defendant)-[a-z]+)?")
+_MISSING_ISSUE_RE = re.compile(
+    r"missing-issue-[a-z0-9]+(?:-[a-z0-9]+)*-(\d{3})(?:-party-(?:plaintiff|defendant)-[a-z]+)?"
+)
 # Party IDs: party-{role}-{name}
 _PARTY_ID_RE = re.compile(r"party-(plaintiff|defendant)-[a-z]+")
 
@@ -221,16 +221,19 @@ def humanize_text(text: str, context: dict[str, str] | None = None) -> str:
     # Replace issue IDs (hyphenated slugs like issue-loan-agreement-validity-001)
     def _replace_issue(m: re.Match[str]) -> str:
         return humanize_id(m.group(0), context)
+
     result = re.sub(r"issue-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}", _replace_issue, result)
 
     # Replace evidence IDs
     def _replace_evidence(m: re.Match[str]) -> str:
         return humanize_id(m.group(0), context)
+
     result = re.sub(r"evidence-(?:plaintiff|defendant)-\d{3}", _replace_evidence, result)
 
     # Replace FACT IDs (both FACT-NNN and fact-slug-NNN forms)
     def _replace_fact(m: re.Match[str]) -> str:
         return humanize_id(m.group(0), context)
+
     result = re.sub(r"FACT-\d{3}", _replace_fact, result)
     result = re.sub(r"fact-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}", _replace_fact, result)
 
@@ -254,6 +257,7 @@ def humanize_text(text: str, context: dict[str, str] | None = None) -> str:
     # Replace party IDs (party-plaintiff-wang → 原告方)
     def _replace_party(m: re.Match[str]) -> str:
         return humanize_id(m.group(0), context)
+
     result = re.sub(r"party-(?:plaintiff|defendant)-[a-z]+", _replace_party, result)
 
     # Replace internal field values

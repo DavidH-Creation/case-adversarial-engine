@@ -1,0 +1,30 @@
+{
+  "report_id": "amt-resume-smoke",
+  "case_id": "case-resume-smoke",
+  "run_id": "run-resume-smoke",
+  "loan_transactions": [],
+  "repayment_transactions": [],
+  "disputed_amount_attributions": [],
+  "claim_calculation_table": [
+    {
+      "claim_id": "CLM-001",
+      "claim_type": "principal",
+      "claimed_amount": "100000",
+      "calculated_amount": "80000",
+      "delta": "20000",
+      "delta_explanation": ""
+    }
+  ],
+  "consistency_check_result": {
+    "principal_base_unique": true,
+    "all_repayments_attributed": true,
+    "text_table_amount_consistent": true,
+    "duplicate_interest_penalty_claim": false,
+    "claim_total_reconstructable": true,
+    "unresolved_conflicts": [],
+    "verdict_block_active": false,
+    "claim_delivery_ratio_normal": true
+  },
+  "interest_recalculation": null,
+  "created_at": "2026-04-02T16:39:18Z"
+}

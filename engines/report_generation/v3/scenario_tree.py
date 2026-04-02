@@ -51,13 +51,15 @@ def build_scenario_tree_from_decision_paths(
 
     # Build condition nodes from blocking conditions (sequential gates)
     blocking_nodes: list[str] = []
-    for bc in (decision_tree.blocking_conditions or []):
+    for bc in decision_tree.blocking_conditions or []:
         node_id = _next_id()
-        nodes.append(ConditionalNode(
-            node_id=node_id,
-            condition=bc.description,
-            related_evidence_ids=getattr(bc, "related_evidence_ids", []),
-        ))
+        nodes.append(
+            ConditionalNode(
+                node_id=node_id,
+                condition=bc.description,
+                related_evidence_ids=getattr(bc, "related_evidence_ids", []),
+            )
+        )
         blocking_nodes.append(node_id)
 
     # Build a proper binary tree from decision paths instead of a flat linked list.
@@ -73,19 +75,21 @@ def build_scenario_tree_from_decision_paths(
         if len(path_list) == 1:
             p = path_list[0]
             node_id = _next_id()
-            nodes.append(ConditionalNode(
-                node_id=node_id,
-                condition=p.trigger_condition,
-                yes_outcome=p.possible_outcome,
-                no_outcome="条件不成立，结果不确定",
-                related_evidence_ids=p.key_evidence_ids or [],
-            ))
+            nodes.append(
+                ConditionalNode(
+                    node_id=node_id,
+                    condition=p.trigger_condition,
+                    yes_outcome=p.possible_outcome,
+                    no_outcome="条件不成立，结果不确定",
+                    related_evidence_ids=p.key_evidence_ids or [],
+                )
+            )
             return node_id
 
         mid = len(path_list) // 2
         pivot = path_list[mid]
         left_paths = path_list[:mid]
-        right_paths = path_list[mid + 1:]
+        right_paths = path_list[mid + 1 :]
 
         node_id = _next_id()
 
@@ -93,15 +97,17 @@ def build_scenario_tree_from_decision_paths(
         yes_child = _build_binary_subtree(left_paths)
         no_child = _build_binary_subtree(right_paths)
 
-        nodes.append(ConditionalNode(
-            node_id=node_id,
-            condition=pivot.trigger_condition,
-            yes_outcome=pivot.possible_outcome if yes_child is None else None,
-            yes_child_id=yes_child,
-            no_child_id=no_child,
-            no_outcome=None if no_child else "条件均不成立，结果不确定",
-            related_evidence_ids=pivot.key_evidence_ids or [],
-        ))
+        nodes.append(
+            ConditionalNode(
+                node_id=node_id,
+                condition=pivot.trigger_condition,
+                yes_outcome=pivot.possible_outcome if yes_child is None else None,
+                yes_child_id=yes_child,
+                no_child_id=no_child,
+                no_outcome=None if no_child else "条件均不成立，结果不确定",
+                related_evidence_ids=pivot.key_evidence_ids or [],
+            )
+        )
         return node_id
 
     path_root_id = _build_binary_subtree(paths)

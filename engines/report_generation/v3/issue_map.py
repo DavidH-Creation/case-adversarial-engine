@@ -40,6 +40,7 @@ _THESIS_TRUNCATE_LEN = 200
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _jaccard(a: set[str], b: set[str]) -> float:
     """Jaccard similarity between two sets."""
     if not a and not b:
@@ -201,9 +202,7 @@ def _compute_sensitivity(issue) -> str:
     outcome_impact = getattr(issue, "outcome_impact", None)
     if outcome_impact:
         impact_val = (
-            outcome_impact.value
-            if hasattr(outcome_impact, "value")
-            else str(outcome_impact)
+            outcome_impact.value if hasattr(outcome_impact, "value") else str(outcome_impact)
         )
         sensitivity_map = {
             "decisive": "极高 — 该争点翻转将直接改变裁判结果",
@@ -235,6 +234,7 @@ def _collect_gaps(issue, attack_targets: dict[str, str]) -> list[str]:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def build_issue_map(
     issue_tree,
@@ -358,9 +358,7 @@ def build_issue_map(
                 depth=depth,
                 plaintiff_thesis=p_thesis,
                 defendant_thesis=d_thesis,
-                decisive_evidence=(
-                    issue.evidence_ids[:5] if issue.evidence_ids else []
-                ),
+                decisive_evidence=(issue.evidence_ids[:5] if issue.evidence_ids else []),
                 current_gaps=_collect_gaps(issue, attack_targets),
                 outcome_sensitivity=_compute_sensitivity(issue),
                 tag=SectionTag.inference,

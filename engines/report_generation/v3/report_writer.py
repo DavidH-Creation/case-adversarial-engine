@@ -71,7 +71,9 @@ def build_four_layer_report(
 
     # Build timeline ONCE and share across Layer 1 and Layer 4
     timeline_events = auto_generate_timeline(
-        case_data, evidence_index=evidence_index, issue_tree=issue_tree,
+        case_data,
+        evidence_index=evidence_index,
+        issue_tree=issue_tree,
     )
 
     # Build evidence priorities ONCE and share across layers
@@ -130,7 +132,9 @@ def build_four_layer_report(
 
     return FourLayerReport(
         report_id=f"rpt-v3-{uuid.uuid4().hex[:12]}",
-        case_id=adversarial_result.case_id if adversarial_result else case_data.get("case_id", "unknown"),
+        case_id=adversarial_result.case_id
+        if adversarial_result
+        else case_data.get("case_id", "unknown"),
         run_id=adversarial_result.run_id if adversarial_result else f"run-{uuid.uuid4().hex[:8]}",
         perspective=perspective,
         layer1=layer1,
@@ -180,7 +184,9 @@ def write_v3_report_md(
     lines: list[str] = [
         DISCLAIMER_MD,
         "",
-        "# " + case_data.get("case_type", "civil_loan").replace("_", " ").title() + " — 案件诊断报告",
+        "# "
+        + case_data.get("case_type", "civil_loan").replace("_", " ").title()
+        + " — 案件诊断报告",
         "",
         f"**Case ID**: {report.case_id}  |  **Run ID**: {report.run_id}",
         f"**Generated**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",

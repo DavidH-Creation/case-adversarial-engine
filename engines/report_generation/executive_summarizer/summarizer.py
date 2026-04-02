@@ -463,3 +463,109 @@ class ExecutiveSummarizer:
             best = min(calculable, key=lambda e: abs(e.delta))
             return f"诉请 {best.claim_type.value} {best.claimed_amount} delta={best.delta}"
         return f"绑定 {report.report_id}"
+
+    def _build_structured_output(
+        self,
+        issues: list[Issue],
+        top5_issue_ids: list[str],
+        top3_actions: list[str] | str,
+        top3_attacks: list[str],
+        critical_gaps: list[str] | str,
+        amount_report: AmountCalculationReport,
+        action_recommendation: Optional[ActionRecommendation],
+        defense_chain_result: Optional[DefenseChainResult] = None,
+    ) -> ExecutiveSummaryStructuredOutput:
+        """Build the structured summary without probability/confidence wording."""
+        issue_count = len(issues)
+        high_count = sum(1 for issue in issues if issue.outcome_impact == OutcomeImpact.high)
+        overview = (
+            f"案件共有 {issue_count} 个争点，其中 {high_count} 个高影响争点。"
+            f" 绑定金额报告 {amount_report.report_id}。"
+        )
+        if action_recommendation and action_recommendation.strategic_headline:
+            overview = f"{action_recommendation.strategic_headline}。{overview}"
+
+        issue_map = {issue.issue_id: issue for issue in issues}
+        key_findings: list[str] = []
+        for issue_id in top5_issue_ids:
+            issue = issue_map.get(issue_id)
+            if issue is None:
+                continue
+            impact_str = issue.outcome_impact.value if issue.outcome_impact else "unknown"
+            key_findings.append(f"争点《{issue.title}》影响程度：{impact_str}")
+
+        if high_count > 0:
+            risk_assessment = (
+                f"存在 {high_count} 个高影响争点，对方最优攻击节点 {len(top3_attacks)} 个，"
+                "需要优先布置回应。"
+            )
+        else:
+            risk_assessment = (
+                f"当前未识别高影响争点，对方可用攻击节点 {len(top3_attacks)} 个，整体风险可控。"
+            )
+        if isinstance(critical_gaps, list) and critical_gaps:
+            risk_assessment += f" 另有 {len(critical_gaps)} 项关键缺证，建议先补齐。"
+        if defense_chain_result:
+            defense_point_count = len(defense_chain_result.chain.defense_points)
+            risk_assessment += (
+                f" 已形成 {defense_point_count} 个防御论点，可直接用于后续说明与质证。"
+            )
+
+        if isinstance(top3_actions, list):
+            recommended_actions = [f"执行行动 {action_id}" for action_id in top3_actions]
+        else:
+            recommended_actions = ["P1.8 行动建议未启用，建议人工审查。"]
+
+        evaluated_count = sum(1 for issue in issues if issue.outcome_impact is not None)
+        evidence_completeness = evaluated_count / issue_count if issue_count > 0 else 0.0
+        gaps_count = len(critical_gaps) if isinstance(critical_gaps, list) else 0
+        legal_clarity = max(0.0, 1.0 - gaps_count * 0.15)
+        overall_confidence = (evidence_completeness + legal_clarity) / 2.0
+
+        confidence_metrics = ConfidenceMetrics(
+            overall_confidence=round(overall_confidence, 3),
+            evidence_completeness=round(evidence_completeness, 3),
+            legal_clarity=round(legal_clarity, 3),
+        )
+
+        return ExecutiveSummaryStructuredOutput(
+            case_overview=overview,
+            key_findings=key_findings,
+            risk_assessment=risk_assessment,
+            recommended_actions=recommended_actions,
+            confidence_metrics=confidence_metrics,
+        )
+
+    def _build_internal_decision_summary(
+        self,
+        issues: list[Issue],
+        decision_tree: Optional[DecisionPathTree],
+        critical_gaps: list[str] | str,
+    ) -> Optional[InternalDecisionSummary]:
+        """Build the internal decision summary without probability wording."""
+        del issues
+        winner = "uncertain"
+        rationale = ""
+
+        if decision_tree and decision_tree.most_likely_path:
+            for path in decision_tree.paths:
+                if path.path_id == decision_tree.most_likely_path:
+                    winner = path.party_favored
+                    rationale = (
+                        f"首位路径 {path.path_id} 当前更有利于 {path.party_favored}，"
+                        f"触发条件为：{path.trigger_condition}"
+                    )
+                    break
+
+        priority_gap = None
+        gap_rationale = ""
+        if isinstance(critical_gaps, list) and critical_gaps:
+            priority_gap = critical_gaps[0]
+            gap_rationale = f"ROI 排序最高的缺证项是 {priority_gap}"
+
+        return InternalDecisionSummary(
+            most_likely_winner=winner,
+            most_likely_winner_rationale=rationale,
+            priority_evidence_to_supplement=priority_gap,
+            priority_supplement_rationale=gap_rationale,
+        )

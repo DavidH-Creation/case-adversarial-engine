@@ -51,7 +51,9 @@ def build_perspective_card(
     paths: list = _get_paths(decision_path_tree)
 
     if perspective == Perspective.PLAINTIFF:
-        return _build_plaintiff_card(summary, paths, action_recommendations, missing_evidence_report)
+        return _build_plaintiff_card(
+            summary, paths, action_recommendations, missing_evidence_report
+        )
     elif perspective == Perspective.DEFENDANT:
         return _build_defendant_card(summary, paths, action_recommendations)
     else:

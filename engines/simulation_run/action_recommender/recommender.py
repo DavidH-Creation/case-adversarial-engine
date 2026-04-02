@@ -281,9 +281,7 @@ class ActionRecommender:
             for s in abandon_suggestions
         ]
         annotated_trial = [
-            t.model_copy(
-                update={"impacted_path_ids": _path_ids_for_issue(t.issue_id)}
-            )
+            t.model_copy(update={"impacted_path_ids": _path_ids_for_issue(t.issue_id)})
             for t in trial_explanations
         ]
 

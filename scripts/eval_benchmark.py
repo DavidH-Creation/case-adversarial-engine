@@ -50,7 +50,13 @@ from engines.shared.cli_adapter import ClaudeCLIClient, CLINotFoundError
 
 BENCHMARKS_DIR = _PROJECT_ROOT / "benchmarks" / "civil_loans"
 
-HARD_CASES = ["civil-loan-002", "civil-loan-001", "civil-loan-015", "civil-loan-003", "civil-loan-004"]
+HARD_CASES = [
+    "civil-loan-002",
+    "civil-loan-001",
+    "civil-loan-015",
+    "civil-loan-003",
+    "civil-loan-004",
+]
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
 
@@ -58,6 +64,7 @@ DEFAULT_MODEL = "claude-sonnet-4-6"
 # ---------------------------------------------------------------------------
 # Similarity helpers
 # ---------------------------------------------------------------------------
+
 
 def _char_jaccard(a: str, b: str) -> float:
     """Character-level Jaccard similarity between two strings."""
@@ -72,8 +79,8 @@ def _char_jaccard(a: str, b: str) -> float:
 
 def _bigram_jaccard(a: str, b: str) -> float:
     """Bigram Jaccard similarity — more sensitive than character-level."""
-    bigrams_a = {a[i:i+2] for i in range(len(a) - 1)}
-    bigrams_b = {b[i:i+2] for i in range(len(b) - 1)}
+    bigrams_a = {a[i : i + 2] for i in range(len(a) - 1)}
+    bigrams_b = {b[i : i + 2] for i in range(len(b) - 1)}
     if not bigrams_a and not bigrams_b:
         return 1.0
     intersection = len(bigrams_a & bigrams_b)
@@ -106,7 +113,7 @@ _STOP_CHARS = set("的是否为在与之其等了而但和或因由对于中有�
 
 def _extract_content_chars(text: str) -> set[str]:
     """Extract meaningful CJK characters, filtering stop chars and punctuation."""
-    return {c for c in text if '\u4e00' <= c <= '\u9fff' and c not in _STOP_CHARS}
+    return {c for c in text if "\u4e00" <= c <= "\u9fff" and c not in _STOP_CHARS}
 
 
 def _has_keyword_overlap(a: str, b: str, min_overlap: int = 2) -> bool:
@@ -119,6 +126,7 @@ def _has_keyword_overlap(a: str, b: str, min_overlap: int = 2) -> bool:
 def _get_judge_client():
     """Return the resolved path to the claude CLI binary for LLM-judge calls."""
     import shutil
+
     resolved = shutil.which("claude")
     if not resolved:
         raise CLINotFoundError("claude CLI not found — needed for --matcher llm-judge")
@@ -128,15 +136,20 @@ def _get_judge_client():
 def _llm_judge_match(a: str, b: str, claude_bin: str) -> bool:
     """Call claude CLI (sync subprocess) to judge semantic equivalence of two legal issues."""
     import subprocess
+
     prompt = (
-        "以下两个法律争点描述是否指向同一个争议焦点？只回答 YES 或 NO。\n"
-        f"争点A: {a}\n争点B: {b}"
+        f"以下两个法律争点描述是否指向同一个争议焦点？只回答 YES 或 NO。\n争点A: {a}\n争点B: {b}"
     )
     cmd = [claude_bin, "--print", "--output-format", "text", "--model", _JUDGE_MODEL]
     if sys.platform == "win32" and claude_bin.lower().endswith((".cmd", ".bat")):
         cmd = ["cmd", "/c"] + cmd
     result = subprocess.run(
-        cmd, input=prompt, capture_output=True, text=True, timeout=60, encoding="utf-8",
+        cmd,
+        input=prompt,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        encoding="utf-8",
     )
     if result.returncode != 0:
         return False
@@ -162,6 +175,7 @@ def _best_match_llm(query: str, candidates: list[str], client) -> bool:
 # Gold data loaders
 # ---------------------------------------------------------------------------
 
+
 def load_gold_evidence(case_dir: Path) -> list[dict]:
     path = case_dir / "gold_evidence_index.json"
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -182,7 +196,8 @@ def save_engine_output(case_dir: Path, evidence_dicts: list[dict], issue_dicts: 
     """Persist engine output for later --match-only re-evaluation."""
     out = {"evidence": evidence_dicts, "issues": issue_dicts}
     (case_dir / "engine_output.json").write_text(
-        json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8",
+        json.dumps(out, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
 
@@ -198,6 +213,7 @@ def load_engine_output(case_dir: Path) -> tuple[list[dict], list[dict]] | None:
 # ---------------------------------------------------------------------------
 # Input construction from case description
 # ---------------------------------------------------------------------------
+
 
 def build_raw_materials(manifest: dict) -> list[RawMaterial]:
     """Build a single RawMaterial from the case description (裁判要旨)."""
@@ -256,9 +272,13 @@ def build_synthetic_claims(manifest: dict) -> list[dict]:
 # Metrics computation
 # ---------------------------------------------------------------------------
 
+
 def compute_evidence_metrics(
-    extracted: list, gold: list[dict], threshold: float = 0.25,
-    matcher: str = "bigram", judge_client=None,
+    extracted: list,
+    gold: list[dict],
+    threshold: float = 0.25,
+    matcher: str = "bigram",
+    judge_client=None,
 ) -> dict:
     """Compare extracted Evidence objects to gold evidence dicts."""
     gold_titles = [e.get("title", "") for e in gold]
@@ -270,12 +290,8 @@ def compute_evidence_metrics(
     ext_texts = [f"{t} {s}" for t, s in zip(ext_titles, ext_summaries)]
 
     if matcher == "llm-judge" and judge_client is not None:
-        recall_hits = sum(
-            1 for g in gold_texts if _best_match_llm(g, ext_texts, judge_client)
-        )
-        precision_hits = sum(
-            1 for e in ext_texts if _best_match_llm(e, gold_texts, judge_client)
-        )
+        recall_hits = sum(1 for g in gold_texts if _best_match_llm(g, ext_texts, judge_client))
+        precision_hits = sum(1 for e in ext_texts if _best_match_llm(e, gold_texts, judge_client))
     else:
         recall_hits = sum(
             1 for g in gold_texts if _best_match(g, ext_texts, threshold) >= threshold
@@ -299,8 +315,11 @@ def compute_evidence_metrics(
 
 
 def compute_issue_metrics(
-    extracted_issues: list[dict], gold: list[dict], threshold: float = 0.25,
-    matcher: str = "bigram", judge_client=None,
+    extracted_issues: list[dict],
+    gold: list[dict],
+    threshold: float = 0.25,
+    matcher: str = "bigram",
+    judge_client=None,
 ) -> dict:
     """Compare extracted IssueTree issues to gold issue dicts."""
     gold_titles = [i.get("title", "") for i in gold]
@@ -316,12 +335,8 @@ def compute_issue_metrics(
             ext_titles.append(str(issue))
 
     if matcher == "llm-judge" and judge_client is not None:
-        recall_hits = sum(
-            1 for g in gold_titles if _best_match_llm(g, ext_titles, judge_client)
-        )
-        precision_hits = sum(
-            1 for e in ext_titles if _best_match_llm(e, gold_titles, judge_client)
-        )
+        recall_hits = sum(1 for g in gold_titles if _best_match_llm(g, ext_titles, judge_client))
+        precision_hits = sum(1 for e in ext_titles if _best_match_llm(e, gold_titles, judge_client))
     else:
         recall_hits = sum(
             1 for g in gold_titles if _best_match(g, ext_titles, threshold) >= threshold
@@ -348,9 +363,14 @@ def compute_issue_metrics(
 # Single-case evaluation
 # ---------------------------------------------------------------------------
 
+
 async def eval_case(
-    case_id: str, model: str, verbose: bool = True,
-    matcher: str = "bigram", judge_client=None, match_only: bool = False,
+    case_id: str,
+    model: str,
+    verbose: bool = True,
+    matcher: str = "bigram",
+    judge_client=None,
+    match_only: bool = False,
 ) -> dict:
     """Run EvidenceIndexer + IssueExtractor on a single benchmark case.
 
@@ -366,7 +386,7 @@ async def eval_case(
     gold_issues = load_gold_issues(case_dir)
 
     if verbose:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"[{case_id}] {manifest.get('title', '')}")
         print(f"  Gold: {len(gold_evidence)} evidence, {len(gold_issues)} issues")
 
@@ -389,25 +409,37 @@ async def eval_case(
 
         saved_evidence, saved_issues = saved
         if verbose:
-            print(f"  [match-only] Loaded {len(saved_evidence)} evidence, {len(saved_issues)} issues from cache")
+            print(
+                f"  [match-only] Loaded {len(saved_evidence)} evidence, {len(saved_issues)} issues from cache"
+            )
 
         from types import SimpleNamespace
+
         ev_metrics = compute_evidence_metrics(
             [SimpleNamespace(**d) for d in saved_evidence],
-            gold_evidence, matcher=matcher, judge_client=judge_client,
+            gold_evidence,
+            matcher=matcher,
+            judge_client=judge_client,
         )
         result["evidence_metrics"] = ev_metrics
 
         issue_metrics = compute_issue_metrics(
-            saved_issues, gold_issues, matcher=matcher, judge_client=judge_client,
+            saved_issues,
+            gold_issues,
+            matcher=matcher,
+            judge_client=judge_client,
         )
         result["issue_metrics"] = issue_metrics
 
         if verbose:
-            print(f"  Evidence  Recall={ev_metrics['recall']:.1%}  Precision={ev_metrics['precision']:.1%}  F1={ev_metrics['f1']:.1%}")
-            print(f"  Issues    Recall={issue_metrics['recall']:.1%}  Precision={issue_metrics['precision']:.1%}  F1={issue_metrics['f1']:.1%}")
-            print(f"  Gold issues:      {[i.get('title','') for i in gold_issues]}")
-            print(f"  Extracted issues: {[i.get('title','') for i in saved_issues]}")
+            print(
+                f"  Evidence  Recall={ev_metrics['recall']:.1%}  Precision={ev_metrics['precision']:.1%}  F1={ev_metrics['f1']:.1%}"
+            )
+            print(
+                f"  Issues    Recall={issue_metrics['recall']:.1%}  Precision={issue_metrics['precision']:.1%}  F1={issue_metrics['f1']:.1%}"
+            )
+            print(f"  Gold issues:      {[i.get('title', '') for i in gold_issues]}")
+            print(f"  Extracted issues: {[i.get('title', '') for i in saved_issues]}")
         return result
 
     # Full engine run path
@@ -421,7 +453,11 @@ async def eval_case(
     indexer = EvidenceIndexer(llm_client=llm_client, model=model)
 
     try:
-        party_id = manifest["parties"][0]["party_id"] if manifest.get("parties") else f"party-{case_id}-001"
+        party_id = (
+            manifest["parties"][0]["party_id"]
+            if manifest.get("parties")
+            else f"party-{case_id}-001"
+        )
         extracted_evidence = await indexer.index(
             materials=materials,
             case_id=case_id,
@@ -429,12 +465,17 @@ async def eval_case(
             case_slug=case_id,
         )
         ev_metrics = compute_evidence_metrics(
-            extracted_evidence, gold_evidence, matcher=matcher, judge_client=judge_client,
+            extracted_evidence,
+            gold_evidence,
+            matcher=matcher,
+            judge_client=judge_client,
         )
         result["evidence_metrics"] = ev_metrics
         if verbose:
             print(f"  [Phase 1] Extracted {len(extracted_evidence)} evidence items")
-            print(f"           Recall={ev_metrics['recall']:.1%}  Precision={ev_metrics['precision']:.1%}  F1={ev_metrics['f1']:.1%}")
+            print(
+                f"           Recall={ev_metrics['recall']:.1%}  Precision={ev_metrics['precision']:.1%}  F1={ev_metrics['f1']:.1%}"
+            )
     except Exception as exc:
         result["evidence_error"] = str(exc)
         extracted_evidence = []
@@ -468,15 +509,20 @@ async def eval_case(
         )
         extracted_issues = issue_tree.issues if hasattr(issue_tree, "issues") else []
         issue_metrics = compute_issue_metrics(
-            extracted_issues, gold_issues, matcher=matcher, judge_client=judge_client,
+            extracted_issues,
+            gold_issues,
+            matcher=matcher,
+            judge_client=judge_client,
         )
         result["issue_metrics"] = issue_metrics
         if verbose:
             print(f"  [Phase 2] Extracted {len(extracted_issues)} issues")
-            print(f"           Recall={issue_metrics['recall']:.1%}  Precision={issue_metrics['precision']:.1%}  F1={issue_metrics['f1']:.1%}")
+            print(
+                f"           Recall={issue_metrics['recall']:.1%}  Precision={issue_metrics['precision']:.1%}  F1={issue_metrics['f1']:.1%}"
+            )
             # Show extracted vs gold titles
-            print(f"  Gold issues:      {[i.get('title','') for i in gold_issues]}")
-            ext_titles = [getattr(i, 'title', '') for i in extracted_issues]
+            print(f"  Gold issues:      {[i.get('title', '') for i in gold_issues]}")
+            ext_titles = [getattr(i, "title", "") for i in extracted_issues]
             print(f"  Extracted issues: {ext_titles}")
     except Exception as exc:
         result["issue_error"] = str(exc)
@@ -504,18 +550,32 @@ async def eval_case(
 # Main
 # ---------------------------------------------------------------------------
 
+
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate engine against gold benchmark cases")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--cases", nargs="+", metavar="CASE_ID", help="Specific case IDs to evaluate")
+    group.add_argument(
+        "--cases", nargs="+", metavar="CASE_ID", help="Specific case IDs to evaluate"
+    )
     group.add_argument("--hard", action="store_true", help="Evaluate hardest 5 cases")
     group.add_argument("--all", action="store_true", help="Evaluate all 20 cases")
-    parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Model name (default: {DEFAULT_MODEL})")
-    parser.add_argument("--output-dir", type=Path, default=_PROJECT_ROOT / "outputs" / "benchmark_eval")
-    parser.add_argument("--matcher", choices=["bigram", "llm-judge"], default="bigram",
-                        help="Matching algorithm: bigram (fast, literal) or llm-judge (semantic, uses API)")
-    parser.add_argument("--match-only", action="store_true",
-                        help="Skip engine runs; re-evaluate saved engine_output.json with chosen --matcher")
+    parser.add_argument(
+        "--model", default=DEFAULT_MODEL, help=f"Model name (default: {DEFAULT_MODEL})"
+    )
+    parser.add_argument(
+        "--output-dir", type=Path, default=_PROJECT_ROOT / "outputs" / "benchmark_eval"
+    )
+    parser.add_argument(
+        "--matcher",
+        choices=["bigram", "llm-judge"],
+        default="bigram",
+        help="Matching algorithm: bigram (fast, literal) or llm-judge (semantic, uses API)",
+    )
+    parser.add_argument(
+        "--match-only",
+        action="store_true",
+        help="Skip engine runs; re-evaluate saved engine_output.json with chosen --matcher",
+    )
     parser.add_argument("--quiet", action="store_true", help="Suppress per-case verbose output")
     args = parser.parse_args()
 
@@ -523,7 +583,11 @@ async def main() -> None:
     if args.hard:
         cases = HARD_CASES
     elif args.all:
-        cases = sorted(d.name for d in BENCHMARKS_DIR.iterdir() if d.is_dir() and d.name.startswith("civil-loan-"))
+        cases = sorted(
+            d.name
+            for d in BENCHMARKS_DIR.iterdir()
+            if d.is_dir() and d.name.startswith("civil-loan-")
+        )
     elif args.cases:
         cases = args.cases
     else:
@@ -543,8 +607,11 @@ async def main() -> None:
     for case_id in cases:
         try:
             r = await eval_case(
-                case_id, model=args.model, verbose=not args.quiet,
-                matcher=args.matcher, judge_client=judge_client,
+                case_id,
+                model=args.model,
+                verbose=not args.quiet,
+                matcher=args.matcher,
+                judge_client=judge_client,
                 match_only=args.match_only,
             )
             results.append(r)
@@ -556,10 +623,12 @@ async def main() -> None:
             sys.exit(1)
 
     # Aggregate summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("SUMMARY")
-    print(f"{'='*60}")
-    print(f"{'Case':<20} {'Ev-R':>6} {'Ev-P':>6} {'Ev-F1':>7} {'Iss-R':>6} {'Iss-P':>6} {'Iss-F1':>7}")
+    print(f"{'=' * 60}")
+    print(
+        f"{'Case':<20} {'Ev-R':>6} {'Ev-P':>6} {'Ev-F1':>7} {'Iss-R':>6} {'Iss-P':>6} {'Iss-F1':>7}"
+    )
     print("-" * 65)
 
     ev_f1s, iss_f1s = [], []
@@ -574,7 +643,9 @@ async def main() -> None:
         iss_f1 = iss.get("f1", 0)
         ev_f1s.append(ev_f1)
         iss_f1s.append(iss_f1)
-        print(f"{r['case_id']:<20} {ev_r:>6.1%} {ev_p:>6.1%} {ev_f1:>7.1%} {iss_r:>6.1%} {iss_p:>6.1%} {iss_f1:>7.1%}")
+        print(
+            f"{r['case_id']:<20} {ev_r:>6.1%} {ev_p:>6.1%} {ev_f1:>7.1%} {iss_r:>6.1%} {iss_p:>6.1%} {iss_f1:>7.1%}"
+        )
 
     print("-" * 65)
     avg_ev_f1 = sum(ev_f1s) / len(ev_f1s) if ev_f1s else 0

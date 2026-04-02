@@ -57,14 +57,10 @@ def build_layer1(
     neutral_conclusion = _build_neutral_conclusion(adversarial_result, issue_tree)
 
     # B. Winning move
-    winning_move = _build_winning_move(
-        adversarial_result, evidence_index, issue_tree, attack_chain
-    )
+    winning_move = _build_winning_move(adversarial_result, evidence_index, issue_tree, attack_chain)
 
     # C. Blocking conditions
-    blocking_conditions = _build_blocking_conditions(
-        adversarial_result, scenario_tree
-    )
+    blocking_conditions = _build_blocking_conditions(adversarial_result, scenario_tree)
 
     cover = CoverSummary(
         neutral_conclusion=neutral_conclusion,
@@ -100,10 +96,7 @@ def _build_neutral_conclusion(adversarial_result, issue_tree) -> str:
 
     # Fallback: count issues and summarize
     n_issues = len(issue_tree.issues)
-    n_open = sum(
-        1 for i in issue_tree.issues
-        if hasattr(i, "status") and i.status.value == "open"
-    )
+    n_open = sum(1 for i in issue_tree.issues if hasattr(i, "status") and i.status.value == "open")
     return f"\u672c\u6848\u6d89\u53ca {n_issues} \u4e2a\u4e89\u70b9\uff0c\u5176\u4e2d {n_open} \u4e2a\u5c1a\u672a\u89e3\u51b3\uff0c\u53cc\u65b9\u5728\u6838\u5fc3\u4e8b\u5b9e\u8ba4\u5b9a\u4e0a\u5b58\u5728\u5206\u6b67\u3002"
 
 
@@ -148,9 +141,7 @@ def _build_winning_move(
     issue_id = getattr(top_arg, "issue_id", "")
 
     # Try to find the most-cited evidence across top arguments
-    evidence_title = _find_dominant_evidence(
-        favored_args[:3], evidence_index
-    )
+    evidence_title = _find_dominant_evidence(favored_args[:3], evidence_index)
 
     if evidence_title:
         return f"{evidence_title} \u2014\u2014 {position}"
@@ -238,7 +229,9 @@ def _build_blocking_conditions(
                     f"\u5426\u5219{no_out}"
                 )
             elif cond:
-                conditions.append(f"\u82e5\u201c{cond}\u201d\u88ab\u63a8\u7ffb\uff0c\u5219\u7ed3\u8bba\u53ef\u80fd\u53cd\u8f6c")
+                conditions.append(
+                    f"\u82e5\u201c{cond}\u201d\u88ab\u63a8\u7ffb\uff0c\u5219\u7ed3\u8bba\u53ef\u80fd\u53cd\u8f6c"
+                )
 
             if len(conditions) >= 4:
                 break
@@ -256,7 +249,9 @@ def _build_blocking_conditions(
                 desc = str(issue.issue_id)
 
             if desc:
-                conditions.append(f"\u82e5\u201c{desc}\u201d\u5f97\u5230\u89e3\u51b3\uff0c\u5219\u7ed3\u8bba\u53ef\u80fd\u53d8\u5316")
+                conditions.append(
+                    f"\u82e5\u201c{desc}\u201d\u5f97\u5230\u89e3\u51b3\uff0c\u5219\u7ed3\u8bba\u53ef\u80fd\u53d8\u5316"
+                )
 
             if len(conditions) >= 4:
                 break
@@ -311,9 +306,7 @@ def render_layer1_md(layer1: Layer1Cover, perspective: str = "neutral") -> list[
         for ev in layer1.timeline:
             disputed_marker = "\u26a0\ufe0f" if ev.disputed else ""
             source = ev.source or "\u2014"
-            lines.append(
-                f"| {ev.date} | {ev.event} | {source} | {disputed_marker} |"
-            )
+            lines.append(f"| {ev.date} | {ev.event} | {source} | {disputed_marker} |")
     else:
         lines.append("\uff08\u65e0\u65f6\u95f4\u7ebf\u6570\u636e\uff09")
     lines.append("")
@@ -325,9 +318,7 @@ def render_layer1_md(layer1: Layer1Cover, perspective: str = "neutral") -> list[
         lines.append("| \u8bc1\u636e | \u5c42\u7ea7 | \u7406\u7531 |")
         lines.append("|------|------|------|")
         for card in layer1.evidence_priorities:
-            lines.append(
-                f"| {card.title} | {card.priority.value} | {card.reason} |"
-            )
+            lines.append(f"| {card.title} | {card.priority.value} | {card.reason} |")
     else:
         lines.append("\uff08\u65e0\u8bc1\u636e\u4f18\u5148\u7ea7\u6570\u636e\uff09")
     lines.append("")

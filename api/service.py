@@ -267,7 +267,11 @@ class CaseStore:
             record.artifacts.setdefault("report.md", record.report_markdown)
 
         report_ref = meta.get("report_docx_ref") or artifact_refs.get("report.docx")
-        report_path = _resolve_workspace_ref(wm, report_ref) if report_ref else wm.artifact_path("report.docx")
+        report_path = (
+            _resolve_workspace_ref(wm, report_ref)
+            if report_ref
+            else wm.artifact_path("report.docx")
+        )
         if report_path.exists():
             record.report_path = report_path
 
@@ -829,9 +833,7 @@ async def run_analysis(record: CaseRecord) -> None:
                     }
                 )
             except Exception:
-                logger.exception(
-                    "Failed to persist analysis artifacts for case %s", record.case_id
-                )
+                logger.exception("Failed to persist analysis artifacts for case %s", record.case_id)
                 raise
 
         record.log("[分析] 完成 ✓")
@@ -860,7 +862,9 @@ class ScenarioService:
         self._outputs_dir = outputs_dir
         self._results: dict[str, dict] = {}
 
-    async def run(self, run_id: str, change_set: list[dict], case_type: Optional[str] = None) -> dict:
+    async def run(
+        self, run_id: str, change_set: list[dict], case_type: Optional[str] = None
+    ) -> dict:
         """从 outputs/{run_id}/ 加载 baseline，执行场景推演，返回序列化的 ScenarioResult。"""
         from engines.simulation_run.schemas import ChangeItem, ScenarioInput
         from engines.simulation_run.simulator import ScenarioSimulator, load_baseline

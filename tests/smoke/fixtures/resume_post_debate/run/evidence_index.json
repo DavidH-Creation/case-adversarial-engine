@@ -1,0 +1,44 @@
+{
+  "case_id": "case-resume-smoke",
+  "evidence": [
+    {
+      "evidence_id": "EV-001",
+      "case_id": "case-resume-smoke",
+      "owner_party_id": "P-001",
+      "title": "Original IOU",
+      "source": "plaintiff_material_1",
+      "summary": "The IOU states the amount and contains signatures.",
+      "evidence_type": "documentary",
+      "target_fact_ids": [
+        "FACT-001"
+      ],
+      "target_issue_ids": [
+        "ISS-001"
+      ],
+      "access_domain": "admitted_record",
+      "status": "admitted_for_discussion",
+      "submitted_by_party_id": null,
+      "challenged_by_party_ids": [],
+      "admissibility_notes": null,
+      "admissibility_risk": null,
+      "authenticity_risk": null,
+      "relevance_score": null,
+      "probative_value": null,
+      "legality_risk": null,
+      "vulnerability": null,
+      "evidence_weight_scored": false,
+      "is_copy_only": false,
+      "admissibility_score": 1.0,
+      "admissibility_challenges": [],
+      "exclusion_impact": null,
+      "admissibility_status": "clear",
+      "supports": [],
+      "is_attacked_by": [],
+      "stability_score": null,
+      "support_strength": null,
+      "counter_evidence_strength": null,
+      "dispute_ratio": null
+    }
+  ],
+  "extraction_metadata": null
+}

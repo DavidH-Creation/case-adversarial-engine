@@ -2,6 +2,7 @@
 关键词提取器 — 用 LLM 从案件数据提取搜索关键词。
 Keyword extractor — uses LLM to extract search keywords from case data.
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,12 +41,34 @@ _TOOL_SCHEMA: dict = {
     "type": "object",
     "properties": {
         "cause_of_action": {"type": "string", "description": "案由（如：民间借贷纠纷）"},
-        "legal_relations": {"type": "array", "items": {"type": "string"}, "description": "核心法律关系列表"},
-        "dispute_focuses": {"type": "array", "items": {"type": "string"}, "description": "主要争议焦点列表"},
-        "relevant_statutes": {"type": "array", "items": {"type": "string"}, "description": "相关法条列表"},
-        "search_terms": {"type": "array", "items": {"type": "string"}, "description": "搜索关键词列表（3-8个）"},
+        "legal_relations": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "核心法律关系列表",
+        },
+        "dispute_focuses": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "主要争议焦点列表",
+        },
+        "relevant_statutes": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "相关法条列表",
+        },
+        "search_terms": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "搜索关键词列表（3-8个）",
+        },
     },
-    "required": ["cause_of_action", "legal_relations", "dispute_focuses", "relevant_statutes", "search_terms"],
+    "required": [
+        "cause_of_action",
+        "legal_relations",
+        "dispute_focuses",
+        "relevant_statutes",
+        "search_terms",
+    ],
 }
 
 

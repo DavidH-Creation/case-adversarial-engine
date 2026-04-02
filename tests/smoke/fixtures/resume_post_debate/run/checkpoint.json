@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "run-resume-smoke",
+  "last_completed_step": "step_3_5_post_debate",
+  "artifact_paths": {
+    "result": "result.json",
+    "evidence_index": "evidence_index.json",
+    "issue_tree": "issue_tree.json",
+    "ranked_issues": "ranked_issues.json",
+    "decision_tree": "decision_tree.json",
+    "attack_chain": "attack_chain.json",
+    "amount_report": "amount_report.json",
+    "exec_summary": "exec_summary.json",
+    "action_rec": "action_rec.json"
+  },
+  "timestamp": "2026-04-03T00:00:00Z"
+}

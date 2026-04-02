@@ -1,0 +1,55 @@
+{
+  "case_id": "case-resume-smoke",
+  "run_id": "run-resume-smoke",
+  "job_id": "",
+  "rounds": [
+    {
+      "round_number": 1,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "OUT-001",
+          "case_id": "case-resume-smoke",
+          "run_id": "run-resume-smoke",
+          "state_id": "STATE-001",
+          "phase": "opening",
+          "round_index": 0,
+          "agent_role_code": "plaintiff_agent",
+          "owner_party_id": "P-001",
+          "issue_ids": [
+            "ISS-001"
+          ],
+          "title": "Plaintiff opening",
+          "body": "The plaintiff argues that the defendant must repay the principal.",
+          "evidence_citations": [
+            "EV-001"
+          ],
+          "statement_class": "fact",
+          "risk_flags": [],
+          "created_at": "2026-04-03T00:00:00Z"
+        }
+      ]
+    }
+  ],
+  "plaintiff_best_arguments": [],
+  "defendant_best_defenses": [],
+  "unresolved_issues": [],
+  "evidence_conflicts": [],
+  "missing_evidence_report": [],
+  "summary": {
+    "plaintiff_strongest_arguments": [
+      {
+        "issue_id": "ISS-001",
+        "position": "The IOU and transfer record corroborate the loan relationship.",
+        "evidence_ids": [
+          "EV-001"
+        ],
+        "reasoning": "The core documentary evidence is authentic and directly tied to the issue."
+      }
+    ],
+    "defendant_strongest_defenses": [],
+    "unresolved_issues": [],
+    "missing_evidence_report": [],
+    "overall_assessment": "The current record favors the plaintiff on loan formation."
+  }
+}

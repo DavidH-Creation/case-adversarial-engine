@@ -34,28 +34,31 @@ class MockLLMClient:
 # 测试数据
 # ---------------------------------------------------------------------------
 
-MOCK_RANKER_RESPONSE = json.dumps({
-    "ranked_cases": [
-        {
-            "case_number": "（2024）最高法民再1号",
-            "fact_similarity": 0.8,
-            "legal_relation_similarity": 0.9,
-            "dispute_focus_similarity": 0.7,
-            "judgment_reference_value": 0.85,
-            "overall": 0.81,
-            "analysis": "本案与当前案件均涉及民间借贷利率争议，事实基础高度相似。",
-        },
-        {
-            "case_number": "（2024）沪02民终3号",
-            "fact_similarity": 0.6,
-            "legal_relation_similarity": 0.7,
-            "dispute_focus_similarity": 0.5,
-            "judgment_reference_value": 0.6,
-            "overall": 0.60,
-            "analysis": "均涉及借条效力认定，但争议焦点有所不同。",
-        },
-    ]
-}, ensure_ascii=False)
+MOCK_RANKER_RESPONSE = json.dumps(
+    {
+        "ranked_cases": [
+            {
+                "case_number": "（2024）最高法民再1号",
+                "fact_similarity": 0.8,
+                "legal_relation_similarity": 0.9,
+                "dispute_focus_similarity": 0.7,
+                "judgment_reference_value": 0.85,
+                "overall": 0.81,
+                "analysis": "本案与当前案件均涉及民间借贷利率争议，事实基础高度相似。",
+            },
+            {
+                "case_number": "（2024）沪02民终3号",
+                "fact_similarity": 0.6,
+                "legal_relation_similarity": 0.7,
+                "dispute_focus_similarity": 0.5,
+                "judgment_reference_value": 0.6,
+                "overall": 0.60,
+                "analysis": "均涉及借条效力认定，但争议焦点有所不同。",
+            },
+        ]
+    },
+    ensure_ascii=False,
+)
 
 SAMPLE_CANDIDATES = [
     CaseIndexEntry(

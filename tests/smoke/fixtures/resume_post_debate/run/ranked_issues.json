@@ -1,0 +1,44 @@
+{
+  "case_id": "case-resume-smoke",
+  "run_id": "run-resume-smoke",
+  "job_id": null,
+  "issues": [
+    {
+      "issue_id": "ISS-001",
+      "case_id": "case-resume-smoke",
+      "title": "Whether the loan agreement was formed",
+      "issue_type": "factual",
+      "parent_issue_id": null,
+      "related_claim_ids": [],
+      "related_defense_ids": [],
+      "evidence_ids": [
+        "EV-001"
+      ],
+      "burden_ids": [],
+      "fact_propositions": [],
+      "status": "open",
+      "created_at": null,
+      "description": null,
+      "priority": null,
+      "outcome_impact": "high",
+      "impact_targets": [],
+      "proponent_evidence_strength": null,
+      "opponent_attack_strength": null,
+      "recommended_action": null,
+      "recommended_action_basis": null,
+      "importance_score": null,
+      "swing_score": null,
+      "evidence_strength_gap": null,
+      "dependency_depth": null,
+      "credibility_impact": null,
+      "composite_score": null,
+      "issue_category": null,
+      "depends_on": [],
+      "decisive_sub_question": null
+    }
+  ],
+  "burdens": [],
+  "claim_issue_mapping": [],
+  "defense_issue_mapping": [],
+  "extraction_metadata": null
+}

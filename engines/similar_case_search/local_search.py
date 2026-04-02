@@ -4,6 +4,7 @@ Local case index search — keyword matching against a local JSON index file.
 
 不需要网络请求，纯本地计算。支持案由精确匹配 + 关键词模糊匹配。
 """
+
 from __future__ import annotations
 
 import json

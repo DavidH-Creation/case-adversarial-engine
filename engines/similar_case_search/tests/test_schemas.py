@@ -2,6 +2,7 @@
 类案搜索数据模型测试。
 Tests for similar case search data models.
 """
+
 from __future__ import annotations
 
 import pytest

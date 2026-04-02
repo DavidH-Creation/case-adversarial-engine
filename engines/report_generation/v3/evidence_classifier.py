@@ -44,7 +44,7 @@ _GREEN_TYPES = {
 
 # Evidence types from screenshots or single-party sources
 _YELLOW_TYPES = {
-    "electronic_data",   # 微信截图、短信、App记录
+    "electronic_data",  # 微信截图、短信、App记录
     "witness_statement",  # 证人证言
 }
 
@@ -55,14 +55,29 @@ _RED_TYPES = {
 
 # Source keywords indicating third-party verification
 _GREEN_SOURCE_KEYWORDS = {
-    "银行", "bank", "公证", "notary", "法院", "court",
-    "工商", "税务", "公安",
+    "银行",
+    "bank",
+    "公证",
+    "notary",
+    "法院",
+    "court",
+    "工商",
+    "税务",
+    "公安",
 }
 
 # Source keywords indicating single-party / screenshot
 _YELLOW_SOURCE_KEYWORDS = {
-    "微信", "wechat", "支付宝", "alipay", "短信", "sms",
-    "截图", "screenshot", "朋友圈", "qq",
+    "微信",
+    "wechat",
+    "支付宝",
+    "alipay",
+    "短信",
+    "sms",
+    "截图",
+    "screenshot",
+    "朋友圈",
+    "qq",
 }
 
 
@@ -204,7 +219,9 @@ def classify_all_evidence(
             classify_evidence_risk(
                 evidence_id=ev.evidence_id,
                 title=ev.title,
-                evidence_type=ev.evidence_type.value if hasattr(ev.evidence_type, "value") else str(ev.evidence_type),
+                evidence_type=ev.evidence_type.value
+                if hasattr(ev.evidence_type, "value")
+                else str(ev.evidence_type),
                 source=ev.source,
                 is_copy_only=getattr(ev, "is_copy_only", False),
                 is_challenged=bool(getattr(ev, "challenged_by_party_ids", [])),
@@ -231,11 +248,7 @@ def _get_l1_issue_ids(issue_tree) -> set[str]:
     top-level issues that directly control case outcomes.
     """
     issues = getattr(issue_tree, "issues", [])
-    return {
-        iss.issue_id
-        for iss in issues
-        if getattr(iss, "parent_issue_id", None) is None
-    }
+    return {iss.issue_id for iss in issues if getattr(iss, "parent_issue_id", None) is None}
 
 
 def _get_issue_title_map(issue_tree) -> dict[str, str]:
@@ -264,8 +277,7 @@ def _targets_only_cost_issues(
     if not target_issue_ids:
         return False
     return all(
-        any(kw in issue_title_map.get(iid, "") for kw in _COST_KEYWORDS)
-        for iid in target_issue_ids
+        any(kw in issue_title_map.get(iid, "") for kw in _COST_KEYWORDS) for iid in target_issue_ids
     )
 
 
@@ -390,9 +402,7 @@ def classify_evidence_priority(
         )
 
     # Does not target any L1 issue directly — supporting
-    targeted_titles = [
-        issue_title_map.get(iid, iid) for iid in target_issue_ids[:3]
-    ]
+    targeted_titles = [issue_title_map.get(iid, iid) for iid in target_issue_ids[:3]]
     suffix = "等" if len(target_issue_ids) > 3 else ""
     return EvidencePriorityCard(
         evidence_id=ev_id,

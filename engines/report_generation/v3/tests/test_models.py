@@ -366,7 +366,9 @@ class TestCoverSummaryV31:
     def test_backward_compat(self):
         """Old plaintiff/defendant summaries still work."""
         ps = PerspectivePlaintiffSummary(
-            top3_strengths=["s1"], top2_dangers=["d1"], top3_actions=["a1"],
+            top3_strengths=["s1"],
+            top2_dangers=["d1"],
+            top3_actions=["a1"],
         )
         cs = CoverSummary(
             neutral_conclusion="Test",

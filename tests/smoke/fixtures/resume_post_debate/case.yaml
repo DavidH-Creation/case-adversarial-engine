@@ -1,0 +1,29 @@
+case_id: case-resume-smoke
+case_slug: case-resume-smoke
+case_type: civil_loan
+parties:
+  plaintiff:
+    party_id: P-001
+    name: Alice
+  defendant:
+    party_id: D-001
+    name: Bob
+materials:
+  plaintiff:
+    - source_id: plaintiff_material_1
+      text: Original IOU showing the loan amount and signatures.
+      metadata: {}
+  defendant:
+    - source_id: defendant_material_1
+      text: Defendant says the transfer was a gift.
+      metadata: {}
+claims:
+  - claim_id: CLM-001
+    claim_type: principal
+    claim_text: Repay the principal in the amount of 100000.
+defenses:
+  - defense_id: DEF-001
+    defense_text: The transfer was a gift.
+summary:
+  - [Case Type, Civil Loan]
+  - [Core Dispute, Whether the transfer was a loan or a gift]

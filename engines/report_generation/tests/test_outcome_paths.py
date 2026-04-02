@@ -357,8 +357,8 @@ class TestVerdictBlockActive:
         result = build_case_outcome_paths(tree, verdict_block_active=True)
         assert result.lose_path.risk_points == []
 
-    def test_verdict_block_active_false_risk_points_populated(self) -> None:
-        """verdict_block_active=False（默认）→ risk_points 包含 probability_rationale。"""
+    def test_verdict_block_active_false_still_keeps_risk_points_empty(self) -> None:
+        """verdict_block_active=False is now a compatibility no-op for risk_points."""
         rationale = "证据链完整，胜诉概率高"
         tree = _make_decision_tree(
             [
@@ -366,7 +366,7 @@ class TestVerdictBlockActive:
             ]
         )
         result = build_case_outcome_paths(tree, verdict_block_active=False)
-        assert rationale in result.win_path.risk_points
+        assert result.win_path.risk_points == []
 
 
 # ---------------------------------------------------------------------------

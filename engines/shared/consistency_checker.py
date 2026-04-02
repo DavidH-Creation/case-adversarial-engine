@@ -395,3 +395,46 @@ class ConsistencyChecker:
                             break
 
         return ok
+
+    def _check_recommendation_consistency(
+        self,
+        decision_tree: Optional[DecisionPathTree],
+        recommendation: Optional[ActionRecommendation],
+        failures: list[str],
+        sections_to_regen: list[str],
+    ) -> bool:
+        """Check recommendation consistency without exposing probability wording."""
+        if decision_tree is None or recommendation is None:
+            return True
+
+        most_likely = None
+        if decision_tree.most_likely_path:
+            for path in decision_tree.paths:
+                if path.path_id == decision_tree.most_likely_path:
+                    most_likely = path
+                    break
+
+        if most_likely is None or most_likely.party_favored != "defendant":
+            return True
+
+        headline = recommendation.strategic_headline or ""
+        overconfident_signals = [
+            "鍏ㄩ",
+            "绋虫嬁",
+            "蹇呰儨",
+            "纭繚鑾疯禂",
+            "瀹屽叏鏀寔",
+            "full recovery",
+            "certain win",
+        ]
+        for signal in overconfident_signals:
+            if signal in headline:
+                failures.append(
+                    "推荐一致性冲突：首位路径对被告更有利"
+                    f"（path={most_likely.path_id}, favored={most_likely.party_favored}），"
+                    f"但 strategic_headline 仍包含“{signal}”。"
+                )
+                sections_to_regen.append("action_recommendation")
+                return False
+
+        return True

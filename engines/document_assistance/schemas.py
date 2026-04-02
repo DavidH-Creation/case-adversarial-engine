@@ -107,9 +107,7 @@ class DefenseStatement(BaseModel):
         description="文书中引用的证据 ID 列表（强制非空）/ Evidence IDs cited (mandatory non-empty)"
     )
 
-    @field_validator(
-        "denial_items", "defense_claim_items", "counter_prayer_items", mode="before"
-    )
+    @field_validator("denial_items", "defense_claim_items", "counter_prayer_items", mode="before")
     @classmethod
     def _normalize_items(cls, v: list) -> list[dict]:
         return _normalize_numbered_items(v)

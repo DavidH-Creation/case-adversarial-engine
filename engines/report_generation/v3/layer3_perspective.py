@@ -54,32 +54,36 @@ def build_layer3(
     outputs: list[PerspectiveOutput] = []
 
     if perspective in ("plaintiff", "neutral"):
-        outputs.append(_build_plaintiff_output(
-            adversarial_result,
-            action_rec,
-            attack_chain,
-            hearing_order,
-            issue_tree=issue_tree,
-            evidence_index=evidence_index,
-            exec_summary=exec_summary,
-            evidence_cards=evidence_cards,
-            scenario_tree=scenario_tree,
-            unified_electronic_strategy=unified_electronic_strategy,
-        ))
+        outputs.append(
+            _build_plaintiff_output(
+                adversarial_result,
+                action_rec,
+                attack_chain,
+                hearing_order,
+                issue_tree=issue_tree,
+                evidence_index=evidence_index,
+                exec_summary=exec_summary,
+                evidence_cards=evidence_cards,
+                scenario_tree=scenario_tree,
+                unified_electronic_strategy=unified_electronic_strategy,
+            )
+        )
 
     if perspective in ("defendant", "neutral"):
-        outputs.append(_build_defendant_output(
-            adversarial_result,
-            attack_chain,
-            defense_chain,
-            action_rec,
-            issue_tree=issue_tree,
-            evidence_index=evidence_index,
-            exec_summary=exec_summary,
-            evidence_cards=evidence_cards,
-            scenario_tree=scenario_tree,
-            unified_electronic_strategy=unified_electronic_strategy,
-        ))
+        outputs.append(
+            _build_defendant_output(
+                adversarial_result,
+                attack_chain,
+                defense_chain,
+                action_rec,
+                issue_tree=issue_tree,
+                evidence_index=evidence_index,
+                exec_summary=exec_summary,
+                evidence_cards=evidence_cards,
+                scenario_tree=scenario_tree,
+                unified_electronic_strategy=unified_electronic_strategy,
+            )
+        )
 
     return Layer3Perspective(outputs=outputs)
 
@@ -90,8 +94,14 @@ def build_layer3(
 
 
 def _build_plaintiff_output(
-    adversarial_result, action_rec, attack_chain, hearing_order,
-    *, issue_tree=None, evidence_index=None, exec_summary=None,
+    adversarial_result,
+    action_rec,
+    attack_chain,
+    hearing_order,
+    *,
+    issue_tree=None,
+    evidence_index=None,
+    exec_summary=None,
     evidence_cards: Optional[list] = None,
     scenario_tree: Optional[ConditionalScenarioTree] = None,
     unified_electronic_strategy: str = "",
@@ -121,7 +131,10 @@ def _build_plaintiff_output(
     # --- 5. 过度主张边界 (over_assertion_boundaries) -----------------------
     # Source: unresolved_issues + weak evidence indicators
     _fill_over_assertion_boundaries_plaintiff(
-        output, adversarial_result, issue_tree, evidence_index,
+        output,
+        adversarial_result,
+        issue_tree,
+        evidence_index,
     )
 
     return output
@@ -133,8 +146,14 @@ def _build_plaintiff_output(
 
 
 def _build_defendant_output(
-    adversarial_result, attack_chain, defense_chain, action_rec,
-    *, issue_tree=None, evidence_index=None, exec_summary=None,
+    adversarial_result,
+    attack_chain,
+    defense_chain,
+    action_rec,
+    *,
+    issue_tree=None,
+    evidence_index=None,
+    exec_summary=None,
     evidence_cards: Optional[list] = None,
     scenario_tree: Optional[ConditionalScenarioTree] = None,
     unified_electronic_strategy: str = "",
@@ -161,7 +180,10 @@ def _build_defendant_output(
 
     # --- 5. 过度主张边界 ---------------------------------------------------
     _fill_over_assertion_boundaries_defendant(
-        output, adversarial_result, issue_tree, evidence_index,
+        output,
+        adversarial_result,
+        issue_tree,
+        evidence_index,
     )
 
     return output
@@ -173,7 +195,10 @@ def _build_defendant_output(
 
 
 def _fill_supplement_checklist_plaintiff(
-    output: PerspectiveOutput, action_rec, evidence_index, issue_tree,
+    output: PerspectiveOutput,
+    action_rec,
+    evidence_index,
+    issue_tree,
 ) -> None:
     """补证清单 for plaintiff: what concrete evidence to obtain."""
     # Primary source: action_rec.evidence_supplement_priorities
@@ -193,8 +218,7 @@ def _fill_supplement_checklist_plaintiff(
             if "plaintiff" in owner.lower() or "原告" in owner:
                 if adm < 0.7:
                     gap_str = (
-                        f"针对{ev.title}（可采性{adm:.0%}）："
-                        f"补强{_evidence_reinforce_hint(ev)}"
+                        f"针对{ev.title}（可采性{adm:.0%}）：补强{_evidence_reinforce_hint(ev)}"
                     )
                     output.evidence_supplement_checklist.append(gap_str)
             if len(output.evidence_supplement_checklist) >= 5:
@@ -202,23 +226,27 @@ def _fill_supplement_checklist_plaintiff(
 
 
 def _fill_cross_exam_plaintiff(
-    output: PerspectiveOutput, evidence_cards: Optional[list], evidence_index,
+    output: PerspectiveOutput,
+    evidence_cards: Optional[list],
+    evidence_index,
 ) -> None:
     """质证要点 for plaintiff: challenge each defendant core evidence."""
     defendant_cards = _get_opponent_cards(
-        evidence_cards, evidence_index, opponent_keywords=("defendant", "被告"),
+        evidence_cards,
+        evidence_index,
+        opponent_keywords=("defendant", "被告"),
     )
     for card in defendant_cards[:5]:
         attack = getattr(card, "q4_best_attack", "")
         title = _card_title(card, evidence_index)
         if attack:
-            output.cross_examination_points.append(
-                f"针对「{title}」：{attack}"
-            )
+            output.cross_examination_points.append(f"针对「{title}」：{attack}")
 
 
 def _fill_trial_questions_plaintiff(
-    output: PerspectiveOutput, adversarial_result, issue_tree,
+    output: PerspectiveOutput,
+    adversarial_result,
+    issue_tree,
 ) -> None:
     """庭审发问 for plaintiff: questions targeting defendant factual contradictions."""
     q_num = 0
@@ -240,13 +268,14 @@ def _fill_trial_questions_plaintiff(
             # Look for issues where defendant has burden but evidence is thin
             if _issue_has_defendant_burden(iss, issue_tree):
                 q_num += 1
-                output.trial_questions.append(
-                    f"问被告（{iss.title}）：请提供支持该抗辩的具体证据"
-                )
+                output.trial_questions.append(f"问被告（{iss.title}）：请提供支持该抗辩的具体证据")
 
 
 def _fill_over_assertion_boundaries_plaintiff(
-    output: PerspectiveOutput, adversarial_result, issue_tree, evidence_index,
+    output: PerspectiveOutput,
+    adversarial_result,
+    issue_tree,
+    evidence_index,
 ) -> None:
     """过度主张边界 for plaintiff: what NOT to over-claim."""
     if adversarial_result:
@@ -280,7 +309,10 @@ def _fill_over_assertion_boundaries_plaintiff(
 
 
 def _fill_supplement_checklist_defendant(
-    output: PerspectiveOutput, action_rec, evidence_index, issue_tree,
+    output: PerspectiveOutput,
+    action_rec,
+    evidence_index,
+    issue_tree,
 ) -> None:
     """补证清单 for defendant: evidence to gather for defense."""
     # From action_rec — predict what plaintiff will supplement, then pre-empt
@@ -299,8 +331,7 @@ def _fill_supplement_checklist_defendant(
             if "defendant" in owner.lower() or "被告" in owner:
                 if adm < 0.7:
                     gap_str = (
-                        f"针对{ev.title}（可采性{adm:.0%}）："
-                        f"补强{_evidence_reinforce_hint(ev)}"
+                        f"针对{ev.title}（可采性{adm:.0%}）：补强{_evidence_reinforce_hint(ev)}"
                     )
                     output.evidence_supplement_checklist.append(gap_str)
             if len(output.evidence_supplement_checklist) >= 5:
@@ -308,23 +339,27 @@ def _fill_supplement_checklist_defendant(
 
 
 def _fill_cross_exam_defendant(
-    output: PerspectiveOutput, evidence_cards: Optional[list], evidence_index,
+    output: PerspectiveOutput,
+    evidence_cards: Optional[list],
+    evidence_index,
 ) -> None:
     """质证要点 for defendant: challenge each plaintiff core evidence."""
     plaintiff_cards = _get_opponent_cards(
-        evidence_cards, evidence_index, opponent_keywords=("plaintiff", "原告"),
+        evidence_cards,
+        evidence_index,
+        opponent_keywords=("plaintiff", "原告"),
     )
     for card in plaintiff_cards[:5]:
         attack = getattr(card, "q4_best_attack", "")
         title = _card_title(card, evidence_index)
         if attack:
-            output.cross_examination_points.append(
-                f"针对「{title}」：{attack}"
-            )
+            output.cross_examination_points.append(f"针对「{title}」：{attack}")
 
 
 def _fill_trial_questions_defendant(
-    output: PerspectiveOutput, adversarial_result, issue_tree,
+    output: PerspectiveOutput,
+    adversarial_result,
+    issue_tree,
 ) -> None:
     """庭审发问 for defendant: questions targeting plaintiff factual contradictions."""
     q_num = 0
@@ -344,13 +379,14 @@ def _fill_trial_questions_defendant(
                 break
             if _issue_has_plaintiff_burden(iss, issue_tree):
                 q_num += 1
-                output.trial_questions.append(
-                    f"问原告（{iss.title}）：请提供支持该主张的直接证据"
-                )
+                output.trial_questions.append(f"问原告（{iss.title}）：请提供支持该主张的直接证据")
 
 
 def _fill_over_assertion_boundaries_defendant(
-    output: PerspectiveOutput, adversarial_result, issue_tree, evidence_index,
+    output: PerspectiveOutput,
+    adversarial_result,
+    issue_tree,
+    evidence_index,
 ) -> None:
     """过度主张边界 for defendant: what NOT to over-claim."""
     if adversarial_result:
@@ -393,7 +429,8 @@ def _fill_contingency_plans(
     node_map = {n.node_id: n for n in scenario_tree.nodes}
 
     def _collect_contingencies(
-        node_id: str, depth: int = 0,
+        node_id: str,
+        depth: int = 0,
     ) -> list[str]:
         if depth > 4:
             return []
@@ -403,10 +440,7 @@ def _fill_contingency_plans(
 
         items: list[str] = []
         if node.yes_outcome and node.no_outcome:
-            items.append(
-                f"若{node.condition} → {node.yes_outcome}；"
-                f"否则 → {node.no_outcome}"
-            )
+            items.append(f"若{node.condition} → {node.yes_outcome}；否则 → {node.no_outcome}")
         elif node.yes_outcome:
             items.append(f"若{node.condition} → {node.yes_outcome}")
         elif node.no_outcome:
@@ -561,17 +595,21 @@ def render_layer3_md(layer3: Layer3Perspective, perspective: str = "neutral") ->
 
     for output in layer3.outputs:
         if output.perspective == "plaintiff":
-            lines.extend(_render_perspective_md(
-                output,
-                title="原告策略「建议」",
-                ask_target="被告",
-            ))
+            lines.extend(
+                _render_perspective_md(
+                    output,
+                    title="原告策略「建议」",
+                    ask_target="被告",
+                )
+            )
         elif output.perspective == "defendant":
-            lines.extend(_render_perspective_md(
-                output,
-                title="被告策略「建议」",
-                ask_target="原告",
-            ))
+            lines.extend(
+                _render_perspective_md(
+                    output,
+                    title="被告策略「建议」",
+                    ask_target="原告",
+                )
+            )
 
     return lines
 

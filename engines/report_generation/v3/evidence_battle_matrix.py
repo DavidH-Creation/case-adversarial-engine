@@ -270,9 +270,7 @@ def _build_failure_impact(evidence, issue_tree) -> str:
     if affected_issues:
         for issue in getattr(issue_tree, "issues", []):
             if issue.issue_id in affected_issues:
-                impacts.append(
-                    f"争点「{issue.title}」({issue.issue_id}) 结论需重新评估"
-                )
+                impacts.append(f"争点「{issue.title}」({issue.issue_id}) 结论需重新评估")
 
     # Check exclusion impact
     excl = getattr(evidence, "exclusion_impact", None)
@@ -315,9 +313,7 @@ def _extract_unified_electronic_strategy(
 
     # Threshold: 3+ occurrences, or majority if fewer than 6 electronic items
     threshold = min(3, max(1, len(all_electronic_strategies) // 2 + 1))
-    common_actions = {
-        action for action, count in action_counter.items() if count >= threshold
-    }
+    common_actions = {action for action, count in action_counter.items() if count >= threshold}
 
     if not common_actions:
         return "", set()
@@ -388,9 +384,7 @@ def build_evidence_cards(
 
     for ev in evidence_index.evidence:
         ev_type_str = (
-            ev.evidence_type.value
-            if hasattr(ev.evidence_type, "value")
-            else str(ev.evidence_type)
+            ev.evidence_type.value if hasattr(ev.evidence_type, "value") else str(ev.evidence_type)
         )
 
         priority_card = classify_evidence_priority(ev, issue_tree)
@@ -437,51 +431,73 @@ def build_evidence_cards(
         if ev_type_str == "electronic_data" and q5_reinforce and q5_reinforce != _INSUFFICIENT_MSG:
             electronic_strategies.append(q5_reinforce)
 
-        evidence_data.append((
-            ev, priority_card, ev_type_str,
-            q1_what, q2_target, q3_key_risk, q4_best_attack,
-            q5_reinforce, q6_failure_impact, observable,
-        ))
+        evidence_data.append(
+            (
+                ev,
+                priority_card,
+                ev_type_str,
+                q1_what,
+                q2_target,
+                q3_key_risk,
+                q4_best_attack,
+                q5_reinforce,
+                q6_failure_impact,
+                observable,
+            )
+        )
 
     # Extract unified electronic strategy
-    unified_strategy, common_actions = _extract_unified_electronic_strategy(
-        electronic_strategies
-    )
+    unified_strategy, common_actions = _extract_unified_electronic_strategy(electronic_strategies)
 
     # Second pass: build cards, removing common electronic actions from per-card strategies
     for (
-        ev, priority_card, ev_type_str,
-        q1_what, q2_target, q3_key_risk, q4_best_attack,
-        q5_reinforce, q6_failure_impact, observable,
+        ev,
+        priority_card,
+        ev_type_str,
+        q1_what,
+        q2_target,
+        q3_key_risk,
+        q4_best_attack,
+        q5_reinforce,
+        q6_failure_impact,
+        observable,
     ) in evidence_data:
         priority = priority_card.priority
 
         # Remove common electronic actions from per-card reinforce strategy
-        if ev_type_str == "electronic_data" and common_actions and q5_reinforce != _INSUFFICIENT_MSG:
+        if (
+            ev_type_str == "electronic_data"
+            and common_actions
+            and q5_reinforce != _INSUFFICIENT_MSG
+        ):
             q5_reinforce = _remove_common_actions(q5_reinforce, common_actions)
 
         if priority == EvidencePriority.core:
-            cards.append(EvidenceKeyCard(
-                evidence_id=ev.evidence_id,
-                q1_what=q1_what,
-                q2_target=q2_target,
-                q3_key_risk=q3_key_risk,
-                q4_best_attack=q4_best_attack,
-                q5_reinforce=q5_reinforce,
-                q6_failure_impact=q6_failure_impact,
-                priority=priority,
-                tag=SectionTag.inference,
-            ))
+            cards.append(
+                EvidenceKeyCard(
+                    evidence_id=ev.evidence_id,
+                    q1_what=q1_what,
+                    q2_target=q2_target,
+                    q3_key_risk=q3_key_risk,
+                    q4_best_attack=q4_best_attack,
+                    q5_reinforce=q5_reinforce,
+                    q6_failure_impact=q6_failure_impact,
+                    priority=priority,
+                    tag=SectionTag.inference,
+                )
+            )
         else:
-            cards.append(EvidenceBasicCard(
-                evidence_id=ev.evidence_id,
-                q1_what=q1_what,
-                q2_target=q2_target,
-                q3_key_risk=q3_key_risk,
-                q4_best_attack=q4_best_attack,
-                priority=priority,
-                tag=SectionTag.inference,
-            ))
+            cards.append(
+                EvidenceBasicCard(
+                    evidence_id=ev.evidence_id,
+                    q1_what=q1_what,
+                    q2_target=q2_target,
+                    q3_key_risk=q3_key_risk,
+                    q4_best_attack=q4_best_attack,
+                    priority=priority,
+                    tag=SectionTag.inference,
+                )
+            )
 
     return cards, unified_strategy
 
@@ -505,9 +521,7 @@ def build_evidence_battle_matrix(
 
     for ev in evidence_index.evidence:
         ev_type_str = (
-            ev.evidence_type.value
-            if hasattr(ev.evidence_type, "value")
-            else str(ev.evidence_type)
+            ev.evidence_type.value if hasattr(ev.evidence_type, "value") else str(ev.evidence_type)
         )
 
         # Classify risk level (old traffic light system)
@@ -544,21 +558,23 @@ def build_evidence_battle_matrix(
         # Build old-style failure impact
         impact_str = _build_failure_impact(ev, issue_tree)
 
-        cards.append(EvidenceBattleCard(
-            evidence_id=ev.evidence_id,
-            q1_what=f"{ev.title} — {ev_type_str}类证据。{getattr(ev, 'summary', '')[:150]}",
-            q2_proves=(
-                f"证明事实: {', '.join(ev.target_fact_ids[:3])}"
-                if getattr(ev, "target_fact_ids", [])
-                else "待明确证明命题"
-            ),
-            q3_direction=q3_direction,
-            q4_risks=risk_str or "暂无明显风险",
-            q5_opponent_attack=attack_str or "对方攻击方向待分析",
-            q6_reinforce=reinforce_str or "当前证据较稳固，保持现状",
-            q7_failure_impact=impact_str or "该证据失败对整体结论影响有限",
-            risk_level=traffic_light.risk_level,
-            tag=SectionTag.inference,
-        ))
+        cards.append(
+            EvidenceBattleCard(
+                evidence_id=ev.evidence_id,
+                q1_what=f"{ev.title} — {ev_type_str}类证据。{getattr(ev, 'summary', '')[:150]}",
+                q2_proves=(
+                    f"证明事实: {', '.join(ev.target_fact_ids[:3])}"
+                    if getattr(ev, "target_fact_ids", [])
+                    else "待明确证明命题"
+                ),
+                q3_direction=q3_direction,
+                q4_risks=risk_str or "暂无明显风险",
+                q5_opponent_attack=attack_str or "对方攻击方向待分析",
+                q6_reinforce=reinforce_str or "当前证据较稳固，保持现状",
+                q7_failure_impact=impact_str or "该证据失败对整体结论影响有限",
+                risk_level=traffic_light.risk_level,
+                tag=SectionTag.inference,
+            )
+        )
 
     return cards

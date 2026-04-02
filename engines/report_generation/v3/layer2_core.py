@@ -48,9 +48,7 @@ def build_layer2(
     fact_base = extract_fact_base(issue_tree, evidence_index, adversarial_result)
 
     # 2.2 Issue map — presents BOTH sides neutrally with source attribution
-    issue_map = build_issue_map(
-        issue_tree, adversarial_result, ranked_issues, attack_chain
-    )
+    issue_map = build_issue_map(issue_tree, adversarial_result, ranked_issues, attack_chain)
 
     # 2.3 Evidence cards (dual-tier) + unified electronic strategy
     evidence_cards, unified_electronic_strategy = build_evidence_cards(
@@ -58,9 +56,7 @@ def build_layer2(
     )
 
     # 2.3b DEPRECATED: old battle matrix for backward compat
-    evidence_matrix = build_evidence_battle_matrix(
-        evidence_index, issue_tree, attack_chain
-    )
+    evidence_matrix = build_evidence_battle_matrix(evidence_index, issue_tree, attack_chain)
 
     # 2.4 Conditional scenario tree — pre-built, passed in from caller
     return Layer2Core(
@@ -131,12 +127,8 @@ def render_layer2_md(
             lines.append("")
             lines.append("| 字段 | 内容 |")
             lines.append("|------|------|")
-            lines.append(
-                f"| 原告主张 | {_h(card.plaintiff_thesis, humanize_ctx)} |"
-            )
-            lines.append(
-                f"| 被告主张 | {_h(card.defendant_thesis, humanize_ctx)} |"
-            )
+            lines.append(f"| 原告主张 | {_h(card.plaintiff_thesis, humanize_ctx)} |")
+            lines.append(f"| 被告主张 | {_h(card.defendant_thesis, humanize_ctx)} |")
             decisive = (
                 ", ".join(_h_list(card.decisive_evidence, humanize_ctx))
                 if card.decisive_evidence
@@ -144,9 +136,7 @@ def render_layer2_md(
             )
             lines.append(f"| 决定性证据 | {decisive} |")
             gaps = (
-                "; ".join(_h_list(card.current_gaps, humanize_ctx))
-                if card.current_gaps
-                else "暂无"
+                "; ".join(_h_list(card.current_gaps, humanize_ctx)) if card.current_gaps else "暂无"
             )
             lines.append(f"| 当前缺口 | {gaps} |")
             lines.append("")
@@ -196,21 +186,11 @@ def render_layer2_md(
                 lines.append("| 字段 | 分析 |")
                 lines.append("|------|------|")
                 lines.append(f"| ① 内容 | {_h(card.q1_what, humanize_ctx)} |")
-                lines.append(
-                    f"| ② 服务争点 | {_h(card.q2_target, humanize_ctx)} |"
-                )
-                lines.append(
-                    f"| ③ 关键风险 | {_h(card.q3_key_risk, humanize_ctx)} |"
-                )
-                lines.append(
-                    f"| ④ 对方最佳攻击点 | {_h(card.q4_best_attack, humanize_ctx)} |"
-                )
-                lines.append(
-                    f"| ⑤ 如何加固 | {_h(card.q5_reinforce, humanize_ctx)} |"
-                )
-                lines.append(
-                    f"| ⑥ 失效影响 | {_h(card.q6_failure_impact, humanize_ctx)} |"
-                )
+                lines.append(f"| ② 服务争点 | {_h(card.q2_target, humanize_ctx)} |")
+                lines.append(f"| ③ 关键风险 | {_h(card.q3_key_risk, humanize_ctx)} |")
+                lines.append(f"| ④ 对方最佳攻击点 | {_h(card.q4_best_attack, humanize_ctx)} |")
+                lines.append(f"| ⑤ 如何加固 | {_h(card.q5_reinforce, humanize_ctx)} |")
+                lines.append(f"| ⑥ 失效影响 | {_h(card.q6_failure_impact, humanize_ctx)} |")
                 lines.append("")
 
         # --- Basic evidence cards (compact summary table) ---
@@ -225,9 +205,7 @@ def render_layer2_md(
                 target = _h(card.q2_target, humanize_ctx)
                 risk = _h(card.q3_key_risk, humanize_ctx)
                 attack = _h(card.q4_best_attack, humanize_ctx)
-                lines.append(
-                    f"| {ev_name} | {priority} | {target} | {risk} | {attack} |"
-                )
+                lines.append(f"| {ev_name} | {priority} | {target} | {risk} | {attack} |")
             lines.append("")
 
     elif layer2.evidence_battle_matrix:
@@ -249,13 +227,9 @@ def render_layer2_md(
             lines.append(f"| 2. 证明什么命题 | {_h(card.q2_proves, humanize_ctx)} |")
             lines.append(f"| 3. 证明方向 | {_h(card.q3_direction, humanize_ctx)} |")
             lines.append(f"| 4. 四性风险 | {_h(card.q4_risks, humanize_ctx)} |")
-            lines.append(
-                f"| 5. 对方如何攻击 | {_h(card.q5_opponent_attack, humanize_ctx)} |"
-            )
+            lines.append(f"| 5. 对方如何攻击 | {_h(card.q5_opponent_attack, humanize_ctx)} |")
             lines.append(f"| 6. 如何加固 | {_h(card.q6_reinforce, humanize_ctx)} |")
-            lines.append(
-                f"| 7. 失败影响 | {_h(card.q7_failure_impact, humanize_ctx)} |"
-            )
+            lines.append(f"| 7. 失败影响 | {_h(card.q7_failure_impact, humanize_ctx)} |")
             lines.append("")
     else:
         lines.append("*暂无证据分析数据。*")

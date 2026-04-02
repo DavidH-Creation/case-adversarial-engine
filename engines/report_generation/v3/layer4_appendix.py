@@ -31,7 +31,8 @@ _TIME_CN_RE = re.compile(r"(\d{1,2})[时:](\d{1,2})[分]?")
 
 
 def _extract_date_from_match(
-    match: re.Match, pattern_type: str,
+    match: re.Match,
+    pattern_type: str,
 ) -> str:
     """Normalize a date regex match to YYYY-MM-DD format."""
     year, month, day = match.group(1), match.group(2), match.group(3)
@@ -317,7 +318,9 @@ def _render_evidence_index(evidence_index) -> str:
     lines.append("| 编号 | 标题 | 类型 | 提交方 | 状态 |")
     lines.append("|------|------|------|--------|------|")
     for ev in evidence_index.evidence:
-        ev_type = ev.evidence_type.value if hasattr(ev.evidence_type, "value") else str(ev.evidence_type)
+        ev_type = (
+            ev.evidence_type.value if hasattr(ev.evidence_type, "value") else str(ev.evidence_type)
+        )
         status = ev.status.value if hasattr(ev.status, "value") else str(ev.status)
         lines.append(
             f"| {ev.evidence_id} | {ev.title[:40]} | {ev_type} | {ev.owner_party_id} | {status} |"
@@ -376,21 +379,13 @@ def _render_amount_calculation(amount_report) -> str:
 
     # Handle AmountCalculationReport fields
     if hasattr(amount_report, "total_principal"):
-        lines.append(
-            f"| 借款本金 | {amount_report.total_principal:,} 元 | 核实本金总额 |"
-        )
+        lines.append(f"| 借款本金 | {amount_report.total_principal:,} 元 | 核实本金总额 |")
     if hasattr(amount_report, "total_interest"):
-        lines.append(
-            f"| 利息 | {amount_report.total_interest:,} 元 | 计算利息总额 |"
-        )
+        lines.append(f"| 利息 | {amount_report.total_interest:,} 元 | 计算利息总额 |")
     if hasattr(amount_report, "total_claimed"):
-        lines.append(
-            f"| 诉请总额 | {amount_report.total_claimed:,} 元 | 原告主张金额 |"
-        )
+        lines.append(f"| 诉请总额 | {amount_report.total_claimed:,} 元 | 原告主张金额 |")
     if hasattr(amount_report, "verified_amount"):
-        lines.append(
-            f"| 可核实金额 | {amount_report.verified_amount:,} 元 | 有证据支撑的金额 |"
-        )
+        lines.append(f"| 可核实金额 | {amount_report.verified_amount:,} 元 | 有证据支撑的金额 |")
 
     return "\n".join(lines) if len(lines) > 2 else "*暂无金额计算明细。*"
 

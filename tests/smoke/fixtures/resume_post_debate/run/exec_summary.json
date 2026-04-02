@@ -1,0 +1,30 @@
+{
+  "summary_id": "exec-resume-smoke",
+  "case_id": "case-resume-smoke",
+  "run_id": "run-resume-smoke",
+  "top5_decisive_issues": [
+    "ISS-001"
+  ],
+  "top3_immediate_actions": [
+    "Supplement proof of funds delivery"
+  ],
+  "action_recommendation_id": "rec-resume-smoke",
+  "top3_adversary_optimal_attacks": [
+    "ATK-001"
+  ],
+  "adversary_attack_chain_id": "chain-resume-smoke",
+  "defense_chain_id": null,
+  "claim_decomposition": null,
+  "current_most_stable_claim": "Seek repayment of principal in the amount of 80,000",
+  "strategic_summary": null,
+  "amount_report_id": "amt-resume-smoke",
+  "critical_evidence_gaps": [
+    "Supplement proof of funds delivery"
+  ],
+  "structured_output": null,
+  "primary_risk": null,
+  "next_best_action": null,
+  "internal_decision_summary": null,
+  "consistency_check": null,
+  "created_at": "2026-04-02T16:39:18Z"
+}

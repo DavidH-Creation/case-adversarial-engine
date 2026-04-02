@@ -455,7 +455,11 @@ class WorkspaceManager:
         if not path.exists():
             return None
         data = json.loads(path.read_text(encoding="utf-8"))
-        if isinstance(data, dict) and set(data.keys()) == {"items"} and isinstance(data["items"], list):
+        if (
+            isinstance(data, dict)
+            and set(data.keys()) == {"items"}
+            and isinstance(data["items"], list)
+        ):
             return data["items"]
         return data
 

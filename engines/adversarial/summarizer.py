@@ -220,6 +220,7 @@ class AdversarialSummarizer:
         """将 LLM JSON 输出解析为 AdversarialSummary。
         Parse LLM JSON output dict to AdversarialSummary.
         """
+
         def _to_dict(item: object) -> dict:
             """Normalize LLM output element: if it's a string, wrap it."""
             return item if isinstance(item, dict) else {"issue_id": str(item)}

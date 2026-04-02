@@ -1,0 +1,70 @@
+{
+  "tree_id": "tree-resume-smoke",
+  "case_id": "case-resume-smoke",
+  "run_id": "run-resume-smoke",
+  "paths": [
+    {
+      "path_id": "path-plaintiff",
+      "trigger_condition": "The IOU is authentic and the transfer is proven",
+      "trigger_issue_ids": [
+        "ISS-001"
+      ],
+      "key_evidence_ids": [
+        "EV-001"
+      ],
+      "counter_evidence_ids": [],
+      "possible_outcome": "Court orders repayment of the principal",
+      "confidence_interval": null,
+      "path_notes": "",
+      "admissibility_gate": [],
+      "result_scope": [],
+      "fallback_path_id": null,
+      "probability": 0.92,
+      "probability_rationale": "legacy only",
+      "party_favored": "plaintiff"
+    },
+    {
+      "path_id": "path-defendant",
+      "trigger_condition": "The defendant proves the transfer was a gift",
+      "trigger_issue_ids": [
+        "ISS-001"
+      ],
+      "key_evidence_ids": [],
+      "counter_evidence_ids": [
+        "EV-001"
+      ],
+      "possible_outcome": "Court rejects the claim",
+      "confidence_interval": null,
+      "path_notes": "",
+      "admissibility_gate": [],
+      "result_scope": [],
+      "fallback_path_id": null,
+      "probability": 0.18,
+      "probability_rationale": "legacy only",
+      "party_favored": "defendant"
+    }
+  ],
+  "blocking_conditions": [],
+  "created_at": "2026-04-02T16:39:18Z",
+  "most_likely_path": "path-plaintiff",
+  "plaintiff_best_path": "path-plaintiff",
+  "defendant_best_path": "path-defendant",
+  "path_ranking": [
+    {
+      "path_id": "path-plaintiff",
+      "probability": 0.92,
+      "party_favored": "plaintiff",
+      "key_conditions": [
+        "The IOU is authentic and the transfer is proven"
+      ]
+    },
+    {
+      "path_id": "path-defendant",
+      "probability": 0.18,
+      "party_favored": "defendant",
+      "key_conditions": [
+        "The defendant proves the transfer was a gift"
+      ]
+    }
+  ]
+}

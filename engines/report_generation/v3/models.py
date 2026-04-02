@@ -33,10 +33,10 @@ from pydantic import BaseModel, Field
 class SectionTag(str, Enum):
     """全文强制标注类型。每个段落/章节必须携带一个标签。"""
 
-    fact = "事实"           # 无争议的客观事实
-    inference = "推断"      # 基于事实的逻辑推理
-    assumption = "假设"     # 条件性假设
-    opinion = "观点"        # 分析性意见
+    fact = "事实"  # 无争议的客观事实
+    inference = "推断"  # 基于事实的逻辑推理
+    assumption = "假设"  # 条件性假设
+    opinion = "观点"  # 分析性意见
     recommendation = "建议"  # 可执行建议
 
 
@@ -55,9 +55,9 @@ class EvidenceRiskLevel(str, Enum):
         Use :class:`EvidencePriority` instead.
     """
 
-    green = "green"    # 第三方可核实（银行流水、公证文书等）
+    green = "green"  # 第三方可核实（银行流水、公证文书等）
     yellow = "yellow"  # 截图/单方提供（微信截图、短信等）
-    red = "red"        # 争议+敏感（录音合法性存疑、复印件无原件等）
+    red = "red"  # 争议+敏感（录音合法性存疑、复印件无原件等）
 
 
 # DEPRECATED: replaced by EvidencePriorityCard in V3.1
@@ -82,7 +82,7 @@ class EvidenceTrafficLight(BaseModel):
 class EvidencePriority(str, Enum):
     """证据优先级分层。"""
 
-    core = "核心证据"        # Controls outcome of L1 issue
+    core = "核心证据"  # Controls outcome of L1 issue
     supporting = "辅助证据"  # Corroborates core evidence
     background = "背景证据"  # Context only
 
@@ -175,9 +175,7 @@ class PerspectiveDefendantSummary(BaseModel):
     plaintiff_likely_supplement: list[str] = Field(
         default_factory=list, description="原告可能补强方向"
     )
-    optimal_attack_order: list[str] = Field(
-        default_factory=list, description="最优攻击顺序"
-    )
+    optimal_attack_order: list[str] = Field(default_factory=list, description="最优攻击顺序")
 
 
 class CoverSummary(BaseModel):
@@ -251,15 +249,9 @@ class IssueMapCard(BaseModel):
     )
     plaintiff_thesis: str = Field(description="原告主张")
     defendant_thesis: str = Field(description="被告主张")
-    decisive_evidence: list[str] = Field(
-        default_factory=list, description="决定性证据 ID 列表"
-    )
-    current_gaps: list[str] = Field(
-        default_factory=list, description="当前缺口"
-    )
-    outcome_sensitivity: str = Field(
-        default="", description="结果敏感度"
-    )
+    decisive_evidence: list[str] = Field(default_factory=list, description="决定性证据 ID 列表")
+    current_gaps: list[str] = Field(default_factory=list, description="当前缺口")
+    outcome_sensitivity: str = Field(default="", description="结果敏感度")
     tag: SectionTag = SectionTag.inference
 
 
@@ -275,14 +267,10 @@ class EvidenceBattleCard(BaseModel):
     q1_what: str = Field(description="1. 这是什么证据")
     q2_proves: str = Field(description="2. 证明什么命题")
     q3_direction: str = Field(description="3. 证明方向（支持谁）")
-    q4_risks: str = Field(
-        description="4. 真实性/完整性/关联性/合法性风险"
-    )
+    q4_risks: str = Field(description="4. 真实性/完整性/关联性/合法性风险")
     q5_opponent_attack: str = Field(description="5. 对方如何攻击")
     q6_reinforce: str = Field(description="6. 如何加固")
-    q7_failure_impact: str = Field(
-        description="7. 若此证据失败，哪些结论需重新计算"
-    )
+    q7_failure_impact: str = Field(description="7. 若此证据失败，哪些结论需重新计算")
     risk_level: EvidenceRiskLevel = EvidenceRiskLevel.yellow
     tag: SectionTag = SectionTag.inference
 
@@ -292,12 +280,8 @@ class ConditionalNode(BaseModel):
 
     node_id: str
     condition: str = Field(description="条件问题（如'录音是否被采信？'）")
-    yes_outcome: Optional[str] = Field(
-        default=None, description="条件成立时的结论（叶节点）"
-    )
-    no_outcome: Optional[str] = Field(
-        default=None, description="条件不成立时的结论（叶节点）"
-    )
+    yes_outcome: Optional[str] = Field(default=None, description="条件成立时的结论（叶节点）")
+    no_outcome: Optional[str] = Field(default=None, description="条件不成立时的结论（叶节点）")
     yes_child_id: Optional[str] = Field(
         default=None, description="条件成立时的子节点 ID（非叶节点）"
     )
@@ -354,21 +338,11 @@ class PerspectiveOutput(BaseModel):
     )
 
     # V3.1 action-oriented fields
-    evidence_supplement_checklist: list[str] = Field(
-        default_factory=list, description="补证清单"
-    )
-    cross_examination_points: list[str] = Field(
-        default_factory=list, description="质证要点"
-    )
-    trial_questions: list[str] = Field(
-        default_factory=list, description="庭审发问"
-    )
-    contingency_plans: list[str] = Field(
-        default_factory=list, description="应对预案"
-    )
-    over_assertion_boundaries: list[str] = Field(
-        default_factory=list, description="过度主张边界"
-    )
+    evidence_supplement_checklist: list[str] = Field(default_factory=list, description="补证清单")
+    cross_examination_points: list[str] = Field(default_factory=list, description="质证要点")
+    trial_questions: list[str] = Field(default_factory=list, description="庭审发问")
+    contingency_plans: list[str] = Field(default_factory=list, description="应对预案")
+    over_assertion_boundaries: list[str] = Field(default_factory=list, description="过度主张边界")
     unified_electronic_evidence_strategy: str = Field(
         default="", description="统一电子证据补强策略"
     )
@@ -420,9 +394,7 @@ class Layer3Perspective(BaseModel):
 class Layer4Appendix(BaseModel):
     """Layer 4: 附录层。始终相同，不受 perspective 影响。"""
 
-    adversarial_transcripts_md: str = Field(
-        default="", description="三轮对抗辩论完整记录"
-    )
+    adversarial_transcripts_md: str = Field(default="", description="三轮对抗辩论完整记录")
     evidence_index_md: str = Field(default="", description="证据索引表")
     timeline_md: str = Field(default="", description="案件时间线")
     glossary_md: str = Field(default="", description="术语表")

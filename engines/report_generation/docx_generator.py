@@ -30,9 +30,9 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.shared import Emu, RGBColor
 
+from engines.report_generation.mediation_range import compute_mediation_range
 from engines.shared.disclaimer_templates import DISCLAIMER_DOCX_BODY, DISCLAIMER_DOCX_TITLE
 from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_LABEL_ZH, RiskLevel
-from engines.report_generation.mediation_range import compute_mediation_range
 from engines.report_generation.v3.tag_system import humanize_text
 
 # ---------------------------------------------------------------------------
@@ -62,11 +62,13 @@ FONT_EAST_ASIA = "Microsoft YaHei"
 # ---------------------------------------------------------------------------
 _humanize_ctx: dict[str, str] = {}
 
+
 def _h(text) -> str:
     """Humanize internal IDs in text for user-facing output."""
     if not text:
         return ""
     return humanize_text(str(text), context=_humanize_ctx)
+
 
 # ---------------------------------------------------------------------------
 # 翻译映射 / Translation maps
@@ -300,9 +302,9 @@ def generate_docx_report(
     # ── 风险热力图 ──
     _render_risk_heatmap(doc, ranked_issues)
     # ── 裁判路径树 ──
-    _render_decision_tree(doc, decision_tree)
+    _render_decision_tree_probability_free(doc, decision_tree)
     # ── 调解区间 ──
-    _render_mediation_range(doc, amount_report, decision_tree)
+    # Mainline output no longer renders mediation sections.
     # ── 攻击链 ── (removed: now unified in _render_opponent_strategy_warning)
     # ── 对方策略预警 ──
     _render_opponent_strategy_warning(doc, result, attack_chain)
@@ -628,7 +630,84 @@ def _render_decision_tree(doc, decision_tree: dict):
         _styled(doc, "阻断条件", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
         for bc in blocking:
             _bullet(
-                doc, f"{_h(bc['condition_id'])}: {bc['description']}", size=SZ_NORMAL, color=CLR_BODY
+                doc,
+                f"{_h(bc['condition_id'])}: {bc['description']}",
+                size=SZ_NORMAL,
+                color=CLR_BODY,
+            )
+
+
+def _ordered_paths_for_output(decision_tree: dict) -> list[dict]:
+    paths = list(decision_tree.get("paths", []))
+    path_ranking = decision_tree.get("path_ranking", [])
+    if not path_ranking:
+        return paths
+
+    rank_index = {
+        item.get("path_id"): idx for idx, item in enumerate(path_ranking) if item.get("path_id")
+    }
+    if not rank_index:
+        return paths
+
+    fallback_base = len(rank_index)
+    ordered: list[tuple[int, int, dict]] = []
+    for source_index, path in enumerate(paths):
+        order_key = rank_index.get(path.get("path_id"), fallback_base + source_index)
+        ordered.append((order_key, source_index, path))
+    ordered.sort(key=lambda item: (item[0], item[1]))
+    return [path for _, _, path in ordered]
+
+
+def _render_decision_tree_probability_free(doc, decision_tree: dict):
+    paths = decision_tree.get("paths", [])
+    if not paths:
+        doc.add_heading("裁判路径树", level=1)
+        _styled(
+            doc,
+            "（本次运行未生成裁判路径，可能需要重新运行庭后分析流程）",
+            size=SZ_NORMAL,
+            color=CLR_GRAY,
+        )
+        return
+
+    ordered_paths = _ordered_paths_for_output(decision_tree)
+    doc.add_heading(f"裁判路径树（{len(ordered_paths)}条路径）", level=1)
+
+    for rank, path in enumerate(ordered_paths, start=1):
+        party = {"plaintiff": "原告", "defendant": "被告", "neutral": "neutral"}.get(
+            path.get("party_favored", "neutral"),
+            "neutral",
+        )
+        label_suffix = f"  【有利方：{party}】" if party != "neutral" else ""
+        _styled(doc, f"路径 {rank}{label_suffix}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+
+        fields = [
+            ("触发条件", path.get("trigger_condition", "")),
+            ("触发争点", ", ".join(_h(x) for x in path.get("trigger_issue_ids", []))),
+            ("关键证据", ", ".join(_h(x) for x in path.get("key_evidence_ids", []))),
+            ("可能结果", path.get("possible_outcome", "")),
+        ]
+        notes = path.get("path_notes", "")
+        if notes:
+            fields.append(("备注", notes))
+
+        for field_label, val in fields:
+            if not val:
+                continue
+            p = doc.add_paragraph()
+            _add_run(p, f"{field_label}：", bold=True, size=SZ_RISK, color=CLR_GRAY)
+            _add_run(p, val, size=SZ_RISK, color=CLR_BODY)
+        doc.add_paragraph()
+
+    blocking = decision_tree.get("blocking_conditions", [])
+    if blocking:
+        _styled(doc, "阻断条件", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+        for bc in blocking:
+            _bullet(
+                doc,
+                f"{_h(bc['condition_id'])}: {bc['description']}",
+                size=SZ_NORMAL,
+                color=CLR_BODY,
             )
 
 
@@ -1175,7 +1254,9 @@ def _render_v3_title(doc, report_v3: dict) -> None:
     _add_run(p1, f"Case ID: {case_id}  |  Run ID: {run_id}", size=SZ_NORMAL, color=CLR_GRAY)
 
     p2 = doc.add_paragraph()
-    _add_run(p2, f"视角: {perspective_label}  |  报告版本: V3 四层架构", size=SZ_NORMAL, color=CLR_GRAY)
+    _add_run(
+        p2, f"视角: {perspective_label}  |  报告版本: V3 四层架构", size=SZ_NORMAL, color=CLR_GRAY
+    )
     doc.add_paragraph()
 
 
@@ -1247,7 +1328,9 @@ def _render_v3_layer1(doc, layer1: dict, perspective: str) -> None:
         scenario_summary = layer1.get("scenario_tree_summary", "")
         if scenario_summary:
             doc.add_heading("C. 条件场景摘要 「推断」", level=2)
-            conditions = [c.strip() for c in scenario_summary.replace("；", ";").split(";") if c.strip()]
+            conditions = [
+                c.strip() for c in scenario_summary.replace("；", ";").split(";") if c.strip()
+            ]
             for cond in conditions:
                 _bullet(doc, cond, size=SZ_BODY, color=CLR_BODY)
             doc.add_paragraph()
@@ -1364,7 +1447,12 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
             _add_run(p, "• ", bold=True, size=SZ_BODY, color=CLR_BLUE)
             _add_run(p, desc, size=SZ_BODY, color=CLR_BODY)
             if sources:
-                _styled(doc, f"  来源证据: {', '.join(_h(x) for x in sources)}", size=SZ_EVIDENCE, color=CLR_GRAY)
+                _styled(
+                    doc,
+                    f"  来源证据: {', '.join(_h(x) for x in sources)}",
+                    size=SZ_EVIDENCE,
+                    color=CLR_GRAY,
+                )
     else:
         _styled(doc, "暂无双方均认可的无争议事实。", size=SZ_NORMAL, color=CLR_GRAY)
     doc.add_paragraph()
@@ -1398,7 +1486,13 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
         else:
             p = doc.add_paragraph()
             p.paragraph_format.left_indent = Emu(depth * 457_200)  # 0.5 inch per level
-            _add_run(p, f"└─ {_h(issue_id)}: {issue_title}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+            _add_run(
+                p,
+                f"└─ {_h(issue_id)}: {issue_title}",
+                bold=True,
+                size=SZ_SECTION_HDR,
+                color=CLR_BLUE,
+            )
         table = doc.add_table(rows=1, cols=2)
         table.style = "Light Grid Accent 1"
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -1558,7 +1652,9 @@ def _render_v3_layer3(doc, layer3: dict, perspective: str) -> None:
             trial_questions = output.get("trial_questions") or []
             contingency_plans = output.get("contingency_plans") or []
             over_assertion_boundaries = output.get("over_assertion_boundaries") or []
-            unified_electronic_evidence_strategy = output.get("unified_electronic_evidence_strategy") or ""
+            unified_electronic_evidence_strategy = (
+                output.get("unified_electronic_evidence_strategy") or ""
+            )
             # V3.0 legacy fields
             top_claims = output.get("top_claims") or []
             defendant_attack_chains = output.get("defendant_attack_chains") or []
@@ -1572,31 +1668,39 @@ def _render_v3_layer3(doc, layer3: dict, perspective: str) -> None:
             over_assertion_warnings = output.get("over_assertion_warnings") or []
         else:
             pov = getattr(output, "perspective", "neutral")
-            evidence_supplement_checklist = getattr(output, "evidence_supplement_checklist", []) or []
+            evidence_supplement_checklist = (
+                getattr(output, "evidence_supplement_checklist", []) or []
+            )
             cross_examination_points = getattr(output, "cross_examination_points", []) or []
             trial_questions = getattr(output, "trial_questions", []) or []
             contingency_plans = getattr(output, "contingency_plans", []) or []
             over_assertion_boundaries = getattr(output, "over_assertion_boundaries", []) or []
-            unified_electronic_evidence_strategy = getattr(output, "unified_electronic_evidence_strategy", "") or ""
+            unified_electronic_evidence_strategy = (
+                getattr(output, "unified_electronic_evidence_strategy", "") or ""
+            )
             top_claims = getattr(output, "top_claims", []) or []
             defendant_attack_chains = getattr(output, "defendant_attack_chains", []) or []
             evidence_to_supplement = getattr(output, "evidence_to_supplement", []) or []
             trial_sequence = getattr(output, "trial_sequence", []) or []
             claims_to_abandon = getattr(output, "claims_to_abandon", []) or []
             top_defenses = getattr(output, "top_defenses", []) or []
-            plaintiff_supplement_prediction = getattr(output, "plaintiff_supplement_prediction", []) or []
+            plaintiff_supplement_prediction = (
+                getattr(output, "plaintiff_supplement_prediction", []) or []
+            )
             evidence_to_challenge_first = getattr(output, "evidence_to_challenge_first", []) or []
             motions_to_file = getattr(output, "motions_to_file", []) or []
             over_assertion_warnings = getattr(output, "over_assertion_warnings", []) or []
 
         # Detect V3.1: any of the 5 new action fields populated
-        has_v31_fields = any([
-            evidence_supplement_checklist,
-            cross_examination_points,
-            trial_questions,
-            contingency_plans,
-            over_assertion_boundaries,
-        ])
+        has_v31_fields = any(
+            [
+                evidence_supplement_checklist,
+                cross_examination_points,
+                trial_questions,
+                contingency_plans,
+                over_assertion_boundaries,
+            ]
+        )
 
         pov_label = {"plaintiff": "原告", "defendant": "被告"}.get(pov, pov)
         doc.add_heading(f"{pov_label}策略 「建议」", level=2)

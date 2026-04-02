@@ -135,10 +135,7 @@ def build_evidence_battle_matrix(
         ev_title = getattr(ev, "title", ev_id) or ev_id
 
         # Column 1: target issue labels
-        target_labels = [
-            issue_titles.get(iid, iid)
-            for iid in getattr(ev, "target_issue_ids", [])
-        ]
+        target_labels = [issue_titles.get(iid, iid) for iid in getattr(ev, "target_issue_ids", [])]
 
         # Column 2: owner party
         owner = getattr(ev, "owner_party_id", "") or ""
@@ -211,7 +208,9 @@ def render_evidence_battle_matrix_markdown(matrix: EvidenceBattleMatrix) -> str:
 
     for row in matrix.rows:
         issues_cell = "、".join(row.target_issue_labels) if row.target_issue_labels else "-"
-        challenges_cell = "；".join(row.opposition_challenges) if row.opposition_challenges else "无"
+        challenges_cell = (
+            "；".join(row.opposition_challenges) if row.opposition_challenges else "无"
+        )
         admissibility_cell = row.admissibility or "-"
         corroboration_cell = str(row.corroboration_count) if row.corroboration_count else "0"
         path_cell = str(row.path_dependency_count) if row.path_dependency_count else "0"
