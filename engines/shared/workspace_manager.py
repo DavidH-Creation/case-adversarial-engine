@@ -37,6 +37,7 @@ from engines.shared.models import (
 )
 
 _ID_RE = re.compile(r"^[a-zA-Z0-9_\-]+$")
+_ARTIFACT_NAME_RE = re.compile(r"^[a-zA-Z0-9_.\-]+$")
 
 
 def _validate_id(value: str, field: str) -> None:
@@ -45,6 +46,15 @@ def _validate_id(value: str, field: str) -> None:
         raise ValueError(
             f"Invalid {field}: {value!r}. "
             "Only alphanumeric characters, hyphens, and underscores are allowed."
+        )
+
+
+def _validate_artifact_name(value: str) -> None:
+    """Raise ValueError if *value* is not a safe artifact filename."""
+    if not _ARTIFACT_NAME_RE.match(value):
+        raise ValueError(
+            f"Invalid artifact name: {value!r}. "
+            "Only alphanumeric characters, dots, hyphens, and underscores are allowed."
         )
 
 
@@ -88,6 +98,11 @@ class WorkspaceManager:
 
     def _artifacts_dir(self) -> Path:
         return self.workspace_dir / "artifacts"
+
+    def artifact_path(self, name: str) -> Path:
+        """Return the path for a top-level artifact file inside artifacts/."""
+        _validate_artifact_name(name)
+        return self._artifacts_dir() / name
 
     def _atomic_write(self, path: Path, data: dict) -> None:
         """原子写操作：先写 .tmp 文件，再重命名替换目标。
@@ -426,6 +441,53 @@ class WorkspaceManager:
                 f"expected {self.case_id!r}, got {data.get('case_id')!r}"
             )
         return ReportArtifact.model_validate(data)
+
+    def save_json_artifact(self, name: str, data: dict | list) -> None:
+        """Persist a JSON artifact under artifacts/ using an atomic write."""
+        path = self.artifact_path(name)
+        payload = {"items": data} if isinstance(data, list) else data
+        with self._lock:
+            self._atomic_write(path, payload)
+
+    def load_json_artifact(self, name: str) -> Optional[dict | list]:
+        """Load a JSON artifact from artifacts/."""
+        path = self.artifact_path(name)
+        if not path.exists():
+            return None
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and set(data.keys()) == {"items"} and isinstance(data["items"], list):
+            return data["items"]
+        return data
+
+    def save_text_artifact(self, name: str, text: str) -> None:
+        """Persist a UTF-8 text artifact under artifacts/."""
+        path = self.artifact_path(name)
+        with self._lock:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+
+    def load_text_artifact(self, name: str) -> Optional[str]:
+        """Load a UTF-8 text artifact from artifacts/."""
+        path = self.artifact_path(name)
+        if not path.exists():
+            return None
+        return path.read_text(encoding="utf-8")
+
+    def save_binary_artifact(self, name: str, content: bytes) -> None:
+        """Persist a binary artifact under artifacts/."""
+        path = self.artifact_path(name)
+        tmp_path = path.with_suffix(path.suffix + ".tmp")
+        with self._lock:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp_path.write_bytes(content)
+            os.replace(tmp_path, path)
+
+    def load_binary_artifact(self, name: str) -> Optional[bytes]:
+        """Load a binary artifact from artifacts/."""
+        path = self.artifact_path(name)
+        if not path.exists():
+            return None
+        return path.read_bytes()
 
     # ------------------------------------------------------------------
     # AgentOutput 持久化 / AgentOutput persistence

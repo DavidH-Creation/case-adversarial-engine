@@ -1,10 +1,5 @@
 """
-FastAPI 主应用 — 渐进式案件录入 Web 服务。
-FastAPI main application — progressive case intake web service.
-
-启动方式 / Start:
-    cd <project_root>
-    uvicorn api.app:app --reload --port 8000
+FastAPI application for the case adversarial analysis service.
 """
 
 from __future__ import annotations
@@ -22,10 +17,8 @@ from .auth import verify_token
 from .schemas import (
     AddMaterialRequest,
     AddMaterialResponse,
-    AnalysisResponse,
     CaseInfoResponse,
     CaseStatus,
-    ChangeItemRequest,
     ConfirmRequest,
     CreateCaseRequest,
     CreateCaseResponse,
@@ -43,10 +36,6 @@ from .service import (
     store,
 )
 
-# ---------------------------------------------------------------------------
-# 应用初始化
-# ---------------------------------------------------------------------------
-
 app = FastAPI(
     title="案件对抗分析系统",
     description="渐进式案件录入与 AI 对抗分析 API",
@@ -57,15 +46,10 @@ app = FastAPI(
 _STATIC_DIR = Path(__file__).parent / "static"
 
 
-# ---------------------------------------------------------------------------
-# 辅助函数
-# ---------------------------------------------------------------------------
-
-
 def _get_case_or_404(case_id: str):
     record = store.get(case_id)
     if record is None:
-        raise HTTPException(status_code=404, detail=f"案件不存在：{case_id}")
+        raise HTTPException(status_code=404, detail=f"案件不存在: {case_id}")
     return record
 
 
@@ -73,19 +57,15 @@ def _require_status(record, *allowed: CaseStatus, detail: str = "当前状态不
     if record.status not in allowed:
         raise HTTPException(
             status_code=400,
-            detail=f"{detail}（当前状态：{record.status.value}，"
-            f"需要：{' 或 '.join(s.value for s in allowed)}）",
+            detail=(
+                f"{detail}（当前状态: {record.status.value}，"
+                f"需要: {' / '.join(s.value for s in allowed)}）"
+            ),
         )
-
-
-# ---------------------------------------------------------------------------
-# POST /api/cases/ — 创建新案件
-# ---------------------------------------------------------------------------
 
 
 @app.post("/api/cases/", response_model=CreateCaseResponse, status_code=201)
 async def create_case(body: CreateCaseRequest) -> CreateCaseResponse:
-    """创建新案件，返回 case_id。"""
     info: dict[str, Any] = {
         "case_type": body.case_type,
         "plaintiff": body.plaintiff.model_dump(),
@@ -97,14 +77,8 @@ async def create_case(body: CreateCaseRequest) -> CreateCaseResponse:
     return CreateCaseResponse(case_id=record.case_id, status=record.status)
 
 
-# ---------------------------------------------------------------------------
-# GET /api/cases/{case_id} — 获取案件状态
-# ---------------------------------------------------------------------------
-
-
 @app.get("/api/cases/{case_id}", response_model=CaseInfoResponse)
 async def get_case(case_id: str) -> CaseInfoResponse:
-    """获取案件当前状态、基本信息和进度日志。"""
     record = _get_case_or_404(case_id)
     return CaseInfoResponse(
         case_id=record.case_id,
@@ -118,14 +92,8 @@ async def get_case(case_id: str) -> CaseInfoResponse:
     )
 
 
-# ---------------------------------------------------------------------------
-# POST /api/cases/{case_id}/materials — 上传原始材料（文本 or 文件）
-# ---------------------------------------------------------------------------
-
-
 @app.post("/api/cases/{case_id}/materials", response_model=AddMaterialResponse)
 async def add_material_json(case_id: str, body: AddMaterialRequest) -> AddMaterialResponse:
-    """通过 JSON 添加文本材料（最常用方式）。"""
     record = _get_case_or_404(case_id)
     _require_status(
         record,
@@ -139,14 +107,14 @@ async def add_material_json(case_id: str, body: AddMaterialRequest) -> AddMateri
     if role not in ("plaintiff", "defendant"):
         raise HTTPException(status_code=400, detail="role 必须是 plaintiff 或 defendant")
 
-    mat = {
+    material = {
         "source_id": body.source_id,
         "role": role,
         "doc_type": body.doc_type,
         "text": body.text,
     }
-    record.materials[role].append(mat)
-    # 若已有提取结果，重置为创建状态（需重新提取）
+    record.materials[role].append(material)
+
     if record.status in (CaseStatus.extracted, CaseStatus.confirmed):
         record.status = CaseStatus.created
         record.extraction_data = None
@@ -169,7 +137,6 @@ async def upload_material_file(
     doc_type: str = Form("general"),
     source_id: str = Form(""),
 ) -> AddMaterialResponse:
-    """通过文件上传添加材料（支持 .txt；PDF/Word 仅存元数据，建议使用 JSON 接口直接粘贴文本）。"""
     record = _get_case_or_404(case_id)
     _require_status(
         record,
@@ -185,15 +152,23 @@ async def upload_material_file(
 
     raw = await file.read()
     filename = file.filename or "upload"
-    # 尝试 UTF-8 解码（txt 文件）；否则用文件名作占位
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:
-        text = f"[上传文件：{filename}，共 {len(raw)} 字节。请在提取前确保引擎能处理该格式，或改用 JSON 接口粘贴文本。]"
+        text = (
+            f"[上传文件: {filename}，共 {len(raw)} 字节。"
+            "请在提取前确保引擎可处理该格式，或改用 JSON 接口粘贴文本。]"
+        )
 
     sid = source_id or f"src-{filename[:20]}"
-    mat = {"source_id": sid, "role": role, "doc_type": doc_type, "text": text}
-    record.materials[role].append(mat)
+    record.materials[role].append(
+        {
+            "source_id": sid,
+            "role": role,
+            "doc_type": doc_type,
+            "text": text,
+        }
+    )
 
     if record.status in (CaseStatus.extracted, CaseStatus.confirmed):
         record.status = CaseStatus.created
@@ -204,40 +179,36 @@ async def upload_material_file(
     return AddMaterialResponse(source_id=sid, role=role, doc_type=doc_type, char_count=len(text))
 
 
-# ---------------------------------------------------------------------------
-# POST /api/cases/{case_id}/extract — 触发 AI 提取
-# ---------------------------------------------------------------------------
-
-
 @app.post("/api/cases/{case_id}/extract", status_code=202)
 async def trigger_extraction(case_id: str) -> dict:
-    """触发证据索引 + 争点提取（异步后台任务）。"""
     record = _get_case_or_404(case_id)
-    _require_status(record, CaseStatus.created, detail="只能在案件创建后触发提取")
+    if record.status != CaseStatus.extracting:
+        _require_status(record, CaseStatus.created, detail="只能在案件创建后触发提取")
 
     total_mats = len(record.materials["plaintiff"]) + len(record.materials["defendant"])
     if total_mats == 0:
         raise HTTPException(status_code=400, detail="请先上传至少一份材料再触发提取")
 
-    # 重置队列
-    record._progress_queue = asyncio.Queue()
-    asyncio.create_task(run_extraction(record))
-    return {"case_id": case_id, "status": CaseStatus.extracting.value, "message": "提取任务已启动"}
-
-
-# ---------------------------------------------------------------------------
-# GET /api/cases/{case_id}/extraction — 获取提取结果
-# ---------------------------------------------------------------------------
+    record, started = store.try_start_extraction(case_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"案件不存在: {case_id}")
+    if not started and record.status != CaseStatus.extracting:
+        _require_status(record, CaseStatus.created, detail="只能在案件创建后触发提取")
+    if started:
+        asyncio.create_task(run_extraction(record))
+        message = "提取任务已启动"
+    else:
+        message = "提取任务正在进行中"
+    return {"case_id": case_id, "status": CaseStatus.extracting.value, "message": message}
 
 
 @app.get("/api/cases/{case_id}/extraction", response_model=ExtractionResponse)
 async def get_extraction(case_id: str) -> ExtractionResponse:
-    """获取 AI 提取的证据和争点（提取完成后可用）。"""
     record = _get_case_or_404(case_id)
     if record.status == CaseStatus.extracting:
         raise HTTPException(status_code=202, detail="提取正在进行中，请稍后再试")
     if record.status == CaseStatus.failed:
-        raise HTTPException(status_code=500, detail=f"提取失败：{record.error}")
+        raise HTTPException(status_code=500, detail=f"提取失败: {record.error}")
     if record.extraction_data is None:
         raise HTTPException(status_code=400, detail="尚未执行提取，请先调用 POST /extract")
 
@@ -248,36 +219,28 @@ async def get_extraction(case_id: str) -> ExtractionResponse:
     )
 
 
-# ---------------------------------------------------------------------------
-# POST /api/cases/{case_id}/confirm — 确认/修正提取结果
-# ---------------------------------------------------------------------------
-
-
 @app.post("/api/cases/{case_id}/confirm", status_code=200)
 async def confirm_extraction(case_id: str, body: ConfirmRequest) -> dict:
-    """
-    用户确认（或修正）AI 提取的争点和证据。
-    修正后的争点 title/description 会写回 IssueTree，供后续分析使用。
-    """
     record = _get_case_or_404(case_id)
     _require_status(
-        record, CaseStatus.extracted, CaseStatus.confirmed, detail="只能在提取完成后确认"
+        record,
+        CaseStatus.extracted,
+        CaseStatus.confirmed,
+        detail="只能在提取完成后确认",
     )
 
-    # 将用户编辑的 issue title/description 写回 IssueTree
     if body.issues and record.issue_tree:
         edits = {item["issue_id"]: item for item in body.issues if "issue_id" in item}
-        for iss in record.issue_tree.issues:
-            if iss.issue_id in edits:
-                edit = edits[iss.issue_id]
+        for issue in record.issue_tree.issues:
+            if issue.issue_id in edits:
+                edit = edits[issue.issue_id]
                 if "title" in edit:
-                    iss.title = edit["title"]
+                    issue.title = edit["title"]
                 if "description" in edit:
-                    iss.description = edit["description"]
-        # 更新 extraction_data 中的 issues
+                    issue.description = edit["description"]
         if record.extraction_data:
             record.extraction_data["issues"] = [
-                i.model_dump(mode="json") for i in record.issue_tree.issues
+                issue.model_dump(mode="json") for issue in record.issue_tree.issues
             ]
 
     record.status = CaseStatus.confirmed
@@ -288,52 +251,42 @@ async def confirm_extraction(case_id: str, body: ConfirmRequest) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# POST /api/cases/{case_id}/analyze — 启动完整分析
-# ---------------------------------------------------------------------------
-
-
 @app.post("/api/cases/{case_id}/analyze", status_code=202)
 async def trigger_analysis(case_id: str) -> dict:
-    """触发三轮对抗辩论 + LLM 总结（异步后台任务）。"""
     record = _get_case_or_404(case_id)
-    _require_status(
-        record,
-        CaseStatus.extracted,
-        CaseStatus.confirmed,
-        detail="请先完成提取（并可选地确认结果）再启动分析",
-    )
+    if record.status != CaseStatus.analyzing:
+        _require_status(
+            record,
+            CaseStatus.extracted,
+            CaseStatus.confirmed,
+            detail="请先完成提取（并可选地确认结果）再启动分析",
+        )
     if record.ev_index is None or record.issue_tree is None:
         raise HTTPException(status_code=400, detail="提取数据不完整，请重新提取")
 
-    asyncio.create_task(run_analysis(record))
-    return {"case_id": case_id, "status": CaseStatus.analyzing.value, "message": "分析任务已启动"}
-
-
-# ---------------------------------------------------------------------------
-# GET /api/cases/{case_id}/analysis — SSE 流式进度 + 结果
-# ---------------------------------------------------------------------------
+    record, started = store.try_start_analysis(case_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"案件不存在: {case_id}")
+    if not started and record.status != CaseStatus.analyzing:
+        _require_status(
+            record,
+            CaseStatus.extracted,
+            CaseStatus.confirmed,
+            detail="请先完成提取（并可选地确认结果）再启动分析",
+        )
+    if started:
+        asyncio.create_task(run_analysis(record))
+        message = "分析任务已启动"
+    else:
+        message = "分析任务正在进行中"
+    return {"case_id": case_id, "status": CaseStatus.analyzing.value, "message": message}
 
 
 @app.get("/api/cases/{case_id}/analysis")
 async def stream_analysis(case_id: str):
-    """
-    Server-Sent Events 流：实时推送分析进度，分析完成后发送最终结果。
-
-    事件格式：
-      data: {"type": "progress", "message": "..."}
-      data: {"type": "done", "result": {...}}
-      data: {"type": "error", "message": "..."}
-      data: {"type": "ping"}
-    """
     record = _get_case_or_404(case_id)
 
     async def event_stream():
-        # 回放历史进度
-        for msg in record.progress:
-            yield f"data: {json.dumps({'type': 'progress', 'message': msg}, ensure_ascii=False)}\n\n"
-
-        # 已完成或已失败 — 直接返回结果
         if record.status == CaseStatus.analyzed:
             payload = json.dumps(
                 {"type": "done", "result": record.analysis_data}, ensure_ascii=False
@@ -343,23 +296,29 @@ async def stream_analysis(case_id: str):
 
         if record.status == CaseStatus.failed:
             payload = json.dumps(
-                {"type": "error", "message": record.error or "未知错误"}, ensure_ascii=False
+                {"type": "error", "message": record.error or "未知错误"},
+                ensure_ascii=False,
             )
             yield f"data: {payload}\n\n"
             return
 
-        if record.status not in (CaseStatus.analyzing,):
-            yield f"data: {json.dumps({'type': 'error', 'message': '分析尚未启动，请先调用 POST /analyze'}, ensure_ascii=False)}\n\n"
+        if record.status != CaseStatus.analyzing:
+            payload = json.dumps(
+                {"type": "error", "message": "分析尚未启动，请先调用 POST /analyze"},
+                ensure_ascii=False,
+            )
+            yield f"data: {payload}\n\n"
             return
 
-        # 实时跟踪
         async for msg in record.iter_progress():
             if msg == "__ping__":
                 yield f"data: {json.dumps({'type': 'ping'}, ensure_ascii=False)}\n\n"
             else:
-                yield f"data: {json.dumps({'type': 'progress', 'message': msg}, ensure_ascii=False)}\n\n"
+                yield (
+                    "data: "
+                    f"{json.dumps({'type': 'progress', 'message': msg}, ensure_ascii=False)}\n\n"
+                )
 
-        # 流结束后发送最终结果
         if record.status == CaseStatus.analyzed:
             payload = json.dumps(
                 {"type": "done", "result": record.analysis_data}, ensure_ascii=False
@@ -367,7 +326,8 @@ async def stream_analysis(case_id: str):
             yield f"data: {payload}\n\n"
         else:
             payload = json.dumps(
-                {"type": "error", "message": record.error or "分析异常终止"}, ensure_ascii=False
+                {"type": "error", "message": record.error or "分析异常终止"},
+                ensure_ascii=False,
             )
             yield f"data: {payload}\n\n"
 
@@ -381,24 +341,8 @@ async def stream_analysis(case_id: str):
     )
 
 
-# ---------------------------------------------------------------------------
-# GET /api/cases/{run_id}/progress — SSE 管道步骤进度流
-# ---------------------------------------------------------------------------
-
-
 @app.get("/api/cases/{run_id}/progress")
 async def stream_pipeline_progress(run_id: str):
-    """
-    Server-Sent Events: real-time pipeline step progress for *run_id*.
-
-    事件格式 / Event schema:
-      data: {"step": N, "status": "started"|"completed"|"failed", "name": "..."}
-      data: {"step": N, "status": "failed", "error": "..."}
-      data: {"type": "ping"}
-      data: {"type": "done"}
-
-    进度由 SSEProgressReporter 推送；pipeline 完成后流自动关闭。
-    """
     from engines.shared.progress_reporter import get_progress_queue
 
     queue = get_progress_queue(run_id)
@@ -430,19 +374,13 @@ async def stream_pipeline_progress(run_id: str):
     )
 
 
-# ---------------------------------------------------------------------------
-# GET /api/cases/{case_id}/report — 下载 DOCX 报告
-# ---------------------------------------------------------------------------
-
-
 @app.get("/api/cases/{case_id}/report")
 async def download_report(case_id: str):
-    """下载 Word 格式分析报告（分析完成后可用）。"""
     record = _get_case_or_404(case_id)
     if record.status != CaseStatus.analyzed:
         raise HTTPException(status_code=400, detail="分析尚未完成，无法下载报告")
     if record.report_path is None or not record.report_path.exists():
-        raise HTTPException(status_code=404, detail="报告文件不存在（可能生成失败）")
+        raise HTTPException(status_code=404, detail="报告文件不存在")
 
     return FileResponse(
         path=str(record.report_path),
@@ -451,23 +389,21 @@ async def download_report(case_id: str):
     )
 
 
-# ---------------------------------------------------------------------------
-# POST /api/scenarios/run — 触发场景推演
-# GET  /api/scenarios/{scenario_id} — 查询场景结果
-# ---------------------------------------------------------------------------
-
-
 def _build_scenario_diff_response(result: dict) -> ScenarioDiffResponse:
     scenario = result["scenario"]
     diff_summary = scenario.get("diff_summary") or []
     diff_entries = [
         DiffEntryResponse(
-            issue_id=e["issue_id"],
-            impact_description=e["impact_description"],
-            direction=e["direction"] if isinstance(e["direction"], str) else str(e["direction"]),
+            issue_id=entry["issue_id"],
+            impact_description=entry["impact_description"],
+            direction=(
+                entry["direction"]
+                if isinstance(entry["direction"], str)
+                else str(entry["direction"])
+            ),
         )
-        for e in diff_summary
-        if isinstance(e, dict)
+        for entry in diff_summary
+        if isinstance(entry, dict)
     ]
     return ScenarioDiffResponse(
         scenario_id=scenario["scenario_id"],
@@ -482,11 +418,10 @@ def _build_scenario_diff_response(result: dict) -> ScenarioDiffResponse:
 
 @app.post("/api/scenarios/run", response_model=ScenarioDiffResponse, status_code=200)
 async def run_scenario(body: ScenarioRunRequest) -> ScenarioDiffResponse:
-    """触发场景推演（what-if 分析），返回 ScenarioDiff。"""
     try:
         result = await scenario_service.run(
             run_id=body.run_id,
-            change_set=[c.model_dump() for c in body.change_set],
+            change_set=[change.model_dump() for change in body.change_set],
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
@@ -495,66 +430,47 @@ async def run_scenario(body: ScenarioRunRequest) -> ScenarioDiffResponse:
 
 @app.get("/api/scenarios/{scenario_id}", response_model=ScenarioDiffResponse)
 async def get_scenario(scenario_id: str) -> ScenarioDiffResponse:
-    """查询已运行 scenario 的结果（从内存或 outputs/ 读取）。"""
     result = scenario_service.get(scenario_id)
     if result is None:
         raise HTTPException(status_code=404, detail=f"scenario_id 不存在: {scenario_id}")
     return _build_scenario_diff_response(result)
 
 
-# ---------------------------------------------------------------------------
-# GET /api/cases/{case_id}/artifacts — 列出所有产物文件名
-# ---------------------------------------------------------------------------
-
-
 @app.get("/api/cases/{case_id}/artifacts")
 async def list_case_artifacts(case_id: str):
-    """列出该 run 所有已就绪的产物文件名。"""
     record = store.get(case_id)
     if record is None:
         return JSONResponse(
             status_code=404,
-            content={"error": f"案件不存在：{case_id}", "code": 404},
+            content={"error": f"案件不存在: {case_id}", "code": 404},
         )
     return {"run_id": case_id, "artifacts": list_artifacts(record)}
 
 
-# ---------------------------------------------------------------------------
-# GET /api/cases/{case_id}/artifacts/{artifact_name} — 获取具体产物 JSON
-# ---------------------------------------------------------------------------
-
-
 @app.get("/api/cases/{case_id}/artifacts/{artifact_name}")
 async def get_case_artifact(case_id: str, artifact_name: str):
-    """获取具体产物 JSON（分析完成后可用）。"""
     record = store.get(case_id)
     if record is None:
         return JSONResponse(
             status_code=404,
-            content={"error": f"案件不存在：{case_id}", "code": 404},
+            content={"error": f"案件不存在: {case_id}", "code": 404},
         )
     artifact = get_artifact(record, artifact_name)
     if artifact is None:
         return JSONResponse(
             status_code=404,
-            content={"error": f"产物尚不可用：{artifact_name}", "code": 404},
+            content={"error": f"产物尚不可用: {artifact_name}", "code": 404},
         )
     return artifact
 
 
-# ---------------------------------------------------------------------------
-# GET /api/cases/{case_id}/report/markdown — 获取 Markdown 格式报告
-# ---------------------------------------------------------------------------
-
-
 @app.get("/api/cases/{case_id}/report/markdown")
 async def get_markdown_report(case_id: str):
-    """获取 Markdown 格式分析报告内容（分析完成后可用）。"""
     record = store.get(case_id)
     if record is None:
         return JSONResponse(
             status_code=404,
-            content={"error": f"案件不存在：{case_id}", "code": 404},
+            content={"error": f"案件不存在: {case_id}", "code": 404},
         )
     if record.report_markdown is None:
         return JSONResponse(
@@ -564,16 +480,10 @@ async def get_markdown_report(case_id: str):
     return Response(content=record.report_markdown, media_type="text/markdown")
 
 
-# ---------------------------------------------------------------------------
-# 静态文件 + 前端入口
-# ---------------------------------------------------------------------------
-
-
 @app.get("/")
 async def serve_frontend():
     return FileResponse(str(_STATIC_DIR / "index.html"))
 
 
-# 挂载其余静态资源（CSS/JS 等，预留扩展）
 if _STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")

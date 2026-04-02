@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import sys
 import time
 import uuid
@@ -56,6 +57,7 @@ from engines.shared.workspace_manager import WorkspaceManager
 from .schemas import CaseStatus
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
+logger = logging.getLogger(__name__)
 
 # Workspace base dir for API case persistence (Unit 6).
 # Set to None to disable workspace writes (useful in tests).
@@ -83,6 +85,7 @@ class CaseRecord:
         self.extraction_data: Optional[dict] = None
         # 最终分析结果
         self.analysis_data: Optional[dict] = None
+        self.run_id: Optional[str] = None
         # 本轮分析的 run_id（Unit 5: stable id for scenario API）
         self.run_id: Optional[str] = None
         # 生成的报告路径
@@ -91,8 +94,6 @@ class CaseRecord:
         self.artifacts: dict[str, Any] = {}
         # Markdown 格式报告内容
         self.report_markdown: Optional[str] = None
-        # 分析 run_id（用于场景推演 baseline 定位）
-        self.run_id: Optional[str] = None
         # 工作区管理器（用于持久化，进程重启后可恢复状态）
         self.workspace_manager: Optional[WorkspaceManager] = None
         # 进度日志
@@ -158,17 +159,12 @@ class CaseStore:
             try:
                 wm = WorkspaceManager(ws_base, case_id)
                 wm.init_workspace(info.get("case_type", "civil_loan"))
-                wm.save_case_meta(
-                    {
-                        "case_id": case_id,
-                        "info": info,
-                        "status": record.status.value,
-                        "materials": record.materials,
-                    }
-                )
                 record.workspace_manager = wm
+                wm.save_case_meta(_record_to_meta(record))
             except Exception:
-                pass  # non-fatal: workspace write failure doesn't block creation
+                logger.exception(
+                    "Failed to initialize workspace for case %s during create", case_id
+                )
 
         with self._lock:
             self._cases[case_id] = (record, time.time())
@@ -189,7 +185,17 @@ class CaseStore:
                 self._evicted.add(case_id)
                 return None
         # Not in memory (e.g. after process restart / _cases.clear()): try disk recovery
-        return self._load_from_disk(case_id, self._workspaces_dir or _WORKSPACE_BASE)
+        recovered = self._load_from_disk(case_id, self._workspaces_dir or _WORKSPACE_BASE)
+        if recovered is None:
+            return None
+        with self._lock:
+            if case_id in self._evicted:
+                return None
+            entry = self._cases.get(case_id)
+            if entry is not None:
+                return entry[0]
+            self._cases[case_id] = (recovered, time.time())
+        return recovered
 
     def load_from_workspace(self, case_id: str) -> Optional["CaseRecord"]:
         """Reconstruct a CaseRecord from workspace persistence (restart recovery)."""
@@ -219,6 +225,7 @@ class CaseStore:
             record.status = _CaseStatus.created
         record.materials = meta.get("materials", {"plaintiff": [], "defendant": []})
         record.workspace_manager = wm
+        record.error = meta.get("error")
 
         # 恢复提取产物
         record.ev_index = wm.load_evidence_index()
@@ -229,14 +236,40 @@ class CaseStore:
                 "issues": [i.model_dump(mode="json") for i in record.issue_tree.issues],
             }
 
-        # 恢复分析产物：先查 artifacts 文件，再 fallback 到 case_meta.json
-        analysis_path = wm.workspace_dir / "artifacts" / "analysis_data.json"
-        if analysis_path.exists():
-            record.analysis_data = json.loads(analysis_path.read_text(encoding="utf-8"))
-            record.run_id = (record.analysis_data or {}).get("run_id")
-        elif meta.get("analysis_data") is not None:
-            record.analysis_data = meta["analysis_data"]
-            record.run_id = meta.get("run_id")
+        artifact_names = meta.get("artifact_names", [])
+        artifact_refs = meta.get("artifact_refs", {})
+        analysis_data = wm.load_json_artifact("analysis_data.json")
+        if analysis_data is None:
+            analysis_data = meta.get("analysis_data")
+        if analysis_data is not None:
+            record.analysis_data = analysis_data
+            record.artifacts["analysis_summary.json"] = analysis_data
+        record.run_id = meta.get("run_id") or (record.analysis_data or {}).get("run_id")
+
+        for name in artifact_names:
+            if name in record.artifacts:
+                continue
+            storage_ref = artifact_refs.get(name, _artifact_storage_ref(name))
+            path = _resolve_workspace_ref(wm, storage_ref)
+            if not path.exists():
+                continue
+            if name.endswith(".json"):
+                record.artifacts[name] = json.loads(path.read_text(encoding="utf-8"))
+            elif name.endswith(".md") or name.endswith(".txt"):
+                record.artifacts[name] = path.read_text(encoding="utf-8")
+
+        if record.report_markdown is None:
+            report_markdown = wm.load_text_artifact("report.md")
+            if report_markdown is None:
+                report_markdown = meta.get("report_markdown")
+            record.report_markdown = report_markdown
+        if record.report_markdown is not None:
+            record.artifacts.setdefault("report.md", record.report_markdown)
+
+        report_ref = meta.get("report_docx_ref") or artifact_refs.get("report.docx")
+        report_path = _resolve_workspace_ref(wm, report_ref) if report_ref else wm.artifact_path("report.docx")
+        if report_path.exists():
+            record.report_path = report_path
 
         return record
 
@@ -248,16 +281,52 @@ class CaseStore:
                 return False
             record, _ = entry
         if record.workspace_manager is None:
+            logger.warning("Failed to persist case %s: no workspace manager", case_id)
             return False
         try:
             record.workspace_manager.save_case_meta(_record_to_meta(record))
             return True
         except Exception:
+            logger.exception("Failed to persist case metadata for case %s", case_id)
             return False
 
     def load_from_disk(self, case_id: str) -> Optional["CaseRecord"]:
         """Public alias for _load_from_disk for restart recovery."""
         return self._load_from_disk(case_id)
+
+    def try_start_extraction(self, case_id: str) -> tuple[Optional[CaseRecord], bool]:
+        return self._try_start(case_id, allowed=(CaseStatus.created,), active=CaseStatus.extracting)
+
+    def try_start_analysis(self, case_id: str) -> tuple[Optional[CaseRecord], bool]:
+        return self._try_start(
+            case_id,
+            allowed=(CaseStatus.extracted, CaseStatus.confirmed),
+            active=CaseStatus.analyzing,
+        )
+
+    def _try_start(
+        self,
+        case_id: str,
+        *,
+        allowed: tuple[CaseStatus, ...],
+        active: CaseStatus,
+    ) -> tuple[Optional[CaseRecord], bool]:
+        with self._lock:
+            entry = self._cases.get(case_id)
+            if entry is None:
+                return None, False
+            record, _ = entry
+            if record.status == active:
+                return record, False
+            if record.status not in allowed:
+                return record, False
+            record.status = active
+            record.error = None
+            record.progress = []
+            record._progress_queue = asyncio.Queue()
+            self._cases[case_id] = (record, time.time())
+        _persist_record_state(record, operation=f"start {active.value}")
+        return record, True
 
     def evict_expired(self) -> int:
         """清理过期条目，返回清理数量。"""
@@ -286,6 +355,9 @@ store = CaseStore()
 
 def _record_to_meta(record: "CaseRecord") -> dict:
     """Serialize durable CaseRecord fields for workspace persistence."""
+    artifact_refs = {name: _artifact_storage_ref(name) for name in record.artifacts}
+    if record.report_path is not None:
+        artifact_refs["report.docx"] = _artifact_storage_ref("report.docx")
     return {
         "case_id": record.case_id,
         "status": record.status.value,
@@ -294,53 +366,53 @@ def _record_to_meta(record: "CaseRecord") -> dict:
         "analysis_data": record.analysis_data,
         "run_id": record.run_id,
         "artifact_names": list(record.artifacts.keys()),
+        "artifact_refs": artifact_refs,
         "report_markdown": record.report_markdown,
+        "report_docx_ref": artifact_refs.get("report.docx"),
         "error": record.error,
     }
 
 
 def _persist_case_meta(record: "CaseRecord") -> None:
     """Write durable CaseRecord state to workspace (non-fatal on failure)."""
-    if _WORKSPACE_BASE is None:
+    wm = _workspace_manager_for_record(record)
+    if wm is None:
         return
     try:
-        wm = WorkspaceManager(_WORKSPACE_BASE, record.case_id)
         wm.save_case_meta(_record_to_meta(record))
     except Exception:
-        pass
+        logger.exception("Failed to persist case metadata for case %s", record.case_id)
 
 
-def _load_case_from_workspace(case_id: str) -> Optional["CaseRecord"]:
-    """Reconstruct a CaseRecord from workspace persistence for restart recovery."""
+def _artifact_storage_ref(name: str) -> str:
+    if name == "analysis_summary.json":
+        return "artifacts/analysis_data.json"
+    return f"artifacts/{name}"
+
+
+def _workspace_manager_for_record(record: "CaseRecord") -> Optional[WorkspaceManager]:
+    if record.workspace_manager is not None:
+        return record.workspace_manager
     if _WORKSPACE_BASE is None:
         return None
-    try:
-        wm = WorkspaceManager(_WORKSPACE_BASE, case_id)
-        meta = wm.load_case_meta()
-        if meta is None:
-            return None
-        record: CaseRecord = CaseRecord.__new__(CaseRecord)
-        # Initialize asyncio-dependent fields that can't be serialized
-        import asyncio as _asyncio
+    return WorkspaceManager(_WORKSPACE_BASE, record.case_id)
 
-        record.case_id = meta["case_id"]
-        record.status = CaseStatus(meta["status"])
-        record.info = meta["info"]
-        record.materials = {"plaintiff": [], "defendant": []}
-        record.ev_index = None
-        record.issue_tree = None
-        record.extraction_data = None
-        record.analysis_data = meta.get("analysis_data")
-        record.run_id = meta.get("run_id")
-        record.report_path = None
-        record.artifacts = {}  # content not persisted; names only
-        record.report_markdown = meta.get("report_markdown")
-        record.progress = []
-        record.error = meta.get("error")
-        record._progress_queue = _asyncio.Queue()
-        return record
-    except Exception:
-        return None
+
+def _resolve_workspace_ref(wm: WorkspaceManager, storage_ref: str) -> Path:
+    path = (wm.workspace_dir / storage_ref).resolve()
+    path.relative_to(wm.workspace_dir.resolve())
+    return path
+
+
+def _persist_record_state(record: "CaseRecord", *, operation: str) -> None:
+    wm = _workspace_manager_for_record(record)
+    if wm is None:
+        return
+    if store.save_to_disk(record.case_id):
+        return
+    message = f"{operation} failed to persist case metadata"
+    logger.error("%s for case %s", message, record.case_id)
+    raise RuntimeError(message)
 
 
 # ---------------------------------------------------------------------------
@@ -378,8 +450,12 @@ def defenses_to_dicts(defenses: list[dict], case_id: str, defendant_id: str) -> 
 
 async def run_extraction(record: CaseRecord) -> None:
     """异步后台任务：索引证据 + 提取争点。"""
-    record.status = CaseStatus.extracting
-    store.save_to_disk(record.case_id)
+    if record.status != CaseStatus.extracting:
+        record.status = CaseStatus.extracting
+        record.error = None
+        record.progress = []
+        record._progress_queue = asyncio.Queue()
+        _persist_record_state(record, operation="start extraction")
     try:
         info = record.info
         case_id = record.case_id
@@ -435,14 +511,7 @@ async def run_extraction(record: CaseRecord) -> None:
         if record.workspace_manager is not None:
             record.workspace_manager.save_evidence_index(record.ev_index)
             record.workspace_manager.save_issue_tree(record.issue_tree)
-            record.workspace_manager.save_case_meta(
-                {
-                    "case_id": record.case_id,
-                    "info": record.info,
-                    "status": CaseStatus.extracted.value,
-                    "materials": record.materials,
-                }
-            )
+        _persist_record_state(record, operation="finish extraction")
 
         record.log("[提取] 完成 ✓")
 
@@ -569,9 +638,12 @@ async def _run_rounds(
 async def run_analysis(record: CaseRecord) -> None:
     """异步后台任务：三轮对抗辩论 + LLM 总结 + 生成 DOCX 报告。"""
     # 重置进度队列（extract 阶段的哨兵可能还在）
-    record._progress_queue = asyncio.Queue()
-    record.status = CaseStatus.analyzing
-    store.save_to_disk(record.case_id)
+    if record.status != CaseStatus.analyzing:
+        record.status = CaseStatus.analyzing
+        record.error = None
+        record.progress = []
+        record._progress_queue = asyncio.Queue()
+        _persist_record_state(record, operation="start analysis")
     try:
         info = record.info
         model = info.get("model", DEFAULT_MODEL)
@@ -636,6 +708,18 @@ async def run_analysis(record: CaseRecord) -> None:
         )
         (baseline_dir / "evidence_index.json").write_text(
             record.ev_index.model_dump_json(), encoding="utf-8"
+        )
+        (baseline_dir / "baseline_meta.json").write_text(
+            json.dumps(
+                {
+                    "case_id": record.case_id,
+                    "run_id": run_id,
+                    "case_type": info.get("case_type", "civil_loan"),
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
         )
 
         # 序列化分析结果
@@ -717,7 +801,6 @@ async def run_analysis(record: CaseRecord) -> None:
             record.log(f"[警告] Markdown 报告生成失败（{md_err}），可继续使用分析结果")
 
         record.status = CaseStatus.analyzed
-        store.save_to_disk(record.case_id)
 
         # P2-3: 持久化分析产物和案件状态到工作区，确保进程重启后可恢复。
         if record.workspace_manager is not None:
@@ -725,14 +808,17 @@ async def run_analysis(record: CaseRecord) -> None:
                 # 持久化更新后的证据索引（状态已由 EvidenceStateMachine 更新）
                 record.workspace_manager.save_evidence_index(record.ev_index)
                 # 持久化分析数据（含 run_id）
-                analysis_path = (
-                    record.workspace_manager.workspace_dir / "artifacts" / "analysis_data.json"
+                record.workspace_manager.save_json_artifact("result.json", result_dict)
+                record.workspace_manager.save_json_artifact(
+                    "analysis_data.json", record.analysis_data
                 )
-                analysis_path.parent.mkdir(parents=True, exist_ok=True)
-                analysis_path.write_text(
-                    json.dumps(record.analysis_data, ensure_ascii=False, indent=2),
-                    encoding="utf-8",
-                )
+                if record.report_markdown is not None:
+                    record.workspace_manager.save_text_artifact("report.md", record.report_markdown)
+                if record.report_path is not None and record.report_path.exists():
+                    record.workspace_manager.save_binary_artifact(
+                        "report.docx", record.report_path.read_bytes()
+                    )
+                    record.report_path = record.workspace_manager.artifact_path("report.docx")
                 # 更新案件状态元数据
                 record.workspace_manager.save_case_meta(
                     {
@@ -742,13 +828,16 @@ async def run_analysis(record: CaseRecord) -> None:
                         "materials": record.materials,
                     }
                 )
-            except Exception as ws_err:
-                record.log(f"[警告] 工作区持久化失败（{ws_err}），不影响分析结果")
+            except Exception:
+                logger.exception(
+                    "Failed to persist analysis artifacts for case %s", record.case_id
+                )
+                raise
 
         record.log("[分析] 完成 ✓")
 
         # Unit 6: persist durable state to workspace
-        _persist_case_meta(record)
+        _persist_record_state(record, operation="finish analysis")
 
     except Exception as exc:
         record.status = CaseStatus.failed
@@ -771,14 +860,21 @@ class ScenarioService:
         self._outputs_dir = outputs_dir
         self._results: dict[str, dict] = {}
 
-    async def run(self, run_id: str, change_set: list[dict], case_type: str = "civil_loan") -> dict:
+    async def run(self, run_id: str, change_set: list[dict], case_type: Optional[str] = None) -> dict:
         """从 outputs/{run_id}/ 加载 baseline，执行场景推演，返回序列化的 ScenarioResult。"""
         from engines.simulation_run.schemas import ChangeItem, ScenarioInput
         from engines.simulation_run.simulator import ScenarioSimulator, load_baseline
 
         baseline_dir = self._outputs_dir / run_id
+        baseline_meta_path = baseline_dir / "baseline_meta.json"
         if not baseline_dir.is_dir():
             raise FileNotFoundError(f"run_id 不存在: {run_id}")
+
+        if baseline_meta_path.exists():
+            baseline_meta = json.loads(baseline_meta_path.read_text(encoding="utf-8"))
+            case_type = baseline_meta.get("case_type", case_type)
+        if case_type is None:
+            case_type = "civil_loan"
 
         issue_tree, evidence_index, baseline_run_id = load_baseline(baseline_dir)
 
