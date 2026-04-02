@@ -2,193 +2,91 @@
 
 多角色案件对抗推演系统 / Multi-role adversarial case simulation engine
 
-## What This Is
+## What This Repo Is
 
-这是一个面向中国诉讼场景的案件备战系统仓库。它的目标不是替律师“判输赢”，而是把案件材料结构化为可推演对象，在程序约束、证据规则、权限隔离和审计链下，提前暴露：
+这是一个面向中国诉讼备战场景的案件分析引擎仓库。
 
-- 争点
-- 证据缺口
-- 程序风险
-- 对方最强攻击路径
-- 法官可能追问
-- 多路径结论与补证方向
+它不做“法院一定会怎么判”的承诺。它做的是把案件材料结构化、把争点和证据关系拉平、把程序状态和访问边界固定下来，再在这个约束下跑对抗推演、报告生成和 `what-if` 场景比较。
 
-当前仓库首先承担 `source of truth` 的职责：先冻结产品边界、路线图、架构、对象模型和评测口径，再驱动后续实现。
+当前仓库同时承载两条版本线：
 
-## Installation
+| Track | 关注点 | 当前状态 |
+|------|------|------|
+| `Core Track = v2` | 内核、对象模型、五阶段工作流、案型扩展、workspace 持久化、scenario | 当前主线，继续演进 |
+| `Output Track = v3.2` | 报告架构、Markdown / DOCX parity、导出语义 | 已在 `main` 落地，主线输出已去 mediation、去 probability |
 
-**Requirements**: Python >= 3.11, Claude Code CLI (or Codex CLI) installed and in PATH.
+## Entry Points
 
-```bash
-# Clone the repo and install in editable mode with dev dependencies
-pip install -e ".[dev]"
-
-# Set your Anthropic API key (required for Claude CLI usage)
-export ANTHROPIC_API_KEY="sk-ant-..."   # Linux / macOS
-set ANTHROPIC_API_KEY=sk-ant-...        # Windows cmd
-$env:ANTHROPIC_API_KEY="sk-ant-..."     # Windows PowerShell
-```
-
-## Quick Start
-
-Run the full adversarial pipeline on a YAML case file:
+### CLI
 
 ```bash
-# Run with the default model (claude-sonnet-4-6)
 python scripts/run_case.py cases/wang_v_chen_zhuang_2025.yaml
-
-# Specify a different model
-python scripts/run_case.py cases/my_case.yaml --model claude-opus-4-6
-
-# Use only the Claude CLI (skip Codex)
-python scripts/run_case.py cases/my_case.yaml --claude-only
+python scripts/run_case.py cases/my_case.yaml --model claude-sonnet-4-6
+python scripts/run_case.py cases/my_case.yaml --resume
 ```
 
-Outputs are written to `outputs/<timestamp>/`:
+### API
 
+```bash
+uvicorn api.app:app --reload --port 8000
 ```
-outputs/20260329-123456/
-  result.json          # AdversarialResult — full debate record
-  report.md            # human-readable summary
-  decision_tree.json   # JudgmentPathTree
+
+交互式文档默认在 `http://localhost:8000/docs`。
+
+## Main Outputs
+
+CLI 运行默认写入 `outputs/<timestamp>/`，当前主线会生成这些产物：
+
+```text
+outputs/<timestamp>/
+  result.json
+  report.md
+  report.docx
+  decision_tree.json
   executive_summary.json
   attack_chain.json
   amount_report.json
-  对抗分析报告.docx     # Word report
 ```
 
-Run the test suite:
+API 路径另外会把案件状态和可恢复产物持久化到 `workspaces/api/<case_id>/`，服务重启后仍可恢复 `artifacts`、Markdown report 和 DOCX report。
 
-```bash
-pytest
-```
-
-## What This Is Not
+## What This Repo Is Not
 
 - 不是 AI 法官
-- 不是自由聊天 demo
-- 不是面向普通用户的法律咨询产品
-- 不是自动对法院提交材料的工具
-- 不是绕过律师复核直接生成正式法律意见的系统
+- 不是面向 C 端用户的法律咨询产品
+- 不是自动向法院提交材料的系统
+- 不是无证据追溯的聊天式 demo
+- 不是绕过律师复核直接出正式法律意见的自动化工具
 
-## Current Status
+## Documentation
 
-当前版本：`v2`（开发中）
+- 当前有效文档入口：[docs/README.md](docs/README.md)
+- 仓库结构总览：[docs/05_repository_map.md](docs/05_repository_map.md)
+- 历史档案入口：[docs/archive/README.md](docs/archive/README.md)
 
-单案种（民事 `民间借贷`）、离线可跑通的双边对抗案件分析引擎，930 个测试全部通过。
-
-**已完成里程碑**：
-
-| 版本 | 内容 | 测试数 |
-|------|------|--------|
-| v0.5 | 静态分析：案件结构化、争点提取、证据索引、报告生成 | 280 |
-| v1 | 双边对抗：原告/被告代理、证据管理员、三轮对抗、访问隔离 | 482 |
-| v1.2 | 分析质量升级：12 个分析模块（争点排序、金额校验、裁判路径树、攻击链、证据权重、行动建议等） | 930 |
-| v1.5 | 程序化庭前会议 / 质证版（`evidence_state_machine`、法官发问机制） | — |
-
-**下一目标**：`v2` — 民事通用内核 Beta（多案型支持：`civil_loan` / `labor_dispute` / `real_estate`）。
-
-当前明确不做：
-
-- `judge agent`（v2 计划）
-- 刑事/行政
-- `ui`
-- 在线协作
-
-## Product Workflow
-
-未来统一按五阶段工作流组织：
-
-1. `case_structuring`
-2. `procedure_setup`
-3. `simulation_run`
-4. `report_generation`
-5. `interactive_followup`
-
-这套工作流是产品层骨架，不替代法律程序状态机。
-
-## Repository Map
-
-```text
-docs/
-  00_north_star.md
-  01_product_roadmap.md
-  02_architecture.md
-  03_case_object_model.md
-  04_eval_and_acceptance.md
-plans/
-  current_plan.md
-.bulwark/
-  policies/
-  tasks/
-schemas/
-  README.md
-  case/
-  procedure/
-  reporting/
-engines/
-  README.md
-  shared/                  # 共享模型、JobManager、AccessController、CLI adapter
-  case_structuring/        # 证据索引、争点提取、金额计算、证据权重评分
-  procedure_setup/
-  simulation_run/          # 模拟推演 + 9 个 v1.2 分析子引擎
-  report_generation/       # 报告生成 + 执行摘要
-  adversarial/             # 双边对抗引擎（原告/被告/证据管理员）
-  interactive_followup/
-benchmarks/
-  README.md
-  fixtures/
-  acceptance/
-tests/
-  README.md
-  contracts/
-  smoke/
-```
-
-推荐阅读顺序：
+建议先读：
 
 1. [docs/00_north_star.md](docs/00_north_star.md)
-2. [docs/03_case_object_model.md](docs/03_case_object_model.md)
-3. [docs/02_architecture.md](docs/02_architecture.md)
+2. [docs/02_architecture.md](docs/02_architecture.md)
+3. [docs/03_case_object_model.md](docs/03_case_object_model.md)
 4. [docs/01_product_roadmap.md](docs/01_product_roadmap.md)
 5. [docs/04_eval_and_acceptance.md](docs/04_eval_and_acceptance.md)
-   _(docs/05 is intentionally absent — that slot is reserved for the v1.5 programmatic pretrial-conference spec, not yet written)_
-6. [docs/06_v1.2_spec.md](docs/06_v1.2_spec.md)
-7. [plans/current_plan.md](plans/current_plan.md)
 
-## Design Principles
+## Repo Pointers
+
+- `scripts/`：CLI 入口和辅助脚本
+- `api/`：FastAPI 服务和 API persistence orchestration
+- `engines/`：五阶段工作流引擎和共享运行时
+- `schemas/`：JSON Schema 契约
+- `benchmarks/`：金标集、fixtures、acceptance 参考
+- `tests/`：单元、集成、API 和 smoke 测试
+- `docs/archive/`：历史计划、评审和设计资料
+
+## Design Priorities
 
 - `schema stability`
-- `reproducibility`
+- `workspace-backed persistence`
 - `citation traceability`
 - `access isolation`
+- `replayability`
 - `versioned evaluation`
-
-同时明确不采用：
-
-- 社交媒体式 action space
-- 高自由 persona 生成
-- 把外部图谱/记忆平台设为不可替代底座
-
-## Repository Bootstrap
-
-仓库保持 pre-framework，不绑定具体运行时或部署方案：
-
-- `schemas/`：版本化数据契约和交换边界（12 个 JSON Schema）
-- `engines/`：7 个引擎目录，含 20 个子模块，与五阶段工作流对齐
-- `benchmarks/`：回归评测输入与验收参考
-- `tests/`：契约测试、smoke 测试、集成测试（930 个测试）
-- `.bulwark/`：面向 Codex / Claude 的任务合同与策略控制平面
-
-## Near-Term Direction
-
-v1.5（程序化庭前会议）已完成并合并。当前方向：`v2` — 民事通用内核 Beta：
-
-1. 统一对象模型：`Party`、`Claim`、`Defense`、`Issue`、`Evidence`、`Burden`、`ProcedureState`
-2. 案型插件机制（`civil_loan` / `labor_dispute` / `real_estate`）
-3. 输出升级：胜诉路径、败诉路径、调解路径、补证路径
-4. 文书辅助引擎
-
-## License / Reference Note
-
-本仓库当前以自有文档与规划为主。外部项目只借鉴产品链路、状态管理和报告互动思路，不直接复用受许可证约束的实现代码。

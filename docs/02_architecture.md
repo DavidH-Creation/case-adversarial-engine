@@ -1,16 +1,65 @@
 # System Architecture
 
-## 定位
+## Overview
 
-本仓库是多角色案件对抗推演系统的系统仓库。当前版本已经补上最小工程骨架，但仍然不绑定具体框架；这里冻结的是未来工程实现必须遵守的模块边界、状态流转方式和访问控制原则。
+这个仓库现在不是 bootstrap scaffold 了。它已经有真实的 CLI、API、workspace persistence、scenario flow 和报告导出链路。
 
-系统的设计原则不是“多角色自由对话”，而是“对象模型 + 程序驱动 + 证据约束 + 权限隔离 + 可审计输出”。
+系统的骨架可以概括成一句话：
 
-## Product Workflow State Machine
+**同一套对象模型，驱动两种入口，产出同一批可回放、可恢复、可比较的案件产物。**
 
-这是产品体验层的状态机，用来组织律师使用系统的步骤，不替代法律程序状态。
+两个主要入口：
 
-统一工作流：
+- CLI：`scripts/run_case.py`
+- API：`api/app.py`
+
+共享的运行时底座：
+
+- `engines/shared/`
+- `schemas/`
+- `engines/*`
+- `benchmarks/`
+- `tests/`
+
+## Runtime Surfaces
+
+### CLI
+
+CLI 负责离线和半离线运行：
+
+1. 读取 `cases/*.yaml`
+2. 进入五阶段工作流
+3. 写出 `outputs/<timestamp>/`
+4. 支持 `--resume` 基于已持久化产物继续后半程
+
+CLI 主线产物目前包括：
+
+- `result.json`
+- `report.md`
+- `report.docx`
+- `decision_tree.json`
+- `executive_summary.json`
+- `attack_chain.json`
+- `amount_report.json`
+
+### API
+
+API 负责案件式、可恢复、可重连的服务化运行：
+
+1. `POST /api/cases/` 创建案件
+2. `POST /api/cases/{case_id}/materials` 上传材料
+3. `POST /api/cases/{case_id}/extract` 启动提取
+4. `POST /api/cases/{case_id}/confirm` 确认提取结果
+5. `POST /api/cases/{case_id}/analyze` 启动分析
+6. `GET /api/cases/{case_id}/analysis` 通过 SSE 看进度
+7. `GET /api/cases/{case_id}/artifacts` / `report` / `report/markdown` 读取产物
+8. `POST /api/scenarios/run` 基于 baseline `run_id` 运行情景比较
+
+API 层的状态与产物持久化在 `workspaces/api/<case_id>/`。
+
+## Five-Stage Workflow
+
+仓库当前按五阶段工作流组织代码：
 
 1. `case_structuring`
 2. `procedure_setup`
@@ -18,357 +67,101 @@
 4. `report_generation`
 5. `interactive_followup`
 
-约束：
-
-- 工作流状态只描述产品阶段，不描述法律程序正当性
-- 每个工作流阶段都要消费前一阶段的结构化产物
-- 所有工作流产物都要落回统一案件上下文
-
-## Legal Procedure State Machine
-
-法律程序状态机继续保留原有回合语义，不被 UI 或产品流程替代。
-
-## Repository Baseline
-
-当前最小工程骨架如下：
-
-```text
-schemas/
-  case/
-  procedure/
-  reporting/
-engines/
-  case_structuring/
-  procedure_setup/
-  simulation_run/
-  report_generation/
-  interactive_followup/
-benchmarks/
-  fixtures/
-  acceptance/
-tests/
-  contracts/
-  smoke/
-```
+这五阶段是产品工作流，不等于法律程序状态机。
 
-该骨架只提供稳定落点，不代表已经确定运行时、服务分层或部署方式。
+法律程序层的状态和证据准入规则，仍由共享对象模型、证据状态机和程序模板约束。
 
-## System Modules
+## Persistence Model
 
-### schemas
+### Case-level persistence
 
-职责：定义所有核心对象和枚举，作为系统唯一数据契约来源。
+核心持久化容器是 `CaseWorkspace` 这套概念模型。
 
-当前最小目录分层：
+在代码里主要落为：
 
-- `case/`
-- `procedure/`
-- `reporting/`
+- `engines/shared/models.py`
+- `engines/shared/workspace_manager.py`
+- API workspace 目录
+- CLI output 目录
 
-至少覆盖：
+### Two persistence surfaces
 
-- `Party`
-- `Claim`
-- `Defense`
-- `Issue`
-- `Evidence`
-- `Burden`
-- `ProcedureState`
-- `AgentOutput`
-- `CaseWorkspace`
-- `Run`
-- `Job`
+当前仓库有两种持久化表面：
 
-约束：
+- `outputs/<timestamp>/`
+  主要给 CLI / baseline run / export 使用
+- `workspaces/api/<case_id>/`
+  主要给 API 的案件恢复、artifact 恢复和 report 恢复使用
 
-- 字段命名只能来自 `docs/03_case_object_model.md`
-- 新案型不得另造同义对象
-- `schemas` 的变化必须同步更新评测基线
-- `CaseWorkspace` contract 放在 `schemas/case/`
-- `Run` 与 `Job` contract 放在 `schemas/procedure/`
-- 共享索引与可追溯引用定义可以放在 `schemas/` 下复用，但不能另造新的工作流对象名
+设计要求是这两种表面最终都能回到同一批结构化产物，而不是各写一套互不相认的状态。
 
-### engines
+## Scenario Flow
 
-职责：承载系统行为，而不是承载业务话术。
+`simulation_run` 不只负责对抗，还负责 baseline 到 scenario 的差异运行。
 
-逻辑子模块边界：
+当前 scenario 链路的核心约束是：
 
-- `access_control`
-- `case_manager`
-- `job_manager`
-- `round_engine`
-- `evidence_state_machine`
-- `citation_trace`
-- `report_engine`
-- `interaction_engine`
-- `scenario_engine`
-- `evaluator`
+- scenario 必须绑定 baseline `run_id`
+- baseline output 目录写出 `baseline_meta.json`
+- scenario 运行时从 baseline metadata 恢复真实 `case_type`
+- 差异输出必须可解释，不能只给一段模糊文本
 
-当前最小目录分层：
+API 场景入口是：
 
-- `case_structuring/`
-- `procedure_setup/`
-- `simulation_run/`
-- `report_generation/`
-- `interactive_followup/`
+- `POST /api/scenarios/run`
+- `GET /api/scenarios/{scenario_id}`
 
-职责边界：
+## Reporting Architecture
 
-- `access_control` 只负责“谁能看什么、谁能在当前阶段写什么”
-- `case_manager` 只负责案件级上下文持久化和产物索引，并且必须把 `CaseWorkspace` 当作 `Run`、`AgentOutput`、`ReportArtifact`、`InteractionTurn`、`Scenario` 的单一持久化容器
-- `job_manager` 只负责 `Job` 生命周期、进度与恢复语义，不预设消息队列、外部 worker、broker 或云服务
-- `round_engine` 只负责程序化回合推进，不负责生成具体法律立场
-- `evidence_state_machine` 只负责证据生命周期与合法迁移
-- `citation_trace` 只负责结论与证据、规则、回合的追溯链
-- `report_engine` 只负责把推演结果整理成律师可消费产物
-- `interaction_engine` 只负责报告后的深度追问和 drill-down
-- `scenario_engine` 只负责 `what-if` 变量注入与差异比较
-- `evaluator` 只负责版本评测与回归比较
-- 工作流阶段切换与回放入口都必须先经过 `CaseWorkspace`，不能直接绕开工作区写入孤立产物
+报告层现在已经是 active runtime，不是占位目录。
 
-### templates
+主线 report stack 位于 `engines/report_generation/`，负责：
 
-职责：承载案种、程序和角色的模板化差异。
+- Markdown report
+- DOCX export
+- executive summary
+- outcome / path rendering
+- parity 和语义一致性
 
-未来至少拆分为：
+当前 `Output Track = v3.2` 的主线规则：
 
-- `civil`
-- `criminal`
-- `admin`
+- 主线输出 probability-free
+- 主线输出 mediation-free
+- Markdown 与 DOCX 保持同一套报告语义
+- `--resume` 后仍能重新生成 `report.md` 和 `report.docx`
 
-模板只定义：
+## Access and Evidence Rules
 
-- 案种要件模板
-- 常见抗辩模板
-- 程序回合模板
-- 文书框架模板
+系统的硬边界仍然是：
 
-模板不定义：
+- `owner_private`
+- `shared_common`
+- `admitted_record`
 
-- 核心对象结构
-- 权限底层逻辑
-- 评测指标口径
+证据状态机仍然是：
 
-### agents
+- `private`
+- `submitted`
+- `challenged`
+- `admitted_for_discussion`
 
-职责：在受限输入与固定输出合同下生成角色化推演结果。
+任何角色化输出都不能绕过这套边界。
 
-未来至少拆分为：
+## Evaluation Stack
 
-- `party_agents`
-- `judge_agents`
-- `review_agents`
-- `safety_agents`
+评测与回归能力由三层构成：
 
-设计要求：
+- `schemas/`：契约边界
+- `benchmarks/`：金标和 fixtures
+- `tests/`：单元、集成、API、smoke
 
-- 每个 `agent` 都必须带角色边界
-- 每个 `agent` 输出都必须落入 `AgentOutput`
-- 不允许输出无引用结论
-- 不允许读取超出 `access_control` 的材料
-
-### benchmarks
-
-职责：提供版本回放、验收和回归比较的标准案件集。
-
-当前最小目录分层：
-
-- `fixtures/`
-- `acceptance/`
-
-未来至少按案型组织：
-
-- `civil_loans`
-- `civil_contracts`
-- `criminal_drunk_driving`
-- `admin_penalty`
-
-每个 benchmark 用例都要能回放到：
-
-- 输入材料
-- 标准争点
-- 关键证据
-- 预期输出或人工评分记录
-
-### ui
-
-职责：面向律师的工作台和审计视图。
-
-未来可能包含：
-
-- `process`
-- `run`
-- `report`
-- `interaction`
-- `history`
-- `issue_board`
-- `evidence_board`
-- `audit_log`
-
-当前约束：
-
-- `ui` 不是 `v0.5` 范围
-- 任何 UI 设计都不能倒逼对象模型重命名
-
-## Service / API Surfaces
-
-为了避免把所有行为塞进单一接口，后续服务/API 至少按以下切面组织：
-
-- `case`：案件、材料、工作区与产物索引
-- `workflow`：产品工作流状态与阶段切换
-- `simulation`：对抗回合、程序推进、场景运行
-- `report`：报告生成、报告读取、报告后追问
-- `audit`：审计日志、引用链、权限拦截记录
-
-## Access Control
-
-### 访问域
-
-系统统一使用以下访问域：
-
-- `owner_private`：材料仅对拥有方和授权审计角色可见
-- `shared_common`：已交换或约定共享的材料，对相关当事方与中立角色可见
-- `admitted_record`：已正式进入当前程序记录的材料，对裁判层与审计层可见
-
-### 角色层级
-
-- `orchestrator`
-- `party_agent`
-- `evidence_manager`
-- `judge_agent`
-- `review_agent`
-- `audit_agent`
-
-### 访问原则
-
-- 原被告/控辩各自 `party_agent` 只能读取自己的 `owner_private` 与可见的 `shared_common`
-- `judge_agent` 只能读取 `admitted_record` 与当前程序允许进入本轮的材料
-- `review_agent` 可以读取 `shared_common` 与 `admitted_record`，但不能读取对方未披露的 `owner_private`
-- `orchestrator` 只读取案件元数据与流程状态，不读取案件核心材料
-- `audit_agent` 可读取审计必需信息，但必须留下访问日志
-
-### 违规定义
-
-以下情况直接视为系统违规：
-
-- 任何 `judge_agent` 读取对方 `owner_private`
-- 任何 `party_agent` 读取对方未共享材料
-- 未进入程序的证据被当作裁判依据引用
-- 输出中存在无法还原来源的“黑箱结论”
-
-## Evidence State Machine
-
-统一证据状态生命周期：
-
-1. `private`
-2. `submitted`
-3. `challenged`
-4. `admitted_for_discussion`
-
-### 允许迁移
-
-- `private -> submitted`
-- `submitted -> challenged`
-- `challenged -> admitted_for_discussion`
-
-### 不允许迁移
-
-- `private -> admitted_for_discussion`
-- `submitted -> private`
-- `admitted_for_discussion -> private`
-
-### 状态含义
-
-- `private`：材料只存在于拥有方可见域，尚未正式提交
-- `submitted`：材料已被一方提交进入共同程序空间
-- `challenged`：材料已被对方或中立角色提出质疑
-- `admitted_for_discussion`：材料已获准进入本轮讨论和裁判参考范围
-
-### 状态与访问关系
-
-- `private` 默认落在 `owner_private`
-- `submitted` 默认落在 `shared_common`
-- `challenged` 仍处于 `shared_common`，但需附带争议记录
-- `admitted_for_discussion` 才可进入 `admitted_record`
-
-## Procedure-Driven Round Model
-
-系统回合必须围绕程序推进，不允许“自由辩论”。
-
-统一回合骨架：
-
-1. `case_intake`
-2. `element_mapping`
-3. `opening`
-4. `evidence_submission`
-5. `evidence_challenge`
-6. `judge_questions`
-7. `rebuttal`
-8. `output_branching`
-
-约束：
-
-- 每轮输出必须绑定 `issue_id`
-- 每轮只能使用当前状态可读材料
-- 只有 `output_branching` 才允许形成路径结论
-
-## Job Lifecycle Contract
-
-`Job` 只定义长任务的持久化生命周期合同，不等同于消息队列、任务 broker、外部 worker 或云编排。`v0.5` 可以在单进程、本地后台线程或未来其他运行方式下实现，只要最终落盘语义一致。
-
-### 状态含义
-
-- `created`：`Job` 已创建并持久化，但尚未开始推进；`progress = 0`
-- `pending`：`Job` 处于待执行或待恢复状态，但当前未主动推进；既可表示首次等待，也可表示中断后的恢复准备
-- `running`：`Job` 正在推进；`progress` 只能反映已经持久化的确定性里程碑
-- `completed`：终止状态；必须已有有效 `result_ref`，且 `progress = 1`
-- `failed`：终止状态；必须带结构化 `error`，且 `progress < 1`
-- `cancelled`：终止状态；表示任务被显式停止且不再推进，且 `progress < 1`
-
-### 允许迁移
-
-- `created -> pending`
-- `created -> running`
-- `created -> cancelled`
-- `created -> failed`
-- `pending -> running`
-- `pending -> cancelled`
-- `pending -> failed`
-- `running -> pending`
-- `running -> completed`
-- `running -> failed`
-- `running -> cancelled`
-
-其中 `completed`、`failed`、`cancelled` 是终止状态。`pending` 与 `running` 可以在不变更状态名的前提下更新 `progress`、`message` 和 `updated_at`。
-
-### 恢复与重试
-
-- 中断恢复必须从已持久化的 `Job`、`CaseWorkspace`、相关 `Run` 与索引化产物重新装载，不能依赖只存在于内存中的临时结果
-- `running -> pending` 只用于表达“执行被中断但可继续恢复”；恢复后的同一 `Job` 可以再次进入 `running`，且 `progress` 只能反映最后一个已持久化里程碑
-- 终止态 `Job` 不得重新打开；如果需要重试，必须创建新的 `job_id`，原 `Job` 保留为审计记录
-- `Job` 只暴露单个主 `result_ref`；完整可回放输入/输出仍通过 `Run.input_snapshot`、`Run.output_refs` 与 `CaseWorkspace` 索引表达
+当前默认 `pytest` 覆盖大量单元与集成测试，`tests/smoke/` 中的 CLI smoke 则作为显式单独运行的补充。
 
 ## Design Priorities
 
 1. `schema stability`
-2. `reproducibility`
+2. `workspace-backed recovery`
 3. `citation traceability`
 4. `access isolation`
-5. `versioned evaluation`
-
-## Explicitly Not Adopted
-
-以下能力只作为参考对象，不作为本系统核心方案：
-
-- 社交媒体式 action space
-- 高自由 persona 生成
-- 把外部图谱/记忆平台设为不可替代底座
-- 用“平行世界仿真”替代法律程序与证据约束
-
-## 当前实现边界
-
-- 当前已创建 `schemas/`、`engines/`、`benchmarks/`、`tests/` 最小目录骨架，并已落地全部五阶段引擎业务代码（v1.2，930 个测试通过）
-- `engines/adversarial/`（双边对抗引擎）和 `engines/pretrial_conference/`（庭前会议）已作为实体目录存在；`templates/`、`ui/` 仍不创建
-- 当前骨架已冻结模块落点并完成主体业务代码实现
-- 后续任何代码任务都必须把本文件作为模块边界约束
+5. `replayability`
+6. `report parity`

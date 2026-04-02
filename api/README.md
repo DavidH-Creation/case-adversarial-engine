@@ -1,57 +1,81 @@
-# API 文档
+# API
 
-案件对抗分析系统 REST API（`api/app.py`）。
+FastAPI 服务入口在 `api/app.py`。
 
-## 启动
+## Run
 
 ```bash
-cd <project_root>
 uvicorn api.app:app --reload --port 8000
 ```
 
-交互式文档：`http://localhost:8000/docs`
+交互式文档默认在 `http://localhost:8000/docs`。
 
-## 认证
+## Auth
 
-| 配置 | 行为 |
+| Config | Behavior |
 |------|------|
-| `API_SECRET_KEY` 未设置 | 开放访问（本地开发默认） |
+| `API_SECRET_KEY` 未设置 | 本地开发默认开放访问 |
 | `API_SECRET_KEY=<secret>` | 所有端点要求 `Authorization: Bearer <secret>` |
 
-```bash
-export API_SECRET_KEY="my-secret-token"
-curl -H "Authorization: Bearer my-secret-token" http://localhost:8000/api/cases/
-```
+## Main Flow
 
-## 主要端点
+### Case lifecycle
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Purpose |
 |------|------|------|
 | `POST` | `/api/cases/` | 创建案件，返回 `case_id` |
-| `POST` | `/api/cases/{case_id}/materials` | 上传案件材料 |
-| `POST` | `/api/cases/{case_id}/extract` | 触发证据提取 + 争点识别 |
-| `GET` | `/api/cases/{case_id}/extraction` (SSE) | 流式获取提取进度 |
-| `POST` | `/api/cases/{case_id}/confirm` | 确认争点，进入分析阶段 |
-| `POST` | `/api/cases/{case_id}/analyze` | 触发三轮对抗分析 |
-| `GET` | `/api/cases/{case_id}/analysis` (SSE) | 流式获取分析进度 |
-| `GET` | `/api/cases/{case_id}/artifacts` | 列出分析产物文件 |
-| `GET` | `/api/cases/{case_id}/artifacts/{name}` | 获取具体产物 JSON |
-| `GET` | `/api/cases/{case_id}/report/markdown` | 获取 Markdown 分析报告 |
-| `POST` | `/api/cases/{case_id}/scenarios/run` | 运行情景假设分析 |
-| `GET` | `/api/cases/{case_id}/scenarios/{scenario_id}` | 获取情景分析结果 |
+| `POST` | `/api/cases/{case_id}/materials` | 上传材料 |
+| `POST` | `/api/cases/{case_id}/extract` | 启动提取任务 |
+| `GET` | `/api/cases/{case_id}/extraction` | 读取提取结果，提取中返回 `202` |
+| `POST` | `/api/cases/{case_id}/confirm` | 确认或编辑提取后的争点 |
+| `POST` | `/api/cases/{case_id}/analyze` | 启动分析任务 |
+| `GET` | `/api/cases/{case_id}/analysis` | SSE 分析进度流 |
 
-## SSE 重连说明
+### Report and artifacts
 
-分析完成后，SSE 客户端重连时会先回放完整的历史进度消息，再退出流。无需担心错过已完成状态。
+| Method | Path | Purpose |
+|------|------|------|
+| `GET` | `/api/cases/{case_id}/artifacts` | 列出当前案件可见产物 |
+| `GET` | `/api/cases/{case_id}/artifacts/{artifact_name}` | 读取单个产物 |
+| `GET` | `/api/cases/{case_id}/report/markdown` | 读取 Markdown report |
+| `GET` | `/api/cases/{case_id}/report` | 下载 DOCX report |
 
-## 持久化
+### Scenario
 
-`CaseRecord` 通过 `WorkspaceManager` 持久化到磁盘（`workspaces/api/<case_id>/`）。
-服务重启后可通过 `CaseStore.load_from_workspace(case_id)` 恢复案件状态。
+| Method | Path | Purpose |
+|------|------|------|
+| `POST` | `/api/scenarios/run` | 基于 baseline `run_id` 运行 scenario |
+| `GET` | `/api/scenarios/{scenario_id}` | 读取 scenario diff |
 
-内存中的 `CaseStore` 设有 24h TTL，过期后自动清理防止内存泄漏。
+## Runtime Semantics
 
-## 与 WorkspaceManager 的关系
+### Single-flight behavior
 
-API 层通过 `_WORKSPACE_BASE`（默认 `<project_root>/workspaces/api`）初始化工作空间。
-设置环境变量 `WORKSPACE_BASE` 可覆盖默认路径。测试中可将 `api.service._WORKSPACE_BASE = None` 禁用持久化。
+- 同一 `case_id` 上重复 `POST /extract` 不会再启动第二个提取任务
+- 同一 `case_id` 上重复 `POST /analyze` 不会再启动第二个分析任务
+- 当任务已在运行中时，接口继续返回 `202`，但语义是幂等重入，不是重复开跑
+
+### SSE behavior
+
+`GET /api/cases/{case_id}/analysis` 的行为是：
+
+- 分析进行中时，先回放一次当前历史进度，再继续推送实时进度
+- 分析完成后重连，直接返回一次 `done`
+- 分析失败时，返回结构化 `error`
+
+### Persistence and recovery
+
+API workspace 默认位于 `workspaces/api/<case_id>/`。
+
+当前恢复语义包括：
+
+- 重启后可恢复案件状态
+- `artifacts` 列表可恢复
+- Markdown report 可恢复
+- DOCX report 可恢复
+- scenario 基于 baseline metadata 读取真实 `case_type`
+
+## Notes
+
+- API 层的目标不是重新实现 CLI，而是给案件式、可恢复、可重连的运行面提供服务化入口。
+- 当前详细运行语义以 `api/app.py` 和 `api/service.py` 为准。

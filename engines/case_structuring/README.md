@@ -1,3 +1,12 @@
 # Case Structuring Engine
 
-Reserved for intake, normalization, and workspace initialization logic.
+负责把原始案件材料变成后续阶段能消费的结构化对象。
+
+当前目录下的能力主要包括：
+
+- 证据索引
+- 争点提取
+- 金额计算与一致性校验
+- 证据权重和 admissibility 相关规则层
+
+这是五阶段工作流的第一段，不负责最终结论表达。
