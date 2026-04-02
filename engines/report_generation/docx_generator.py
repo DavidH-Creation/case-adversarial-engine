@@ -33,6 +33,7 @@ from docx.shared import Emu, RGBColor
 from engines.shared.disclaimer_templates import DISCLAIMER_DOCX_BODY, DISCLAIMER_DOCX_TITLE
 from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_LABEL_ZH, RiskLevel
 from engines.report_generation.mediation_range import compute_mediation_range
+from engines.report_generation.v3.tag_system import humanize_text
 
 # ---------------------------------------------------------------------------
 # 样式常量 / Style constants
@@ -55,6 +56,17 @@ SZ_EVIDENCE = 114_300  # ~9pt
 SZ_NORMAL = 127_000  # ~10pt
 FONT_NAME = "Arial"
 FONT_EAST_ASIA = "Microsoft YaHei"
+
+# ---------------------------------------------------------------------------
+# ID humanization context (populated per-report)
+# ---------------------------------------------------------------------------
+_humanize_ctx: dict[str, str] = {}
+
+def _h(text) -> str:
+    """Humanize internal IDs in text for user-facing output."""
+    if not text:
+        return ""
+    return humanize_text(str(text), context=_humanize_ctx)
 
 # ---------------------------------------------------------------------------
 # 翻译映射 / Translation maps
@@ -88,6 +100,7 @@ def _add_run(
     italic: bool = False,
 ):
     """向段落追加一个格式化 run。"""
+    text = _h(text)
     run = para.add_run(text)
     run.font.name = FONT_NAME
     rPr = run._element.get_or_add_rPr()
@@ -128,6 +141,15 @@ def _agent_color(role: str) -> RGBColor:
     if "defendant" in role:
         return CLR_RED
     return CLR_GREEN
+
+
+def _probability_label(prob: float) -> str:
+    """Convert probability to qualitative Chinese label."""
+    if prob >= 0.6:
+        return "较大可能"
+    if prob >= 0.4:
+        return "均等可能"
+    return "较小可能"
 
 
 def _set_table_font(table):
@@ -215,8 +237,8 @@ def generate_docx_report(
         result:          AdversarialResult 序列化 dict
         issue_tree:      IssueTree 对象（可选，用于争点描述/类型）
         decision_tree:   DecisionPathTree 序列化 dict（可选）
-        attack_chain:    OptimalAttackChain 序列��� dict（可选）
-        exec_summary:    ExecutiveSummaryArtifact 序列化 dict（可选���
+        attack_chain:    OptimalAttackChain 序列化 dict（可选）
+        exec_summary:    ExecutiveSummaryArtifact 序列化 dict（可选）
         amount_report:   AmountCalculationReport 序列化 dict（可选）
         similar_cases:   RankedCase 序列化 dict 列表（可选，类案检索结果）
         filename:        自定义文件名（默认 "对抗分析报告.docx"）
@@ -228,6 +250,24 @@ def generate_docx_report(
     attack_chain = attack_chain or {}
     exec_summary = exec_summary or {}
     amount_report = amount_report or {}
+
+    global _humanize_ctx
+    _humanize_ctx = {}
+    # Build humanize context from issue_tree
+    if issue_tree:
+        issues = getattr(issue_tree, "issues", [])
+        for iss in issues:
+            iid = getattr(iss, "issue_id", "")
+            title = getattr(iss, "title", "")
+            if iid and title:
+                _humanize_ctx[iid] = title
+    # Build from evidence in result
+    for rnd in (result or {}).get("rounds", []):
+        for ev in rnd.get("evidence_index", []):
+            eid = ev.get("evidence_id", "")
+            etitle = ev.get("title", "")
+            if eid and etitle:
+                _humanize_ctx[eid] = etitle
 
     party_zh = _build_party_zh(case_data)
     issue_info = _build_issue_info(issue_tree)
@@ -255,7 +295,7 @@ def generate_docx_report(
     _render_llm_summary(doc, result)
     # ── 证据缺失 ──
     _render_missing_evidence(doc, result, party_zh)
-    # ─��� 争点影响排序 ──
+    # ── 争点影响排序 ──
     _render_issue_ranking(doc, exec_summary)
     # ── 风险热力图 ──
     _render_risk_heatmap(doc, ranked_issues)
@@ -263,11 +303,10 @@ def generate_docx_report(
     _render_decision_tree(doc, decision_tree)
     # ── 调解区间 ──
     _render_mediation_range(doc, amount_report, decision_tree)
-    # ── 攻击链 ──
-    _render_attack_chain(doc, attack_chain, party_zh)
+    # ── 攻击链 ── (removed: now unified in _render_opponent_strategy_warning)
     # ── 对方策略预警 ──
     _render_opponent_strategy_warning(doc, result, attack_chain)
-    # ── 行动建议 ���─
+    # ── 行动建议 ──
     _render_action_recommendations(doc, exec_summary)
     # ── 执行摘要 ──
     _render_executive_summary(doc, exec_summary, amount_report)
@@ -361,7 +400,7 @@ def _render_issue_table(doc, result: dict, issue_info: dict[str, tuple[str, str]
 
     conflict_ids = {c["issue_id"] for c in result.get("evidence_conflicts", [])}
 
-    doc.add_heading(f"争点列表（{len(seen_ids)}个争���）", level=1)
+    doc.add_heading(f"争点列表（{len(seen_ids)}个争点）", level=1)
     table = doc.add_table(rows=1, cols=4)
     table.style = "Light Grid Accent 1"
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -375,7 +414,7 @@ def _render_issue_table(doc, result: dict, issue_info: dict[str, tuple[str, str]
         row = table.add_row().cells
         num = iid.split("-")[-1] if "-" in iid else str(idx)
         row[0].text = num
-        desc, itype = issue_info.get(iid, (iid, ""))
+        desc, itype = issue_info.get(iid, (_h(iid), ""))
         row[1].text = desc
         row[2].text = _ISSUE_TYPE_ZH.get(itype, itype)
         row[3].text = "⚠ 冲突" if iid in conflict_ids else "✔"
@@ -396,7 +435,7 @@ def _render_debate_rounds(doc, result: dict):
             role = o["agent_role_code"]
             title_text = o.get("title", "")
             body = o.get("body", "")
-            ev_cited = ", ".join(o.get("evidence_citations", []))
+            ev_cited = ", ".join(_h(x) for x in o.get("evidence_citations", []))
 
             if "plaintiff" in role:
                 role_label = "[原告代理]"
@@ -438,7 +477,7 @@ def _render_conflicts(doc, result: dict):
     doc.add_heading(f"证据冲突分析（{len(conflicts)}条）", level=1)
     for c in conflicts:
         p = doc.add_paragraph()
-        _add_run(p, f"[{c['issue_id']}] ", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+        _add_run(p, f"[{_h(c['issue_id'])}] ", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
         doc.add_paragraph()
         _styled(doc, c["conflict_description"], size=SZ_NORMAL, color=CLR_BODY)
 
@@ -449,7 +488,7 @@ def _render_llm_summary(doc, result: dict):
     if not summary:
         return
 
-    doc.add_heading("AI综���分析", level=1)
+    doc.add_heading("AI综合分析", level=1)
     doc.add_heading("整体态势评估", level=2)
     overall = summary.get("overall_assessment", "")
     _styled(doc, overall, size=SZ_NORMAL, color=CLR_BODY)
@@ -460,23 +499,13 @@ def _render_llm_summary(doc, result: dict):
         _styled(doc, "原告最强论点", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
         for a in p_args:
             p = doc.add_paragraph()
-            _add_run(p, f"[{a['issue_id']}] ", bold=True, size=SZ_NORMAL, color=CLR_BLUE)
+            _add_run(p, f"[{_h(a['issue_id'])}] ", bold=True, size=SZ_NORMAL, color=CLR_BLUE)
             _add_run(p, a.get("position", ""), size=SZ_NORMAL, color=CLR_BODY)
             reasoning = a.get("reasoning", "")
             if reasoning:
                 _styled(doc, f"▶ {reasoning}", size=SZ_NORMAL, color=CLR_GRAY)
 
-    # 被告最强抗辩
-    d_args = summary.get("defendant_strongest_defenses", [])
-    if d_args:
-        _styled(doc, "被告最强抗辩", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
-        for d in d_args:
-            p = doc.add_paragraph()
-            _add_run(p, f"[{d['issue_id']}] ", bold=True, size=SZ_NORMAL, color=CLR_RED)
-            _add_run(p, d.get("position", ""), size=SZ_NORMAL, color=CLR_BODY)
-            reasoning = d.get("reasoning", "")
-            if reasoning:
-                _styled(doc, f"▶ {reasoning}", size=SZ_NORMAL, color=CLR_GRAY)
+    # NOTE: 被告最强抗辩 moved to _render_opponent_strategy_warning() to avoid duplication.
 
     # 未解决争点
     unresolved = summary.get("unresolved_issues", [])
@@ -486,7 +515,7 @@ def _render_llm_summary(doc, result: dict):
             iid = u.get("issue_id", "")
             title = u.get("issue_title", "")
             why = u.get("why_unresolved", "")
-            _bullet(doc, f"{iid} {title}：{why}", size=SZ_NORMAL, color=CLR_BODY)
+            _bullet(doc, f"{_h(iid)} {title}：{why}", size=SZ_NORMAL, color=CLR_BODY)
 
 
 def _render_missing_evidence(doc, result: dict, party_zh: dict[str, str]):
@@ -494,14 +523,14 @@ def _render_missing_evidence(doc, result: dict, party_zh: dict[str, str]):
     missing = result.get("missing_evidence_report", [])
     if not missing:
         return
-    doc.add_heading("证据��失报告", level=1)
+    doc.add_heading("证据缺失报告", level=1)
     for m in missing:
         raw_party = m.get("missing_for_party_id", "")
         party_name = party_zh.get(raw_party, raw_party)
         p = doc.add_paragraph()
         _add_run(
             p,
-            f"[{m['issue_id']}] {party_name}: {m['description']}",
+            f"[{_h(m['issue_id'])}] {party_name}: {m['description']}",
             bold=True,
             size=SZ_BODY,
             color=CLR_ORANGE,
@@ -516,7 +545,7 @@ def _render_issue_ranking(doc, exec_summary: dict):
     visible = _filter_uuids(top5) if isinstance(top5, list) else []
     if visible:
         for iid in visible:
-            _bullet(doc, iid, size=SZ_NORMAL, color=CLR_BODY)
+            _bullet(doc, _h(iid), size=SZ_NORMAL, color=CLR_BODY)
     else:
         _styled(doc, "（暂无排序数据）", size=SZ_NORMAL, color=CLR_GRAY)
 
@@ -555,7 +584,7 @@ def _render_decision_tree(doc, decision_tree: dict):
         for label, val in summary_fields:
             p = doc.add_paragraph()
             _add_run(p, f"{label}：", bold=True, size=SZ_RISK, color=CLR_GRAY)
-            _add_run(p, val, size=SZ_RISK, color=CLR_BODY)
+            _add_run(p, _h(val), size=SZ_RISK, color=CLR_BODY)
         doc.add_paragraph()
 
     # Sort paths by probability descending for display
@@ -567,23 +596,18 @@ def _render_decision_tree(doc, decision_tree: dict):
         party = _PARTY_ZH.get(path.get("party_favored", "neutral"), "中性")
 
         # Label most-likely path
-        label_suffix = f"  【概率 {prob:.0%} · 有利方：{party}】"
+        label_suffix = f"  【可能性：{_probability_label(prob)} · 有利方：{party}】"
         if pid == most_likely:
             label_suffix += "  ★ 最可能"
 
-        _styled(doc, f"路径 {pid}{label_suffix}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+        _styled(doc, f"路径 {rank}{label_suffix}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
 
         fields = [
             ("触发条件", path.get("trigger_condition", "")),
-            ("触发争点", ", ".join(path.get("trigger_issue_ids", []))),
-            ("关键证据", ", ".join(path.get("key_evidence_ids", []))),
+            ("触发争点", ", ".join(_h(x) for x in path.get("trigger_issue_ids", []))),
+            ("关键证据", ", ".join(_h(x) for x in path.get("key_evidence_ids", []))),
             ("可能结果", path.get("possible_outcome", "")),
         ]
-        ci = path.get("confidence_interval")
-        if ci:
-            lo = ci.get("lower", 0)
-            hi = ci.get("upper", 0)
-            fields.append(("置信区间", f"{lo:.0%} ~ {hi:.0%}"))
         rationale = path.get("probability_rationale", "")
         if rationale:
             fields.append(("概率依据", rationale))
@@ -604,7 +628,7 @@ def _render_decision_tree(doc, decision_tree: dict):
         _styled(doc, "阻断条件", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
         for bc in blocking:
             _bullet(
-                doc, f"{bc['condition_id']}: {bc['description']}", size=SZ_NORMAL, color=CLR_BODY
+                doc, f"{_h(bc['condition_id'])}: {bc['description']}", size=SZ_NORMAL, color=CLR_BODY
             )
 
 
@@ -615,13 +639,13 @@ def _render_attack_chain(doc, attack_chain: dict, party_zh: dict[str, str]):
         doc.add_heading("对方最优攻击链", level=1)
         _styled(
             doc,
-            "（本次运行未生成攻击链，可能需重新运���庭后分析流程）",
+            "（本次运行未生成攻击链，可能需重新运行庭后分析流程）",
             size=SZ_NORMAL,
             color=CLR_GRAY,
         )
         return
 
-    doc.add_heading("对��最优攻击链", level=1)
+    doc.add_heading("对方最优攻击链", level=1)
 
     order = attack_chain.get("recommended_order", [])
     raw_party = attack_chain.get("owner_party_id", "")
@@ -631,18 +655,18 @@ def _render_attack_chain(doc, attack_chain: dict, party_zh: dict[str, str]):
     if order:
         p2 = doc.add_paragraph()
         _add_run(p2, "推荐顺序：", bold=True, size=SZ_BODY, color=CLR_RED)
-        _add_run(p2, " → ".join(order), size=SZ_BODY, color=CLR_BODY)
+        _add_run(p2, " → ".join(_h(x) for x in order), size=SZ_BODY, color=CLR_BODY)
     doc.add_paragraph()
 
     for node in attacks:
         nid = node.get("attack_node_id", "")
-        _styled(doc, nid, bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+        _styled(doc, _h(nid), bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
 
         attack_fields = [
-            ("目标争点", node.get("target_issue_id", "")),
+            ("目标争点", _h(node.get("target_issue_id", ""))),
             ("攻击论点", node.get("attack_description", "")),
             ("成功条件", node.get("success_conditions", "")),
-            ("支撑证据", ", ".join(node.get("supporting_evidence_ids", []))),
+            ("支撑证据", ", ".join(_h(x) for x in node.get("supporting_evidence_ids", []))),
             ("反制动作", node.get("counter_measure", "")),
             ("对方补证策略", node.get("adversary_pivot_strategy", "")),
         ]
@@ -668,7 +692,7 @@ def _render_action_recommendations(doc, exec_summary: dict):
         _styled(doc, "前三项立即行动：", bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
         if isinstance(actions, list):
             for a in _filter_uuids(actions):
-                _bullet(doc, a, size=SZ_NORMAL, color=CLR_BODY)
+                _bullet(doc, _h(a), size=SZ_NORMAL, color=CLR_BODY)
         else:
             _styled(doc, str(actions), size=SZ_NORMAL, color=CLR_GRAY)
 
@@ -677,7 +701,7 @@ def _render_action_recommendations(doc, exec_summary: dict):
         _styled(doc, "关键缺证：", bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
         if isinstance(gaps, list):
             for g in _filter_uuids(gaps):
-                _bullet(doc, g, size=SZ_NORMAL, color=CLR_BODY)
+                _bullet(doc, _h(g), size=SZ_NORMAL, color=CLR_BODY)
         else:
             _styled(doc, str(gaps), size=SZ_NORMAL, color=CLR_GRAY)
 
@@ -695,7 +719,7 @@ def _render_executive_summary(doc, exec_summary: dict, amount_report: dict):
         _add_run(p, f"{label}：", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
         if isinstance(val, list):
             for item in val:
-                _bullet(doc, item, size=SZ_NORMAL, color=CLR_BODY)
+                _bullet(doc, _h(item), size=SZ_NORMAL, color=CLR_BODY)
         else:
             _styled(doc, str(val), size=SZ_NORMAL, color=CLR_BODY)
 
@@ -750,7 +774,7 @@ def _render_action_priority_list(doc, exec_summary: dict | None, action_rec: Any
     for i, item in enumerate(visible[:3], 1):
         p = doc.add_paragraph()
         _add_run(p, f"{i}. ", bold=True, size=SZ_SECTION_HDR, color=CLR_ORANGE)
-        _add_run(p, item, size=SZ_BODY, color=CLR_BODY)
+        _add_run(p, _h(item), size=SZ_BODY, color=CLR_BODY)
     doc.add_paragraph()
 
 
@@ -775,7 +799,7 @@ def _render_risk_heatmap(doc, ranked_issues: Any | None):
 
     for row in rows:
         cells = table.add_row().cells
-        cells[0].text = f"{row.issue_id}: {row.title[:20]}"
+        cells[0].text = f"{_h(row.issue_id)}: {row.title[:20]}"
         cells[1].text = row.outcome_impact or "-"
         cells[2].text = row.attack_strength or "-"
         cells[3].text = row.evidence_strength or "-"
@@ -787,7 +811,7 @@ def _render_risk_heatmap(doc, ranked_issues: Any | None):
             for run in para.runs:
                 run.font.color.rgb = color
                 run.font.bold = True
-        cells[5].text = row.recommended_action or "-"
+        cells[5].text = _h(row.recommended_action) or "-"
 
     _set_table_font(table)
 
@@ -813,7 +837,7 @@ def _render_mediation_range(doc, amount_report: dict | None, decision_tree: dict
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     for i, (label, val) in enumerate(rows_data):
         table.rows[i].cells[0].text = label
-        table.rows[i].cells[1].text = val
+        table.rows[i].cells[1].text = _h(val)
     _set_table_font(table)
 
     # Highlight the suggested amount row
@@ -828,21 +852,29 @@ def _render_mediation_range(doc, amount_report: dict | None, decision_tree: dict
 
 
 def _render_opponent_strategy_warning(doc, result: dict, attack_chain: dict | None):
-    """对方策略预警 — 被告核心抗辩 + 攻击路径预警。"""
+    """对方策略预警 — unified section combining defendant defenses and attack chain.
+
+    This is the SINGLE place that renders both ``defendant_strongest_defenses``
+    (from the LLM summary) and ``top_attacks`` (from the attack chain).  The
+    duplicate renderings in ``_render_llm_summary`` and the standalone
+    ``_render_attack_chain`` call have been removed.
+    """
     summary = result.get("summary")
     defenses = summary.get("defendant_strongest_defenses", []) if summary else []
-    attacks = (attack_chain or {}).get("top_attacks", [])
+    ac = attack_chain or {}
+    attacks = ac.get("top_attacks", [])
 
     if not defenses and not attacks:
         return
 
     doc.add_heading("对方策略预警", level=1)
 
+    # --- Part 1: 被告核心抗辩及应对建议 ---
     if defenses:
         _styled(doc, "被告核心抗辩及应对建议", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
         for d in defenses:
             p = doc.add_paragraph()
-            _add_run(p, f"[{d['issue_id']}] ", bold=True, size=SZ_NORMAL, color=CLR_RED)
+            _add_run(p, f"[{_h(d['issue_id'])}] ", bold=True, size=SZ_NORMAL, color=CLR_RED)
             _add_run(p, d.get("position", ""), size=SZ_NORMAL, color=CLR_BODY)
             reasoning = d.get("reasoning", "")
             if reasoning:
@@ -858,19 +890,37 @@ def _render_opponent_strategy_warning(doc, result: dict, attack_chain: dict | No
                         break
         doc.add_paragraph()
 
+    # --- Part 2: 对方最优攻击路径预警 (replaces standalone _render_attack_chain) ---
     if attacks:
         _styled(doc, "对方最优攻击路径预警", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
+
+        # Attack chain metadata (previously only in _render_attack_chain)
+        raw_owner = ac.get("owner_party_id", "")
+        if raw_owner:
+            p = doc.add_paragraph()
+            _add_run(p, "攻击方：", bold=True, size=SZ_BODY, color=CLR_RED)
+            _add_run(p, _h(raw_owner), size=SZ_BODY, color=CLR_BODY)
+        order = ac.get("recommended_order", [])
+        if order:
+            p = doc.add_paragraph()
+            _add_run(p, "推荐攻击顺序：", bold=True, size=SZ_BODY, color=CLR_RED)
+            _add_run(p, " → ".join(_h(x) for x in order), size=SZ_BODY, color=CLR_BODY)
+        doc.add_paragraph()
+
         for node in attacks:
             nid = node.get("attack_node_id", "")
             target = node.get("target_issue_id", "")
             desc = node.get("attack_description", "")
             p = doc.add_paragraph()
-            _add_run(p, f"{nid} → {target}: ", bold=True, size=SZ_RISK, color=CLR_RED)
+            _add_run(p, f"{_h(nid)} → {_h(target)}: ", bold=True, size=SZ_RISK, color=CLR_RED)
             _add_run(p, desc, size=SZ_RISK, color=CLR_BODY)
 
             cond = node.get("success_conditions", "")
             if cond:
                 _styled(doc, f"成功条件: {cond}", size=SZ_RISK, color=CLR_GRAY)
+            evidence = ", ".join(_h(x) for x in node.get("supporting_evidence_ids", []))
+            if evidence:
+                _styled(doc, f"支撑证据: {evidence}", size=SZ_RISK, color=CLR_GRAY)
             cm = node.get("counter_measure", "")
             if cm:
                 _styled(doc, f"应对: {cm}", size=SZ_RISK, color=CLR_GREEN)
@@ -944,7 +994,7 @@ def _render_document_drafts(doc, document_drafts: list) -> None:
                     ev_id = getattr(item, "evidence_id", "")
                     opinion = getattr(item, "opinion_text", "")
                     p = doc.add_paragraph()
-                    _add_run(p, f"[{ev_id}] ", bold=True, size=SZ_NORMAL, color=CLR_BLUE)
+                    _add_run(p, f"[{_h(ev_id)}] ", bold=True, size=SZ_NORMAL, color=CLR_BLUE)
                     _add_run(p, opinion, size=SZ_NORMAL, color=CLR_BODY)
             else:
                 _styled(doc, "（无证据需要质证）", size=SZ_NORMAL, color=CLR_GRAY)
@@ -954,7 +1004,7 @@ def _render_document_drafts(doc, document_drafts: list) -> None:
         if ev_cited:
             p = doc.add_paragraph()
             _add_run(p, "引用证据：", bold=True, size=SZ_NORMAL, color=CLR_GRAY)
-            _add_run(p, ", ".join(ev_cited), size=SZ_NORMAL, color=CLR_GRAY)
+            _add_run(p, ", ".join(_h(x) for x in ev_cited), size=SZ_NORMAL, color=CLR_GRAY)
 
         doc.add_paragraph()
 
@@ -1176,12 +1226,12 @@ def _render_v3_layer1(doc, layer1: dict, perspective: str) -> None:
             if visible_supp:
                 _styled(doc, "原告可能补强方向：", bold=True, size=SZ_RISK, color=CLR_ORANGE)
                 for s in visible_supp:
-                    _bullet(doc, s, size=SZ_RISK, color=CLR_BODY)
+                    _bullet(doc, _h(s), size=SZ_RISK, color=CLR_BODY)
             visible_order = _filter_uuids(defendant_summary.get("optimal_attack_order", []))
             if visible_order:
                 p = doc.add_paragraph()
                 _add_run(p, "最优攻击顺序：", bold=True, size=SZ_RISK, color=CLR_RED)
-                _add_run(p, " → ".join(visible_order), size=SZ_RISK, color=CLR_BODY)
+                _add_run(p, " → ".join(_h(x) for x in visible_order), size=SZ_RISK, color=CLR_BODY)
             doc.add_paragraph()
 
     # C. 阻断条件 (V3.1) — fallback to scenario_tree_summary (V3.0)
@@ -1255,7 +1305,7 @@ def _render_v3_layer1(doc, layer1: dict, perspective: str) -> None:
                 title = getattr(ep, "title", "")
                 priority = getattr(ep, "priority", "")
                 reason = getattr(ep, "reason", "")
-            label = f"{ev_id}: {title}" if title else ev_id
+            label = f"{_h(ev_id)}: {title}" if title else _h(ev_id)
             row = table.add_row().cells
             row[0].text = label
             row[1].text = priority
@@ -1287,7 +1337,7 @@ def _render_v3_layer1(doc, layer1: dict, perspective: str) -> None:
                     risk = str(getattr(tl, "risk_level", "yellow"))
                     reason = getattr(tl, "reason", "")
                 row = table.add_row().cells
-                row[0].text = ev_id
+                row[0].text = _h(ev_id)
                 row[1].text = title
                 row[2].text = _TRAFFIC_LIGHT_EMOJI.get(risk, "🟡")
                 row[3].text = reason
@@ -1314,7 +1364,7 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
             _add_run(p, "• ", bold=True, size=SZ_BODY, color=CLR_BLUE)
             _add_run(p, desc, size=SZ_BODY, color=CLR_BODY)
             if sources:
-                _styled(doc, f"  来源证据: {', '.join(sources)}", size=SZ_EVIDENCE, color=CLR_GRAY)
+                _styled(doc, f"  来源证据: {', '.join(_h(x) for x in sources)}", size=SZ_EVIDENCE, color=CLR_GRAY)
     else:
         _styled(doc, "暂无双方均认可的无争议事实。", size=SZ_NORMAL, color=CLR_GRAY)
     doc.add_paragraph()
@@ -1342,9 +1392,13 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
             current_gaps = getattr(card, "current_gaps", [])
             outcome_sensitivity = getattr(card, "outcome_sensitivity", "")
 
-        # V3.1: depth=0 as level-3 heading, depth>0 as level-4 (indented sub-issue)
-        heading_level = 3 if depth == 0 else 4
-        doc.add_heading(f"{issue_id}: {issue_title}", level=heading_level)
+        # V3.1: depth=0 as level-3 heading, depth>0 as indented paragraph
+        if depth == 0:
+            doc.add_heading(f"{_h(issue_id)}: {issue_title}", level=3)
+        else:
+            p = doc.add_paragraph()
+            p.paragraph_format.left_indent = Emu(depth * 457_200)  # 0.5 inch per level
+            _add_run(p, f"└─ {_h(issue_id)}: {issue_title}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
         table = doc.add_table(rows=1, cols=2)
         table.style = "Light Grid Accent 1"
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -1354,7 +1408,7 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
         fields = [
             ("原告主张", plaintiff_thesis[:500] + ("..." if len(plaintiff_thesis) > 500 else "")),
             ("被告主张", defendant_thesis[:500] + ("..." if len(defendant_thesis) > 500 else "")),
-            ("决定性证据", ", ".join(decisive_evidence)),
+            ("决定性证据", ", ".join(_h(x) for x in decisive_evidence)),
             ("当前缺口", " | ".join(current_gaps) if current_gaps else "暂无"),
             ("结果敏感度", outcome_sensitivity),
         ]
@@ -1402,7 +1456,7 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
             if is_core:
                 # Full 6-field table card for core evidence
                 p = doc.add_paragraph()
-                _add_run(p, f"{ev_id}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+                _add_run(p, f"{_h(ev_id)}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
                 if priority:
                     _add_run(p, f"  [{priority}]", bold=True, size=SZ_RISK, color=CLR_RED)
                 table = doc.add_table(rows=6, cols=2)
@@ -1418,13 +1472,13 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
                 ]
                 for i, (label, val) in enumerate(questions):
                     table.rows[i].cells[0].text = label
-                    table.rows[i].cells[1].text = val or "—"
+                    table.rows[i].cells[1].text = _h(val) or "—"
                 _set_table_font(table)
                 doc.add_paragraph()
             else:
                 # Compact row for supporting / background evidence
                 p = doc.add_paragraph()
-                _add_run(p, f"{ev_id}", bold=True, size=SZ_BODY, color=CLR_GRAY)
+                _add_run(p, f"{_h(ev_id)}", bold=True, size=SZ_BODY, color=CLR_GRAY)
                 if priority:
                     _add_run(p, f"  [{priority}]", size=SZ_RISK, color=CLR_ORANGE)
                 table = doc.add_table(rows=4, cols=2)
@@ -1438,7 +1492,7 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
                 ]
                 for i, (label, val) in enumerate(questions):
                     table.rows[i].cells[0].text = label
-                    table.rows[i].cells[1].text = val or "—"
+                    table.rows[i].cells[1].text = _h(val) or "—"
                 _set_table_font(table)
                 doc.add_paragraph()
     else:
@@ -1470,7 +1524,7 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
 
                 emoji = _TRAFFIC_LIGHT_EMOJI.get(risk, "🟡")
                 p = doc.add_paragraph()
-                _add_run(p, f"{ev_id} {emoji}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
+                _add_run(p, f"{_h(ev_id)} {emoji}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
                 table = doc.add_table(rows=7, cols=2)
                 table.style = "Light Grid Accent 1"
                 table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -1485,7 +1539,7 @@ def _render_v3_layer2(doc, layer2: dict) -> None:
                 ]
                 for i, (label, val) in enumerate(questions):
                     table.rows[i].cells[0].text = label
-                    table.rows[i].cells[1].text = val or "—"
+                    table.rows[i].cells[1].text = _h(val) or "—"
                 _set_table_font(table)
                 doc.add_paragraph()
 
@@ -1652,13 +1706,13 @@ def _render_v3_layer4(doc, layer4: dict) -> None:
     transcripts = layer4.get("adversarial_transcripts_md", "")
     if transcripts:
         doc.add_heading("4.1 三轮对抗辩论记录", level=2)
-        _render_md_as_text(doc, transcripts)
+        _render_md_as_text(doc, _h(transcripts))
         doc.add_paragraph()
 
     evidence_index = layer4.get("evidence_index_md", "")
     if evidence_index:
         doc.add_heading("4.2 证据索引表", level=2)
-        _render_md_as_text(doc, evidence_index)
+        _render_md_as_text(doc, _h(evidence_index))
         doc.add_paragraph()
 
     timeline = layer4.get("timeline_md", "")
@@ -1667,19 +1721,19 @@ def _render_v3_layer4(doc, layer4: dict) -> None:
     _timeline_placeholder = "暂无时间线数据"
     if timeline and _timeline_placeholder not in timeline:
         doc.add_heading("4.3 案件时间线", level=2)
-        _render_md_as_text(doc, timeline)
+        _render_md_as_text(doc, _h(timeline))
         doc.add_paragraph()
 
     glossary = layer4.get("glossary_md", "")
     if glossary:
         doc.add_heading("4.4 术语表", level=2)
-        _render_md_as_text(doc, glossary)
+        _render_md_as_text(doc, _h(glossary))
         doc.add_paragraph()
 
     amount_calc = layer4.get("amount_calculation_md", "")
     if amount_calc:
         doc.add_heading("4.5 金额计算明细", level=2)
-        _render_md_as_text(doc, amount_calc)
+        _render_md_as_text(doc, _h(amount_calc))
         doc.add_paragraph()
 
 

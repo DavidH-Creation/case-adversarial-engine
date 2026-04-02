@@ -65,6 +65,15 @@ _EVIDENCE_ID_RE = re.compile(r"evidence-(plaintiff|defendant)-(\d{3})")
 _FACT_ID_RE = re.compile(r"FACT-(\d{3})")
 _FACT_SLUG_RE = re.compile(r"fact-[a-z0-9]+(?:-[a-z0-9]+)*-(\d{3})")
 _COND_ID_RE = re.compile(r"COND-(\d{3})")
+# Attack node IDs: atk-NNN
+_ATK_ID_RE = re.compile(r"atk-(\d{3})")
+# Path IDs: path-A (letter) or path-NNN (number)
+_PATH_LETTER_RE = re.compile(r"path-([A-E])")
+_PATH_NUM_RE = re.compile(r"path-(\d{3})")
+# Blocking condition IDs: bc-NNN or BC-NNN
+_BC_ID_RE = re.compile(r"[Bb][Cc]-(\d{3})")
+# Missing issue IDs: missing-issue-{slug}-NNN[-party-{role}-{name}]
+_MISSING_ISSUE_RE = re.compile(r"missing-issue-[a-z0-9]+(?:-[a-z0-9]+)*-(\d{3})(?:-party-(?:plaintiff|defendant)-[a-z]+)?")
 # Party IDs: party-{role}-{name}
 _PARTY_ID_RE = re.compile(r"party-(plaintiff|defendant)-[a-z]+")
 
@@ -81,6 +90,11 @@ _FIELD_VALUE_MAP = {
     "proponent_strength=weak": "举证方举证较为薄弱",
     "proponent_strength=strong": "举证方举证较为充分",
     "proponent_strength=moderate": "举证方举证强度一般",
+    "explain_in_trial": "建议庭审中解释说明",
+    "cross_examine": "建议质证攻击",
+    "principal": "本金",
+    "interest": "利息",
+    "litigation_cost": "诉讼费用",
 }
 
 
@@ -138,6 +152,35 @@ def humanize_id(raw_id: str, context: dict[str, str] | None = None) -> str:
         num = int(m.group(1))
         return f"条件{num}"
 
+    # Attack node ID: atk-NNN → 攻击点N
+    m = _ATK_ID_RE.match(raw_id)
+    if m:
+        num = int(m.group(1))
+        return f"攻击点{_chinese_numeral(num)}"
+
+    # Path letter ID: path-A → 路径A
+    m = _PATH_LETTER_RE.match(raw_id)
+    if m:
+        return f"路径{m.group(1)}"
+
+    # Path number ID: path-NNN → 路径N
+    m = _PATH_NUM_RE.match(raw_id)
+    if m:
+        num = int(m.group(1))
+        return f"路径{_chinese_numeral(num)}"
+
+    # Blocking condition: bc-NNN → 阻断条件N
+    m = _BC_ID_RE.match(raw_id)
+    if m:
+        num = int(m.group(1))
+        return f"阻断条件{_chinese_numeral(num)}"
+
+    # Missing issue ID: missing-issue-slug-NNN-party-* → 证据缺口N
+    m = _MISSING_ISSUE_RE.match(raw_id)
+    if m:
+        num = int(m.group(1))
+        return f"证据缺口{_chinese_numeral(num)}"
+
     # Party ID pattern: party-{role}-{name}
     m = _PARTY_ID_RE.match(raw_id)
     if m:
@@ -191,6 +234,23 @@ def humanize_text(text: str, context: dict[str, str] | None = None) -> str:
     result = re.sub(r"FACT-\d{3}", _replace_fact, result)
     result = re.sub(r"fact-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}", _replace_fact, result)
 
+    # Replace atk IDs
+    result = re.sub(r"atk-\d{3}", lambda m: humanize_id(m.group(0), context), result)
+
+    # Replace path IDs (letter and number forms)
+    result = re.sub(r"path-[A-E]", lambda m: humanize_id(m.group(0), context), result)
+    result = re.sub(r"path-\d{3}", lambda m: humanize_id(m.group(0), context), result)
+
+    # Replace blocking condition IDs
+    result = re.sub(r"[Bb][Cc]-\d{3}", lambda m: humanize_id(m.group(0), context), result)
+
+    # Replace missing-issue IDs
+    result = re.sub(
+        r"missing-issue-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}(?:-party-(?:plaintiff|defendant)-[a-z]+)?",
+        lambda m: humanize_id(m.group(0), context),
+        result,
+    )
+
     # Replace party IDs (party-plaintiff-wang → 原告方)
     def _replace_party(m: re.Match[str]) -> str:
         return humanize_id(m.group(0), context)
@@ -199,6 +259,15 @@ def humanize_text(text: str, context: dict[str, str] | None = None) -> str:
     # Replace internal field values
     for raw, human in _FIELD_VALUE_MAP.items():
         result = result.replace(raw, human)
+
+    # Remove model class names + internal report IDs (e.g. "AmountCalculationReport amount-report-xxx")
+    result = re.sub(r"\s*AmountCalculationReport\s+amount-report-[a-f0-9]+", "", result)
+    # Remove delta=0 style internal metadata
+    result = re.sub(r"（delta=\d+）", "", result)
+    # Clean up issue-NNN short references in prose (e.g. "issue-003")
+    result = re.sub(r"issue-(\d{3})", lambda m: f"争点{_chinese_numeral(int(m.group(1)))}", result)
+    # Remove run-id patterns (e.g. "run-abc12345")
+    result = re.sub(r"run-[a-f0-9]{8,}", "", result)
 
     return result
 

@@ -23,10 +23,10 @@ _ACTION_LABEL: dict[str, str] = {
 }
 
 # Maximum number of L1 root issues before merging kicks in.
-_MAX_ROOTS = 5
+_MAX_ROOTS = 4
 
 # Threshold for evidence-based merging (Jaccard overlap).
-_EVIDENCE_OVERLAP_THRESHOLD = 0.50
+_EVIDENCE_OVERLAP_THRESHOLD = 0.30
 
 # Maximum thesis length for child issues.
 _CHILD_THESIS_MAX_LEN = 120
