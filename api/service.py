@@ -229,23 +229,50 @@ class CaseStore:
                 "issues": [i.model_dump(mode="json") for i in record.issue_tree.issues],
             }
 
-        # 恢复分析产物
+        # 恢复分析产物：先查 artifacts 文件，再 fallback 到 case_meta.json
         analysis_path = wm.workspace_dir / "artifacts" / "analysis_data.json"
         if analysis_path.exists():
             record.analysis_data = json.loads(analysis_path.read_text(encoding="utf-8"))
             record.run_id = (record.analysis_data or {}).get("run_id")
+        elif meta.get("analysis_data") is not None:
+            record.analysis_data = meta["analysis_data"]
+            record.run_id = meta.get("run_id")
 
         return record
+
+    def save_to_disk(self, case_id: str) -> bool:
+        """Atomically flush the in-memory record for case_id to case_meta.json. Returns True on success."""
+        with self._lock:
+            entry = self._cases.get(case_id)
+            if entry is None:
+                return False
+            record, _ = entry
+        if record.workspace_manager is None:
+            return False
+        try:
+            record.workspace_manager.save_case_meta(_record_to_meta(record))
+            return True
+        except Exception:
+            return False
+
+    def load_from_disk(self, case_id: str) -> Optional["CaseRecord"]:
+        """Public alias for _load_from_disk for restart recovery."""
+        return self._load_from_disk(case_id)
 
     def evict_expired(self) -> int:
         """清理过期条目，返回清理数量。"""
         now = time.time()
         with self._lock:
             expired = [k for k, (_, t) in self._cases.items() if now - t > self._ttl]
+        # Save last known state before eviction (outside lock to avoid deadlock)
+        for k in expired:
+            self.save_to_disk(k)
+        with self._lock:
             for k in expired:
-                del self._cases[k]
+                if k in self._cases:
+                    del self._cases[k]
                 self._evicted.add(k)
-            return len(expired)
+        return len(expired)
 
 
 # 全局单例
@@ -263,6 +290,7 @@ def _record_to_meta(record: "CaseRecord") -> dict:
         "case_id": record.case_id,
         "status": record.status.value,
         "info": record.info,
+        "materials": record.materials,
         "analysis_data": record.analysis_data,
         "run_id": record.run_id,
         "artifact_names": list(record.artifacts.keys()),
@@ -351,6 +379,7 @@ def defenses_to_dicts(defenses: list[dict], case_id: str, defendant_id: str) -> 
 async def run_extraction(record: CaseRecord) -> None:
     """异步后台任务：索引证据 + 提取争点。"""
     record.status = CaseStatus.extracting
+    store.save_to_disk(record.case_id)
     try:
         info = record.info
         case_id = record.case_id
@@ -420,6 +449,7 @@ async def run_extraction(record: CaseRecord) -> None:
     except Exception as exc:
         record.status = CaseStatus.failed
         record.error = str(exc)
+        store.save_to_disk(record.case_id)
         record.log(f"[错误] 提取失败：{exc}")
     finally:
         record._signal_done()
@@ -541,6 +571,7 @@ async def run_analysis(record: CaseRecord) -> None:
     # 重置进度队列（extract 阶段的哨兵可能还在）
     record._progress_queue = asyncio.Queue()
     record.status = CaseStatus.analyzing
+    store.save_to_disk(record.case_id)
     try:
         info = record.info
         model = info.get("model", DEFAULT_MODEL)
@@ -686,6 +717,7 @@ async def run_analysis(record: CaseRecord) -> None:
             record.log(f"[警告] Markdown 报告生成失败（{md_err}），可继续使用分析结果")
 
         record.status = CaseStatus.analyzed
+        store.save_to_disk(record.case_id)
 
         # P2-3: 持久化分析产物和案件状态到工作区，确保进程重启后可恢复。
         if record.workspace_manager is not None:
@@ -721,6 +753,7 @@ async def run_analysis(record: CaseRecord) -> None:
     except Exception as exc:
         record.status = CaseStatus.failed
         record.error = str(exc)
+        store.save_to_disk(record.case_id)
         record.log(f"[错误] 分析失败：{exc}")
     finally:
         record._signal_done()
