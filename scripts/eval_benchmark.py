@@ -16,6 +16,7 @@ Usage:
     python scripts/eval_benchmark.py --cases civil-loan-002 --model claude-sonnet-4-6
     python scripts/eval_benchmark.py --hard --matcher llm-judge  # semantic matching via LLM
     python scripts/eval_benchmark.py --hard --match-only --matcher llm-judge  # re-score cached output
+    python scripts/eval_benchmark.py --hard --compare-matchers  # bigram vs llm-judge on same engine output
 """
 
 from __future__ import annotations
@@ -99,6 +100,7 @@ def _compute_f1(precision: float, recall: float) -> float:
 # ---------------------------------------------------------------------------
 
 _JUDGE_MODEL = "claude-haiku-4-5-20251001"
+_LLM_TOP_K = 2
 
 # Common Chinese stop/function characters — excluded from keyword pre-filter
 _STOP_CHARS = set("的是否为在与之其等了而但和或因由对于中有被所以得不也将")
@@ -156,6 +158,75 @@ def _best_match_llm(query: str, candidates: list[str], client) -> bool:
         if _llm_judge_match(query, candidates[best_idx], client):
             return True
     return False
+
+
+def _collect_candidate_pairs(
+    left: list[str],
+    right: list[str],
+    *,
+    threshold: float,
+    matcher: str,
+    judge_client=None,
+) -> list[tuple[float, int, int]]:
+    """Return candidate one-to-one pairs as (score, left_idx, right_idx)."""
+    pairs: list[tuple[float, int, int]] = []
+    if not left or not right:
+        return pairs
+
+    if matcher == "llm-judge" and judge_client is not None:
+        for left_idx, left_text in enumerate(left):
+            ranked = sorted(
+                (
+                    (_bigram_jaccard(left_text, right_text), right_idx, right_text)
+                    for right_idx, right_text in enumerate(right)
+                ),
+                reverse=True,
+            )
+            for rank, (score, right_idx, right_text) in enumerate(ranked[:_LLM_TOP_K]):
+                if rank > 0 and not _has_keyword_overlap(left_text, right_text):
+                    continue
+                if _llm_judge_match(left_text, right_text, judge_client):
+                    pairs.append((score, left_idx, right_idx))
+        return pairs
+
+    for left_idx, left_text in enumerate(left):
+        for right_idx, right_text in enumerate(right):
+            score = _bigram_jaccard(left_text.lower(), right_text.lower())
+            if score >= threshold:
+                pairs.append((score, left_idx, right_idx))
+    return pairs
+
+
+def _count_one_to_one_matches(
+    left: list[str],
+    right: list[str],
+    *,
+    threshold: float = 0.25,
+    matcher: str = "bigram",
+    judge_client=None,
+) -> int:
+    """Greedy one-to-one matching avoids overcounting broad labels."""
+    pairs = _collect_candidate_pairs(
+        left,
+        right,
+        threshold=threshold,
+        matcher=matcher,
+        judge_client=judge_client,
+    )
+    pairs.sort(reverse=True)
+
+    matched_left: set[int] = set()
+    matched_right: set[int] = set()
+    hits = 0
+
+    for _score, left_idx, right_idx in pairs:
+        if left_idx in matched_left or right_idx in matched_right:
+            continue
+        matched_left.add(left_idx)
+        matched_right.add(right_idx)
+        hits += 1
+
+    return hits
 
 
 # ---------------------------------------------------------------------------
@@ -269,23 +340,16 @@ def compute_evidence_metrics(
     ext_summaries = [getattr(e, "summary", "") or "" for e in extracted]
     ext_texts = [f"{t} {s}" for t, s in zip(ext_titles, ext_summaries)]
 
-    if matcher == "llm-judge" and judge_client is not None:
-        recall_hits = sum(
-            1 for g in gold_texts if _best_match_llm(g, ext_texts, judge_client)
-        )
-        precision_hits = sum(
-            1 for e in ext_texts if _best_match_llm(e, gold_texts, judge_client)
-        )
-    else:
-        recall_hits = sum(
-            1 for g in gold_texts if _best_match(g, ext_texts, threshold) >= threshold
-        )
-        precision_hits = sum(
-            1 for e in ext_texts if _best_match(e, gold_texts, threshold) >= threshold
-        )
+    hits = _count_one_to_one_matches(
+        gold_texts,
+        ext_texts,
+        threshold=threshold,
+        matcher=matcher,
+        judge_client=judge_client,
+    )
 
-    recall = recall_hits / len(gold_texts) if gold_texts else 1.0
-    precision = precision_hits / len(ext_texts) if ext_texts else 0.0
+    recall = hits / len(gold_texts) if gold_texts else 1.0
+    precision = hits / len(ext_texts) if ext_texts else 0.0
 
     return {
         "gold_count": len(gold),
@@ -293,8 +357,8 @@ def compute_evidence_metrics(
         "recall": round(recall, 3),
         "precision": round(precision, 3),
         "f1": round(_compute_f1(precision, recall), 3),
-        "recall_hits": recall_hits,
-        "precision_hits": precision_hits,
+        "recall_hits": hits,
+        "precision_hits": hits,
     }
 
 
@@ -315,23 +379,16 @@ def compute_issue_metrics(
         else:
             ext_titles.append(str(issue))
 
-    if matcher == "llm-judge" and judge_client is not None:
-        recall_hits = sum(
-            1 for g in gold_titles if _best_match_llm(g, ext_titles, judge_client)
-        )
-        precision_hits = sum(
-            1 for e in ext_titles if _best_match_llm(e, gold_titles, judge_client)
-        )
-    else:
-        recall_hits = sum(
-            1 for g in gold_titles if _best_match(g, ext_titles, threshold) >= threshold
-        )
-        precision_hits = sum(
-            1 for e in ext_titles if _best_match(e, gold_titles, threshold) >= threshold
-        )
+    hits = _count_one_to_one_matches(
+        gold_titles,
+        ext_titles,
+        threshold=threshold,
+        matcher=matcher,
+        judge_client=judge_client,
+    )
 
-    recall = recall_hits / len(gold_titles) if gold_titles else 1.0
-    precision = precision_hits / len(ext_titles) if ext_titles else 0.0
+    recall = hits / len(gold_titles) if gold_titles else 1.0
+    precision = hits / len(ext_titles) if ext_titles else 0.0
 
     return {
         "gold_count": len(gold),
@@ -339,9 +396,65 @@ def compute_issue_metrics(
         "recall": round(recall, 3),
         "precision": round(precision, 3),
         "f1": round(_compute_f1(precision, recall), 3),
-        "recall_hits": recall_hits,
-        "precision_hits": precision_hits,
+        "recall_hits": hits,
+        "precision_hits": hits,
     }
+
+
+def _aggregate_results(results: list[dict]) -> dict:
+    ev_f1s = [r.get("evidence_metrics", {}).get("f1", 0) for r in results]
+    iss_f1s = [r.get("issue_metrics", {}).get("f1", 0) for r in results]
+    return {
+        "avg_evidence_f1": round(sum(ev_f1s) / len(ev_f1s), 3) if ev_f1s else 0.0,
+        "avg_issue_f1": round(sum(iss_f1s) / len(iss_f1s), 3) if iss_f1s else 0.0,
+    }
+
+
+def _print_summary(title: str, results: list[dict]) -> None:
+    print(f"\n{'='*60}")
+    print(title)
+    print(f"{'='*60}")
+    print(f"{'Case':<20} {'Ev-R':>6} {'Ev-P':>6} {'Ev-F1':>7} {'Iss-R':>6} {'Iss-P':>6} {'Iss-F1':>7}")
+    print("-" * 65)
+
+    for result in results:
+        ev = result.get("evidence_metrics", {})
+        iss = result.get("issue_metrics", {})
+        print(
+            f"{result['case_id']:<20} "
+            f"{ev.get('recall', 0):>6.1%} {ev.get('precision', 0):>6.1%} {ev.get('f1', 0):>7.1%} "
+            f"{iss.get('recall', 0):>6.1%} {iss.get('precision', 0):>6.1%} {iss.get('f1', 0):>7.1%}"
+        )
+
+    aggregate = _aggregate_results(results)
+    print("-" * 65)
+    print(
+        f"{'AVERAGE':<20} {'':>6} {'':>6} {aggregate['avg_evidence_f1']:>7.1%} "
+        f"{'':>6} {'':>6} {aggregate['avg_issue_f1']:>7.1%}"
+    )
+
+
+def _print_comparison_table(bigram_results: list[dict], llm_results: list[dict]) -> None:
+    print("\nCOMPARISON TABLE")
+    print("=" * 80)
+    print(
+        f"{'Case':<20} {'Bg-Iss-F1':>10} {'LLM-Iss-F1':>10} {'Delta':>8} "
+        f"{'Bg-Ev-F1':>10} {'LLM-Ev-F1':>10}"
+    )
+    print("-" * 80)
+
+    llm_by_case = {result["case_id"]: result for result in llm_results}
+    for bigram in bigram_results:
+        llm = llm_by_case.get(bigram["case_id"], {})
+        bg_issue = bigram.get("issue_metrics", {}).get("f1", 0)
+        llm_issue = llm.get("issue_metrics", {}).get("f1", 0)
+        bg_evidence = bigram.get("evidence_metrics", {}).get("f1", 0)
+        llm_evidence = llm.get("evidence_metrics", {}).get("f1", 0)
+        delta = llm_issue - bg_issue
+        print(
+            f"{bigram['case_id']:<20} {bg_issue:>10.1%} {llm_issue:>10.1%} {delta:>+8.1%} "
+            f"{bg_evidence:>10.1%} {llm_evidence:>10.1%}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -500,6 +613,66 @@ async def eval_case(
     return result
 
 
+async def _run_matcher(
+    cases: list[str],
+    *,
+    model: str,
+    verbose: bool,
+    matcher: str,
+    judge_client=None,
+    match_only: bool = False,
+) -> dict:
+    results = []
+    for case_id in cases:
+        try:
+            result = await eval_case(
+                case_id,
+                model=model,
+                verbose=verbose,
+                matcher=matcher,
+                judge_client=judge_client,
+                match_only=match_only,
+            )
+            results.append(result)
+        except FileNotFoundError as exc:
+            print(f"  SKIP: {exc}")
+        except CLINotFoundError:
+            raise
+
+    return {
+        "matcher": matcher,
+        "match_only": match_only,
+        "results": results,
+        "aggregate": _aggregate_results(results),
+    }
+
+
+async def run_matcher_comparison(
+    cases: list[str],
+    *,
+    model: str,
+    verbose: bool = True,
+    match_only: bool = False,
+) -> dict[str, dict]:
+    """Run bigram and llm-judge against the same extracted engine output."""
+    bigram = await _run_matcher(
+        cases,
+        model=model,
+        verbose=verbose,
+        matcher="bigram",
+        match_only=match_only,
+    )
+    llm_judge = await _run_matcher(
+        cases,
+        model=model,
+        verbose=verbose,
+        matcher="llm-judge",
+        judge_client=_get_judge_client(),
+        match_only=True,
+    )
+    return {"bigram": bigram, "llm-judge": llm_judge}
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -514,6 +687,8 @@ async def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=_PROJECT_ROOT / "outputs" / "benchmark_eval")
     parser.add_argument("--matcher", choices=["bigram", "llm-judge"], default="bigram",
                         help="Matching algorithm: bigram (fast, literal) or llm-judge (semantic, uses API)")
+    parser.add_argument("--compare-matchers", action="store_true",
+                        help="Run bigram and llm-judge side-by-side on the same engine outputs")
     parser.add_argument("--match-only", action="store_true",
                         help="Skip engine runs; re-evaluate saved engine_output.json with chosen --matcher")
     parser.add_argument("--quiet", action="store_true", help="Suppress per-case verbose output")
@@ -529,73 +704,66 @@ async def main() -> None:
     else:
         cases = HARD_CASES  # default: hard 5
 
-    # Initialize LLM judge client if needed
-    judge_client = None
-    if args.matcher == "llm-judge":
-        judge_client = _get_judge_client()
 
     print(f"\nBenchmark Evaluation — {len(cases)} cases")
     print(f"Model: {args.model}")
-    print(f"Matcher: {args.matcher}" + (" (match-only)" if args.match_only else ""))
+    if args.compare_matchers:
+        mode_suffix = "cached re-score only" if args.match_only else "engine run + cached re-score"
+        print(f"Mode: compare-matchers ({mode_suffix})")
+    else:
+        print(f"Matcher: {args.matcher}" + (" (match-only)" if args.match_only else ""))
     print(f"Cases: {', '.join(cases)}")
 
-    results = []
-    for case_id in cases:
-        try:
-            r = await eval_case(
-                case_id, model=args.model, verbose=not args.quiet,
-                matcher=args.matcher, judge_client=judge_client,
+    try:
+        if args.compare_matchers:
+            comparison = await run_matcher_comparison(
+                cases,
+                model=args.model,
+                verbose=not args.quiet,
                 match_only=args.match_only,
             )
-            results.append(r)
-        except FileNotFoundError as e:
-            print(f"  SKIP: {e}")
-        except CLINotFoundError:
-            print("\nERROR: claude CLI not found in PATH.")
-            print("Make sure Claude Code CLI is installed and authenticated.")
-            sys.exit(1)
-
-    # Aggregate summary
-    print(f"\n{'='*60}")
-    print("SUMMARY")
-    print(f"{'='*60}")
-    print(f"{'Case':<20} {'Ev-R':>6} {'Ev-P':>6} {'Ev-F1':>7} {'Iss-R':>6} {'Iss-P':>6} {'Iss-F1':>7}")
-    print("-" * 65)
-
-    ev_f1s, iss_f1s = [], []
-    for r in results:
-        ev = r.get("evidence_metrics", {})
-        iss = r.get("issue_metrics", {})
-        ev_r = ev.get("recall", 0)
-        ev_p = ev.get("precision", 0)
-        ev_f1 = ev.get("f1", 0)
-        iss_r = iss.get("recall", 0)
-        iss_p = iss.get("precision", 0)
-        iss_f1 = iss.get("f1", 0)
-        ev_f1s.append(ev_f1)
-        iss_f1s.append(iss_f1)
-        print(f"{r['case_id']:<20} {ev_r:>6.1%} {ev_p:>6.1%} {ev_f1:>7.1%} {iss_r:>6.1%} {iss_p:>6.1%} {iss_f1:>7.1%}")
-
-    print("-" * 65)
-    avg_ev_f1 = sum(ev_f1s) / len(ev_f1s) if ev_f1s else 0
-    avg_iss_f1 = sum(iss_f1s) / len(iss_f1s) if iss_f1s else 0
-    print(f"{'AVERAGE':<20} {'':>6} {'':>6} {avg_ev_f1:>7.1%} {'':>6} {'':>6} {avg_iss_f1:>7.1%}")
+        else:
+            judge_client = _get_judge_client() if args.matcher == "llm-judge" else None
+            single = await _run_matcher(
+                cases,
+                model=args.model,
+                verbose=not args.quiet,
+                matcher=args.matcher,
+                judge_client=judge_client,
+                match_only=args.match_only,
+            )
+    except CLINotFoundError:
+        print("\nERROR: claude CLI not found in PATH.")
+        print("Make sure Claude Code CLI is installed and authenticated.")
+        sys.exit(1)
 
     # Save output
     args.output_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out_path = args.output_dir / f"eval_{ts}.json"
-    out_data = {
-        "timestamp": ts,
-        "model": args.model,
-        "matcher": args.matcher,
-        "cases": cases,
-        "results": results,
-        "aggregate": {
-            "avg_evidence_f1": round(avg_ev_f1, 3),
-            "avg_issue_f1": round(avg_iss_f1, 3),
-        },
-    }
+    if args.compare_matchers:
+        _print_summary("SUMMARY — BIGRAM", comparison["bigram"]["results"])
+        _print_summary("SUMMARY — LLM-JUDGE", comparison["llm-judge"]["results"])
+        _print_comparison_table(comparison["bigram"]["results"], comparison["llm-judge"]["results"])
+        out_data = {
+            "timestamp": ts,
+            "model": args.model,
+            "mode": "compare-matchers",
+            "cases": cases,
+            "bigram": comparison["bigram"],
+            "llm_judge": comparison["llm-judge"],
+        }
+    else:
+        _print_summary("SUMMARY", single["results"])
+        out_data = {
+            "timestamp": ts,
+            "model": args.model,
+            "mode": "single-matcher",
+            "matcher": args.matcher,
+            "cases": cases,
+            "results": single["results"],
+            "aggregate": single["aggregate"],
+        }
     out_path.write_text(json.dumps(out_data, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\nResults saved to: {out_path}")
 
