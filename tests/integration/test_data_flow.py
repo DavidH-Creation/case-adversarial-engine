@@ -381,7 +381,7 @@ class TestExecutiveSummarizerDataFlow:
         artifact = ExecutiveSummarizer().summarize(inp)
         risk = artifact.structured_output.risk_assessment
         assert "防御论点" in risk
-        assert "75%" in risk  # confidence_score = 0.75
+        assert "1 个防御论点" in risk
 
     def test_exec_summary_risk_no_defense_info(self):
         """Risk assessment does not mention defense when chain is None."""
