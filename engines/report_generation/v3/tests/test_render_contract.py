@@ -46,9 +46,7 @@ def test_lint_rejects_empty_major_sections() -> None:
 
 def test_lint_rejects_placeholder_only_table_rows() -> None:
     with pytest.raises(ValueError, match="placeholder-only table row"):
-        lint_markdown_render_contract(
-            "## Ranking\n\n| Issue | Impact |\n|---|---|\n| - | - |\n"
-        )
+        lint_markdown_render_contract("## Ranking\n\n| Issue | Impact |\n|---|---|\n| - | - |\n")
 
 
 @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
@@ -66,10 +64,5 @@ def test_write_v3_report_md_rejects_polluted_render(_mock_redact) -> None:
 
 
 def test_checked_in_v3_sample_report_is_render_clean() -> None:
-    sample = (
-        Path(__file__).resolve().parents[4]
-        / "outputs"
-        / "v3"
-        / "report.md"
-    )
+    sample = Path(__file__).resolve().parents[4] / "outputs" / "v3" / "report.md"
     lint_markdown_render_contract(sample.read_text(encoding="utf-8"))

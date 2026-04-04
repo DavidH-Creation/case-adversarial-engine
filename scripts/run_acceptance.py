@@ -112,9 +112,7 @@ def compute_metrics(run_results: list[dict]) -> dict:
 def _compute_issue_tree_stability(successful_runs: list[dict], *, top_k: int = 5) -> float:
     """Measure stability using the most common ordered top-k issue sequence."""
     ordered_sequences = [
-        tuple(run.get("issue_ids", [])[:top_k])
-        for run in successful_runs
-        if run.get("issue_ids")
+        tuple(run.get("issue_ids", [])[:top_k]) for run in successful_runs if run.get("issue_ids")
     ]
     if not ordered_sequences:
         return 0.0
@@ -249,7 +247,9 @@ def _extract_decision_tree_artifacts(
         def __getattr__(self, key: str):
             return self._payload.get(key)
 
-    outcome_paths = build_case_outcome_paths(_DictWrapper(decision_tree_data), mediation_range, None)
+    outcome_paths = build_case_outcome_paths(
+        _DictWrapper(decision_tree_data), mediation_range, None
+    )
     return json.loads(outcome_paths.model_dump_json()), explainable_path_count
 
 
