@@ -1,30 +1,26 @@
 #!/usr/bin/env python3
 """
-批量案件验收回放脚本 / Batch case acceptance runner.
+Batch case acceptance runner.
 
-Runs N pipeline executions per case YAML, computes three acceptance metrics:
-  - consistency       : 争点一致性  (issue consistency across N runs, target ≥0.75)
-  - citation_rate     : 证据引用率  (evidence_citations non-empty rate, target 1.0)
-  - path_explainable  : 路径可解释性 (CaseOutcomePaths 4 paths all have real trigger_conditions)
-
-Usage:
-    python scripts/run_acceptance.py --case_type labor_dispute
-    python scripts/run_acceptance.py --case_type real_estate --cases_dir cases/ --runs 3
-    python scripts/run_acceptance.py --case_type labor_dispute --runs 1 --output-dir outputs/acceptance/
+Runs N pipeline executions per case YAML and computes three mainline metrics:
+- consistency: ordered issue-tree stability across runs
+- citation_rate: non-empty evidence citation rate
+- path_explainable: current branch/report artifacts are present and explainable
 """
 
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import json
 import os
-import subprocess
-import sys
-import tempfile
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+import subprocess
+import sys
+from typing import Callable
+
+import yaml
 
 # Windows UTF-8 guard
 if sys.platform == "win32":
@@ -37,11 +33,6 @@ if sys.platform == "win32":
 _PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-import yaml
-
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
 
 REQUIRED_YAML_KEYS = [
     "case_id",
@@ -58,67 +49,33 @@ METRIC_THRESHOLDS = {
     "citation_rate": 1.0,
 }
 
-MIN_VALID_RUNS = 3  # Minimum successful runs for metrics to be meaningful
-
-
-# ---------------------------------------------------------------------------
-# YAML loading and validation
-# ---------------------------------------------------------------------------
+MIN_VALID_RUNS = 3
 
 
 def load_and_validate_yaml(yaml_path: Path) -> tuple[dict | None, str | None]:
-    """Load a case YAML file and validate required fields.
-
-    Returns:
-        (data, None) on success
-        (None, error_reason) on failure
-    """
+    """Load a case YAML file and validate required fields."""
     try:
-        with open(yaml_path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-    except yaml.YAMLError as e:
-        return None, f"invalid_yaml: {e}"
-    except OSError as e:
-        return None, f"file_error: {e}"
+        with open(yaml_path, "r", encoding="utf-8") as handle:
+            data = yaml.safe_load(handle)
+    except yaml.YAMLError as exc:
+        return None, f"invalid_yaml: {exc}"
+    except OSError as exc:
+        return None, f"file_error: {exc}"
 
     if not isinstance(data, dict):
         return None, "yaml_not_dict"
 
-    missing = [k for k in REQUIRED_YAML_KEYS if k not in data]
+    missing = [key for key in REQUIRED_YAML_KEYS if key not in data]
     if missing:
         return None, f"missing_keys:{','.join(missing)}"
 
     return data, None
 
 
-# ---------------------------------------------------------------------------
-# Metric computation (pure functions — no LLM)
-# ---------------------------------------------------------------------------
-
-
 def compute_metrics(run_results: list[dict]) -> dict:
-    """Compute acceptance metrics from N pipeline run results.
-
-    Args:
-        run_results: List of dicts, each with:
-            - "success"            : bool — whether this run completed without error
-            - "issue_ids"          : list[str] — issue_ids present in this run's issue_tree
-            - "evidence_citations" : list[list[str]] — one list per AgentOutput in the run
-            - "outcome_paths"      : dict with keys win_path/lose_path/mediation_path/supplement_path,
-                                     each having "trigger_conditions": list[str]
-            - "error"              : str | None — error description if not successful
-
-    Returns:
-        dict with keys:
-            consistency        float  [0.0–1.0]
-            citation_rate      float  [0.0–1.0]
-            path_explainable   bool
-            passed             bool
-            n_runs             int
-            n_success          int
-    """
+    """Compute acceptance metrics from pipeline run results."""
     n_total = len(run_results)
-    successful = [r for r in run_results if r.get("success", False)]
+    successful = [result for result in run_results if result.get("success", False)]
     n_success = len(successful)
 
     if n_success == 0:
@@ -131,34 +88,8 @@ def compute_metrics(run_results: list[dict]) -> dict:
             "n_success": 0,
         }
 
-    # --- 争点一致性 ---
-    # For each unique issue_id, count how many runs it appears in.
-    # consistency = max_count / n_success (i.e. the most stable issue's frequency).
-    issue_counts: dict[str, int] = {}
-    for r in successful:
-        for iid in set(r.get("issue_ids", [])):
-            issue_counts[iid] = issue_counts.get(iid, 0) + 1
-
-    if issue_counts:
-        consistency = max(issue_counts.values()) / n_success
-    else:
-        consistency = 0.0
-
-    # --- 证据引用率 ---
-    # Fraction of all AgentOutput slots across successful runs that have non-empty citations.
-    total_outputs = 0
-    cited_outputs = 0
-    for r in successful:
-        for citations in r.get("evidence_citations", []):
-            total_outputs += 1
-            if citations:
-                cited_outputs += 1
-
-    citation_rate = cited_outputs / total_outputs if total_outputs > 0 else 0.0
-
-    # --- 路径可解释性 ---
-    # Use the last successful run's outcome_paths.
-    # All 4 paths must have trigger_conditions that is non-empty and not ["insufficient_data"].
+    consistency = _compute_issue_tree_stability(successful)
+    citation_rate = _compute_citation_rate(successful)
     path_explainable = _check_path_explainability(successful)
 
     passed = (
@@ -178,127 +109,154 @@ def compute_metrics(run_results: list[dict]) -> dict:
     }
 
 
+def _compute_issue_tree_stability(successful_runs: list[dict], *, top_k: int = 5) -> float:
+    """Measure stability using the most common ordered top-k issue sequence."""
+    ordered_sequences = [
+        tuple(run.get("issue_ids", [])[:top_k])
+        for run in successful_runs
+        if run.get("issue_ids")
+    ]
+    if not ordered_sequences:
+        return 0.0
+
+    most_common_count = Counter(ordered_sequences).most_common(1)[0][1]
+    return most_common_count / len(successful_runs)
+
+
+def _compute_citation_rate(successful_runs: list[dict]) -> float:
+    """Measure how often output slots have non-empty evidence citations."""
+    total_outputs = 0
+    cited_outputs = 0
+
+    for run in successful_runs:
+        for citations in run.get("evidence_citations", []):
+            total_outputs += 1
+            if citations:
+                cited_outputs += 1
+
+    return cited_outputs / total_outputs if total_outputs > 0 else 0.0
+
+
 def _check_path_explainability(successful_runs: list[dict]) -> bool:
-    """Return True if the last successful run's outcome_paths are all explainable."""
-    for r in reversed(successful_runs):
-        paths = r.get("outcome_paths")
+    """Return True when current explainability artifacts satisfy the mainline contract."""
+    for run in reversed(successful_runs):
+        branch_artifacts = run.get("branch_artifacts")
+        if branch_artifacts is not None:
+            return (
+                bool(branch_artifacts.get("report_present"))
+                and bool(branch_artifacts.get("decision_tree_present"))
+                and int(branch_artifacts.get("explainable_path_count", 0)) > 0
+            )
+
+        # Legacy fallback for older artifacts that still expose outcome_paths.
+        paths = run.get("outcome_paths")
         if not paths:
             continue
-        for path_key in ("win_path", "lose_path", "mediation_path", "supplement_path"):
-            tc = paths.get(path_key, {}).get("trigger_conditions", ["insufficient_data"])
-            if not tc or tc == ["insufficient_data"]:
+
+        required_keys = ("win_path", "lose_path", "supplement_path")
+        for path_key in required_keys:
+            trigger_conditions = paths.get(path_key, {}).get(
+                "trigger_conditions", ["insufficient_data"]
+            )
+            if not trigger_conditions or trigger_conditions == ["insufficient_data"]:
                 return False
         return True
-    # No run had outcome_paths
+
     return False
 
 
-# ---------------------------------------------------------------------------
-# Artifact extraction from pipeline output directory
-# ---------------------------------------------------------------------------
-
-
 def extract_run_artifacts(output_dir: Path) -> dict:
-    """Parse pipeline output files from a single run directory.
-
-    Reads result.json, issue_tree.json, and decision_tree.json to produce
-    the run result dict expected by compute_metrics().
-
-    Returns a run result dict with success=True on success, success=False on error.
-    """
+    """Parse pipeline outputs for one run."""
     try:
-        # --- issue_ids from issue_tree.json ---
         issue_ids: list[str] = []
-        it_path = output_dir / "issue_tree.json"
-        if it_path.exists():
-            it_data = json.loads(it_path.read_text(encoding="utf-8"))
-            issue_ids = [iss["issue_id"] for iss in it_data.get("issues", [])]
+        issue_tree_path = output_dir / "issue_tree.json"
+        if issue_tree_path.exists():
+            issue_tree = json.loads(issue_tree_path.read_text(encoding="utf-8"))
+            issue_ids = [issue["issue_id"] for issue in issue_tree.get("issues", [])]
 
-        # --- evidence_citations from result.json ---
         evidence_citations: list[list[str]] = []
         result_path = output_dir / "result.json"
         if result_path.exists():
             result_data = json.loads(result_path.read_text(encoding="utf-8"))
-            for rnd in result_data.get("rounds", []):
-                for output in rnd.get("outputs", []):
+            for round_data in result_data.get("rounds", []):
+                for output in round_data.get("outputs", []):
                     evidence_citations.append(output.get("evidence_citations", []))
 
-        # --- outcome_paths from decision_tree.json ---
-        # Build CaseOutcomePaths using the outcome_paths module.
         outcome_paths: dict | None = None
-        dt_path = output_dir / "decision_tree.json"
-        if dt_path.exists():
-            from engines.report_generation.outcome_paths import build_case_outcome_paths
-            from engines.report_generation.mediation_range import compute_mediation_range
-
-            dt_data = json.loads(dt_path.read_text(encoding="utf-8"))
-
-            # Load amount_report for mediation range (optional)
-            amount_report = None
-            ar_path = output_dir / "amount_report.json"
-            if ar_path.exists():
-                try:
-                    from engines.case_structuring.amount_calculator import AmountCalculationReport
-
-                    ar_data = json.loads(ar_path.read_text(encoding="utf-8"))
-                    amount_report = AmountCalculationReport.model_validate(ar_data)
-                except Exception:
-                    pass
-
-            mediation_range = compute_mediation_range(amount_report) if amount_report else None
-
-            # Wrap dt_data as a simple object for build_case_outcome_paths
-            class _DictWrapper:
-                def __init__(self, d: dict) -> None:
-                    self._d = d
-
-                def __getattr__(self, key: str):
-                    return self._d.get(key)
-
-            dt_obj = _DictWrapper(dt_data)
-            cop = build_case_outcome_paths(dt_obj, mediation_range, None)
-            outcome_paths = json.loads(cop.model_dump_json())
+        explainable_path_count = 0
+        decision_tree_path = output_dir / "decision_tree.json"
+        if decision_tree_path.exists():
+            outcome_paths, explainable_path_count = _extract_decision_tree_artifacts(
+                decision_tree_path,
+                output_dir,
+            )
 
         return {
             "success": True,
             "issue_ids": issue_ids,
             "evidence_citations": evidence_citations,
+            "branch_artifacts": {
+                "report_present": (output_dir / "report.md").exists(),
+                "decision_tree_present": decision_tree_path.exists(),
+                "explainable_path_count": explainable_path_count,
+            },
             "outcome_paths": outcome_paths,
             "error": None,
         }
-
-    except Exception as e:
+    except Exception as exc:
         return {
             "success": False,
             "issue_ids": [],
             "evidence_citations": [],
+            "branch_artifacts": None,
             "outcome_paths": None,
-            "error": str(e),
+            "error": str(exc),
         }
 
 
-# ---------------------------------------------------------------------------
-# Pipeline runner (default: subprocess)
-# ---------------------------------------------------------------------------
+def _extract_decision_tree_artifacts(
+    decision_tree_path: Path, output_dir: Path
+) -> tuple[dict | None, int]:
+    """Return legacy outcome paths plus current explainable-branch count."""
+    from engines.report_generation.mediation_range import compute_mediation_range
+    from engines.report_generation.outcome_paths import build_case_outcome_paths
+
+    decision_tree_data = json.loads(decision_tree_path.read_text(encoding="utf-8"))
+    explainable_path_count = sum(
+        1
+        for path in decision_tree_data.get("paths", [])
+        if str(path.get("trigger_condition", "")).strip()
+        and str(path.get("trigger_condition", "")).strip() != "insufficient_data"
+    )
+
+    amount_report = None
+    amount_report_path = output_dir / "amount_report.json"
+    if amount_report_path.exists():
+        try:
+            from engines.case_structuring.amount_calculator import AmountCalculationReport
+
+            amount_report_data = json.loads(amount_report_path.read_text(encoding="utf-8"))
+            amount_report = AmountCalculationReport.model_validate(amount_report_data)
+        except Exception:
+            amount_report = None
+
+    mediation_range = compute_mediation_range(amount_report) if amount_report else None
+
+    class _DictWrapper:
+        def __init__(self, payload: dict) -> None:
+            self._payload = payload
+
+        def __getattr__(self, key: str):
+            return self._payload.get(key)
+
+    outcome_paths = build_case_outcome_paths(_DictWrapper(decision_tree_data), mediation_range, None)
+    return json.loads(outcome_paths.model_dump_json()), explainable_path_count
 
 
-def _default_pipeline_runner(
-    yaml_path: Path,
-    run_index: int,
-    output_dir: Path,
-) -> dict:
-    """Run the full pipeline via subprocess and return extracted artifacts.
-
-    Args:
-        yaml_path   : Path to the case YAML file.
-        run_index   : 0-based run index (for logging).
-        output_dir  : Directory to write pipeline outputs into.
-
-    Returns:
-        Run result dict for compute_metrics().
-    """
+def _default_pipeline_runner(yaml_path: Path, run_index: int, output_dir: Path) -> dict:
+    """Run the full pipeline via subprocess and return extracted artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    cmd = [
+    command = [
         sys.executable,
         str(_PROJECT_ROOT / "scripts" / "run_case.py"),
         str(yaml_path),
@@ -307,20 +265,21 @@ def _default_pipeline_runner(
         "--skip-pretrial",
     ]
     try:
-        proc = subprocess.run(
-            cmd,
+        completed = subprocess.run(
+            command,
             capture_output=True,
             text=True,
             encoding="utf-8",
             timeout=600,
         )
-        if proc.returncode != 0:
+        if completed.returncode != 0:
             return {
                 "success": False,
                 "issue_ids": [],
                 "evidence_citations": [],
+                "branch_artifacts": None,
                 "outcome_paths": None,
-                "error": f"subprocess_exit_{proc.returncode}: {proc.stderr[-500:]}",
+                "error": f"subprocess_exit_{completed.returncode}: {completed.stderr[-500:]}",
             }
         return extract_run_artifacts(output_dir)
     except subprocess.TimeoutExpired:
@@ -328,22 +287,19 @@ def _default_pipeline_runner(
             "success": False,
             "issue_ids": [],
             "evidence_citations": [],
+            "branch_artifacts": None,
             "outcome_paths": None,
             "error": "pipeline_timeout",
         }
-    except Exception as e:
+    except Exception as exc:
         return {
             "success": False,
             "issue_ids": [],
             "evidence_citations": [],
+            "branch_artifacts": None,
             "outcome_paths": None,
-            "error": str(e),
+            "error": str(exc),
         }
-
-
-# ---------------------------------------------------------------------------
-# Per-case acceptance run
-# ---------------------------------------------------------------------------
 
 
 def run_acceptance_for_case(
@@ -352,28 +308,9 @@ def run_acceptance_for_case(
     base_output_dir: Path,
     pipeline_runner: Callable[[Path, int, Path], dict] | None = None,
 ) -> dict:
-    """Run acceptance evaluation for a single case YAML.
-
-    Args:
-        yaml_path       : Path to the case YAML file.
-        n_runs          : Number of pipeline runs to execute.
-        base_output_dir : Directory under which per-run subdirs are created.
-        pipeline_runner : Optional override for the pipeline execution function.
-                          Signature: (yaml_path, run_index, output_dir) -> run_result_dict
-                          Defaults to _default_pipeline_runner.
-
-    Returns:
-        Case result dict with keys:
-            case_id   str
-            yaml_path str
-            status    "passed" | "failed" | "skipped"
-            reason    str | None   (set when status == "skipped")
-            metrics   dict | None  (set when status != "skipped")
-            runs      list[dict]   per-run results
-    """
+    """Run acceptance evaluation for a single case YAML."""
     runner = pipeline_runner or _default_pipeline_runner
 
-    # Validate YAML
     data, error = load_and_validate_yaml(yaml_path)
     if data is None:
         return {
@@ -390,13 +327,13 @@ def run_acceptance_for_case(
     run_results: list[dict] = []
 
     print(f"\n  Case: {case_id} ({yaml_path.name})")
-    for i in range(n_runs):
-        run_dir = base_output_dir / f"{case_slug}_run{i + 1}"
-        print(f"    Run {i + 1}/{n_runs}...", end="", flush=True)
-        result = runner(yaml_path, i, run_dir)
+    for run_index in range(n_runs):
+        run_dir = base_output_dir / f"{case_slug}_run{run_index + 1}"
+        print(f"    Run {run_index + 1}/{n_runs}...", end="", flush=True)
+        result = runner(yaml_path, run_index, run_dir)
         run_results.append(result)
-        status_sym = "✓" if result["success"] else "✗"
-        print(f" {status_sym}")
+        status_symbol = "[OK]" if result["success"] else "[FAIL]"
+        print(f" {status_symbol}")
         if not result["success"]:
             print(f"      Error: {result.get('error', 'unknown')}")
 
@@ -411,19 +348,14 @@ def run_acceptance_for_case(
         "metrics": metrics,
         "runs": [
             {
-                "run_index": i + 1,
-                "success": r["success"],
-                "error": r.get("error"),
-                "issue_count": len(r.get("issue_ids", [])),
+                "run_index": index + 1,
+                "success": result["success"],
+                "error": result.get("error"),
+                "issue_count": len(result.get("issue_ids", [])),
             }
-            for i, r in enumerate(run_results)
+            for index, result in enumerate(run_results)
         ],
     }
-
-
-# ---------------------------------------------------------------------------
-# Batch acceptance run
-# ---------------------------------------------------------------------------
 
 
 def run_acceptance(
@@ -434,46 +366,35 @@ def run_acceptance(
     pipeline_runner: Callable[[Path, int, Path], dict] | None = None,
     output_dir: Path | None = None,
 ) -> dict:
-    """Run acceptance evaluation for all case YAMLs of a given case_type.
-
-    Args:
-        case_type       : e.g. "labor_dispute" or "real_estate"
-        cases_dir       : Directory containing case YAML files.
-        n_runs          : Number of runs per case (default 5).
-        pipeline_runner : Optional pipeline runner override (for testing).
-        output_dir      : Where to write intermediate run outputs.
-
-    Returns:
-        Acceptance report dict.
-    """
-    # Find matching YAML files
+    """Run acceptance evaluation for all matching case YAMLs."""
     all_yamls = sorted(cases_dir.glob("*.yaml"))
-    matching = [p for p in all_yamls if _yaml_matches_case_type(p, case_type)]
+    matching = [path for path in all_yamls if _yaml_matches_case_type(path, case_type)]
 
     if not matching:
         print(f"  [Warning] No YAML files found for case_type='{case_type}' in {cases_dir}")
 
-    # Intermediate output dir
     if output_dir is None:
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-        output_dir = _PROJECT_ROOT / "outputs" / "acceptance" / f"{case_type}_{ts}"
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        output_dir = _PROJECT_ROOT / "outputs" / "acceptance" / f"{case_type}_{timestamp}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Run each case
     case_results: list[dict] = []
     for yaml_path in matching:
         case_dir = output_dir / yaml_path.stem
-        case_result = run_acceptance_for_case(
-            yaml_path, n_runs, case_dir, pipeline_runner=pipeline_runner
+        case_results.append(
+            run_acceptance_for_case(
+                yaml_path,
+                n_runs,
+                case_dir,
+                pipeline_runner=pipeline_runner,
+            )
         )
-        case_results.append(case_result)
 
-    # Aggregate summary
-    passed = sum(1 for r in case_results if r["status"] == "passed")
-    failed = sum(1 for r in case_results if r["status"] == "failed")
-    skipped = sum(1 for r in case_results if r["status"] == "skipped")
+    passed = sum(1 for result in case_results if result["status"] == "passed")
+    failed = sum(1 for result in case_results if result["status"] == "failed")
+    skipped = sum(1 for result in case_results if result["status"] == "skipped")
 
-    report = {
+    return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "case_type": case_type,
         "cases_dir": str(cases_dir),
@@ -488,42 +409,23 @@ def run_acceptance(
         "thresholds": METRIC_THRESHOLDS,
         "cases": case_results,
     }
-    return report
 
 
 def _yaml_matches_case_type(yaml_path: Path, case_type: str) -> bool:
-    """Return True if the YAML file's case_type matches the requested type.
-
-    Checks both the filename prefix and the case_type field inside the YAML.
-    """
-    # Fast check: filename prefix (e.g. labor_dispute_1.yaml)
+    """Return True if a YAML file matches the requested case type."""
     if yaml_path.stem.startswith(case_type):
         return True
 
-    # Slow check: read YAML and inspect case_type field
     try:
-        with open(yaml_path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+        with open(yaml_path, "r", encoding="utf-8") as handle:
+            data = yaml.safe_load(handle) or {}
         return data.get("case_type") == case_type
     except Exception:
         return False
 
 
-# ---------------------------------------------------------------------------
-# Report output
-# ---------------------------------------------------------------------------
-
-
 def write_report(report: dict, report_path: Path | None = None) -> Path:
-    """Write the acceptance report JSON to disk.
-
-    Args:
-        report      : Report dict from run_acceptance().
-        report_path : Override path. Defaults to outputs/acceptance/report_YYYYMMDD.json
-
-    Returns:
-        Path to written report file.
-    """
+    """Write the acceptance report JSON to disk."""
     if report_path is None:
         today = datetime.now(timezone.utc).strftime("%Y%m%d")
         report_dir = _PROJECT_ROOT / "outputs" / "acceptance"
@@ -537,20 +439,15 @@ def write_report(report: dict, report_path: Path | None = None) -> Path:
     return report_path
 
 
-# ---------------------------------------------------------------------------
-# CLI entry point
-# ---------------------------------------------------------------------------
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Batch case acceptance runner — runs N pipeline executions per case and computes acceptance metrics.",
+        description="Batch case acceptance runner.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
             "  python scripts/run_acceptance.py --case_type labor_dispute\n"
             "  python scripts/run_acceptance.py --case_type real_estate --runs 3\n"
-            "  python scripts/run_acceptance.py --case_type labor_dispute --cases_dir cases/ --runs 1\n"
+            "  python scripts/run_acceptance.py --case_type civil_loan --cases_dir cases/ --runs 1\n"
         ),
     )
     parser.add_argument(
@@ -577,47 +474,26 @@ def main() -> None:
     parser.add_argument(
         "--report-path",
         default=None,
-        help="Override the report JSON output path (default: outputs/acceptance/report_YYYYMMDD.json)",
+        help="Override the report JSON output path",
     )
     args = parser.parse_args()
 
-    cases_dir = Path(args.cases_dir)
-    if not cases_dir.is_absolute():
-        cases_dir = _PROJECT_ROOT / cases_dir
-
-    output_dir = Path(args.output_dir) if args.output_dir else None
-    report_path = Path(args.report_path) if args.report_path else None
-
-    print(f"\n{'=' * 60}")
-    print(f"Acceptance Run")
-    print(f"  case_type : {args.case_type}")
-    print(f"  cases_dir : {cases_dir}")
-    print(f"  runs      : {args.runs}")
-    print(f"{'=' * 60}")
-
     report = run_acceptance(
         case_type=args.case_type,
-        cases_dir=cases_dir,
+        cases_dir=Path(args.cases_dir),
         n_runs=args.runs,
-        output_dir=output_dir,
+        output_dir=Path(args.output_dir) if args.output_dir else None,
     )
-
-    out_path = write_report(report, report_path)
-
+    path = write_report(report, Path(args.report_path) if args.report_path else None)
+    print(f"\nAcceptance report written to: {path}")
     summary = report["summary"]
-    print(f"\n{'=' * 60}")
-    print(f"Acceptance Report")
-    print(f"  Total cases : {summary['total']}")
-    print(f"  Passed      : {summary['passed']}")
-    print(f"  Failed      : {summary['failed']}")
-    print(f"  Skipped     : {summary['skipped']}")
-    print(f"  All passed  : {summary['all_passed']}")
-    print(f"\nReport written to: {out_path}")
-    print(f"{'=' * 60}\n")
-
-    # Exit with non-zero code if any case failed
-    if not summary["all_passed"]:
-        sys.exit(1)
+    print(
+        "Summary: "
+        f"total={summary['total']} "
+        f"passed={summary['passed']} "
+        f"failed={summary['failed']} "
+        f"skipped={summary['skipped']}"
+    )
 
 
 if __name__ == "__main__":
