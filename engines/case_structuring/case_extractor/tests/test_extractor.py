@@ -36,7 +36,10 @@ from engines.case_structuring.case_extractor.schemas import (
     LLMExtractedRepayment,
     LLMExtractedSummaryRow,
 )
-from engines.case_structuring.case_extractor.prompts.generic import format_documents
+from engines.case_structuring.case_extractor.prompts.generic import (
+    build_extraction_prompt,
+    format_documents,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -512,6 +515,25 @@ class TestPrompts:
         result = format_documents(docs)
         assert result.count("<document") == 3
         assert result.count("</document>") == 3
+
+    def test_braces_in_document_text_do_not_crash(self):
+        """Document text with Python format braces must not cause KeyError."""
+        docs = [("contract.txt", "条款约定: {penalty} = {amount} * 0.01")]
+        doc_block = format_documents(docs)
+        # This would raise KeyError with str.format()
+        prompt = build_extraction_prompt(doc_block)
+        assert "{penalty}" in prompt
+        assert "{amount}" in prompt
+        assert "contract.txt" in prompt
+
+    @pytest.mark.asyncio
+    async def test_extraction_survives_braces_in_input(self):
+        """End-to-end: document with format braces → extraction succeeds."""
+        mock = MockLLMClient(_make_civil_loan_response())
+        extractor = CaseExtractor(llm_client=mock)
+        docs = [("doc.txt", "违约金计算: {penalty_rate} * {days}")]
+        result = await extractor.extract(docs)
+        assert isinstance(result, ExtractedCase)
 
     def test_format_documents_empty_list(self):
         """Empty list produces empty string."""

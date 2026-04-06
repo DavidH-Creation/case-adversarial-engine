@@ -39,59 +39,59 @@ deposit_receipt, payment_records, witness_statement, expert_opinion, other
 Ensure all IDs are unique and follow the format requirements.
 """
 
-EXTRACTION_PROMPT = """\
+_EXTRACTION_PROMPT_TEMPLATE = """\
 请从以下法律文书中提取完整的结构化案件信息。
 Please extract complete structured case information from the following legal documents.
 
 <documents>
-{documents}
+__DOCUMENTS_PLACEHOLDER__
 </documents>
 
 请严格按照以下 JSON schema 输出，不要遗漏任何字段：
 Output strictly according to the following JSON schema, do not omit any fields:
 
-{{
+{
   "case_type": "civil_loan | labor_dispute | real_estate | other",
-  "plaintiff": {{
+  "plaintiff": {
     "role": "plaintiff",
     "name": "原告姓名",
     "party_id": ""
-  }},
-  "defendant": {{
+  },
+  "defendant": {
     "role": "defendant",
     "name": "被告姓名",
     "party_id": ""
-  }},
+  },
   "summary": [
-    {{"label": "关键事实标签", "description": "简要描述"}}
+    {"label": "关键事实标签", "description": "简要描述"}
   ],
   "materials": [
-    {{
+    {
       "source_id": "src-p-001 或 src-d-001",
       "text": "材料原文内容",
       "submitter": "plaintiff 或 defendant",
       "document_type": "文书类型"
-    }}
+    }
   ],
   "claims": [
-    {{
+    {
       "claim_id": "c-001",
       "claim_category": "诉请类别",
       "title": "诉请标题",
       "claim_text": "诉请详细描述"
-    }}
+    }
   ],
   "defenses": [
-    {{
+    {
       "defense_id": "d-001",
       "defense_category": "抗辩类别",
       "against_claim_id": "c-001",
       "title": "抗辩标题",
       "defense_text": "抗辩详细描述"
-    }}
+    }
   ],
   "financials": null
-}}
+}
 
 注意 / Notes:
 - source_id 格式：原告材料用 src-p-XXX，被告材料用 src-d-XXX
@@ -101,6 +101,16 @@ Output strictly according to the following JSON schema, do not omit any fields:
 - 如果文书中信息不完整，尽可能提取已有内容，缺失字段留空字符串
 - 如果只有起诉状没有答辩状，defenses 留空列表
 """
+
+
+def build_extraction_prompt(documents_block: str) -> str:
+    """Build the extraction prompt with document text safely inserted.
+
+    Uses placeholder replacement instead of str.format() to avoid
+    KeyError / injection when document text contains Python format
+    braces like ``{variable}``.
+    """
+    return _EXTRACTION_PROMPT_TEMPLATE.replace("__DOCUMENTS_PLACEHOLDER__", documents_block)
 
 
 def format_documents(texts: list[tuple[str, str]]) -> str:

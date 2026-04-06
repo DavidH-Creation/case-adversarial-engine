@@ -109,7 +109,7 @@ class CaseExtractor:
         # Format documents into XML blocks
         doc_block = prompt_module.format_documents(documents)
         system = prompt_module.SYSTEM_PROMPT
-        user = prompt_module.EXTRACTION_PROMPT.format(documents=doc_block)
+        user = prompt_module.build_extraction_prompt(doc_block)
 
         # Call LLM with structured output
         raw_data = await self._call_llm(system, user)
