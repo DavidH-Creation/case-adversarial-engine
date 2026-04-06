@@ -145,15 +145,6 @@ def _agent_color(role: str) -> RGBColor:
     return CLR_GREEN
 
 
-def _probability_label(prob: float) -> str:
-    """Convert probability to qualitative Chinese label."""
-    if prob >= 0.6:
-        return "较大可能"
-    if prob >= 0.4:
-        return "均等可能"
-    return "较小可能"
-
-
 def _set_table_font(table):
     for row in table.rows:
         for cell in row.cells:
@@ -555,88 +546,6 @@ def _render_issue_ranking(doc, exec_summary: dict):
 _PARTY_ZH = {"plaintiff": "原告", "defendant": "被告", "neutral": "中性"}
 
 
-def _render_decision_tree(doc, decision_tree: dict):
-    """裁判路径树。"""
-    paths = decision_tree.get("paths", [])
-    if not paths:
-        doc.add_heading("裁判路径树", level=1)
-        _styled(
-            doc,
-            "（本次运行未生成裁判路径，可能需重新运行庭后分析流程）",
-            size=SZ_NORMAL,
-            color=CLR_GRAY,
-        )
-        return
-
-    doc.add_heading(f"裁判路径树（{len(paths)}条路径）", level=1)
-
-    # --- 概率比较摘要 ---
-    most_likely = decision_tree.get("most_likely_path")
-    plaintiff_best = decision_tree.get("plaintiff_best_path")
-    defendant_best = decision_tree.get("defendant_best_path")
-    if most_likely or plaintiff_best or defendant_best:
-        _styled(doc, "路径概率比较", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
-        summary_fields = []
-        if most_likely:
-            summary_fields.append(("最可能路径", most_likely))
-        if plaintiff_best:
-            summary_fields.append(("原告最优路径", plaintiff_best))
-        if defendant_best:
-            summary_fields.append(("被告最优路径", defendant_best))
-        for label, val in summary_fields:
-            p = doc.add_paragraph()
-            _add_run(p, f"{label}：", bold=True, size=SZ_RISK, color=CLR_GRAY)
-            _add_run(p, _h(val), size=SZ_RISK, color=CLR_BODY)
-        doc.add_paragraph()
-
-    # Sort paths by probability descending for display
-    sorted_paths = sorted(paths, key=lambda x: x.get("probability", 0.5), reverse=True)
-
-    for rank, path in enumerate(sorted_paths, start=1):
-        pid = path.get("path_id", "")
-        prob = path.get("probability", 0.5)
-        party = _PARTY_ZH.get(path.get("party_favored", "neutral"), "中性")
-
-        # Label most-likely path
-        label_suffix = f"  【可能性：{_probability_label(prob)} · 有利方：{party}】"
-        if pid == most_likely:
-            label_suffix += "  ★ 最可能"
-
-        _styled(doc, f"路径 {rank}{label_suffix}", bold=True, size=SZ_SECTION_HDR, color=CLR_BLUE)
-
-        fields = [
-            ("触发条件", path.get("trigger_condition", "")),
-            ("触发争点", ", ".join(_h(x) for x in path.get("trigger_issue_ids", []))),
-            ("关键证据", ", ".join(_h(x) for x in path.get("key_evidence_ids", []))),
-            ("可能结果", path.get("possible_outcome", "")),
-        ]
-        rationale = path.get("probability_rationale", "")
-        if rationale:
-            fields.append(("概率依据", rationale))
-        notes = path.get("path_notes", "")
-        if notes:
-            fields.append(("备注", notes))
-
-        for field_label, val in fields:
-            if not val:
-                continue
-            p = doc.add_paragraph()
-            _add_run(p, f"{field_label}：", bold=True, size=SZ_RISK, color=CLR_GRAY)
-            _add_run(p, val, size=SZ_RISK, color=CLR_BODY)
-        doc.add_paragraph()
-
-    blocking = decision_tree.get("blocking_conditions", [])
-    if blocking:
-        _styled(doc, "阻断条件", bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
-        for bc in blocking:
-            _bullet(
-                doc,
-                f"{_h(bc['condition_id'])}: {bc['description']}",
-                size=SZ_NORMAL,
-                color=CLR_BODY,
-            )
-
-
 def _ordered_paths_for_output(decision_tree: dict) -> list[dict]:
     paths = list(decision_tree.get("paths", []))
     path_ranking = decision_tree.get("path_ranking", [])
@@ -709,53 +618,6 @@ def _render_decision_tree_probability_free(doc, decision_tree: dict):
                 size=SZ_NORMAL,
                 color=CLR_BODY,
             )
-
-
-def _render_attack_chain(doc, attack_chain: dict, party_zh: dict[str, str]):
-    """对方最优攻击链。"""
-    attacks = attack_chain.get("top_attacks", [])
-    if not attacks:
-        doc.add_heading("对方最优攻击链", level=1)
-        _styled(
-            doc,
-            "（本次运行未生成攻击链，可能需重新运行庭后分析流程）",
-            size=SZ_NORMAL,
-            color=CLR_GRAY,
-        )
-        return
-
-    doc.add_heading("对方最优攻击链", level=1)
-
-    order = attack_chain.get("recommended_order", [])
-    raw_party = attack_chain.get("owner_party_id", "")
-    p = doc.add_paragraph()
-    _add_run(p, "攻击方：", bold=True, size=SZ_BODY, color=CLR_RED)
-    _add_run(p, party_zh.get(raw_party, raw_party), size=SZ_BODY, color=CLR_BODY)
-    if order:
-        p2 = doc.add_paragraph()
-        _add_run(p2, "推荐顺序：", bold=True, size=SZ_BODY, color=CLR_RED)
-        _add_run(p2, " → ".join(_h(x) for x in order), size=SZ_BODY, color=CLR_BODY)
-    doc.add_paragraph()
-
-    for node in attacks:
-        nid = node.get("attack_node_id", "")
-        _styled(doc, _h(nid), bold=True, size=SZ_SECTION_HDR, color=CLR_RED)
-
-        attack_fields = [
-            ("目标争点", _h(node.get("target_issue_id", ""))),
-            ("攻击论点", node.get("attack_description", "")),
-            ("成功条件", node.get("success_conditions", "")),
-            ("支撑证据", ", ".join(_h(x) for x in node.get("supporting_evidence_ids", []))),
-            ("反制动作", node.get("counter_measure", "")),
-            ("对方补证策略", node.get("adversary_pivot_strategy", "")),
-        ]
-        for label, val in attack_fields:
-            if not val:
-                continue
-            p = doc.add_paragraph()
-            _add_run(p, f"{label}：", bold=True, size=SZ_RISK, color=CLR_ORANGE)
-            _add_run(p, val, size=SZ_RISK, color=CLR_BODY)
-        doc.add_paragraph()
 
 
 def _render_action_recommendations(doc, exec_summary: dict):
