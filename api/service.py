@@ -85,7 +85,6 @@ class CaseRecord:
         self.extraction_data: Optional[dict] = None
         # 最终分析结果
         self.analysis_data: Optional[dict] = None
-        self.run_id: Optional[str] = None
         # 本轮分析的 run_id（Unit 5: stable id for scenario API）
         self.run_id: Optional[str] = None
         # 生成的报告路径
@@ -278,7 +277,11 @@ class CaseStore:
         return record
 
     def save_to_disk(self, case_id: str) -> bool:
-        """Atomically flush the in-memory record for case_id to case_meta.json. Returns True on success."""
+        """Atomically flush the in-memory record for *case_id* to case_meta.json.
+
+        Returns True on success, False when the case is unknown or has no
+        workspace_manager (e.g. workspace writes are disabled in tests).
+        """
         with self._lock:
             entry = self._cases.get(case_id)
             if entry is None:
@@ -295,8 +298,12 @@ class CaseStore:
             return False
 
     def load_from_disk(self, case_id: str) -> Optional["CaseRecord"]:
-        """Public alias for _load_from_disk for restart recovery."""
-        return self._load_from_disk(case_id)
+        """Public alias for _load_from_disk — reconstruct a CaseRecord from workspace.
+
+        Use this for explicit restart-recovery calls; the private _load_from_disk
+        is called automatically by get() on a cache miss.
+        """
+        return self._load_from_disk(case_id, self._workspaces_dir or _WORKSPACE_BASE)
 
     def try_start_extraction(self, case_id: str) -> tuple[Optional[CaseRecord], bool]:
         return self._try_start(case_id, allowed=(CaseStatus.created,), active=CaseStatus.extracting)
@@ -333,7 +340,7 @@ class CaseStore:
         return record, True
 
     def evict_expired(self) -> int:
-        """清理过期条目，返回清理数量。"""
+        """清理过期条目，返回清理数量。保存最后状态到磁盘后再删除。"""
         now = time.time()
         with self._lock:
             expired = [k for k, (_, t) in self._cases.items() if now - t > self._ttl]

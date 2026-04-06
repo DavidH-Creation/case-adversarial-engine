@@ -90,7 +90,7 @@ class TestListArtifacts:
         resp = client.get(f"/api/cases/{record.case_id}/artifacts")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["run_id"] == record.case_id
+        assert data["case_id"] == record.case_id
         assert set(data["artifacts"]) == {"result.json", "analysis_summary.json"}
 
     def test_empty_artifacts_returns_empty_list(self):

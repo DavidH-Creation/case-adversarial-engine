@@ -341,15 +341,15 @@ async def stream_analysis(case_id: str):
     )
 
 
-@app.get("/api/cases/{run_id}/progress")
-async def stream_pipeline_progress(run_id: str):
+@app.get("/api/cases/{case_id}/progress")
+async def stream_pipeline_progress(case_id: str):
     from engines.shared.progress_reporter import get_progress_queue
 
-    queue = get_progress_queue(run_id)
+    queue = get_progress_queue(case_id)
     if queue is None:
         raise HTTPException(
             status_code=404,
-            detail=f"No progress stream registered for run_id: {run_id}",
+            detail=f"No progress stream registered for case_id: {case_id}",
         )
 
     async def event_stream():
@@ -444,7 +444,7 @@ async def list_case_artifacts(case_id: str):
             status_code=404,
             content={"error": f"案件不存在: {case_id}", "code": 404},
         )
-    return {"run_id": case_id, "artifacts": list_artifacts(record)}
+    return {"case_id": case_id, "artifacts": list_artifacts(record)}
 
 
 @app.get("/api/cases/{case_id}/artifacts/{artifact_name}")
