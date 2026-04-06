@@ -1141,6 +1141,143 @@ def get_artifact(record: CaseRecord, name: str) -> Optional[Any]:
 
 
 # ---------------------------------------------------------------------------
+# Unit 15: Followup job manager (async 202 pattern)
+# ---------------------------------------------------------------------------
+
+
+class FollowupJobManager:
+    """Manages async followup Q&A jobs.
+
+    Uses asyncio.create_task to run FollowupResponder in the background,
+    matching the same 202 pattern as CaseScenarioManager.
+    """
+
+    def __init__(self) -> None:
+        self._jobs: dict[str, dict] = {}  # job_id → job state
+
+    def submit(
+        self,
+        case_id: str,
+        question: str,
+        record: "CaseRecord",
+        session_id: str | None = None,
+    ) -> str:
+        """Create a followup job and launch it asynchronously. Returns job_id."""
+        from .schemas import FollowupStatus
+
+        job_id = f"followup-{uuid.uuid4().hex[:12]}"
+        self._jobs[job_id] = {
+            "job_id": job_id,
+            "case_id": case_id,
+            "status": FollowupStatus.pending.value,
+            "session_id": session_id,
+            "answer": None,
+            "issue_ids": [],
+            "evidence_ids": [],
+            "statement_class": None,
+            "error": None,
+        }
+        asyncio.create_task(
+            self._run_followup(job_id, case_id, question, record, session_id)
+        )
+        return job_id
+
+    async def _run_followup(
+        self,
+        job_id: str,
+        case_id: str,
+        question: str,
+        record: "CaseRecord",
+        session_id: str | None,
+    ) -> None:
+        """Execute the followup via FollowupResponder and store result."""
+        from .schemas import FollowupStatus
+        from engines.interactive_followup.responder import FollowupResponder
+        from engines.interactive_followup.session_manager import SessionManager
+        from engines.shared.models import ReportArtifact, ReportSection
+
+        job = self._jobs[job_id]
+        job["status"] = FollowupStatus.running.value
+        try:
+            case_type = record.info.get("case_type", "civil_loan")
+            run_id = record.run_id or "unknown"
+
+            # Build a minimal ReportArtifact from analysis_data
+            analysis = record.analysis_data or {}
+            report_artifact = ReportArtifact(
+                report_id=f"rpt-{case_id}",
+                case_id=case_id,
+                run_id=run_id,
+                title="对抗分析报告",
+                summary=analysis.get("overall_assessment", "分析摘要"),
+                sections=[
+                    ReportSection(
+                        section_id=f"sec-{case_id}-overall",
+                        title="综合评估",
+                        body=analysis.get("overall_assessment", ""),
+                        linked_issue_ids=[],
+                        linked_evidence_ids=[],
+                        key_conclusions=[],
+                    ),
+                ],
+            )
+
+            # Set up session manager
+            ws_base = _WORKSPACE_BASE
+            if ws_base is not None:
+                session_dir = ws_base / case_id / "sessions"
+            else:
+                session_dir = Path("/tmp") / "sessions" / case_id
+            session_mgr = SessionManager(session_dir)
+
+            # Load or create session
+            session = session_mgr.load_or_create(
+                case_id=case_id,
+                report_id=report_artifact.report_id,
+                run_id=run_id,
+            )
+            job["session_id"] = session.session_id
+
+            # Build previous turns from session
+            previous_turns = session.turns if session.turns else None
+
+            # Run FollowupResponder
+            claude = ClaudeCLIClient(timeout=600.0)
+            responder = FollowupResponder(
+                llm_client=claude,
+                case_type=case_type,
+            )
+            turn = await responder.respond(
+                report=report_artifact,
+                question=question,
+                previous_turns=previous_turns,
+                run_id=run_id,
+            )
+
+            # Save turn to session
+            session_mgr.append_turn(session, turn)
+
+            # Populate job result
+            job["answer"] = turn.answer
+            job["issue_ids"] = turn.issue_ids
+            job["evidence_ids"] = turn.evidence_ids
+            job["statement_class"] = turn.statement_class
+            job["status"] = FollowupStatus.completed.value
+
+        except Exception as exc:
+            logger.exception("Followup job %s failed", job_id)
+            job["status"] = FollowupStatus.failed.value
+            job["error"] = str(exc)
+
+    def get(self, job_id: str) -> Optional[dict]:
+        """Return followup job state, or None if not found."""
+        return self._jobs.get(job_id)
+
+
+followup_job_manager = FollowupJobManager()
+
+
+# ---------------------------------------------------------------------------
 # Markdown 报告生成
 # ---------------------------------------------------------------------------
 

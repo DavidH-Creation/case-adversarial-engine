@@ -331,3 +331,52 @@ class BulkExportRequest(BaseModel):
     case_ids: conlist(str, max_length=50)  # type: ignore[valid-type]
     format: ExportFormat = ExportFormat.json
     include_materials: bool = False
+
+
+# ---------------------------------------------------------------------------
+# GET /api/cases/{case_id}/result  (Unit 15: full analysis result)
+# ---------------------------------------------------------------------------
+
+
+class CaseResultResponse(BaseModel):
+    case_id: str
+    run_id: Optional[str] = None
+    status: CaseStatus
+    analysis_data: Optional[dict[str, Any]] = None
+    artifacts: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/cases/{case_id}/followup  (Unit 15: async followup)
+# GET  /api/cases/{case_id}/followup/{job_id}
+# ---------------------------------------------------------------------------
+
+
+class FollowupStatus(str, Enum):
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+
+
+class FollowupRequest(BaseModel):
+    question: str = Field(..., min_length=1)
+    session_id: Optional[str] = None
+
+
+class FollowupAcceptedResponse(BaseModel):
+    job_id: str
+    case_id: str
+    status: FollowupStatus
+
+
+class FollowupResultResponse(BaseModel):
+    job_id: str
+    case_id: str
+    status: FollowupStatus
+    session_id: Optional[str] = None
+    answer: Optional[str] = None
+    issue_ids: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    statement_class: Optional[str] = None
+    error: Optional[str] = None
