@@ -1,5 +1,41 @@
 # Changelog
 
+## [2.5.0] — 2026-04-06
+
+律师工作台 v2.5 — 五阶段交付，658 个测试全部通过。
+
+### Phase 1: Case List & Query
+- `GET /api/cases` — 案件列表端点，支持分页、排序、多字段过滤
+- `CaseIndex` 内存索引 + 启动时磁盘扫描重建
+
+### Phase 2: Replay & Audit
+- `engines/shared/event_log.py` — 追加式 JSONL 事件日志
+- `GET /api/cases/{case_id}/events` — 审计追踪端点
+- Artifact 版本化：WorkspaceManager 保存产物快照
+
+### Phase 3: Human Review
+- `api/review_service.py` — ReviewStore 原子持久化（`{workspace}/reviews/rev-*.json`）
+- `POST /api/cases/{case_id}/reviews` — 复核提交（状态机：none→pending_review→approved/rejected/revision_requested）
+- `GET /api/cases/{case_id}/reviews` — 复核历史查询
+- Section-level flags（section_key + flag + comment）
+- EventLog 集成：`review_submitted` 事件
+
+### Phase 4: Users & Permissions
+- `api/auth.py` — JWT 认证（python-jose, HS256），三模式（dev/static/JWT）
+- `api/users.py` — UserStore + 5 角色（admin/senior_lawyer/junior_lawyer/reviewer/readonly）
+- `api/permissions.py` — `require_permission()` 工厂依赖，10 种操作的 RBAC 矩阵
+- 所有端点迁移至 per-route `Depends(require_permission(Action.xxx))`
+- `actor_id` 写入所有审计事件
+
+### Phase 5: Export Enhancement
+- `api/export_service.py` — CaseExporter：结构化 JSON 快照 + 批量 ZIP 打包
+- `GET /api/cases/{case_id}/export?format=json|markdown|docx` — 单案件导出
+- `POST /api/cases/export/bulk` — 批量导出（最多 50 件，ZIP 格式）
+- `CaseSnapshot` 模型：含 events、reviews、evidence、analysis_data 等完整快照
+- EventLog 集成：`exported` 事件
+
+---
+
 ## [2.0.0-dev] — Unreleased
 
 ### In Progress
