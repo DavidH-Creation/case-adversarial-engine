@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from docx import Document
 
-from engines.report_generation.docx_generator import generate_docx_report
+from engines.report_generation.docx_generator import (
+    generate_docx_report,
+    generate_docx_v3_report,
+)
 
 
 _EMPTY_RESULT: dict = {
@@ -32,6 +37,21 @@ def _read_docx_text(path: Path) -> str:
             for cell in row.cells:
                 parts.append(cell.text)
     return "\n".join(parts)
+
+
+def _count_docx_headings(path: Path) -> int:
+    """Count all heading paragraphs in a DOCX document."""
+    doc = Document(path)
+    count = 0
+    for para in doc.paragraphs:
+        if para.style and para.style.name and para.style.name.startswith("Heading"):
+            count += 1
+    return count
+
+
+def _count_md_h2(md_text: str) -> int:
+    """Count ## headings in Markdown text."""
+    return len(re.findall(r"(?m)^##\s+", md_text))
 
 
 class TestDocxGeneratorSmoke:
@@ -234,3 +254,351 @@ class TestDocxGeneratorProbabilityFree:
         assert "可能性：" not in content
         assert "概率依据" not in content
         assert content.index("Outcome two") < content.index("Outcome one")
+
+
+# ---------------------------------------------------------------------------
+# V3 DOCX fixtures
+# ---------------------------------------------------------------------------
+
+_V3_REPORT_MINIMAL: dict = {
+    "report_id": "rpt-v3-test001",
+    "case_id": "case-test-v3",
+    "run_id": "run-test-v3",
+    "perspective": "neutral",
+    "layer1": {
+        "cover_summary": {
+            "neutral_conclusion": "本案涉及3个争点。",
+            "winning_move": "借条原件是本案胜负手。",
+            "blocking_conditions": ["如被告提供完整还款凭证则结论逆转"],
+        },
+        "timeline": [
+            {"date": "2025-01-01", "event": "签署借条", "source": "ev-001", "disputed": False},
+        ],
+        "evidence_priorities": [
+            {"evidence_id": "ev-001", "title": "借条原件", "priority": "核心", "reason": "直接证明"},
+        ],
+    },
+    "layer2": {
+        "fact_base": [
+            {"description": "双方确认借款事实", "source_evidence_ids": ["ev-001"]},
+        ],
+        "issue_map": [
+            {
+                "issue_id": "issue-001",
+                "issue_title": "借款合同效力",
+                "depth": 0,
+                "plaintiff_thesis": "合同有效",
+                "defendant_thesis": "合同无效",
+                "decisive_evidence": ["ev-001"],
+                "current_gaps": [],
+                "outcome_sensitivity": "高",
+            },
+        ],
+        "evidence_cards": [
+            {
+                "evidence_id": "ev-001",
+                "q1_what": "借条",
+                "q2_target": "证明借款关系",
+                "q3_key_risk": "笔迹鉴定",
+                "q4_best_attack": "质疑签名真实性",
+                "q5_reinforce": "公证",
+                "q6_failure_impact": "丧失核心证据",
+                "priority": "核心",
+            },
+        ],
+    },
+    "layer3": {
+        "outputs": [
+            {
+                "perspective": "plaintiff",
+                "evidence_supplement_checklist": ["补充银行流水"],
+                "cross_examination_points": ["质证借条签名"],
+                "trial_questions": ["询问还款时间"],
+                "contingency_plans": ["备选：请求笔迹鉴定"],
+                "over_assertion_boundaries": ["不宜主张精神损害赔偿"],
+            },
+            {
+                "perspective": "defendant",
+                "evidence_supplement_checklist": ["提供还款转账记录"],
+                "cross_examination_points": ["质证借条日期"],
+                "trial_questions": ["询问借款用途"],
+                "contingency_plans": ["备选：和解方案"],
+                "over_assertion_boundaries": ["不宜否认全部借款事实"],
+            },
+        ],
+    },
+    "layer4": {
+        "adversarial_transcripts_md": "## 第一轮\n\n原告主张...\n\n被告抗辩...",
+        "evidence_index_md": "| 证据 | 来源 |\n|---|---|\n| 借条 | 原告 |",
+        "glossary_md": "- **借条**: 债权凭证",
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Task 1: DOCX content completeness — section count parity with MD
+# ---------------------------------------------------------------------------
+
+
+class TestDocxV3ContentCompleteness:
+    """Assert V3 DOCX heading count >= MD ## heading count."""
+
+    def test_v3_docx_section_count_gte_md(self, tmp_path: Path) -> None:
+        """DOCX must contain at least as many heading sections as MD ## count."""
+        dest = generate_docx_v3_report(
+            output_dir=tmp_path,
+            report_v3=_V3_REPORT_MINIMAL,
+        )
+        assert dest.exists()
+
+        docx_headings = _count_docx_headings(dest)
+
+        # The MD report for the same V3 data would have these ## sections:
+        # A, B, C, D, E (layer1) + 2.1, 2.2, 2.4 (layer2) +
+        # plaintiff策略, defendant策略 (layer3) + 4.1, 4.2, 4.4 (layer4)
+        # That's about 12-13 ## headings. DOCX may have more (level-3 sub-headings).
+        # Core assertion: DOCX heading count >= expected MD ## count.
+        expected_md_h2_count = 12  # conservative lower bound
+        assert docx_headings >= expected_md_h2_count, (
+            f"DOCX has {docx_headings} headings but expected >= {expected_md_h2_count}"
+        )
+
+    def test_v3_docx_contains_all_layer_headings(self, tmp_path: Path) -> None:
+        """DOCX must contain headings for all four layers."""
+        dest = generate_docx_v3_report(
+            output_dir=tmp_path,
+            report_v3=_V3_REPORT_MINIMAL,
+        )
+        content = _read_docx_text(dest)
+
+        layer_markers = [
+            "一、封面摘要",
+            "二、中立对抗内核",
+            "三、角色化输出",
+            "四、附录",
+        ]
+        for marker in layer_markers:
+            assert marker in content, f"Missing layer heading: {marker}"
+
+    def test_v3_docx_contains_layer1_subsections(self, tmp_path: Path) -> None:
+        """DOCX layer1 should render A/B/C/D/E subsections when data is present."""
+        dest = generate_docx_v3_report(
+            output_dir=tmp_path,
+            report_v3=_V3_REPORT_MINIMAL,
+        )
+        content = _read_docx_text(dest)
+
+        subsections = [
+            "中立结论摘要",
+            "胜负手",
+            "阻断条件",
+            "案件时间线",
+            "证据优先级",
+        ]
+        for sub in subsections:
+            assert sub in content, f"Missing layer1 subsection: {sub}"
+
+    def test_v3_docx_contains_layer2_subsections(self, tmp_path: Path) -> None:
+        """DOCX layer2 should render 2.1 fact_base, 2.2 issue_map, 2.4 evidence_cards."""
+        dest = generate_docx_v3_report(
+            output_dir=tmp_path,
+            report_v3=_V3_REPORT_MINIMAL,
+        )
+        content = _read_docx_text(dest)
+
+        assert "事实底座" in content
+        assert "争点地图" in content
+        assert "证据卡片" in content
+
+    def test_v3_docx_contains_layer3_perspectives(self, tmp_path: Path) -> None:
+        """DOCX layer3 should have both plaintiff and defendant strategy sections."""
+        dest = generate_docx_v3_report(
+            output_dir=tmp_path,
+            report_v3=_V3_REPORT_MINIMAL,
+        )
+        content = _read_docx_text(dest)
+
+        assert "原告策略" in content
+        assert "被告策略" in content
+
+    def test_v3_docx_contains_layer4_appendix_items(self, tmp_path: Path) -> None:
+        """DOCX layer4 should render transcripts, evidence index, glossary."""
+        dest = generate_docx_v3_report(
+            output_dir=tmp_path,
+            report_v3=_V3_REPORT_MINIMAL,
+        )
+        content = _read_docx_text(dest)
+
+        assert "三轮对抗辩论记录" in content
+        assert "证据索引" in content
+        assert "术语表" in content
+
+
+# ---------------------------------------------------------------------------
+# Task 2: V3.0 backward-compat fallback coverage
+# ---------------------------------------------------------------------------
+
+
+class TestDocxV3FallbackPaths:
+    """Verify V3.0 fallback branches still render correctly for legacy data."""
+
+    def test_v30_plaintiff_defendant_summary_fallback(self, tmp_path: Path) -> None:
+        """When winning_move is absent, V3.0 plaintiff/defendant summaries render."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer1": {
+                "cover_summary": {
+                    "neutral_conclusion": "测试结论。",
+                    "winning_move": "",  # empty → triggers V3.0 fallback
+                    "plaintiff_summary": {
+                        "top3_strengths": ["优势一", "优势二", "优势三"],
+                        "top2_dangers": ["风险一", "风险二"],
+                    },
+                    "defendant_summary": {
+                        "top3_defenses": ["防线一", "防线二", "防线三"],
+                        "plaintiff_likely_supplement": [],
+                        "optimal_attack_order": [],
+                    },
+                },
+            },
+            "layer2": {"fact_base": [], "issue_map": []},
+            "layer3": {"outputs": []},
+            "layer4": {},
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+
+        assert "原告视角" in content
+        assert "被告视角" in content
+        assert "优势1" in content or "优势一" in content
+
+    def test_v30_evidence_traffic_lights_fallback(self, tmp_path: Path) -> None:
+        """When evidence_priorities is absent, V3.0 traffic lights render."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer1": {
+                "cover_summary": {
+                    "neutral_conclusion": "结论。",
+                    "winning_move": "胜负手",
+                    "blocking_conditions": [],
+                },
+                "evidence_priorities": [],  # empty → triggers V3.0 fallback
+                "evidence_traffic_lights": [
+                    {
+                        "evidence_id": "ev-001",
+                        "title": "借条",
+                        "risk_level": "green",
+                        "reason": "原件完整",
+                    },
+                ],
+            },
+            "layer2": {"fact_base": [], "issue_map": []},
+            "layer3": {"outputs": []},
+            "layer4": {},
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+
+        assert "证据风险红绿灯" in content
+        assert "借条" in content
+
+    def test_v30_evidence_battle_matrix_fallback(self, tmp_path: Path) -> None:
+        """When evidence_cards is absent, V3.0 evidence_battle_matrix renders."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer1": {
+                "cover_summary": {"neutral_conclusion": "结论。"},
+            },
+            "layer2": {
+                "fact_base": [],
+                "issue_map": [],
+                "evidence_cards": [],  # empty → triggers V3.0 fallback
+                "evidence_battle_matrix": [
+                    {
+                        "evidence_id": "ev-001",
+                        "risk_level": "yellow",
+                        "q1_what": "借条原件",
+                        "q2_proves": "借款事实",
+                        "q3_direction": "有利原告",
+                        "q4_risks": "笔迹质疑",
+                        "q5_opponent_attack": "否认签名",
+                        "q6_reinforce": "公证",
+                        "q7_failure_impact": "核心证据缺失",
+                    },
+                ],
+            },
+            "layer3": {"outputs": []},
+            "layer4": {},
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+
+        assert "证据作战矩阵" in content
+        assert "借条原件" in content
+
+
+# ---------------------------------------------------------------------------
+# Task 3: CJK font fallback — no crash without Microsoft YaHei
+# ---------------------------------------------------------------------------
+
+
+class TestDocxCJKFontFallback:
+    """DOCX generation must not crash when CJK font is unavailable."""
+
+    def test_generate_without_microsoft_yahei(self, tmp_path: Path) -> None:
+        """Smoke test: DOCX generation succeeds even if YaHei is missing.
+
+        python-docx embeds the font name as metadata only; it does not validate
+        font availability at generation time.  This test ensures the generator
+        doesn't do any font-existence checks that would raise.
+        """
+        dest = generate_docx_v3_report(
+            output_dir=tmp_path,
+            report_v3=_V3_REPORT_MINIMAL,
+        )
+        assert dest.exists()
+        assert dest.stat().st_size > 0
+
+        # Verify the DOCX can be reopened and has CJK content
+        doc = Document(dest)
+        full_text = "\n".join(p.text for p in doc.paragraphs)
+        assert "封面摘要" in full_text
+
+    def test_legacy_docx_without_microsoft_yahei(self, tmp_path: Path) -> None:
+        """Legacy generator also works without YaHei font."""
+        dest = generate_docx_report(
+            output_dir=tmp_path,
+            case_data=_EMPTY_CASE_DATA,
+            result=_EMPTY_RESULT,
+        )
+        assert dest.exists()
+        assert dest.stat().st_size > 0
+
+    def test_font_fallback_chain_in_docx_xml(self, tmp_path: Path) -> None:
+        """DOCX rFonts should specify eastAsia font (even if unavailable at runtime)."""
+        dest = generate_docx_v3_report(
+            output_dir=tmp_path,
+            report_v3=_V3_REPORT_MINIMAL,
+        )
+        doc = Document(dest)
+        # Check that at least one run has eastAsia font set
+        found_east_asia = False
+        for para in doc.paragraphs:
+            for run in para.runs:
+                rPr = run._element.find(
+                    "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr"
+                )
+                if rPr is not None:
+                    rFonts = rPr.find(
+                        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rFonts"
+                    )
+                    if rFonts is not None:
+                        ea = rFonts.get(
+                            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}eastAsia"
+                        )
+                        if ea:
+                            found_east_asia = True
+                            break
+            if found_east_asia:
+                break
+        assert found_east_asia, "No eastAsia font attribute found in DOCX runs"
