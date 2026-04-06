@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -35,6 +36,10 @@ from .schemas import (
     CaseListEntry,
     CaseListQuery,
     CaseListResponse,
+    CaseResultResponse,
+    CaseScenarioAcceptedResponse,
+    CaseScenarioRequest,
+    CaseScenarioResultResponse,
     CaseStatus,
     ConfirmRequest,
     CreateCaseRequest,
@@ -43,12 +48,17 @@ from .schemas import (
     ExtractionResponse,
     BulkExportRequest,
     ExportFormat,
+    FollowupAcceptedResponse,
+    FollowupRequest,
+    FollowupResultResponse,
+    FollowupStatus,
     ReviewListResponse,
     ReviewRequest,
     ReviewResponse,
     ReviewStatus,
     ScenarioDiffResponse,
     ScenarioRunRequest,
+    ScenarioStatus,
 )
 from .export_service import case_exporter
 from .review_service import ReviewRecord, review_store
@@ -57,6 +67,8 @@ from .service import (
     _emit_event,
     _record_to_index_entry,
     case_index,
+    case_scenario_manager,
+    followup_job_manager,
     get_artifact,
     list_artifacts,
     run_analysis,
@@ -83,6 +95,14 @@ app = FastAPI(
     description="渐进式案件录入与 AI 对抗分析 API",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 _STATIC_DIR = Path(__file__).parent / "static"
@@ -618,6 +638,67 @@ async def get_scenario(
     return _build_scenario_diff_response(result)
 
 
+# ---------------------------------------------------------------------------
+# Unit A: Case-scoped async scenario endpoints (202 pattern)
+# ---------------------------------------------------------------------------
+
+
+@app.post(
+    "/api/cases/{case_id}/scenarios",
+    response_model=CaseScenarioAcceptedResponse,
+    status_code=202,
+)
+async def create_case_scenario(
+    case_id: str,
+    body: CaseScenarioRequest,
+    user: UserContext = Depends(require_permission(Action.analysis_trigger)),
+) -> CaseScenarioAcceptedResponse:
+    record = _get_case_or_404(case_id)
+    _require_status(
+        record,
+        CaseStatus.analyzed,
+        detail="案件必须完成分析后才能运行场景推演",
+    )
+    if not record.run_id:
+        raise HTTPException(
+            status_code=400,
+            detail="案件没有分析运行记录（run_id），无法运行场景推演",
+        )
+
+    case_type = record.info.get("case_type", "civil_loan")
+    change_set = [change.model_dump() for change in body.change_set]
+    scenario_id = case_scenario_manager.submit(
+        case_id=case_id,
+        run_id=record.run_id,
+        change_set=change_set,
+        case_type=case_type,
+    )
+    return CaseScenarioAcceptedResponse(
+        scenario_id=scenario_id,
+        case_id=case_id,
+        status=ScenarioStatus.pending,
+    )
+
+
+@app.get(
+    "/api/cases/{case_id}/scenarios/{scenario_id}",
+    response_model=CaseScenarioResultResponse,
+)
+async def get_case_scenario(
+    case_id: str,
+    scenario_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+) -> CaseScenarioResultResponse:
+    _get_case_or_404(case_id)
+    job = case_scenario_manager.get(scenario_id)
+    if job is None or job["case_id"] != case_id:
+        raise HTTPException(
+            status_code=404,
+            detail=f"scenario_id 不存在: {scenario_id}",
+        )
+    return CaseScenarioResultResponse(**job)
+
+
 @app.get("/api/cases/{case_id}/artifacts")
 async def list_case_artifacts(
     case_id: str,
@@ -651,6 +732,81 @@ async def get_case_artifact(
             content={"error": f"产物尚不可用: {artifact_name}", "code": 404},
         )
     return artifact
+
+
+# ---------------------------------------------------------------------------
+# Unit 15: GET /api/cases/{case_id}/result — full analysis result
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/cases/{case_id}/result", response_model=CaseResultResponse)
+async def get_case_result(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+) -> CaseResultResponse:
+    record = _get_case_or_404(case_id)
+    return CaseResultResponse(
+        case_id=record.case_id,
+        run_id=record.run_id,
+        status=record.status,
+        analysis_data=record.analysis_data,
+        artifacts=list_artifacts(record),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Unit 15: POST /api/cases/{case_id}/followup — async followup Q&A (202)
+#           GET  /api/cases/{case_id}/followup/{job_id}
+# ---------------------------------------------------------------------------
+
+
+@app.post(
+    "/api/cases/{case_id}/followup",
+    response_model=FollowupAcceptedResponse,
+    status_code=202,
+)
+async def create_followup(
+    case_id: str,
+    body: FollowupRequest,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+) -> FollowupAcceptedResponse:
+    record = _get_case_or_404(case_id)
+    _require_status(
+        record,
+        CaseStatus.analyzed,
+        detail="案件必须完成分析后才能进行追问",
+    )
+
+    job_id = followup_job_manager.submit(
+        case_id=case_id,
+        question=body.question,
+        record=record,
+        session_id=body.session_id,
+    )
+    return FollowupAcceptedResponse(
+        job_id=job_id,
+        case_id=case_id,
+        status=FollowupStatus.pending,
+    )
+
+
+@app.get(
+    "/api/cases/{case_id}/followup/{job_id}",
+    response_model=FollowupResultResponse,
+)
+async def get_followup_result(
+    case_id: str,
+    job_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+) -> FollowupResultResponse:
+    _get_case_or_404(case_id)
+    job = followup_job_manager.get(job_id)
+    if job is None or job["case_id"] != case_id:
+        raise HTTPException(
+            status_code=404,
+            detail=f"追问任务不存在: {job_id}",
+        )
+    return FollowupResultResponse(**job)
 
 
 @app.get("/api/cases/{case_id}/report/markdown")
