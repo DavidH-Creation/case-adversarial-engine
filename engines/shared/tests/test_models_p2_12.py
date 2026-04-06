@@ -135,9 +135,15 @@ class TestRequiredFields:
         with pytest.raises(ValidationError):
             _make_artifact(adversary_attack_chain_id="")
 
-    def test_empty_amount_report_id_raises(self):
-        with pytest.raises(ValidationError):
-            _make_artifact(amount_report_id="")
+    def test_empty_amount_report_id_accepted(self):
+        """amount_report_id is Optional — empty string is valid (no longer required)."""
+        artifact = _make_artifact(amount_report_id="")
+        assert artifact.amount_report_id == ""
+
+    def test_none_amount_report_id_accepted(self):
+        """amount_report_id is Optional — None is the default."""
+        artifact = _make_artifact(amount_report_id=None)
+        assert artifact.amount_report_id is None
 
     def test_empty_current_most_stable_claim_deprecated_ok(self):
         """v7: current_most_stable_claim 已废弃，空字符串不再报错（向后兼容）。"""
