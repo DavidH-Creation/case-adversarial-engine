@@ -128,7 +128,12 @@ from engines.document_assistance.schemas import DocumentAssistanceInput, Documen
 from engines.pretrial_conference.conference_engine import PretrialConferenceEngine
 from engines.pretrial_conference.schemas import PretrialConferenceResult
 from engines.shared.evidence_state_machine import EvidenceStateMachine
-from engines.shared.progress_reporter import CLIProgressReporter
+from engines.shared.config_loader import load_engine_config
+from engines.shared.progress_reporter import (
+    CLIProgressReporter,
+    JSONProgressReporter,
+    ProgressReporter,
+)
 from engines.similar_case_search.keyword_extractor import KeywordExtractor
 from engines.similar_case_search.local_search import LocalCaseSearcher
 from engines.similar_case_search.relevance_ranker import RelevanceRanker
@@ -145,6 +150,10 @@ def _load_pipeline_config() -> dict:
             data = yaml.safe_load(f) or {}
         return data.get("pipeline", {})
     return {}
+
+
+# Unified engine config (config/engine_config.yaml + hardcoded defaults)
+_ENGINE_CFG = load_engine_config(project_root=_PROJECT_ROOT)
 
 
 # Pipeline step identifiers (used by checkpoint)
@@ -1235,6 +1244,7 @@ async def main(
     with_mediation: bool = False,
     with_similar_cases: bool = False,
     perspective: str | None = None,
+    progress_json: bool = False,
 ) -> None:
     case_file = Path(case_path)
     if not case_file.exists():
@@ -1313,7 +1323,11 @@ async def main(
             print("\n[Config] Plaintiff/Evidence/Summary -> Claude  |  Defendant -> Codex")
             codex = CodexCLIClient(timeout=600.0, model="gpt-5.4")
 
-    reporter = CLIProgressReporter(total_steps=5)
+    reporter: ProgressReporter = (
+        JSONProgressReporter(total_steps=5)
+        if progress_json
+        else CLIProgressReporter(total_steps=5)
+    )
 
     # Step 1: Index evidence
     if _should_skip(STEP_EVIDENCE, last_completed):
@@ -1924,6 +1938,11 @@ if __name__ == "__main__":
         default=None,
         help="Add role-based perspective output to report (Layer 1 Block B + Layer 3)",
     )
+    parser.add_argument(
+        "--progress-json",
+        action="store_true",
+        help="Emit JSON progress events to stderr (for machine-readable pipeline monitoring)",
+    )
     args = parser.parse_args()
     _pipeline_cfg = _load_pipeline_config()
     # CLI flags take priority; config.yaml provides defaults for unset toggles
@@ -1959,6 +1978,7 @@ if __name__ == "__main__":
                 with_mediation=args.with_mediation,
                 with_similar_cases=args.with_similar_cases,
                 perspective=args.perspective,
+                progress_json=args.progress_json,
             )
         )
     except CLINotFoundError as e:

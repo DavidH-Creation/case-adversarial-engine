@@ -4,15 +4,20 @@ Tests for engines/shared/progress_reporter.py
 Covers:
   - CLIProgressReporter: output format for start / complete / error
   - SSEProgressReporter: queue event schema for start / complete / error / close
+  - JSONProgressReporter: JSON-line stderr output for machine-readable progress
   - Edge cases: error on step 3, multiple runs with separate queues
 """
 
 from __future__ import annotations
 
+import io
+import json
+
 import pytest
 
 from engines.shared.progress_reporter import (
     CLIProgressReporter,
+    JSONProgressReporter,
     SSEProgressReporter,
     get_progress_queue,
     remove_progress_queue,
@@ -206,3 +211,108 @@ class TestSSEProgressReporter:
         assert get_progress_queue(_TEST_RUN_A) is not None
         remove_progress_queue(_TEST_RUN_A)
         assert get_progress_queue(_TEST_RUN_A) is None
+
+
+# ---------------------------------------------------------------------------
+# JSONProgressReporter
+# ---------------------------------------------------------------------------
+
+
+class TestJSONProgressReporter:
+    def _make(self, total: int = 5) -> tuple[JSONProgressReporter, io.StringIO]:
+        buf = io.StringIO()
+        return JSONProgressReporter(total_steps=total, stream=buf), buf
+
+    def _lines(self, buf: io.StringIO) -> list[dict]:
+        buf.seek(0)
+        return [json.loads(line) for line in buf if line.strip()]
+
+    def test_step_start_emits_json(self):
+        reporter, buf = self._make(5)
+        reporter.on_step_start(1, "Index Evidence")
+        events = self._lines(buf)
+        assert len(events) == 1
+        ev = events[0]
+        assert ev["step"] == 1
+        assert ev["total"] == 5
+        assert ev["name"] == "Index Evidence"
+        assert ev["status"] == "started"
+        assert ev["pct"] == 0  # (1-1)/5 * 100 = 0
+
+    def test_step_complete_emits_json(self):
+        reporter, buf = self._make(5)
+        reporter.on_step_complete(3, "Adversarial Debate")
+        events = self._lines(buf)
+        assert len(events) == 1
+        ev = events[0]
+        assert ev["step"] == 3
+        assert ev["status"] == "completed"
+        assert ev["name"] == "Adversarial Debate"
+        assert ev["pct"] == 60  # 3/5 * 100
+
+    def test_error_emits_json_with_error_field(self):
+        reporter, buf = self._make(5)
+        reporter.on_step_start(2, "Extract Issues")
+        reporter.on_error(2, "LLM timeout")
+        events = self._lines(buf)
+        assert len(events) == 2
+        err = events[1]
+        assert err["status"] == "failed"
+        assert err["error"] == "LLM timeout"
+        assert err["name"] == "Extract Issues"
+
+    def test_error_without_prior_start_uses_unknown(self):
+        reporter, buf = self._make(5)
+        reporter.on_error(1, "connection refused")
+        events = self._lines(buf)
+        assert events[0]["name"] == "unknown"
+        assert events[0]["status"] == "failed"
+
+    def test_full_pipeline_happy_path(self):
+        step_names = [
+            "Index Evidence",
+            "Extract Issues",
+            "Adversarial Debate",
+            "Write Outputs",
+            "Generate DOCX",
+        ]
+        reporter, buf = self._make(5)
+        for n, name in enumerate(step_names, 1):
+            reporter.on_step_start(n, name)
+            reporter.on_step_complete(n, name)
+
+        events = self._lines(buf)
+        assert len(events) == 10  # 5 started + 5 completed
+        completed = [e for e in events if e["status"] == "completed"]
+        assert len(completed) == 5
+        assert completed[-1]["pct"] == 100
+
+    def test_pct_progression(self):
+        reporter, buf = self._make(4)
+        for n in range(1, 5):
+            reporter.on_step_start(n, f"step{n}")
+            reporter.on_step_complete(n, f"step{n}")
+
+        events = self._lines(buf)
+        completed_pcts = [e["pct"] for e in events if e["status"] == "completed"]
+        assert completed_pcts == [25, 50, 75, 100]
+
+    def test_ts_field_present_and_numeric(self):
+        reporter, buf = self._make(5)
+        reporter.on_step_start(1, "test")
+        events = self._lines(buf)
+        assert "ts" in events[0]
+        assert isinstance(events[0]["ts"], float)
+
+    def test_each_event_is_valid_json_line(self):
+        """Each line is independently parseable JSON."""
+        reporter, buf = self._make(3)
+        reporter.on_step_start(1, "A")
+        reporter.on_step_complete(1, "A")
+        reporter.on_step_start(2, "B")
+        reporter.on_error(2, "fail")
+        buf.seek(0)
+        for line in buf:
+            if line.strip():
+                parsed = json.loads(line)
+                assert isinstance(parsed, dict)

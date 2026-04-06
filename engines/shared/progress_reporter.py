@@ -1,12 +1,15 @@
 """
 ProgressReporter — 管道步骤进度上报抽象与实现。
-Pipeline step progress reporter: abstract interface + CLI + SSE implementations.
+Pipeline step progress reporter: abstract interface + CLI + SSE + JSON implementations.
 """
 
 from __future__ import annotations
 
 import abc
 import asyncio
+import json
+import sys
+import time
 from typing import Any, Optional
 
 
@@ -95,3 +98,63 @@ class SSEProgressReporter(ProgressReporter):
     def close(self) -> None:
         """Signal pipeline completion by pushing None sentinel."""
         self._queue.put_nowait(None)
+
+
+class JSONProgressReporter(ProgressReporter):
+    """Writes JSON-line progress events to stderr for CLI pipeline consumers.
+
+    Each event is a single JSON object written to stderr (one per line),
+    making it easy for wrapper scripts to parse progress while stdout
+    carries the normal human-readable output.
+
+    Event schema::
+
+        {"ts": <unix_epoch>, "step": N, "total": T, "name": "...", "status": "started"|"completed"|"failed", "pct": 0-100}
+        {"ts": <unix_epoch>, "step": N, "total": T, "name": "...", "status": "failed", "error": "..."}
+
+    The ``pct`` field is an approximate percentage based on step_n / total_steps.
+    """
+
+    def __init__(self, total_steps: int = 5, *, stream: Any = None) -> None:
+        self.total_steps = total_steps
+        self._stream = stream if stream is not None else sys.stderr
+        self._current_step_name: str = ""
+
+    def _emit(self, event: dict[str, Any]) -> None:
+        """Write a single JSON line to the output stream."""
+        line = json.dumps(event, ensure_ascii=False)
+        self._stream.write(line + "\n")
+        self._stream.flush()
+
+    def on_step_start(self, step_n: int, step_name: str) -> None:
+        self._current_step_name = step_name
+        self._emit({
+            "ts": time.time(),
+            "step": step_n,
+            "total": self.total_steps,
+            "name": step_name,
+            "status": "started",
+            "pct": int((step_n - 1) / self.total_steps * 100),
+        })
+
+    def on_step_complete(self, step_n: int, step_name: str) -> None:
+        self._emit({
+            "ts": time.time(),
+            "step": step_n,
+            "total": self.total_steps,
+            "name": step_name,
+            "status": "completed",
+            "pct": int(step_n / self.total_steps * 100),
+        })
+
+    def on_error(self, step_n: int, error: str) -> None:
+        name = self._current_step_name or "unknown"
+        self._emit({
+            "ts": time.time(),
+            "step": step_n,
+            "total": self.total_steps,
+            "name": name,
+            "status": "failed",
+            "error": str(error),
+            "pct": int((step_n - 1) / self.total_steps * 100),
+        })
