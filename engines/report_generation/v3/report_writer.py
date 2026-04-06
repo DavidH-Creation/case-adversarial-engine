@@ -211,9 +211,9 @@ def write_v3_report_md(
         if r.severity == LintSeverity.WARN:
             _logger.warning("render-contract WARN [%s]: %s", r.rule, r.message)
 
-    # Hard gate: reject reports with excessive fallback content (Phase 1 transitional: 0.25)
+    # Hard gate: reject reports with excessive fallback content (Phase 3d final: 0.20)
     ratio, fb_count, fb_total = compute_fallback_ratio(content)
-    if fb_total > 0 and ratio > 0.25:
+    if fb_total > 0 and ratio > 0.20:
         raise RenderContractViolation(
             f"render contract violation: fallback_ratio {ratio:.0%} "
             f"({fb_count}/{fb_total} major sections are placeholders)"

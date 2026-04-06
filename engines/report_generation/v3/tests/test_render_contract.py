@@ -305,7 +305,7 @@ def test_write_v3_report_md_rejects_high_fallback_ratio(_mock_redact) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Fallback ratio threshold boundary tests (Phase 1 transitional gate: 0.25)
+# Fallback ratio threshold boundary tests (Phase 3d final gate: 0.20)
 # ---------------------------------------------------------------------------
 
 
@@ -313,10 +313,10 @@ def test_write_v3_report_md_rejects_high_fallback_ratio(_mock_redact) -> None:
 @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
 @patch(
     "engines.report_generation.v3.report_writer.compute_fallback_ratio",
-    return_value=(0.26, 2, 8),
+    return_value=(0.21, 2, 10),
 )
-def test_fallback_gate_blocks_ratio_above_0_25(_mock_ratio, _mock_redact) -> None:
-    """Hard gate at 0.25 (Phase 1 transitional threshold) blocks 0.26."""
+def test_fallback_gate_blocks_ratio_above_0_20(_mock_ratio, _mock_redact) -> None:
+    """Hard gate at 0.20 (Phase 3d final threshold) blocks 0.21."""
     report = _minimal_report(
         neutral_conclusion=(
             "\u5408\u540c\u501f\u6b3e\u5173\u7cfb\u6210\u7acb\u4e14\u8bc1\u636e\u94fe"
@@ -338,10 +338,10 @@ def test_fallback_gate_blocks_ratio_above_0_25(_mock_ratio, _mock_redact) -> Non
 @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
 @patch(
     "engines.report_generation.v3.report_writer.compute_fallback_ratio",
-    return_value=(0.24, 2, 8),
+    return_value=(0.19, 2, 10),
 )
-def test_fallback_gate_passes_ratio_below_0_25(_mock_ratio, _mock_redact) -> None:
-    """Pipeline succeeds when fallback ratio is at or below transitional gate (0.25)."""
+def test_fallback_gate_passes_ratio_below_0_20(_mock_ratio, _mock_redact) -> None:
+    """Pipeline succeeds when fallback ratio is at or below final gate (0.20)."""
     report = _minimal_report(
         neutral_conclusion=(
             "\u5408\u540c\u501f\u6b3e\u5173\u7cfb\u6210\u7acb\u4e14\u8bc1\u636e\u94fe"
@@ -355,6 +355,6 @@ def test_fallback_gate_passes_ratio_below_0_25(_mock_ratio, _mock_redact) -> Non
     )
     case_data = {"case_type": "civil_loan", "parties": {}}
     with TemporaryDirectory() as tmpdir:
-        # Should not raise — ratio 0.24 ≤ 0.25
+        # Should not raise — ratio 0.19 ≤ 0.20
         result = write_v3_report_md(Path(tmpdir), report, case_data, no_redact=True)
         assert result.exists()

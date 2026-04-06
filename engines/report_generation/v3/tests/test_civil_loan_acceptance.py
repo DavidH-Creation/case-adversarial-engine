@@ -3,7 +3,7 @@
 Acceptance matrix checks (from plans/v3-plan.md §3.2):
   1. MD render contract 10/10 pass
   2. DOCX render contract pass
-  3. Fallback ratio ≤ 0.25 (current threshold; final target 0.20 in Phase 3d)
+  3. Fallback ratio ≤ 0.20 (Phase 3d final threshold)
   4. All major sections have substantive content (≥50 chars)
   5. No orphan evidence citations
   6. Amount calculation section present and correct (civil_loan HAS this)
@@ -945,13 +945,12 @@ class TestCivilLoanStructure:
 
 
 class TestThresholdConfiguration:
-    """Verify the fallback ratio threshold is correctly set per Phase 1."""
+    """Verify the fallback ratio threshold is correctly set per Phase 3d."""
 
-    def test_hard_gate_threshold_is_0_25(self):
-        """Phase 1 should have set the hard gate to 0.25 (not 0.35).
+    def test_hard_gate_threshold_is_0_20(self):
+        """Phase 3d should have set the hard gate to 0.20 (not 0.25 or 0.35).
 
-        The plan specifies: Phase 1 changes 0.35→0.25 (transition),
-        Phase 3d changes 0.25→0.20 (final).
+        The plan specifies: Phase 3d final: 0.20.
 
         This test documents the EXPECTED state. If it fails, the
         threshold in report_writer.py needs updating.
@@ -960,14 +959,11 @@ class TestThresholdConfiguration:
         import inspect
 
         source = inspect.getsource(write_v3_report_md)
-        # Look for the hard gate: `ratio > X` where X should be 0.25
-        # We parse the source to find the threshold value
         tree = ast.parse(source)
 
         threshold_values = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Compare):
-                # Looking for `ratio > 0.XX`
                 if (
                     isinstance(node.left, ast.Name)
                     and node.left.id == "ratio"
@@ -978,13 +974,17 @@ class TestThresholdConfiguration:
                 ):
                     threshold_values.append(node.comparators[0].value)
 
-        # Should find two comparisons: ratio > 0.25 (FAIL) and ratio > 0.20 (WARN)
-        assert 0.25 in threshold_values, (
-            f"Hard gate threshold 0.25 not found in write_v3_report_md. "
+        assert 0.20 in threshold_values, (
+            f"Hard gate threshold 0.20 not found in write_v3_report_md. "
+            f"Current thresholds: {threshold_values}"
+        )
+        assert 0.25 not in threshold_values, (
+            f"Found ratio > 0.25 in write_v3_report_md — "
+            f"Phase 3d threshold change (0.25→0.20) was NOT applied. "
             f"Current thresholds: {threshold_values}"
         )
         assert 0.35 not in threshold_values, (
             f"Found ratio > 0.35 in write_v3_report_md — "
-            f"Phase 1 threshold change (0.35→0.25) was NOT applied. "
+            f"original threshold was never tightened. "
             f"Current thresholds: {threshold_values}"
         )
