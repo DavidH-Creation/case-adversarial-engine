@@ -9,12 +9,19 @@ import pytest
 
 from engines.report_generation.v3.models import (
     CoverSummary,
+    EvidenceBasicCard,
+    EvidencePriority,
+    EvidencePriorityCard,
+    FactBaseEntry,
     FourLayerReport,
+    IssueMapCard,
     Layer1Cover,
     Layer2Core,
     Layer3Perspective,
     Layer4Appendix,
+    PerspectiveOutput,
     SectionTag,
+    TimelineEvent,
 )
 from engines.report_generation.v3.report_writer import (
     build_four_layer_report,
@@ -211,32 +218,118 @@ class TestBuildFourLayerReport:
         assert has_plaintiff
 
 
-_PATCH_FALLBACK_RATIO = patch(
-    "engines.report_generation.v3.report_writer.compute_fallback_ratio",
-    return_value=(0.0, 0, 0),
-)
-_PATCH_LINT = patch(
-    "engines.report_generation.v3.report_writer.lint_markdown_render_contract",
-    return_value=[],
-)
+def _substantive_layer4() -> Layer4Appendix:
+    """Build a Layer4 with enough content to avoid excessive fallback ratio."""
+    return Layer4Appendix(
+        adversarial_transcripts_md=(
+            "### Round 1 (claim)\n\n"
+            "**plaintiff_agent** — 原告主张\n\n原告主张内容，借贷关系成立\n\n"
+            "*引用证据*: EV001\n\n---\n\n"
+            "**defendant_agent** — 被告抗辩\n\n被告否认借贷合意\n\n"
+            "*引用证据*: EV003\n\n---"
+        ),
+        evidence_index_md=(
+            "| 编号 | 标题 | 类型 | 提交方 | 状态 |\n"
+            "|------|------|------|--------|------|\n"
+            "| EV001 | 银行转账记录 | documentary | party-p | submitted |"
+        ),
+        timeline_md=(
+            "| 日期 | 事件 | 来源 | 争议 |\n"
+            "|------|------|------|------|\n"
+            "| 2025-01-10 | 原告银行转账10万元 | EV001 |  |\n"
+            "| 2025-03-01 | 原告向法院起诉 | case_data |  |"
+        ),
+        glossary_md=(
+            "| 术语 | 解释 |\n"
+            "|------|------|\n"
+            "| 争点 | 双方在事实或法律适用上存在分歧的焦点问题 |\n"
+            "| 举证责任 | 当事人应当对其主张的事实承担提供证据并加以证明的责任 |"
+        ),
+    )
+
+
+def _substantive_layer2() -> Layer2Core:
+    """Build a Layer2 with enough content to avoid excessive fallback ratio."""
+    return Layer2Core(
+        fact_base=[
+            FactBaseEntry(
+                fact_id="FACT-001",
+                description="2025年1月10日原告向被告转账10万元（银行流水确认）",
+                source_evidence_ids=["EV001"],
+            ),
+        ],
+        issue_map=[
+            IssueMapCard(
+                issue_id="ISS001",
+                issue_title="借款合意是否成立",
+                plaintiff_thesis="原告主张存在借贷合意，有借条和转账记录",
+                defendant_thesis="被告否认借贷合意，主张系代收代付",
+                decisive_evidence=["EV001"],
+                outcome_sensitivity="高",
+            ),
+        ],
+        evidence_cards=[
+            EvidenceBasicCard(
+                evidence_id="EV001",
+                q1_what="银行转账记录，记载原告向被告转账10万元",
+                q2_target="证明资金实际交付",
+                q3_key_risk="仅能证明资金流向，不能单独证明借贷合意",
+                q4_best_attack="被告可主张转账系代收代付非借款",
+                priority=EvidencePriority.core,
+            ),
+        ],
+    )
+
+
+def _substantive_report(**cover_kwargs) -> FourLayerReport:
+    """Build a report with enough substantive content to pass the 0.25 fallback gate."""
+    return FourLayerReport(
+        report_id="rpt-test",
+        case_id="case-test",
+        run_id="run-test",
+        layer1=Layer1Cover(
+            cover_summary=CoverSummary(**cover_kwargs),
+            timeline=[
+                TimelineEvent(date="2025-01-10", event="原告银行转账10万元", source="EV001"),
+                TimelineEvent(date="2025-03-01", event="原告向法院起诉", source="case_data"),
+            ],
+            evidence_priorities=[
+                EvidencePriorityCard(
+                    evidence_id="EV001",
+                    title="银行转账记录",
+                    priority=EvidencePriority.core,
+                    reason="直接证明资金交付",
+                    controls_issue_ids=["ISS001"],
+                ),
+            ],
+        ),
+        layer2=_substantive_layer2(),
+        layer3=Layer3Perspective(
+            outputs=[
+                PerspectiveOutput(
+                    perspective="plaintiff",
+                    evidence_supplement_checklist=["补充完整银行流水"],
+                    cross_examination_points=["质疑被告代收代付抗辩的合理性"],
+                    trial_questions=["问被告：如仅代收代付为何讨论还款？"],
+                ),
+                PerspectiveOutput(
+                    perspective="defendant",
+                    evidence_supplement_checklist=["提供代收代付关系证据"],
+                    cross_examination_points=["质疑借条签名真实性"],
+                    trial_questions=["问原告：面对面借款合意何时达成？"],
+                ),
+            ]
+        ),
+        layer4=_substantive_layer4(),
+    )
 
 
 class TestWriteV3ReportMd:
     @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
     @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
-    @_PATCH_FALLBACK_RATIO
-    @_PATCH_LINT
-    def test_writes_markdown(self, _mock_lint, _mock_ratio, _mock_redact):
-        report = FourLayerReport(
-            report_id="rpt-test",
-            case_id="case-test",
-            run_id="run-test",
-            layer1=Layer1Cover(
-                cover_summary=CoverSummary(neutral_conclusion="Test conclusion"),
-            ),
-            layer2=Layer2Core(),
-            layer3=Layer3Perspective(),
-            layer4=Layer4Appendix(),
+    def test_writes_markdown(self, _mock_redact):
+        report = _substantive_report(
+            neutral_conclusion="本案涉及民间借贷纠纷，核心争点在于借款合意是否成立",
         )
         case_data = {
             "case_type": "civil_loan",
@@ -257,25 +350,13 @@ class TestWriteV3ReportMd:
 
     @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
     @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
-    @_PATCH_FALLBACK_RATIO
-    @_PATCH_LINT
-    def test_no_percentages_in_output(self, _mock_lint, _mock_ratio, _mock_redact):
+    def test_no_percentages_in_output(self, _mock_redact):
         """Verify the report does not contain probability percentages."""
-        report = FourLayerReport(
-            report_id="rpt-test",
-            case_id="case-test",
-            run_id="run-test",
-            layer1=Layer1Cover(
-                cover_summary=CoverSummary(
-                    neutral_conclusion="Test",
-                    blocking_conditions=[
-                        "若条件A成立则X；若不成立则Y",
-                    ],
-                ),
-            ),
-            layer2=Layer2Core(),
-            layer3=Layer3Perspective(),
-            layer4=Layer4Appendix(),
+        report = _substantive_report(
+            neutral_conclusion="本案核心争点在于借款合意认定",
+            blocking_conditions=[
+                "若条件A成立则X；若不成立则Y",
+            ],
         )
         case_data = {"case_type": "civil_loan", "parties": {}}
 
@@ -287,20 +368,10 @@ class TestWriteV3ReportMd:
 
     @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
     @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
-    @_PATCH_FALLBACK_RATIO
-    @_PATCH_LINT
-    def test_neutral_conclusion_tagged_as_inference(self, _mock_lint, _mock_ratio, _mock_redact):
+    def test_neutral_conclusion_tagged_as_inference(self, _mock_redact):
         """overall_assessment is an inference, not a fact."""
-        report = FourLayerReport(
-            report_id="rpt-test",
-            case_id="case-test",
-            run_id="run-test",
-            layer1=Layer1Cover(
-                cover_summary=CoverSummary(neutral_conclusion="Test conclusion"),
-            ),
-            layer2=Layer2Core(),
-            layer3=Layer3Perspective(),
-            layer4=Layer4Appendix(),
+        report = _substantive_report(
+            neutral_conclusion="本案涉及民间借贷纠纷核心争点认定问题",
         )
         case_data = {"case_type": "civil_loan", "parties": {}}
 
