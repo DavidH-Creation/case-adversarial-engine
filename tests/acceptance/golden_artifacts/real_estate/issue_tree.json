@@ -1,0 +1,30 @@
+{
+  "case_id": "case-real_estate-golden",
+  "issues": [
+    {
+      "issue_id": "iss-re-contract-validity",
+      "title": "Issue 1",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-re-deposit-penalty",
+      "title": "Issue 2",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-re-specific-performance",
+      "title": "Issue 3",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-re-market-value-gap",
+      "title": "Issue 4",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-re-mortgage-obstacle",
+      "title": "Issue 5",
+      "description": "test"
+    }
+  ]
+}

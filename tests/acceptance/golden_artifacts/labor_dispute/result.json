@@ -1,0 +1,61 @@
+{
+  "case_id": "case-labor_dispute-golden",
+  "run_id": "run-labor_dispute-golden",
+  "rounds": [
+    {
+      "round_number": 1,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-1",
+          "evidence_citations": [
+            "src-p-contract",
+            "src-p-termination-notice"
+          ],
+          "body": "Argument round 1"
+        }
+      ]
+    },
+    {
+      "round_number": 2,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-2",
+          "evidence_citations": [
+            "src-d-itlog",
+            "src-d-nda"
+          ],
+          "body": "Argument round 2"
+        }
+      ]
+    },
+    {
+      "round_number": 3,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-3",
+          "evidence_citations": [
+            "src-p-salary-records"
+          ],
+          "body": "Argument round 3"
+        }
+      ]
+    },
+    {
+      "round_number": 4,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-4",
+          "evidence_citations": [
+            "src-p-wechat",
+            "src-p-colleague-statement"
+          ],
+          "body": "Argument round 4"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "case_id": "case-labor_dispute-golden",
+  "issues": [
+    {
+      "issue_id": "iss-ld-termination-legality",
+      "title": "Issue 1",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-ld-trade-secret-breach",
+      "title": "Issue 2",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-ld-policy-validity",
+      "title": "Issue 3",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-ld-wage-dispute",
+      "title": "Issue 4",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-ld-compensation-calc",
+      "title": "Issue 5",
+      "description": "test"
+    }
+  ]
+}

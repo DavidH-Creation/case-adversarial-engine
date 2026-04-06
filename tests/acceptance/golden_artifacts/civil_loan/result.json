@@ -1,0 +1,60 @@
+{
+  "case_id": "case-civil_loan-golden",
+  "run_id": "run-civil_loan-golden",
+  "rounds": [
+    {
+      "round_number": 1,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-1",
+          "evidence_citations": [
+            "src-p-transfer",
+            "src-p-contract"
+          ],
+          "body": "Argument round 1"
+        }
+      ]
+    },
+    {
+      "round_number": 2,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-2",
+          "evidence_citations": [
+            "src-p-chat",
+            "src-d-receipt"
+          ],
+          "body": "Argument round 2"
+        }
+      ]
+    },
+    {
+      "round_number": 3,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-3",
+          "evidence_citations": [
+            "src-d-witness"
+          ],
+          "body": "Argument round 3"
+        }
+      ]
+    },
+    {
+      "round_number": 4,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-4",
+          "evidence_citations": [
+            "src-p-transfer"
+          ],
+          "body": "Argument round 4"
+        }
+      ]
+    }
+  ]
+}

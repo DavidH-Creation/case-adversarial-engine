@@ -1,0 +1,19 @@
+{
+  "paths": [
+    {
+      "path_id": "path-001",
+      "trigger_condition": "借款合意成立且有银行转账凭证",
+      "outcome": "plaintiff_favorable"
+    },
+    {
+      "path_id": "path-002",
+      "trigger_condition": "被告证明款项系代收代付",
+      "outcome": "defendant_favorable"
+    },
+    {
+      "path_id": "path-003",
+      "trigger_condition": "双方协商调解",
+      "outcome": "settlement"
+    }
+  ]
+}

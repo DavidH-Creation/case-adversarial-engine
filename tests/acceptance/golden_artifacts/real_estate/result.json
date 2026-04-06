@@ -1,0 +1,60 @@
+{
+  "case_id": "case-real_estate-golden",
+  "run_id": "run-real_estate-golden",
+  "rounds": [
+    {
+      "round_number": 1,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-1",
+          "evidence_citations": [
+            "src-p-purchase-contract",
+            "src-p-deposit-receipt"
+          ],
+          "body": "Argument round 1"
+        }
+      ]
+    },
+    {
+      "round_number": 2,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-2",
+          "evidence_citations": [
+            "src-p-refusal-wechat"
+          ],
+          "body": "Argument round 2"
+        }
+      ]
+    },
+    {
+      "round_number": 3,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-3",
+          "evidence_citations": [
+            "src-d-contract-defect",
+            "src-d-property-restriction"
+          ],
+          "body": "Argument round 3"
+        }
+      ]
+    },
+    {
+      "round_number": 4,
+      "phase": "claim",
+      "outputs": [
+        {
+          "output_id": "out-4",
+          "evidence_citations": [
+            "src-p-bank-approval"
+          ],
+          "body": "Argument round 4"
+        }
+      ]
+    }
+  ]
+}

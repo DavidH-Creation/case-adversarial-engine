@@ -1,0 +1,30 @@
+{
+  "case_id": "case-civil_loan-golden",
+  "issues": [
+    {
+      "issue_id": "iss-cl-loan-agreement",
+      "title": "Issue 1",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-cl-principal-amount",
+      "title": "Issue 2",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-cl-interest-rate",
+      "title": "Issue 3",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-cl-repayment-obligation",
+      "title": "Issue 4",
+      "description": "test"
+    },
+    {
+      "issue_id": "iss-cl-borrower-identity",
+      "title": "Issue 5",
+      "description": "test"
+    }
+  ]
+}
