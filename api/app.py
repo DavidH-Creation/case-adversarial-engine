@@ -33,12 +33,18 @@ from .schemas import (
     CreateCaseResponse,
     DiffEntryResponse,
     ExtractionResponse,
+    ReviewListResponse,
+    ReviewRequest,
+    ReviewResponse,
+    ReviewStatus,
     ScenarioDiffResponse,
     ScenarioRunRequest,
 )
+from .review_service import ReviewRecord, review_store
 from .service import (
     _WORKSPACE_BASE,
     _emit_event,
+    _record_to_index_entry,
     case_index,
     get_artifact,
     list_artifacts,
@@ -158,6 +164,7 @@ async def get_case(case_id: str) -> CaseInfoResponse:
         has_extraction=record.extraction_data is not None,
         has_analysis=record.analysis_data is not None,
         run_id=record.run_id,
+        review_status=record.review_status,
     )
 
 
@@ -555,6 +562,105 @@ async def get_markdown_report(case_id: str):
             content={"error": "报告尚不可用，请先完成分析", "code": 404},
         )
     return Response(content=record.report_markdown, media_type="text/markdown")
+
+
+# ---------------------------------------------------------------------------
+# POST/GET /api/cases/{case_id}/reviews  (v2.5 Phase 3: human review)
+# ---------------------------------------------------------------------------
+
+# State machine transitions — maps (current_review_status) → allowed actions
+_REVIEW_TRANSITIONS: dict[ReviewStatus, set[ReviewStatus]] = {
+    ReviewStatus.none: {ReviewStatus.pending_review},
+    ReviewStatus.pending_review: {
+        ReviewStatus.approved,
+        ReviewStatus.rejected,
+        ReviewStatus.revision_requested,
+    },
+    ReviewStatus.revision_requested: {ReviewStatus.pending_review},
+    ReviewStatus.approved: set(),   # terminal
+    ReviewStatus.rejected: set(),   # terminal
+}
+
+
+@app.post("/api/cases/{case_id}/reviews", response_model=ReviewResponse)
+async def submit_review(case_id: str, body: ReviewRequest) -> ReviewResponse:
+    record = _get_case_or_404(case_id)
+
+    # Must be analyzed before any review
+    if record.status != CaseStatus.analyzed:
+        raise HTTPException(400, "只有分析完成的案件才能提交复核")
+
+    # action=none is not a valid submission
+    if body.action == ReviewStatus.none:
+        raise HTTPException(400, f"不支持的 action: {body.action}")
+
+    # State machine check
+    allowed = _REVIEW_TRANSITIONS.get(record.review_status, set())
+    if body.action not in allowed:
+        raise HTTPException(
+            400,
+            f"当前复核状态 {record.review_status.value} 不允许执行 {body.action.value}",
+        )
+
+    # Create review record
+    review = ReviewRecord(
+        case_id=case_id,
+        action=body.action,
+        comment=body.comment,
+        section_flags=body.section_flags,
+    )
+
+    # Persist review to disk
+    if record.workspace_manager is not None:
+        review_store.save(record.workspace_manager, review)
+
+    # Update case review_status
+    record.review_status = body.action
+    # Sync index + persist meta
+    case_index.upsert(_record_to_index_entry(record))
+    store.save_to_disk(case_id)
+
+    # Emit audit event
+    _emit_event(record, EventType.review_submitted, {
+        "review_id": review.review_id,
+        "action": body.action.value,
+        "comment": body.comment,
+    })
+
+    return ReviewResponse(
+        review_id=review.review_id,
+        case_id=case_id,
+        action=review.action,
+        reviewer_id=review.reviewer_id,
+        comment=review.comment,
+        section_flags=review.section_flags,
+        created_at=review.created_at,
+    )
+
+
+@app.get("/api/cases/{case_id}/reviews", response_model=ReviewListResponse)
+async def list_reviews(case_id: str) -> ReviewListResponse:
+    record = _get_case_or_404(case_id)
+    if record.workspace_manager is not None:
+        reviews = review_store.load_all(record.workspace_manager, case_id)
+    else:
+        reviews = []
+    return ReviewListResponse(
+        case_id=case_id,
+        current_review_status=record.review_status,
+        reviews=[
+            ReviewResponse(
+                review_id=r.review_id,
+                case_id=r.case_id,
+                action=r.action,
+                reviewer_id=r.reviewer_id,
+                comment=r.comment,
+                section_flags=r.section_flags,
+                created_at=r.created_at,
+            )
+            for r in reviews
+        ],
+    )
 
 
 @app.get("/")

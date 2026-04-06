@@ -24,6 +24,7 @@ class CaseIndexEntry(TypedDict):
     created_at: str  # ISO8601
     updated_at: str  # ISO8601
     has_report: bool
+    review_status: str  # ReviewStatus.value — "none" by default
 
 
 class CaseIndex:
@@ -146,4 +147,5 @@ def _meta_to_index_entry(meta: dict) -> CaseIndexEntry:
         created_at=meta.get("created_at", ""),
         updated_at=meta.get("updated_at", ""),
         has_report="report.docx" in artifact_names,
+        review_status=meta.get("review_status", "none"),
     )

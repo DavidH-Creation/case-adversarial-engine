@@ -56,7 +56,7 @@ from engines.shared.event_log import CaseEvent, EventType
 from engines.shared.workspace_manager import WorkspaceManager
 
 from .case_index import CaseIndex, CaseIndexEntry, _meta_to_index_entry
-from .schemas import CaseStatus
+from .schemas import CaseStatus, ReviewStatus
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
 logger = logging.getLogger(__name__)
@@ -80,6 +80,7 @@ class CaseRecord:
     def __init__(self, case_id: str, info: dict[str, Any]) -> None:
         self.case_id = case_id
         self.status = CaseStatus.created
+        self.review_status = ReviewStatus.none  # v2.5 Phase 3
         self.info = info  # case_type, plaintiff, defendant, claims, defenses
         # v2.5 Phase 1: timestamps for case list index
         now = datetime.now(timezone.utc)
@@ -241,6 +242,11 @@ class CaseStore:
         record.materials = meta.get("materials", {"plaintiff": [], "defendant": []})
         record.workspace_manager = wm
         record.error = meta.get("error")
+        # v2.5 Phase 3: restore review_status
+        try:
+            record.review_status = ReviewStatus(meta.get("review_status", "none"))
+        except ValueError:
+            record.review_status = ReviewStatus.none
         # v2.5 Phase 1: restore timestamps
         if meta.get("created_at"):
             record.created_at = datetime.fromisoformat(
@@ -421,6 +427,7 @@ def _record_to_meta(record: "CaseRecord") -> dict:
         "report_markdown": record.report_markdown,
         "report_docx_ref": artifact_refs.get("report.docx"),
         "error": record.error,
+        "review_status": record.review_status.value,
     }
 
 
@@ -436,6 +443,7 @@ def _record_to_index_entry(record: "CaseRecord") -> CaseIndexEntry:
         created_at=record.created_at.isoformat().replace("+00:00", "Z"),
         updated_at=record.updated_at.isoformat().replace("+00:00", "Z"),
         has_report=record.report_path is not None or "report.docx" in record.artifacts,
+        review_status=record.review_status.value,
     )
 
 
