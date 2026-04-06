@@ -309,3 +309,104 @@ def test_e2e_create_extract_analyze_scenario(tmp_path):
         assert data["diff_entries"][0]["direction"] == "weaken"
         assert data["affected_issue_ids"] == ["issue-e2e-001"]
         assert data["status"] == "completed"
+
+
+# ---------------------------------------------------------------------------
+# v2.5 Phase 1: GET /api/cases list endpoint tests
+# ---------------------------------------------------------------------------
+
+
+def _minimal_case_payload() -> dict:
+    return {
+        "case_type": "civil_loan",
+        "plaintiff": {"name": "测试原告"},
+        "defendant": {"name": "测试被告"},
+        "claims": [],
+        "defenses": [],
+    }
+
+
+def test_list_cases_pagination(tmp_path):
+    """GET /api/cases returns paginated results."""
+    test_store = CaseStore(workspaces_dir=tmp_path / "workspaces")
+    from api.service import case_index
+
+    # Reset the global index for isolation
+    case_index._entries.clear()
+
+    with patch.object(service_module, "store", test_store), patch("api.app.store", test_store):
+        client = TestClient(app)
+        # Create 3 cases
+        for _ in range(3):
+            client.post("/api/cases/", json=_minimal_case_payload())
+
+        resp = client.get("/api/cases?page=1&page_size=2")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total"] >= 3
+        assert len(body["items"]) == 2
+        assert body["page"] == 1
+        assert body["page_size"] == 2
+        assert all("case_id" in item for item in body["items"])
+
+
+def test_list_cases_sort_newest_first(tmp_path):
+    """GET /api/cases?sort=-created_at returns newest first."""
+    test_store = CaseStore(workspaces_dir=tmp_path / "workspaces")
+    from api.service import case_index
+
+    case_index._entries.clear()
+
+    with patch.object(service_module, "store", test_store), patch("api.app.store", test_store):
+        client = TestClient(app)
+        resp1 = client.post("/api/cases/", json=_minimal_case_payload()).json()
+        resp2 = client.post("/api/cases/", json=_minimal_case_payload()).json()
+
+        result = client.get("/api/cases?sort=-created_at&page_size=2").json()
+        # Newest case should be first
+        assert result["items"][0]["case_id"] == resp2["case_id"]
+
+
+def test_list_cases_page_size_over_100_rejected(tmp_path):
+    """page_size > 100 should return 422 (Pydantic validation)."""
+    test_store = CaseStore(workspaces_dir=tmp_path / "workspaces")
+
+    with patch.object(service_module, "store", test_store), patch("api.app.store", test_store):
+        client = TestClient(app)
+        resp = client.get("/api/cases?page_size=101")
+        assert resp.status_code == 422
+
+
+def test_list_cases_filter_by_status(tmp_path):
+    """GET /api/cases?status=created filters correctly."""
+    test_store = CaseStore(workspaces_dir=tmp_path / "workspaces")
+    from api.service import case_index
+
+    case_index._entries.clear()
+
+    with patch.object(service_module, "store", test_store), patch("api.app.store", test_store):
+        client = TestClient(app)
+        client.post("/api/cases/", json=_minimal_case_payload())
+        client.post("/api/cases/", json=_minimal_case_payload())
+
+        resp = client.get("/api/cases?status=created")
+        assert resp.status_code == 200
+        items = resp.json()["items"]
+        assert len(items) >= 2
+        assert all(item["status"] == "created" for item in items)
+
+
+def test_list_cases_empty(tmp_path):
+    """GET /api/cases returns empty list when no cases exist."""
+    test_store = CaseStore(workspaces_dir=tmp_path / "workspaces")
+    from api.service import case_index
+
+    case_index._entries.clear()
+
+    with patch.object(service_module, "store", test_store), patch("api.app.store", test_store):
+        client = TestClient(app)
+        resp = client.get("/api/cases")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total"] == 0
+        assert body["items"] == []

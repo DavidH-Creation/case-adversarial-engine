@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +20,9 @@ from .schemas import (
     AddMaterialRequest,
     AddMaterialResponse,
     CaseInfoResponse,
+    CaseListEntry,
+    CaseListQuery,
+    CaseListResponse,
     CaseStatus,
     ConfirmRequest,
     CreateCaseRequest,
@@ -28,6 +33,8 @@ from .schemas import (
     ScenarioRunRequest,
 )
 from .service import (
+    _WORKSPACE_BASE,
+    case_index,
     get_artifact,
     list_artifacts,
     run_analysis,
@@ -36,11 +43,25 @@ from .service import (
     store,
 )
 
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: rebuild case index from disk
+    if _WORKSPACE_BASE is not None:
+        n = case_index.scan_from_disk(_WORKSPACE_BASE)
+        logger.info("案件索引重建完成，共 %d 条", n)
+    yield
+    # Shutdown: no cleanup needed
+
+
 app = FastAPI(
     title="案件对抗分析系统",
     description="渐进式案件录入与 AI 对抗分析 API",
     version="1.0.0",
     dependencies=[Depends(verify_token)],
+    lifespan=lifespan,
 )
 
 _STATIC_DIR = Path(__file__).parent / "static"
@@ -75,6 +96,25 @@ async def create_case(body: CreateCaseRequest) -> CreateCaseResponse:
     }
     record = store.create(info)
     return CreateCaseResponse(case_id=record.case_id, status=record.status)
+
+
+@app.get("/api/cases", response_model=CaseListResponse)
+async def list_cases(q: CaseListQuery = Depends()) -> CaseListResponse:
+    entries, total = case_index.query(
+        status=q.status.value if q.status else None,
+        case_type=q.case_type,
+        from_date=q.from_date,
+        to_date=q.to_date,
+        page=q.page,
+        page_size=q.page_size,
+        sort=q.sort,
+    )
+    return CaseListResponse(
+        items=[CaseListEntry.model_validate(e) for e in entries],
+        total=total,
+        page=q.page,
+        page_size=q.page_size,
+    )
 
 
 @app.get("/api/cases/{case_id}", response_model=CaseInfoResponse)
