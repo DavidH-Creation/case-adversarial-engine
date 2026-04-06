@@ -56,7 +56,7 @@ from engines.shared.event_log import CaseEvent, EventType
 from engines.shared.workspace_manager import WorkspaceManager
 
 from .case_index import CaseIndex, CaseIndexEntry, _meta_to_index_entry
-from .schemas import CaseStatus
+from .schemas import CaseStatus, ReviewStatus
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
 logger = logging.getLogger(__name__)
@@ -109,6 +109,8 @@ class CaseRecord:
         self.error: Optional[str] = None
         # SSE 进度队列（None 为终止哨兵）
         self._progress_queue: asyncio.Queue[Optional[str]] = asyncio.Queue()
+        # v2.5 Phase 3: review status (independent from pipeline CaseStatus)
+        self.review_status: ReviewStatus = ReviewStatus.none
 
     # ── 进度 ─────────────────────────────────────────────────────────────────
 
@@ -250,6 +252,13 @@ class CaseStore:
             record.updated_at = datetime.fromisoformat(
                 meta["updated_at"].replace("Z", "+00:00")
             )
+
+        # v2.5 Phase 3: restore review_status
+        if meta.get("review_status"):
+            try:
+                record.review_status = ReviewStatus(meta["review_status"])
+            except ValueError:
+                record.review_status = ReviewStatus.none
 
         # 恢复提取产物
         record.ev_index = wm.load_evidence_index()
@@ -421,6 +430,7 @@ def _record_to_meta(record: "CaseRecord") -> dict:
         "report_markdown": record.report_markdown,
         "report_docx_ref": artifact_refs.get("report.docx"),
         "error": record.error,
+        "review_status": record.review_status.value,
     }
 
 
@@ -436,6 +446,7 @@ def _record_to_index_entry(record: "CaseRecord") -> CaseIndexEntry:
         created_at=record.created_at.isoformat().replace("+00:00", "Z"),
         updated_at=record.updated_at.isoformat().replace("+00:00", "Z"),
         has_report=record.report_path is not None or "report.docx" in record.artifacts,
+        review_status=record.review_status.value,
     )
 
 

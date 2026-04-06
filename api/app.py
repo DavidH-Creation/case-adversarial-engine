@@ -33,9 +33,14 @@ from .schemas import (
     CreateCaseResponse,
     DiffEntryResponse,
     ExtractionResponse,
+    ReviewListResponse,
+    ReviewRequest,
+    ReviewResponse,
+    ReviewStatus,
     ScenarioDiffResponse,
     ScenarioRunRequest,
 )
+from .review_service import ReviewRecord, review_store
 from .service import (
     _WORKSPACE_BASE,
     _emit_event,
@@ -158,6 +163,116 @@ async def get_case(case_id: str) -> CaseInfoResponse:
         has_extraction=record.extraction_data is not None,
         has_analysis=record.analysis_data is not None,
         run_id=record.run_id,
+        review_status=record.review_status.value,
+    )
+
+
+# ---------------------------------------------------------------------------
+# v2.5 Phase 3: Review endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/cases/{case_id}/reviews", response_model=ReviewResponse)
+async def submit_review(case_id: str, body: ReviewRequest) -> ReviewResponse:
+    record = _get_case_or_404(case_id)
+
+    # Must be analyzed before reviews are allowed
+    if record.status != CaseStatus.analyzed:
+        raise HTTPException(400, "只有分析完成的案件才能提交复核")
+
+    # State machine validation
+    if body.action == ReviewStatus.pending_review:
+        if record.review_status not in (ReviewStatus.none, ReviewStatus.revision_requested):
+            raise HTTPException(
+                400, f"当前复核状态 {record.review_status.value} 不允许提交待复核"
+            )
+    elif body.action in (
+        ReviewStatus.approved,
+        ReviewStatus.rejected,
+        ReviewStatus.revision_requested,
+    ):
+        if record.review_status != ReviewStatus.pending_review:
+            raise HTTPException(
+                400, f"只有待复核状态才能执行 {body.action.value}"
+            )
+    else:
+        raise HTTPException(400, f"不支持的 action: {body.action.value}")
+
+    # Create and persist review record
+    review = ReviewRecord(
+        case_id=case_id,
+        action=body.action,
+        comment=body.comment,
+        section_flags=body.section_flags,
+    )
+    record.review_status = body.action
+
+    # Persist to disk
+    if record.workspace_manager is not None:
+        review_store.save(record.workspace_manager, review)
+
+    # Persist updated review_status to case_meta.json
+    store.save_to_disk(case_id)
+
+    # v2.5 Phase 2 integration: emit review_submitted event
+    _emit_event(
+        record,
+        EventType.review_submitted,
+        {"review_id": review.review_id, "action": body.action.value},
+    )
+
+    return ReviewResponse(
+        review_id=review.review_id,
+        case_id=case_id,
+        action=review.action,
+        reviewer_id=review.reviewer_id,
+        comment=review.comment,
+        section_flags=review.section_flags,
+        created_at=review.created_at,
+    )
+
+
+@app.get("/api/cases/{case_id}/reviews", response_model=ReviewListResponse)
+async def list_reviews(case_id: str) -> ReviewListResponse:
+    record = _get_case_or_404(case_id)
+    reviews: list[ReviewResponse] = []
+    if record.workspace_manager is not None:
+        records = review_store.load_all(record.workspace_manager, case_id)
+        reviews = [
+            ReviewResponse(
+                review_id=r.review_id,
+                case_id=r.case_id,
+                action=r.action,
+                reviewer_id=r.reviewer_id,
+                comment=r.comment,
+                section_flags=r.section_flags,
+                created_at=r.created_at,
+            )
+            for r in records
+        ]
+    return ReviewListResponse(
+        case_id=case_id,
+        current_review_status=record.review_status,
+        reviews=reviews,
+    )
+
+
+@app.get("/api/cases/{case_id}/reviews/{review_id}", response_model=ReviewResponse)
+async def get_review(case_id: str, review_id: str) -> ReviewResponse:
+    record = _get_case_or_404(case_id)
+    if record.workspace_manager is None:
+        raise HTTPException(404, f"复核记录不存在: {review_id}")
+    review = review_store.load_one(record.workspace_manager, review_id)
+    if review is None:
+        raise HTTPException(404, f"复核记录不存在: {review_id}")
+    return ReviewResponse(
+        review_id=review.review_id,
+        case_id=review.case_id,
+        action=review.action,
+        reviewer_id=review.reviewer_id,
+        comment=review.comment,
+        section_flags=review.section_flags,
+        created_at=review.created_at,
     )
 
 
