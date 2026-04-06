@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 import re
 import uuid
+
+_logger = logging.getLogger(__name__)
 
 from engines.report_generation.v3.evidence_classifier import classify_all_evidence_priority
 from engines.report_generation.v3.layer1_cover import build_layer1, render_layer1_md
@@ -17,7 +20,11 @@ from engines.report_generation.v3.layer4_appendix import (
     render_layer4_md,
 )
 from engines.report_generation.v3.models import EvidenceBasicCard, FourLayerReport, SectionTag
-from engines.report_generation.v3.render_contract import lint_markdown_render_contract
+from engines.report_generation.v3.render_contract import (
+    RenderContractViolation,
+    compute_fallback_ratio,
+    lint_markdown_render_contract,
+)
 from engines.report_generation.v3.tag_system import (
     build_humanize_context,
     format_tag,
@@ -184,7 +191,29 @@ def write_v3_report_md(
     content = humanize_text(content, context=humanize_ctx)
     if not no_redact:
         content = redact_text(content, party_names=party_names or None)
-    lint_markdown_render_contract(content)
+    # Collect evidence IDs for orphan citation check
+    evidence_id_set: set[str] = set()
+    for card in report.layer2.evidence_cards:
+        evidence_id_set.add(card.evidence_id)
+    for card in report.layer1.evidence_priorities:
+        evidence_id_set.add(card.evidence_id)
+
+    lint_markdown_render_contract(content, evidence_ids=evidence_id_set or None)
+
+    # Hard gate: reject reports with excessive fallback content
+    ratio, fb_count, fb_total = compute_fallback_ratio(content)
+    if fb_total > 0 and ratio > 0.35:
+        raise RenderContractViolation(
+            f"render contract violation: fallback_ratio {ratio:.0%} "
+            f"({fb_count}/{fb_total} major sections are placeholders)"
+        )
+    if fb_total > 0 and ratio > 0.20:
+        _logger.warning(
+            "fallback_ratio %.0f%% (%d/%d sections)",
+            ratio * 100,
+            fb_count,
+            fb_total,
+        )
 
     output_path.write_text(content, encoding="utf-8")
     return output_path
