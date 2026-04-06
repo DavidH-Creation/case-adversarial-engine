@@ -160,6 +160,46 @@ class TestEvidenceWeightScorerRegistry:
 
 
 # ---------------------------------------------------------------------------
+# admissibility_evaluator
+# ---------------------------------------------------------------------------
+
+
+class TestAdmissibilityEvaluatorRegistry:
+    """admissibility_evaluator prompt 注册表测试。"""
+
+    @pytest.fixture(autouse=True)
+    def load_registry(self):
+        from engines.case_structuring.admissibility_evaluator.prompts import PROMPT_REGISTRY
+
+        self.registry = PROMPT_REGISTRY
+
+    def test_all_new_case_types_registered(self):
+        _assert_registry_has_case_types(self.registry, "admissibility_evaluator")
+
+    def test_civil_loan_still_registered(self):
+        assert "civil_loan" in self.registry
+
+    @pytest.mark.parametrize("case_type", NEW_CASE_TYPES)
+    def test_entry_has_system_key(self, case_type):
+        entry = self.registry[case_type]
+        assert "system" in entry, (
+            f"admissibility_evaluator/{case_type} registry entry missing 'system' key"
+        )
+        assert isinstance(entry["system"], str)
+        assert len(entry["system"]) > 50
+
+    @pytest.mark.parametrize("case_type", NEW_CASE_TYPES)
+    def test_entry_has_build_user_callable(self, case_type):
+        entry = self.registry[case_type]
+        assert "build_user" in entry, (
+            f"admissibility_evaluator/{case_type} registry entry missing 'build_user' key"
+        )
+        assert callable(entry["build_user"]), (
+            f"admissibility_evaluator/{case_type} 'build_user' is not callable"
+        )
+
+
+# ---------------------------------------------------------------------------
 # adversarial
 # ---------------------------------------------------------------------------
 
