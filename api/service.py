@@ -490,7 +490,10 @@ def _persist_record_state(record: "CaseRecord", *, operation: str) -> None:
 
 
 def _emit_event(
-    record: "CaseRecord", event_type: EventType, payload: dict | None = None
+    record: "CaseRecord",
+    event_type: EventType,
+    payload: dict | None = None,
+    actor_id: str = "system",
 ) -> None:
     """Emit audit event to the case's events.jsonl (non-fatal on failure)."""
     wm = record.workspace_manager
@@ -501,6 +504,7 @@ def _emit_event(
             CaseEvent(
                 case_id=record.case_id,
                 event_type=event_type,
+                actor_id=actor_id,
                 payload=payload or {},
             )
         )
