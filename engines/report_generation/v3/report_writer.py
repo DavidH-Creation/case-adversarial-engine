@@ -21,6 +21,7 @@ from engines.report_generation.v3.layer4_appendix import (
 )
 from engines.report_generation.v3.models import EvidenceBasicCard, FourLayerReport, SectionTag
 from engines.report_generation.v3.render_contract import (
+    LintSeverity,
     RenderContractViolation,
     compute_fallback_ratio,
     lint_markdown_render_contract,
@@ -198,21 +199,24 @@ def write_v3_report_md(
     for card in report.layer1.evidence_priorities:
         evidence_id_set.add(card.evidence_id)
 
-    lint_markdown_render_contract(content, evidence_ids=evidence_id_set or None)
+    from engines.report_generation.v3.report_fixer import ReportFixer
 
-    # Hard gate: reject reports with excessive fallback content
+    fixer = ReportFixer()
+    content, fix_log = fixer.apply_all(content)
+    for entry in fix_log:
+        _logger.info("report-fixer: %s", entry)
+
+    lint_results = lint_markdown_render_contract(content, evidence_ids=evidence_id_set or None)
+    for r in lint_results:
+        if r.severity == LintSeverity.WARN:
+            _logger.warning("render-contract WARN [%s]: %s", r.rule, r.message)
+
+    # Hard gate: reject reports with excessive fallback content (Phase 1 transitional: 0.25)
     ratio, fb_count, fb_total = compute_fallback_ratio(content)
-    if fb_total > 0 and ratio > 0.35:
+    if fb_total > 0 and ratio > 0.25:
         raise RenderContractViolation(
             f"render contract violation: fallback_ratio {ratio:.0%} "
             f"({fb_count}/{fb_total} major sections are placeholders)"
-        )
-    if fb_total > 0 and ratio > 0.20:
-        _logger.warning(
-            "fallback_ratio %.0f%% (%d/%d sections)",
-            ratio * 100,
-            fb_count,
-            fb_total,
         )
 
     output_path.write_text(content, encoding="utf-8")

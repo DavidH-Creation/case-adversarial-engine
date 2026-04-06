@@ -211,10 +211,22 @@ class TestBuildFourLayerReport:
         assert has_plaintiff
 
 
+_PATCH_FALLBACK_RATIO = patch(
+    "engines.report_generation.v3.report_writer.compute_fallback_ratio",
+    return_value=(0.0, 0, 0),
+)
+_PATCH_LINT = patch(
+    "engines.report_generation.v3.report_writer.lint_markdown_render_contract",
+    return_value=[],
+)
+
+
 class TestWriteV3ReportMd:
     @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
     @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
-    def test_writes_markdown(self, _mock_redact):
+    @_PATCH_FALLBACK_RATIO
+    @_PATCH_LINT
+    def test_writes_markdown(self, _mock_lint, _mock_ratio, _mock_redact):
         report = FourLayerReport(
             report_id="rpt-test",
             case_id="case-test",
@@ -245,7 +257,9 @@ class TestWriteV3ReportMd:
 
     @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
     @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
-    def test_no_percentages_in_output(self, _mock_redact):
+    @_PATCH_FALLBACK_RATIO
+    @_PATCH_LINT
+    def test_no_percentages_in_output(self, _mock_lint, _mock_ratio, _mock_redact):
         """Verify the report does not contain probability percentages."""
         report = FourLayerReport(
             report_id="rpt-test",
@@ -273,7 +287,9 @@ class TestWriteV3ReportMd:
 
     @patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
     @patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
-    def test_neutral_conclusion_tagged_as_inference(self, _mock_redact):
+    @_PATCH_FALLBACK_RATIO
+    @_PATCH_LINT
+    def test_neutral_conclusion_tagged_as_inference(self, _mock_lint, _mock_ratio, _mock_redact):
         """overall_assessment is an inference, not a fact."""
         report = FourLayerReport(
             report_id="rpt-test",

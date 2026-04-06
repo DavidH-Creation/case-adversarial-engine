@@ -56,6 +56,7 @@ testpaths = [
     "engines/document_assistance/tests",
     "api/tests",
     "engines/similar_case_search/tests",
+    "engines/report_generation/v3/tests",
 ]
 
 [tool.coverage.run]

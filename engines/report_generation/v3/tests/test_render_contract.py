@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -302,3 +302,59 @@ def test_write_v3_report_md_rejects_high_fallback_ratio(_mock_redact) -> None:
     with TemporaryDirectory() as tmpdir:
         with pytest.raises(ValueError, match="fallback_ratio"):
             write_v3_report_md(Path(tmpdir), report, case_data, no_redact=True)
+
+
+# ---------------------------------------------------------------------------
+# Fallback ratio threshold boundary tests (Phase 1 transitional gate: 0.25)
+# ---------------------------------------------------------------------------
+
+
+@patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
+@patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
+@patch(
+    "engines.report_generation.v3.report_writer.compute_fallback_ratio",
+    return_value=(0.26, 2, 8),
+)
+def test_fallback_gate_blocks_ratio_above_0_25(_mock_ratio, _mock_redact) -> None:
+    """Hard gate at 0.25 (Phase 1 transitional threshold) blocks 0.26."""
+    report = _minimal_report(
+        neutral_conclusion=(
+            "\u5408\u540c\u501f\u6b3e\u5173\u7cfb\u6210\u7acb\u4e14\u8bc1\u636e\u94fe"
+            "\u5b8c\u6574\uff0c\u6cd5\u9662\u5e94\u652f\u6301\u539f\u544a\u7684\u8bc9"
+            "\u8bbc\u8bf7\u6c42\u3002"
+        ),
+        winning_move=(
+            "\u8f6c\u8d26\u8bb0\u5f55\u548c\u501f\u6761\u662f\u5426\u88ab\u6cd5\u9662"
+            "\u91c7\u4fe1\u5c06\u51b3\u5b9a\u6848\u4ef6\u8d70\u5411\u3002"
+        ),
+    )
+    case_data = {"case_type": "civil_loan", "parties": {}}
+    with TemporaryDirectory() as tmpdir:
+        with pytest.raises(ValueError, match="fallback_ratio"):
+            write_v3_report_md(Path(tmpdir), report, case_data, no_redact=True)
+
+
+@patch("engines.shared.disclaimer_templates.DISCLAIMER_MD", "TEST DISCLAIMER")
+@patch("engines.shared.pii_redactor.redact_text", side_effect=lambda x, **kw: x)
+@patch(
+    "engines.report_generation.v3.report_writer.compute_fallback_ratio",
+    return_value=(0.24, 2, 8),
+)
+def test_fallback_gate_passes_ratio_below_0_25(_mock_ratio, _mock_redact) -> None:
+    """Pipeline succeeds when fallback ratio is at or below transitional gate (0.25)."""
+    report = _minimal_report(
+        neutral_conclusion=(
+            "\u5408\u540c\u501f\u6b3e\u5173\u7cfb\u6210\u7acb\u4e14\u8bc1\u636e\u94fe"
+            "\u5b8c\u6574\uff0c\u6cd5\u9662\u5e94\u652f\u6301\u539f\u544a\u7684\u8bc9"
+            "\u8bbc\u8bf7\u6c42\u3002"
+        ),
+        winning_move=(
+            "\u8f6c\u8d26\u8bb0\u5f55\u548c\u501f\u6761\u662f\u5426\u88ab\u6cd5\u9662"
+            "\u91c7\u4fe1\u5c06\u51b3\u5b9a\u6848\u4ef6\u8d70\u5411\u3002"
+        ),
+    )
+    case_data = {"case_type": "civil_loan", "parties": {}}
+    with TemporaryDirectory() as tmpdir:
+        # Should not raise — ratio 0.24 ≤ 0.25
+        result = write_v3_report_md(Path(tmpdir), report, case_data, no_redact=True)
+        assert result.exists()
