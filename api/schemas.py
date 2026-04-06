@@ -177,6 +177,40 @@ class ScenarioDiffResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# POST /api/cases/{case_id}/scenarios  (async 202 pattern)
+# GET  /api/cases/{case_id}/scenarios/{scenario_id}
+# ---------------------------------------------------------------------------
+
+
+class ScenarioStatus(str, Enum):
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+
+
+class CaseScenarioRequest(BaseModel):
+    change_set: list[ChangeItemRequest]
+
+
+class CaseScenarioAcceptedResponse(BaseModel):
+    scenario_id: str
+    case_id: str
+    status: ScenarioStatus
+
+
+class CaseScenarioResultResponse(BaseModel):
+    scenario_id: str
+    case_id: str
+    baseline_run_id: str
+    status: ScenarioStatus
+    diff_entries: list[DiffEntryResponse] = Field(default_factory=list)
+    affected_issue_ids: list[str] = Field(default_factory=list)
+    affected_evidence_ids: list[str] = Field(default_factory=list)
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
 # GET /api/cases  (list + filter + paginate)
 # ---------------------------------------------------------------------------
 

@@ -1033,6 +1033,99 @@ scenario_service = ScenarioService(_PROJECT_ROOT / "outputs")
 
 
 # ---------------------------------------------------------------------------
+# Unit A: Case-scoped async scenario manager (202 pattern)
+# ---------------------------------------------------------------------------
+
+
+class CaseScenarioManager:
+    """Manages async scenario jobs scoped to a specific case.
+
+    Uses asyncio.create_task to run scenarios in the background, matching
+    the same pattern as run_extraction/run_analysis.
+    """
+
+    def __init__(self) -> None:
+        self._jobs: dict[str, dict] = {}  # scenario_id → job state
+
+    def submit(
+        self,
+        case_id: str,
+        run_id: str,
+        change_set: list[dict],
+        case_type: str = "civil_loan",
+    ) -> str:
+        """Create a scenario job and launch it asynchronously. Returns scenario_id."""
+        from .schemas import ScenarioStatus
+
+        scenario_id = f"scenario-{uuid.uuid4().hex[:12]}"
+        self._jobs[scenario_id] = {
+            "scenario_id": scenario_id,
+            "case_id": case_id,
+            "baseline_run_id": run_id,
+            "status": ScenarioStatus.pending.value,
+            "diff_entries": [],
+            "affected_issue_ids": [],
+            "affected_evidence_ids": [],
+            "error": None,
+        }
+        asyncio.create_task(
+            self._run_scenario(scenario_id, run_id, change_set, case_type)
+        )
+        return scenario_id
+
+    async def _run_scenario(
+        self,
+        scenario_id: str,
+        run_id: str,
+        change_set: list[dict],
+        case_type: str,
+    ) -> None:
+        """Execute the scenario via ScenarioService and store the result."""
+        from .schemas import ScenarioStatus
+
+        job = self._jobs[scenario_id]
+        job["status"] = ScenarioStatus.running.value
+        try:
+            result = await scenario_service.run(
+                run_id=run_id,
+                change_set=change_set,
+                case_type=case_type,
+            )
+            scenario_data = result.get("scenario", {})
+            diff_summary = scenario_data.get("diff_summary") or []
+            job["diff_entries"] = [
+                {
+                    "issue_id": entry["issue_id"],
+                    "impact_description": entry["impact_description"],
+                    "direction": (
+                        entry["direction"]
+                        if isinstance(entry["direction"], str)
+                        else str(entry["direction"])
+                    ),
+                }
+                for entry in diff_summary
+                if isinstance(entry, dict)
+            ]
+            job["affected_issue_ids"] = scenario_data.get("affected_issue_ids", [])
+            job["affected_evidence_ids"] = scenario_data.get("affected_evidence_ids", [])
+            job["status"] = ScenarioStatus.completed.value
+        except Exception as exc:
+            job["status"] = ScenarioStatus.failed.value
+            job["error"] = str(exc)
+
+    def get(self, scenario_id: str) -> Optional[dict]:
+        """Return scenario job state, or None if not found."""
+        return self._jobs.get(scenario_id)
+
+    def list_for_case(self, case_id: str) -> list[dict]:
+        """Return all scenario jobs for a given case_id."""
+        return [j for j in self._jobs.values() if j["case_id"] == case_id]
+
+
+case_scenario_manager = CaseScenarioManager()
+
+
+# ---------------------------------------------------------------------------
 # 产物访问（供 API 端点调用）
 # ---------------------------------------------------------------------------
 
