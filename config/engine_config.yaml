@@ -1,0 +1,44 @@
+# Engine configuration defaults.
+# 引擎配置默认值。
+#
+# CLI flags and environment variables take priority over these values.
+# CLI 参数和环境变量优先于此文件。
+#
+# Model tier selection is in config/model_tiers.yaml (separate file).
+# 模型分级配置见 config/model_tiers.yaml（独立文件）。
+
+pipeline:
+  # Max retries for LLM calls (retry count, not total attempts)
+  max_retries: 3
+  # Default max output tokens per LLM call
+  max_tokens: 4096
+  # Default temperature for LLM calls
+  temperature: 0.0
+  # Timeout per LLM call in seconds
+  timeout_seconds: 120.0
+  # Base output directory (timestamp subdirectory auto-created)
+  output_dir: outputs/
+
+report:
+  # Prepend legal disclaimer to generated reports
+  include_disclaimer: true
+  # Enable PII redaction in generated reports
+  redact_pii: true
+
+interactive:
+  # Maximum characters allowed per followup question
+  max_question_length: 2000
+  # Maximum turns in an interactive session
+  max_session_turns: 20
+
+rules:
+  # Professional lender detection: minimum lawsuits filed
+  prof_lender_min_cases: 3
+  # Professional lender detection: minimum distinct borrowers
+  prof_lender_min_borrowers: 3
+  # Professional lender detection: time window in months
+  prof_lender_max_span_months: 24
+  # False litigation warning: claim/verified-delivery ratio threshold
+  false_litigation_ratio: 2.0
+  # Contract-void scenario: LPR multiplier cap
+  lpr_multiplier_cap: 4.0
