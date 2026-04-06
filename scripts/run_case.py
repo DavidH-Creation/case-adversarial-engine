@@ -1578,6 +1578,13 @@ async def main(
         print("\n[Step 4] Skipped (checkpoint)")
         jp = out / "result.json"
         mp = out / "report.md"
+        # v3 resume: rebuild report from persisted artifacts (zero LLM calls)
+        _v3_json_resume = out / "report_v3.json"
+        if _v3_json_resume.exists():
+            from engines.report_generation.v3.report_writer import rebuild_from_artifacts
+            print("[Resume] Rebuilding v3 report from report_v3.json ...")
+            mp, _ = rebuild_from_artifacts(out, case_data, no_redact=no_redact)
+            print(f"[Resume] v3 report rebuilt: {mp}")
     else:
         reporter.on_step_start(4, "Write Outputs")
         try:
@@ -1608,7 +1615,11 @@ async def main(
             # Also save V3 report data as JSON
             _v3_json_path = out / "report_v3.json"
             _v3_json_path.write_text(v3_report.model_dump_json(indent=2), encoding="utf-8")
-            ckpt.save(STEP_OUTPUTS, {"result_json": str(jp), "report_md": str(mp)})
+            ckpt.save(STEP_OUTPUTS, {
+                "result_json": str(jp),
+                "report_md": str(mp),
+                "report_v3_json": str(_v3_json_path),
+            })
             reporter.on_step_complete(4, "Write Outputs")
         except Exception as _e:
             reporter.on_error(4, str(_e))
@@ -1668,7 +1679,10 @@ async def main(
             print(f"  [Warning] Word report generation failed: {e}")
             reporter.on_error(5, str(e))
             docx_path = None
-        ckpt.save(STEP_DOCX, {"report_docx": str(docx_path) if docx_path else ""})
+        ckpt.save(STEP_DOCX, {
+            "report_docx": str(docx_path) if docx_path else "",
+            "report_v3_docx": str(docx_path) if docx_path else "",
+        })
 
     # Step 5.5: Generate document drafts (pleading, defense, cross_exam)
     if _should_skip(STEP_DOCUMENTS, last_completed):

@@ -19,6 +19,15 @@ logger = logging.getLogger(__name__)
 CHECKPOINT_SCHEMA_VERSION = 1
 CHECKPOINT_FILENAME = "checkpoint.json"
 
+# Well-known artifact keys — used in artifact_paths dict.
+# v2 keys (always present after a full run):
+ARTIFACT_RESULT_JSON = "result_json"
+ARTIFACT_REPORT_MD = "report_md"
+ARTIFACT_REPORT_DOCX = "report_docx"
+# v3 keys (present only for v3 pipeline runs):
+ARTIFACT_V3_JSON = "report_v3_json"
+ARTIFACT_V3_DOCX = "report_v3_docx"
+
 
 @dataclass
 class CheckpointState:
@@ -29,6 +38,11 @@ class CheckpointState:
     artifact_paths: dict[str, str]
     timestamp: str
     schema_version: int = CHECKPOINT_SCHEMA_VERSION
+
+    @property
+    def has_v3_artifacts(self) -> bool:
+        """True when the checkpoint contains v3 report artifacts."""
+        return ARTIFACT_V3_JSON in self.artifact_paths
 
 
 class CheckpointManager:

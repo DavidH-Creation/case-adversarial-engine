@@ -265,3 +265,49 @@ def _section_fallback(title: str) -> str:
         if key in title:
             return fallback
     return "*暂无可展示内容。*"
+
+
+def rebuild_from_artifacts(
+    workspace_dir: Path,
+    case_data: dict,
+    *,
+    no_redact: bool = False,
+) -> tuple[Path, Path | None]:
+    """Rebuild a v3 report from persisted JSON artifacts — zero LLM calls.
+
+    Reads ``report_v3.json`` from *workspace_dir*, deserialises it into a
+    :class:`FourLayerReport`, then re-renders Markdown (with fixer + lint
+    gate) and optionally DOCX.
+
+    Returns:
+        ``(markdown_path, docx_path)`` where *docx_path* may be ``None``
+        if the DOCX generator is unavailable or fails.
+    """
+    from engines.report_generation.v3.models import FourLayerReport as FLR
+
+    v3_json_path = Path(workspace_dir) / "report_v3.json"
+    if not v3_json_path.exists():
+        raise FileNotFoundError(
+            f"report_v3.json not found in {workspace_dir} — "
+            "cannot rebuild without v3 artifact"
+        )
+
+    report = FLR.model_validate_json(v3_json_path.read_text(encoding="utf-8"))
+
+    md_path = write_v3_report_md(
+        Path(workspace_dir), report, case_data, no_redact=no_redact
+    )
+    _logger.info("rebuild_from_artifacts: MD written to %s", md_path)
+
+    docx_path: Path | None = None
+    try:
+        from engines.report_generation.docx_generator import generate_docx_v3_report
+        import json
+
+        v3_data = json.loads(v3_json_path.read_text(encoding="utf-8"))
+        docx_path = generate_docx_v3_report(output_dir=Path(workspace_dir), report_v3=v3_data)
+        _logger.info("rebuild_from_artifacts: DOCX written to %s", docx_path)
+    except Exception as exc:
+        _logger.warning("rebuild_from_artifacts: DOCX generation failed: %s", exc)
+
+    return md_path, docx_path
