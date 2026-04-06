@@ -8,6 +8,8 @@ LLM prompt templates for labor dispute case type decision path tree generation.
 
 from __future__ import annotations
 
+from typing import Optional
+
 from engines.shared.models import AmountCalculationReport, EvidenceIndex, IssueTree
 
 SYSTEM_PROMPT = """\
@@ -97,20 +99,22 @@ def build_user_prompt(
     *,
     issue_tree: IssueTree,
     evidence_index: EvidenceIndex,
-    amount_report: AmountCalculationReport,
+    amount_report: Optional[AmountCalculationReport] = None,
 ) -> str:
     """构建 user prompt。
     注意：evidence_index 在调用前已被生成器按 v1.2 过渡规则过滤（只含 admitted_record 证据）。
     """
-    check = amount_report.consistency_check_result
-
     # 金额一致性状态块
-    amount_block = f"""\
+    if amount_report is not None:
+        check = amount_report.consistency_check_result
+        amount_block = f"""\
 【金额一致性状态】
 - verdict_block_active: {check.verdict_block_active}
 - principal_base_unique: {check.principal_base_unique}
 - all_repayments_attributed: {check.all_repayments_attributed}
 - unresolved_conflicts 数量: {len(check.unresolved_conflicts)} 条"""
+    else:
+        amount_block = "【金额一致性状态】\n（本案无金额计算数据，跳过金额一致性校验）"
 
     # 争点树摘要（展示已排序的争点，包含评分信息）
     issues_lines = []

@@ -89,4 +89,4 @@ class DecisionPathTreeInput(BaseModel):
     run_id: str = Field(..., min_length=1)
     ranked_issue_tree: IssueTree
     evidence_index: EvidenceIndex
-    amount_calculation_report: AmountCalculationReport
+    amount_calculation_report: Optional[AmountCalculationReport] = None

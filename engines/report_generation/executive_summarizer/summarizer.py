@@ -71,7 +71,11 @@ class ExecutiveSummarizer:
         top5 = self._top5_decisive_issues(inp.issue_list)
         top3_actions, rec_id = self._top3_immediate_actions(inp.action_recommendation)
         top3_attacks = self._top3_adversary_attacks(inp.adversary_attack_chain)
-        claim_text = self._current_most_stable_claim(inp.amount_calculation_report)
+        claim_text = (
+            self._current_most_stable_claim(inp.amount_calculation_report)
+            if inp.amount_calculation_report is not None
+            else "金额一致性报告未提供"
+        )
         strategic_summary = self._compute_strategic_summary(
             inp.action_recommendation,
             inp.amount_calculation_report,
@@ -124,7 +128,11 @@ class ExecutiveSummarizer:
             current_most_stable_claim=claim_text,
             claim_decomposition=claim_decomposition,
             strategic_summary=strategic_summary,
-            amount_report_id=inp.amount_calculation_report.report_id,
+            amount_report_id=(
+                inp.amount_calculation_report.report_id
+                if inp.amount_calculation_report is not None
+                else None
+            ),
             critical_evidence_gaps=critical_gaps,
             structured_output=structured,
             primary_risk=primary_risk,
@@ -183,7 +191,7 @@ class ExecutiveSummarizer:
     def _compute_strategic_summary(
         self,
         action_rec: Optional[ActionRecommendation],
-        report: AmountCalculationReport,
+        report: Optional[AmountCalculationReport],
     ) -> Optional[str]:
         """生成核心策略摘要（strategic_summary 字段）。
 
@@ -194,7 +202,7 @@ class ExecutiveSummarizer:
             return None
         category = action_rec.case_dispute_category or "general"
         headline = f"核心策略（{category}）：{action_rec.strategic_headline}"
-        if category == "amount_dispute":
+        if category == "amount_dispute" and report is not None:
             amount_note = self._amount_summary(report)
             return f"{headline}（{amount_note}）"
         return headline
@@ -261,7 +269,7 @@ class ExecutiveSummarizer:
         top3_actions: list[str] | str,
         top3_attacks: list[str],
         critical_gaps: list[str] | str,
-        amount_report: AmountCalculationReport,
+        amount_report: Optional[AmountCalculationReport],
         action_recommendation: Optional[ActionRecommendation],
         defense_chain_result: Optional[DefenseChainResult] = None,
     ) -> ExecutiveSummaryStructuredOutput:
@@ -272,9 +280,10 @@ class ExecutiveSummarizer:
         # case_overview: 案件基本情况
         issue_count = len(issues)
         high_count = sum(1 for i in issues if i.outcome_impact == OutcomeImpact.high)
+        amount_label = f"绑定金额报告 {amount_report.report_id}" if amount_report else "金额报告未提供"
         overview = (
             f"案件共有 {issue_count} 个争点，其中 {high_count} 个高影响争点。"
-            f"绑定金额报告 {amount_report.report_id}。"
+            f"{amount_label}。"
         )
         if action_recommendation and action_recommendation.strategic_headline:
             overview = f"{action_recommendation.strategic_headline}。{overview}"
@@ -341,7 +350,7 @@ class ExecutiveSummarizer:
 
     def _build_claim_decomposition(
         self,
-        report: AmountCalculationReport,
+        report: Optional[AmountCalculationReport],
         decision_tree: Optional[DecisionPathTree],
     ) -> Optional[ClaimDecomposition]:
         """构建 v7 诉请拆分。
@@ -349,7 +358,10 @@ class ExecutiveSummarizer:
         formal_claim:            诉请总额
         fallback_anchor:         路径树最现实路径支持的金额（无路径树时 = formal_claim）
         expected_recovery_range: [lower, upper]
+        report 为 None 时直接返回 None（金额报告缺失，无法构建诉请拆分）。
         """
+        if report is None:
+            return None
         table = report.claim_calculation_table
         if not table:
             return None
@@ -471,16 +483,17 @@ class ExecutiveSummarizer:
         top3_actions: list[str] | str,
         top3_attacks: list[str],
         critical_gaps: list[str] | str,
-        amount_report: AmountCalculationReport,
+        amount_report: Optional[AmountCalculationReport],
         action_recommendation: Optional[ActionRecommendation],
         defense_chain_result: Optional[DefenseChainResult] = None,
     ) -> ExecutiveSummaryStructuredOutput:
         """Build the structured summary without probability/confidence wording."""
         issue_count = len(issues)
         high_count = sum(1 for issue in issues if issue.outcome_impact == OutcomeImpact.high)
+        amount_label = f"绑定金额报告 {amount_report.report_id}" if amount_report else "金额报告未提供"
         overview = (
             f"案件共有 {issue_count} 个争点，其中 {high_count} 个高影响争点。"
-            f" 绑定金额报告 {amount_report.report_id}。"
+            f" {amount_label}。"
         )
         if action_recommendation and action_recommendation.strategic_headline:
             overview = f"{action_recommendation.strategic_headline}。{overview}"

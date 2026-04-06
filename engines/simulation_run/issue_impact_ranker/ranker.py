@@ -162,7 +162,11 @@ class IssueImpactRanker:
                     issue_tree=batch_tree,
                     evidence_index=inp.evidence_index,
                     proponent_party_id=inp.proponent_party_id,
-                    amount_check=inp.amount_calculation_report.consistency_check_result,
+                    amount_check=(
+                        inp.amount_calculation_report.consistency_check_result
+                        if inp.amount_calculation_report is not None
+                        else None
+                    ),
                 )
 
                 raw_dict = await self._call_llm_structured(system_prompt, user_prompt)

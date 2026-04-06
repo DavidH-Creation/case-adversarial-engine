@@ -7,7 +7,7 @@ Engine-specific schemas for issue_category_classifier.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -68,7 +68,7 @@ class IssueCategoryClassifierInput(BaseModel):
     run_id: str = Field(..., min_length=1)
     issue_tree: IssueTree
     evidence_index: EvidenceIndex
-    amount_calculation_report: AmountCalculationReport
+    amount_calculation_report: Optional[AmountCalculationReport] = None
 
 
 class IssueCategoryClassificationResult(BaseModel):

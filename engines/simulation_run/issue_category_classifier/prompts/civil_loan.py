@@ -8,6 +8,8 @@ Guides LLM to classify each issue into one of four categories and output strict 
 
 from __future__ import annotations
 
+from typing import Optional
+
 from engines.shared.models import AmountCalculationReport, EvidenceIndex, IssueTree
 
 SYSTEM_PROMPT = """\
@@ -47,7 +49,7 @@ def build_user_prompt(
     *,
     issue_tree: IssueTree,
     evidence_index: EvidenceIndex,
-    amount_calculation_report: AmountCalculationReport,
+    amount_calculation_report: Optional[AmountCalculationReport] = None,
 ) -> str:
     """构建用于争点类型分类的用户 prompt。
     Build user prompt for issue category classification.
@@ -55,7 +57,7 @@ def build_user_prompt(
     Args:
         issue_tree:                待分类的争点树
         evidence_index:            证据索引（提供背景信息）
-        amount_calculation_report: P0.2 金额报告（提供 claim_id 参考列表）
+        amount_calculation_report: P0.2 金额报告（提供 claim_id 参考列表），可为 None
     """
     # 争点块
     issue_lines: list[str] = []
@@ -73,7 +75,12 @@ def build_user_prompt(
 
     # 金额报告诉请条目块（供 calculation_issue 关联参考）
     claim_entry_lines: list[str] = []
-    for entry in amount_calculation_report.claim_calculation_table:
+    claim_table = (
+        amount_calculation_report.claim_calculation_table
+        if amount_calculation_report is not None
+        else []
+    )
+    for entry in claim_table:
         claim_entry_lines.append(
             f"  claim_id: {entry.claim_id} | type: {entry.claim_type.value} | "
             f"claimed: {entry.claimed_amount} | calculated: {entry.calculated_amount}"
@@ -86,7 +93,7 @@ def build_user_prompt(
         f"【案件基本信息】\n"
         f"case_id: {issue_tree.case_id}\n"
         f"\n【争点列表（共 {len(issue_tree.issues)} 条）】\n{issues_block}\n"
-        f"\n【金额报告诉请条目（共 {len(amount_calculation_report.claim_calculation_table)} 条，供 calculation_issue 关联）】\n"
+        f"\n【金额报告诉请条目（共 {len(claim_table)} 条，供 calculation_issue 关联）】\n"
         f"{claim_entries_block}\n"
         f"\n请对以上每个争点进行类型分类，输出 JSON。"
     )

@@ -873,7 +873,7 @@ class ExecutiveSummaryArtifact(BaseModel):
     - top3_immediate_actions 为 list 时：list 长度 ≤ 3；action_recommendation_id 必须非 None
     - top3_adversary_optimal_attacks 最多 3 条（AttackChain top_attacks 不足时可更少）
     - adversary_attack_chain_id 非空（P0.4 必须实现）
-    - amount_report_id 非空（P0.2 必须实现）
+    - amount_report_id 可为 None（amount_calculation_report 缺失时降级）
     - critical_evidence_gaps 为 list 时：list 长度 ≤ 3
 
     Args:
@@ -931,8 +931,8 @@ class ExecutiveSummaryArtifact(BaseModel):
         default=None,
         description="核心策略一句话摘要（来自 ActionRecommendation.strategic_headline + 金额附注），无策略层时为 None",
     )
-    amount_report_id: str = Field(
-        ..., min_length=1, description="绑定的 AmountCalculationReport.report_id（可回连）"
+    amount_report_id: Optional[str] = Field(
+        default=None, description="绑定的 AmountCalculationReport.report_id（可回连，amount_calculation_report 缺失时为 None）"
     )
     critical_evidence_gaps: Union[list[str], str] = Field(
         ...,

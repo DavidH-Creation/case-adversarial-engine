@@ -9,6 +9,8 @@ Guides LLM to evaluate each issue on 5 dimensions and output strict JSON.
 from __future__ import annotations
 
 from engines.shared.few_shot_examples import load_few_shot_text
+from typing import Optional
+
 from engines.shared.models import AmountConsistencyCheck, EvidenceIndex, IssueTree
 
 _BASE_SYSTEM_PROMPT = """\
@@ -102,7 +104,7 @@ def build_user_prompt(
     issue_tree: IssueTree,
     evidence_index: EvidenceIndex,
     proponent_party_id: str,
-    amount_check: AmountConsistencyCheck,
+    amount_check: Optional[AmountConsistencyCheck] = None,
 ) -> str:
     """构建用于争点影响评估的用户 prompt。
     Build user prompt for issue impact evaluation.
@@ -111,7 +113,7 @@ def build_user_prompt(
         issue_tree:          待评估的争点树
         evidence_index:      证据索引（提供已知证据 ID 列表）
         proponent_party_id:  主张方 party_id（告知 LLM 举证责任方）
-        amount_check:        P0.2 金额一致性校验结果（注入阻断条件）
+        amount_check:        P0.2 金额一致性校验结果（案件无金额数据时为 None）
     """
     # 争点块
     issue_lines: list[str] = []
@@ -156,18 +158,22 @@ def build_user_prompt(
     evidence_block = "\n".join(evidence_lines) if evidence_lines else "（无证据）"
 
     # 金额一致性状态块
-    amount_block = (
-        f"  verdict_block_active: {amount_check.verdict_block_active}\n"
-        f"  principal_base_unique: {amount_check.principal_base_unique}\n"
-        f"  all_repayments_attributed: {amount_check.all_repayments_attributed}\n"
-        f"  unresolved_conflicts 数量: {len(amount_check.unresolved_conflicts)} 条"
-    )
-    verdict_hint = (
-        "\n  ⚠️  注意：verdict_block_active=True，与赔偿金、补偿金、欠薪相关的争点"
-        "通常应评估为 outcome_impact=high。"
-        if amount_check.verdict_block_active
-        else ""
-    )
+    if amount_check is not None:
+        amount_block = (
+            f"  verdict_block_active: {amount_check.verdict_block_active}\n"
+            f"  principal_base_unique: {amount_check.principal_base_unique}\n"
+            f"  all_repayments_attributed: {amount_check.all_repayments_attributed}\n"
+            f"  unresolved_conflicts 数量: {len(amount_check.unresolved_conflicts)} 条"
+        )
+        verdict_hint = (
+            "\n  ⚠️  注意：verdict_block_active=True，与赔偿金、补偿金、欠薪相关的争点"
+            "通常应评估为 outcome_impact=high。"
+            if amount_check.verdict_block_active
+            else ""
+        )
+    else:
+        amount_block = "  （本案无金额计算数据，跳过金额一致性校验）"
+        verdict_hint = ""
 
     return (
         f"【案件基本信息】\n"

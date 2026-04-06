@@ -34,7 +34,7 @@ class ActionRecommenderInput(BaseModel):
         run_id:                     运行快照 ID
         issue_list:                 含 P0.1 扩展字段的争点列表（可为空）
         evidence_gap_list:          含 roi_rank 的缺证项列表（来自 P1.7，可为空）
-        amount_calculation_report:  P0.2 金额一致性报告
+        amount_calculation_report:  P0.2 金额一致性报告（可选）
         decision_path_tree:         P0.3 裁判路径树（v7 新增，用于推荐-路径对齐）
     """
 
@@ -44,7 +44,7 @@ class ActionRecommenderInput(BaseModel):
     evidence_gap_list: list[EvidenceGapItem] = Field(
         default_factory=list, description="含 roi_rank 的缺证项列表（来自 P1.7）"
     )
-    amount_calculation_report: AmountCalculationReport
+    amount_calculation_report: Optional[AmountCalculationReport] = None
     proponent_party_id: str = Field(
         default="", description="主张方 party_id（用于 party-specific 建议）"
     )

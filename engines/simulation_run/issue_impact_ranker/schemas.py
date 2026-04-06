@@ -81,7 +81,7 @@ class IssueImpactRankerInput(BaseModel):
         run_id:                     运行快照 ID（写入元信息）
         issue_tree:                 待评估的争点树
         evidence_index:             证据索引
-        amount_calculation_report:  P0.2 产物（必须已完成）
+        amount_calculation_report:  P0.2 产物（案件无金额数据时为 None）
         proponent_party_id:         主张方 party_id，对应 Burden.burden_party_id
     """
 
@@ -89,7 +89,7 @@ class IssueImpactRankerInput(BaseModel):
     run_id: str = Field(..., min_length=1)
     issue_tree: IssueTree
     evidence_index: EvidenceIndex
-    amount_calculation_report: AmountCalculationReport
+    amount_calculation_report: Optional[AmountCalculationReport] = None
     proponent_party_id: str = Field(
         ...,
         min_length=1,

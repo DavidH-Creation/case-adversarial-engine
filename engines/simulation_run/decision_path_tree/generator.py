@@ -184,7 +184,11 @@ class DecisionPathTreeGenerator:
                 evidence_ids=admitted_ids,
             )
 
-        check = inp.amount_calculation_report.consistency_check_result
+        check = (
+            inp.amount_calculation_report.consistency_check_result
+            if inp.amount_calculation_report is not None
+            else None
+        )
 
         # 只取 admitted_for_discussion 状态的证据
         admitted_evidences = [
@@ -209,7 +213,7 @@ class DecisionPathTreeGenerator:
             llm_output.paths,
             known_issue_ids=known_issue_ids,
             known_evidence_ids=known_evidence_ids,
-            verdict_block_active=check.verdict_block_active,
+            verdict_block_active=check.verdict_block_active if check is not None else False,
             issues=list(inp.ranked_issue_tree.issues),
             evidence_index=inp.evidence_index,
         )
@@ -217,7 +221,7 @@ class DecisionPathTreeGenerator:
         # 规则层处理阻断条件
         cleaned_blocking = self._process_blocking_conditions(
             llm_output.blocking_conditions,
-            unresolved_conflicts=check.unresolved_conflicts,
+            unresolved_conflicts=check.unresolved_conflicts if check is not None else [],
             known_issue_ids=known_issue_ids,
             known_evidence_ids=known_evidence_ids,
         )

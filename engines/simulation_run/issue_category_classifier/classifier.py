@@ -104,9 +104,11 @@ class IssueCategoryClassifier:
             )
 
         known_issue_ids: set[str] = {i.issue_id for i in issues}
-        known_claim_entry_ids: set[str] = {
-            e.claim_id for e in inp.amount_calculation_report.claim_calculation_table
-        }
+        known_claim_entry_ids: set[str] = (
+            {e.claim_id for e in inp.amount_calculation_report.claim_calculation_table}
+            if inp.amount_calculation_report is not None
+            else set()
+        )
 
         try:
             # 构建 prompt
