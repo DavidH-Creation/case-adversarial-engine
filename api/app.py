@@ -17,7 +17,15 @@ from fastapi.staticfiles import StaticFiles
 
 from engines.shared.event_log import EventType
 
-from .auth import verify_token
+from .auth import (
+    TokenRequest,
+    TokenResponse,
+    UserContext,
+    authenticate_user,
+    create_token,
+    get_current_user,
+)
+from .permissions import Action, PERMISSIONS, require_permission
 from .schemas import (
     AddMaterialRequest,
     AddMaterialResponse,
@@ -71,7 +79,6 @@ app = FastAPI(
     title="案件对抗分析系统",
     description="渐进式案件录入与 AI 对抗分析 API",
     version="1.0.0",
-    dependencies=[Depends(verify_token)],
     lifespan=lifespan,
 )
 
@@ -96,8 +103,25 @@ def _require_status(record, *allowed: CaseStatus, detail: str = "当前状态不
         )
 
 
+# ---------------------------------------------------------------------------
+# Auth endpoint — no permission required
+# ---------------------------------------------------------------------------
+
+@app.post("/api/auth/token", response_model=TokenResponse)
+async def issue_token(body: TokenRequest) -> TokenResponse:
+    user = authenticate_user(body.email, body.password)
+    return create_token(user)
+
+
+# ---------------------------------------------------------------------------
+# Case endpoints — RBAC enforced
+# ---------------------------------------------------------------------------
+
 @app.post("/api/cases/", response_model=CreateCaseResponse, status_code=201)
-async def create_case(body: CreateCaseRequest) -> CreateCaseResponse:
+async def create_case(
+    body: CreateCaseRequest,
+    user: UserContext = Depends(require_permission(Action.case_create)),
+) -> CreateCaseResponse:
     info: dict[str, Any] = {
         "case_type": body.case_type,
         "plaintiff": body.plaintiff.model_dump(),
@@ -110,7 +134,10 @@ async def create_case(body: CreateCaseRequest) -> CreateCaseResponse:
 
 
 @app.get("/api/cases", response_model=CaseListResponse)
-async def list_cases(q: CaseListQuery = Depends()) -> CaseListResponse:
+async def list_cases(
+    q: CaseListQuery = Depends(),
+    user: UserContext = Depends(require_permission(Action.case_list)),
+) -> CaseListResponse:
     entries, total = case_index.query(
         status=q.status.value if q.status else None,
         case_type=q.case_type,
@@ -130,7 +157,9 @@ async def list_cases(q: CaseListQuery = Depends()) -> CaseListResponse:
 
 @app.get("/api/cases/{case_id}/events", response_model=CaseEventsResponse)
 async def get_case_events(
-    case_id: str, after: str | None = None
+    case_id: str,
+    after: str | None = None,
+    user: UserContext = Depends(require_permission(Action.case_view)),
 ) -> CaseEventsResponse:
     record = _get_case_or_404(case_id)
     if record.workspace_manager is None:
@@ -153,7 +182,10 @@ async def get_case_events(
 
 
 @app.get("/api/cases/{case_id}", response_model=CaseInfoResponse)
-async def get_case(case_id: str) -> CaseInfoResponse:
+async def get_case(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+) -> CaseInfoResponse:
     record = _get_case_or_404(case_id)
     return CaseInfoResponse(
         case_id=record.case_id,
@@ -169,7 +201,11 @@ async def get_case(case_id: str) -> CaseInfoResponse:
 
 
 @app.post("/api/cases/{case_id}/materials", response_model=AddMaterialResponse)
-async def add_material_json(case_id: str, body: AddMaterialRequest) -> AddMaterialResponse:
+async def add_material_json(
+    case_id: str,
+    body: AddMaterialRequest,
+    user: UserContext = Depends(require_permission(Action.material_add)),
+) -> AddMaterialResponse:
     record = _get_case_or_404(case_id)
     _require_status(
         record,
@@ -215,6 +251,7 @@ async def upload_material_file(
     role: str = Form(...),
     doc_type: str = Form("general"),
     source_id: str = Form(""),
+    user: UserContext = Depends(require_permission(Action.material_add)),
 ) -> AddMaterialResponse:
     record = _get_case_or_404(case_id)
     _require_status(
@@ -262,7 +299,10 @@ async def upload_material_file(
 
 
 @app.post("/api/cases/{case_id}/extract", status_code=202)
-async def trigger_extraction(case_id: str) -> dict:
+async def trigger_extraction(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.extraction_trigger)),
+) -> dict:
     record = _get_case_or_404(case_id)
     if record.status != CaseStatus.extracting:
         _require_status(record, CaseStatus.created, detail="只能在案件创建后触发提取")
@@ -285,7 +325,10 @@ async def trigger_extraction(case_id: str) -> dict:
 
 
 @app.get("/api/cases/{case_id}/extraction", response_model=ExtractionResponse)
-async def get_extraction(case_id: str) -> ExtractionResponse:
+async def get_extraction(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+) -> ExtractionResponse:
     record = _get_case_or_404(case_id)
     if record.status == CaseStatus.extracting:
         raise HTTPException(status_code=202, detail="提取正在进行中，请稍后再试")
@@ -302,7 +345,11 @@ async def get_extraction(case_id: str) -> ExtractionResponse:
 
 
 @app.post("/api/cases/{case_id}/confirm", status_code=200)
-async def confirm_extraction(case_id: str, body: ConfirmRequest) -> dict:
+async def confirm_extraction(
+    case_id: str,
+    body: ConfirmRequest,
+    user: UserContext = Depends(require_permission(Action.extraction_trigger)),
+) -> dict:
     record = _get_case_or_404(case_id)
     _require_status(
         record,
@@ -336,7 +383,10 @@ async def confirm_extraction(case_id: str, body: ConfirmRequest) -> dict:
 
 
 @app.post("/api/cases/{case_id}/analyze", status_code=202)
-async def trigger_analysis(case_id: str) -> dict:
+async def trigger_analysis(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.analysis_trigger)),
+) -> dict:
     record = _get_case_or_404(case_id)
     if record.status != CaseStatus.analyzing:
         _require_status(
@@ -367,7 +417,10 @@ async def trigger_analysis(case_id: str) -> dict:
 
 
 @app.get("/api/cases/{case_id}/analysis")
-async def stream_analysis(case_id: str):
+async def stream_analysis(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+):
     record = _get_case_or_404(case_id)
 
     async def event_stream():
@@ -426,7 +479,10 @@ async def stream_analysis(case_id: str):
 
 
 @app.get("/api/cases/{case_id}/progress")
-async def stream_pipeline_progress(case_id: str):
+async def stream_pipeline_progress(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+):
     from engines.shared.progress_reporter import get_progress_queue
 
     queue = get_progress_queue(case_id)
@@ -459,7 +515,10 @@ async def stream_pipeline_progress(case_id: str):
 
 
 @app.get("/api/cases/{case_id}/report")
-async def download_report(case_id: str):
+async def download_report(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.export_case)),
+):
     record = _get_case_or_404(case_id)
     if record.status != CaseStatus.analyzed:
         raise HTTPException(status_code=400, detail="分析尚未完成，无法下载报告")
@@ -501,7 +560,10 @@ def _build_scenario_diff_response(result: dict) -> ScenarioDiffResponse:
 
 
 @app.post("/api/scenarios/run", response_model=ScenarioDiffResponse, status_code=200)
-async def run_scenario(body: ScenarioRunRequest) -> ScenarioDiffResponse:
+async def run_scenario(
+    body: ScenarioRunRequest,
+    user: UserContext = Depends(require_permission(Action.analysis_trigger)),
+) -> ScenarioDiffResponse:
     try:
         result = await scenario_service.run(
             run_id=body.run_id,
@@ -513,7 +575,10 @@ async def run_scenario(body: ScenarioRunRequest) -> ScenarioDiffResponse:
 
 
 @app.get("/api/scenarios/{scenario_id}", response_model=ScenarioDiffResponse)
-async def get_scenario(scenario_id: str) -> ScenarioDiffResponse:
+async def get_scenario(
+    scenario_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+) -> ScenarioDiffResponse:
     result = scenario_service.get(scenario_id)
     if result is None:
         raise HTTPException(status_code=404, detail=f"scenario_id 不存在: {scenario_id}")
@@ -521,7 +586,10 @@ async def get_scenario(scenario_id: str) -> ScenarioDiffResponse:
 
 
 @app.get("/api/cases/{case_id}/artifacts")
-async def list_case_artifacts(case_id: str):
+async def list_case_artifacts(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+):
     record = store.get(case_id)
     if record is None:
         return JSONResponse(
@@ -532,7 +600,11 @@ async def list_case_artifacts(case_id: str):
 
 
 @app.get("/api/cases/{case_id}/artifacts/{artifact_name}")
-async def get_case_artifact(case_id: str, artifact_name: str):
+async def get_case_artifact(
+    case_id: str,
+    artifact_name: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+):
     record = store.get(case_id)
     if record is None:
         return JSONResponse(
@@ -549,7 +621,10 @@ async def get_case_artifact(case_id: str, artifact_name: str):
 
 
 @app.get("/api/cases/{case_id}/report/markdown")
-async def get_markdown_report(case_id: str):
+async def get_markdown_report(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.export_case)),
+):
     record = store.get(case_id)
     if record is None:
         return JSONResponse(
@@ -583,7 +658,11 @@ _REVIEW_TRANSITIONS: dict[ReviewStatus, set[ReviewStatus]] = {
 
 
 @app.post("/api/cases/{case_id}/reviews", response_model=ReviewResponse)
-async def submit_review(case_id: str, body: ReviewRequest) -> ReviewResponse:
+async def submit_review(
+    case_id: str,
+    body: ReviewRequest,
+    user: UserContext = Depends(get_current_user),
+) -> ReviewResponse:
     record = _get_case_or_404(case_id)
 
     # Must be analyzed before any review
@@ -593,6 +672,14 @@ async def submit_review(case_id: str, body: ReviewRequest) -> ReviewResponse:
     # action=none is not a valid submission
     if body.action == ReviewStatus.none:
         raise HTTPException(400, f"不支持的 action: {body.action}")
+
+    # Per-action permission check
+    if body.action == ReviewStatus.pending_review:
+        required = Action.review_submit
+    else:
+        required = Action.review_decide
+    if required not in PERMISSIONS.get(user.role, set()):
+        raise HTTPException(403, f"权限不足: {required.value}")
 
     # State machine check
     allowed = _REVIEW_TRANSITIONS.get(record.review_status, set())
@@ -620,12 +707,12 @@ async def submit_review(case_id: str, body: ReviewRequest) -> ReviewResponse:
     case_index.upsert(_record_to_index_entry(record))
     store.save_to_disk(case_id)
 
-    # Emit audit event
+    # Emit audit event with real user_id
     _emit_event(record, EventType.review_submitted, {
         "review_id": review.review_id,
         "action": body.action.value,
         "comment": body.comment,
-    })
+    }, actor_id=user.user_id)
 
     return ReviewResponse(
         review_id=review.review_id,
@@ -639,7 +726,10 @@ async def submit_review(case_id: str, body: ReviewRequest) -> ReviewResponse:
 
 
 @app.get("/api/cases/{case_id}/reviews", response_model=ReviewListResponse)
-async def list_reviews(case_id: str) -> ReviewListResponse:
+async def list_reviews(
+    case_id: str,
+    user: UserContext = Depends(require_permission(Action.case_view)),
+) -> ReviewListResponse:
     record = _get_case_or_404(case_id)
     if record.workspace_manager is not None:
         reviews = review_store.load_all(record.workspace_manager, case_id)
