@@ -52,6 +52,7 @@ from engines.shared.models import (
     RawMaterial,
     WorkflowStage,
 )
+from engines.shared.event_log import CaseEvent, EventType
 from engines.shared.workspace_manager import WorkspaceManager
 
 from .case_index import CaseIndex, CaseIndexEntry, _meta_to_index_entry
@@ -179,6 +180,9 @@ class CaseStore:
 
         # v2.5 Phase 1: sync to in-memory case index
         case_index.upsert(_record_to_index_entry(record))
+
+        # v2.5 Phase 2: emit case_created event
+        _emit_event(record, EventType.case_created, {"case_type": info.get("case_type", "")})
 
         return record
 
@@ -329,14 +333,23 @@ class CaseStore:
         return self._load_from_disk(case_id, self._workspaces_dir or _WORKSPACE_BASE)
 
     def try_start_extraction(self, case_id: str) -> tuple[Optional[CaseRecord], bool]:
-        return self._try_start(case_id, allowed=(CaseStatus.created,), active=CaseStatus.extracting)
+        record, started = self._try_start(
+            case_id, allowed=(CaseStatus.created,), active=CaseStatus.extracting
+        )
+        if started and record is not None:
+            total_mats = sum(len(v) for v in record.materials.values())
+            _emit_event(record, EventType.extraction_started, {"material_count": total_mats})
+        return record, started
 
     def try_start_analysis(self, case_id: str) -> tuple[Optional[CaseRecord], bool]:
-        return self._try_start(
+        record, started = self._try_start(
             case_id,
             allowed=(CaseStatus.extracted, CaseStatus.confirmed),
             active=CaseStatus.analyzing,
         )
+        if started and record is not None:
+            _emit_event(record, EventType.analysis_started)
+        return record, started
 
     def _try_start(
         self,
@@ -468,6 +481,27 @@ def _persist_record_state(record: "CaseRecord", *, operation: str) -> None:
     raise RuntimeError(message)
 
 
+def _emit_event(
+    record: "CaseRecord", event_type: EventType, payload: dict | None = None
+) -> None:
+    """Emit audit event to the case's events.jsonl (non-fatal on failure)."""
+    wm = record.workspace_manager
+    if wm is None:
+        return
+    try:
+        wm.append_event(
+            CaseEvent(
+                case_id=record.case_id,
+                event_type=event_type,
+                payload=payload or {},
+            )
+        )
+    except Exception:
+        logger.exception(
+            "Failed to emit %s event for case %s", event_type.value, record.case_id
+        )
+
+
 # ---------------------------------------------------------------------------
 # 材料转换
 # ---------------------------------------------------------------------------
@@ -566,11 +600,22 @@ async def run_extraction(record: CaseRecord) -> None:
             record.workspace_manager.save_issue_tree(record.issue_tree)
         _persist_record_state(record, operation="finish extraction")
 
+        # v2.5 Phase 2: emit extraction_done
+        _emit_event(
+            record,
+            EventType.extraction_done,
+            {
+                "evidence_count": len(all_ev),
+                "issue_count": len(record.issue_tree.issues),
+            },
+        )
+
         record.log("[提取] 完成 ✓")
 
     except Exception as exc:
         record.status = CaseStatus.failed
         record.error = str(exc)
+        _emit_event(record, EventType.extraction_failed, {"error": str(exc)})
         store.save_to_disk(record.case_id)
         record.log(f"[错误] 提取失败：{exc}")
     finally:
@@ -887,12 +932,16 @@ async def run_analysis(record: CaseRecord) -> None:
 
         record.log("[分析] 完成 ✓")
 
+        # v2.5 Phase 2: emit analysis_done
+        _emit_event(record, EventType.analysis_done, {"run_id": record.run_id})
+
         # Unit 6: persist durable state to workspace
         _persist_record_state(record, operation="finish analysis")
 
     except Exception as exc:
         record.status = CaseStatus.failed
         record.error = str(exc)
+        _emit_event(record, EventType.analysis_failed, {"error": str(exc)})
         store.save_to_disk(record.case_id)
         record.log(f"[错误] 分析失败：{exc}")
     finally:

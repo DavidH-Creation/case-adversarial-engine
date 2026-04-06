@@ -15,10 +15,14 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from engines.shared.event_log import EventType
+
 from .auth import verify_token
 from .schemas import (
     AddMaterialRequest,
     AddMaterialResponse,
+    CaseEventResponse,
+    CaseEventsResponse,
     CaseInfoResponse,
     CaseListEntry,
     CaseListQuery,
@@ -34,6 +38,7 @@ from .schemas import (
 )
 from .service import (
     _WORKSPACE_BASE,
+    _emit_event,
     case_index,
     get_artifact,
     list_artifacts,
@@ -117,6 +122,30 @@ async def list_cases(q: CaseListQuery = Depends()) -> CaseListResponse:
     )
 
 
+@app.get("/api/cases/{case_id}/events", response_model=CaseEventsResponse)
+async def get_case_events(
+    case_id: str, after: str | None = None
+) -> CaseEventsResponse:
+    record = _get_case_or_404(case_id)
+    if record.workspace_manager is None:
+        return CaseEventsResponse(case_id=case_id, events=[], count=0)
+    events = record.workspace_manager.load_events(after_event_id=after)
+    return CaseEventsResponse(
+        case_id=case_id,
+        events=[
+            CaseEventResponse(
+                event_id=e.event_id,
+                event_type=e.event_type.value,
+                actor_id=e.actor_id,
+                payload=e.payload,
+                created_at=e.created_at,
+            )
+            for e in events
+        ],
+        count=len(events),
+    )
+
+
 @app.get("/api/cases/{case_id}", response_model=CaseInfoResponse)
 async def get_case(case_id: str) -> CaseInfoResponse:
     record = _get_case_or_404(case_id)
@@ -160,6 +189,9 @@ async def add_material_json(case_id: str, body: AddMaterialRequest) -> AddMateri
         record.extraction_data = None
         record.ev_index = None
         record.issue_tree = None
+
+    # v2.5 Phase 2: emit material_added event
+    _emit_event(record, EventType.material_added, {"source_id": body.source_id, "role": role})
 
     return AddMaterialResponse(
         source_id=body.source_id,
@@ -215,6 +247,9 @@ async def upload_material_file(
         record.extraction_data = None
         record.ev_index = None
         record.issue_tree = None
+
+    # v2.5 Phase 2: emit material_added event
+    _emit_event(record, EventType.material_added, {"source_id": sid, "role": role})
 
     return AddMaterialResponse(source_id=sid, role=role, doc_type=doc_type, char_count=len(text))
 
@@ -284,6 +319,8 @@ async def confirm_extraction(case_id: str, body: ConfirmRequest) -> dict:
             ]
 
     record.status = CaseStatus.confirmed
+    # v2.5 Phase 2: emit confirmed event
+    _emit_event(record, EventType.confirmed)
     return {
         "case_id": case_id,
         "status": CaseStatus.confirmed.value,

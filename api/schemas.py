@@ -198,3 +198,22 @@ class CaseListQuery(BaseModel):
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
     sort: str = "-created_at"
+
+
+# ---------------------------------------------------------------------------
+# GET /api/cases/{case_id}/events  (v2.5 Phase 2: audit trail)
+# ---------------------------------------------------------------------------
+
+
+class CaseEventResponse(BaseModel):
+    event_id: str
+    event_type: str
+    actor_id: str
+    payload: dict
+    created_at: datetime
+
+
+class CaseEventsResponse(BaseModel):
+    case_id: str
+    events: list[CaseEventResponse]
+    count: int
