@@ -41,6 +41,8 @@ from .schemas import (
     CreateCaseResponse,
     DiffEntryResponse,
     ExtractionResponse,
+    BulkExportRequest,
+    ExportFormat,
     ReviewListResponse,
     ReviewRequest,
     ReviewResponse,
@@ -48,6 +50,7 @@ from .schemas import (
     ScenarioDiffResponse,
     ScenarioRunRequest,
 )
+from .export_service import case_exporter
 from .review_service import ReviewRecord, review_store
 from .service import (
     _WORKSPACE_BASE,
@@ -111,6 +114,36 @@ def _require_status(record, *allowed: CaseStatus, detail: str = "当前状态不
 async def issue_token(body: TokenRequest) -> TokenResponse:
     user = authenticate_user(body.email, body.password)
     return create_token(user)
+
+
+# ---------------------------------------------------------------------------
+# Bulk export — must be registered BEFORE /api/cases/{case_id} routes
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/cases/export/bulk")
+async def bulk_export(
+    body: BulkExportRequest,
+    user: UserContext = Depends(require_permission(Action.export_case)),
+):
+    records = []
+    for cid in body.case_ids:
+        r = store.get(cid)
+        if r is not None:
+            records.append(r)
+            # Emit exported event per case
+            _emit_event(r, EventType.exported, {
+                "format": body.format.value,
+                "bulk": True,
+            }, actor_id=user.user_id)
+    zip_bytes = case_exporter.export_bulk_zip(records, fmt=body.format)
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": "attachment; filename=report_export.zip",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -637,6 +670,58 @@ async def get_markdown_report(
             content={"error": "报告尚不可用，请先完成分析", "code": 404},
         )
     return Response(content=record.report_markdown, media_type="text/markdown")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/cases/{case_id}/export  (v2.5 Phase 5: structured export)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/cases/{case_id}/export")
+async def export_case(
+    case_id: str,
+    format: ExportFormat = ExportFormat.json,
+    user: UserContext = Depends(require_permission(Action.export_case)),
+):
+    record = _get_case_or_404(case_id)
+
+    if format == ExportFormat.json:
+        snapshot = case_exporter.export_json(record)
+        _emit_event(record, EventType.exported, {
+            "format": "json", "bulk": False,
+        }, actor_id=user.user_id)
+        content = json.dumps(snapshot, ensure_ascii=False, indent=2)
+        return Response(
+            content=content,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="{case_id}.json"',
+            },
+        )
+    elif format == ExportFormat.markdown:
+        if record.report_markdown is None:
+            raise HTTPException(404, "Markdown 报告尚不可用")
+        _emit_event(record, EventType.exported, {
+            "format": "markdown", "bulk": False,
+        }, actor_id=user.user_id)
+        return Response(
+            content=record.report_markdown,
+            media_type="text/markdown",
+            headers={
+                "Content-Disposition": f'attachment; filename="{case_id}.md"',
+            },
+        )
+    elif format == ExportFormat.docx:
+        if record.report_path is None or not record.report_path.exists():
+            raise HTTPException(404, "DOCX 报告尚不可用")
+        _emit_event(record, EventType.exported, {
+            "format": "docx", "bulk": False,
+        }, actor_id=user.user_id)
+        return FileResponse(
+            path=str(record.report_path),
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            filename=f"{case_id}.docx",
+        )
 
 
 # ---------------------------------------------------------------------------
