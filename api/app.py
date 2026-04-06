@@ -29,6 +29,7 @@ from .permissions import Action, PERMISSIONS, require_permission
 from .schemas import (
     AddMaterialRequest,
     AddMaterialResponse,
+    BulkExportRequest,
     CaseEventResponse,
     CaseEventsResponse,
     CaseInfoResponse,
@@ -40,6 +41,7 @@ from .schemas import (
     CreateCaseRequest,
     CreateCaseResponse,
     DiffEntryResponse,
+    ExportFormat,
     ExtractionResponse,
     ReviewListResponse,
     ReviewRequest,
@@ -48,6 +50,7 @@ from .schemas import (
     ScenarioDiffResponse,
     ScenarioRunRequest,
 )
+from .export_service import CaseExporter
 from .review_service import ReviewRecord, review_store
 from .service import (
     _WORKSPACE_BASE,
@@ -750,6 +753,87 @@ async def list_reviews(
             )
             for r in reviews
         ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Export endpoints (v2.5 Phase 5)
+# ---------------------------------------------------------------------------
+
+_exporter = CaseExporter(store, review_store)
+
+
+@app.get("/api/cases/{case_id}/export")
+async def export_case(
+    case_id: str,
+    format: ExportFormat = ExportFormat.json,
+    user: UserContext = Depends(require_permission(Action.export_case)),
+):
+    from .export_service import ExportFormat as _EF
+
+    record = _get_case_or_404(case_id)
+
+    if format == _EF.json:
+        data = _exporter.export_json(case_id)
+        # Emit exported event
+        _emit_event(record, EventType.exported, {
+            "format": "json", "bulk": False,
+        }, actor_id=user.user_id)
+        return JSONResponse(
+            content=data,
+            headers={"Content-Disposition": f"attachment; filename=case_{case_id}.json"},
+        )
+    elif format == _EF.markdown:
+        md = _exporter.export_markdown(case_id)
+        if md is None:
+            raise HTTPException(404, "Markdown 报告不可用")
+        _emit_event(record, EventType.exported, {
+            "format": "markdown", "bulk": False,
+        }, actor_id=user.user_id)
+        return Response(
+            content=md,
+            media_type="text/markdown",
+            headers={"Content-Disposition": f"attachment; filename=case_{case_id}.md"},
+        )
+    elif format == _EF.docx:
+        if record.report_path is None or not record.report_path.exists():
+            raise HTTPException(404, "DOCX 报告不可用")
+        _emit_event(record, EventType.exported, {
+            "format": "docx", "bulk": False,
+        }, actor_id=user.user_id)
+        return FileResponse(
+            path=str(record.report_path),
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            filename=f"case_{case_id}.docx",
+        )
+
+
+@app.post("/api/export/bulk")
+async def bulk_export(
+    body: BulkExportRequest,
+    user: UserContext = Depends(require_permission(Action.export_case)),
+):
+    from .export_service import ExportFormat as _EF
+
+    fmt = _EF(body.format.value)
+    zip_bytes = _exporter.export_bulk_zip(body.case_ids, fmt)
+
+    # Emit exported event for each case that exists
+    for cid in body.case_ids:
+        record = store.get(cid)
+        if record is not None:
+            _emit_event(record, EventType.exported, {
+                "format": body.format.value, "bulk": True,
+            }, actor_id=user.user_id)
+
+    from datetime import datetime, timezone
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename=report_export_{ts}.zip",
+        },
     )
 
 

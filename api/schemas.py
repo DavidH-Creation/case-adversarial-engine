@@ -10,7 +10,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, conlist
 
 
 class CaseStatus(str, Enum):
@@ -260,3 +260,40 @@ class ReviewListResponse(BaseModel):
     case_id: str
     current_review_status: ReviewStatus
     reviews: list[ReviewResponse]
+
+
+# ---------------------------------------------------------------------------
+# Export (v2.5 Phase 5)
+# ---------------------------------------------------------------------------
+
+
+class ExportFormat(str, Enum):
+    json = "json"
+    docx = "docx"
+    markdown = "markdown"
+
+
+class CaseSnapshot(BaseModel):
+    """Structured JSON export top-level object."""
+
+    export_version: str = "1.0"
+    exported_at: datetime
+    case_id: str
+    case_type: str
+    status: CaseStatus
+    review_status: Optional[str] = None
+    parties: dict[str, Any]
+    claims: list[Any]
+    defenses: list[Any]
+    evidence: list[Any]
+    issues: list[Any]
+    analysis_data: Optional[dict[str, Any]] = None
+    materials_summary: dict[str, int]
+    events: list[Any] = Field(default_factory=list)
+    reviews: list[Any] = Field(default_factory=list)
+
+
+class BulkExportRequest(BaseModel):
+    case_ids: conlist(str, max_length=50)
+    format: ExportFormat = ExportFormat.json
+    include_materials: bool = False
