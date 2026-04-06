@@ -602,3 +602,188 @@ class TestDocxCJKFontFallback:
             if found_east_asia:
                 break
         assert found_east_asia, "No eastAsia font attribute found in DOCX runs"
+
+
+# ---------------------------------------------------------------------------
+# Task 4: V3.0 Layer3 role-specific fallback
+# ---------------------------------------------------------------------------
+
+
+class TestDocxV3Layer3Fallback:
+    """Verify V3.0 role-specific rendering when V3.1 action fields are absent."""
+
+    def test_v30_plaintiff_role_fallback(self, tmp_path: Path) -> None:
+        """V3.0 plaintiff rendering: top_claims, evidence_to_supplement, etc."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer1": {"cover_summary": {"neutral_conclusion": "测试。"}},
+            "layer2": {"fact_base": [], "issue_map": []},
+            "layer3": {
+                "outputs": [
+                    {
+                        "perspective": "plaintiff",
+                        # No V3.1 action fields → triggers V3.0 fallback
+                        "top_claims": ["诉请一", "诉请二"],
+                        "defendant_attack_chains": ["攻击链预警"],
+                        "evidence_to_supplement": ["需补强证据"],
+                        "trial_sequence": ["第一步举证"],
+                        "claims_to_abandon": ["放弃诉请"],
+                    },
+                ],
+            },
+            "layer4": {},
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+
+        assert "三大诉请" in content
+        assert "诉请一" in content
+        assert "被告攻击链预警" in content
+        assert "需补强证据清单" in content
+        assert "庭审举证顺序" in content
+        assert "应放弃诉请" in content
+
+    def test_v30_defendant_role_fallback(self, tmp_path: Path) -> None:
+        """V3.0 defendant rendering: top_defenses, motions_to_file, etc."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer1": {"cover_summary": {"neutral_conclusion": "测试。"}},
+            "layer2": {"fact_base": [], "issue_map": []},
+            "layer3": {
+                "outputs": [
+                    {
+                        "perspective": "defendant",
+                        # No V3.1 action fields → triggers V3.0 fallback
+                        "top_defenses": ["防线一", "防线二"],
+                        "plaintiff_supplement_prediction": ["补强预测"],
+                        "evidence_to_challenge_first": ["优先质证"],
+                        "motions_to_file": ["申请鉴定"],
+                        "over_assertion_warnings": ["过度主张"],
+                    },
+                ],
+            },
+            "layer4": {},
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+
+        assert "三大防线" in content
+        assert "防线一" in content
+        assert "原告可能补强方向" in content
+        assert "优先质证目标" in content
+        assert "应提交动议" in content
+        assert "过度主张警告" in content
+
+
+# ---------------------------------------------------------------------------
+# Task 5: Layer4 timeline placeholder skip
+# ---------------------------------------------------------------------------
+
+
+class TestDocxV3Layer4TimelinePlaceholder:
+    """Verify that Layer4 timeline_md is skipped when it only contains placeholder text."""
+
+    def test_timeline_placeholder_is_skipped(self, tmp_path: Path) -> None:
+        """timeline_md with '暂无时间线数据' should not render in Layer4."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer4": {
+                "timeline_md": "暂无时间线数据",
+                "glossary_md": "- **测试**: 术语",
+            },
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+
+        # Timeline heading should NOT appear
+        assert "4.3 案件时间线" not in content
+        # But glossary should still render
+        assert "术语表" in content
+
+    def test_real_timeline_does_render(self, tmp_path: Path) -> None:
+        """timeline_md with real content should render normally."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer4": {
+                "timeline_md": "## 时间线\n\n2025-01-01 签署借条",
+                "glossary_md": "- **测试**: 术语",
+            },
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+
+        assert "案件时间线" in content
+        assert "签署借条" in content
+
+
+# ---------------------------------------------------------------------------
+# Task 6: V3 empty data resilience
+# ---------------------------------------------------------------------------
+
+
+class TestDocxV3EmptyDataResilience:
+    """V3 DOCX generation must not crash with entirely empty layer data."""
+
+    def test_all_layers_empty(self, tmp_path: Path) -> None:
+        """Completely empty report_v3 must produce a valid DOCX without error."""
+        report = {
+            "case_id": "case-empty",
+            "run_id": "run-empty",
+            "perspective": "neutral",
+            "layer1": {},
+            "layer2": {},
+            "layer3": {},
+            "layer4": {},
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        assert dest.exists()
+        assert dest.stat().st_size > 0
+
+        # Must still have the 4-layer headings
+        content = _read_docx_text(dest)
+        assert "一、封面摘要" in content
+        assert "二、中立对抗内核" in content
+        assert "三、角色化输出" in content
+        assert "四、附录" in content
+
+    def test_layer2_empty_fact_base_shows_fallback_text(self, tmp_path: Path) -> None:
+        """Empty fact_base should show '暂无' fallback text, not crash."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer2": {"fact_base": [], "issue_map": [], "evidence_cards": []},
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+        assert "暂无双方均认可的无争议事实" in content
+
+
+# ---------------------------------------------------------------------------
+# Task 7: V3.0 scenario_tree_summary fallback (Layer1 C section)
+# ---------------------------------------------------------------------------
+
+
+class TestDocxV3ScenarioTreeFallback:
+    """Verify V3.0 scenario_tree_summary fallback when blocking_conditions is empty."""
+
+    def test_scenario_tree_fallback_renders(self, tmp_path: Path) -> None:
+        """When blocking_conditions is empty, scenario_tree_summary should render."""
+        report = {
+            **_V3_REPORT_MINIMAL,
+            "layer1": {
+                "cover_summary": {
+                    "neutral_conclusion": "结论",
+                    "winning_move": "胜负手",
+                    "blocking_conditions": [],  # empty → V3.0 fallback
+                },
+                "scenario_tree_summary": "条件一；条件二；条件三",
+            },
+            "layer2": {"fact_base": [], "issue_map": []},
+            "layer3": {"outputs": []},
+            "layer4": {},
+        }
+        dest = generate_docx_v3_report(output_dir=tmp_path, report_v3=report)
+        content = _read_docx_text(dest)
+
+        assert "条件场景摘要" in content
+        assert "条件一" in content
+        assert "条件二" in content
