@@ -210,10 +210,14 @@ def test_reports_and_artifacts_survive_workspace_recovery(tmp_path):
                     "api.service._generate_markdown_report", return_value="# persisted report"
                 ):
                     with patch(
-                        "engines.report_generation.docx_generator.generate_docx_report",
-                        side_effect=fake_docx_generator,
+                        "engines.report_generation.v3.report_writer.build_four_layer_report",
+                        return_value=MagicMock(model_dump_json=lambda: '{"report_id":"r","case_id":"c","run_id":"r","perspective":"neutral","layer1":{"cover_summary":{"neutral_conclusion":"","winning_move":"","blocking_conditions":[]},"timeline":[],"evidence_priorities":[],"evidence_traffic_lights":[],"scenario_tree_summary":""},"layer2":{"fact_base":[],"issue_map":[],"evidence_cards":[],"unified_electronic_strategy":"","evidence_battle_matrix":[],"scenario_tree":null},"layer3":{"outputs":[]},"layer4":{"adversarial_transcripts_md":"","evidence_index_md":"","timeline_md":"","glossary_md":"","amount_calculation_md":""},"created_at":"2024-01-01T00:00:00Z"}'),
                     ):
-                        asyncio.run(run_analysis(record))
+                        with patch(
+                            "engines.report_generation.docx_generator.generate_docx_v3_report",
+                            side_effect=fake_docx_generator,
+                        ):
+                            asyncio.run(run_analysis(record))
 
             test_store._cases.clear()
 

@@ -28,34 +28,17 @@ from typing import Any
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
-from docx.shared import Emu, RGBColor
+from docx.shared import Emu
 
 from engines.report_generation.mediation_range import compute_mediation_range
 from engines.shared.disclaimer_templates import DISCLAIMER_DOCX_BODY, DISCLAIMER_DOCX_TITLE
 from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_LABEL_ZH, RiskLevel
 from engines.report_generation.v3.tag_system import humanize_text
-
-# ---------------------------------------------------------------------------
-# 样式常量 / Style constants
-# ---------------------------------------------------------------------------
-CLR_TITLE_DARK = RGBColor(0x1B, 0x3A, 0x5C)
-CLR_BLUE = RGBColor(0x2E, 0x75, 0xB6)
-CLR_RED = RGBColor(0xC0, 0x39, 0x2B)
-CLR_GREEN = RGBColor(0x27, 0xAE, 0x60)
-CLR_ORANGE = RGBColor(0xE6, 0x7E, 0x22)
-CLR_BODY = RGBColor(0x1A, 0x1A, 0x1A)
-CLR_GRAY = RGBColor(0x4A, 0x4A, 0x4A)
-
-SZ_TITLE = 279_400  # ~22pt
-SZ_SUBTITLE = 203_200  # ~16pt
-SZ_AGENT_TITLE = 152_400  # ~12pt
-SZ_SECTION_HDR = 139_700  # ~11pt
-SZ_BODY = 133_350  # ~10.5pt
-SZ_RISK = 120_650  # ~9.5pt
-SZ_EVIDENCE = 114_300  # ~9pt
-SZ_NORMAL = 127_000  # ~10pt
-FONT_NAME = "Arial"
-FONT_EAST_ASIA = "Microsoft YaHei"
+from engines.report_generation.v3.docx_styles import (
+    CLR_TITLE_DARK, CLR_BLUE, CLR_RED, CLR_GREEN, CLR_ORANGE, CLR_BODY, CLR_GRAY,
+    SZ_TITLE, SZ_SUBTITLE, SZ_AGENT_TITLE, SZ_SECTION_HDR, SZ_BODY, SZ_RISK, SZ_EVIDENCE, SZ_NORMAL,
+    FONT_NAME, FONT_EAST_ASIA,
+)
 
 # ---------------------------------------------------------------------------
 # ID humanization context (populated per-report)
@@ -1223,7 +1206,7 @@ def _render_v3_layer1(doc, layer1: dict, perspective: str) -> None:
             row = table.add_row().cells
             row[0].text = date
             row[1].text = event
-            row[2].text = source
+            row[2].text = _h(source)
             row[3].text = "⚠ 有争议" if disputed else ""
         _set_table_font(table)
         doc.add_paragraph()

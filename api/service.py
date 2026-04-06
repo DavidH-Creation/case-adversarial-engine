@@ -878,21 +878,23 @@ async def run_analysis(record: CaseRecord) -> None:
         # 生成 DOCX 报告（可选，依赖 python-docx）
         record.log("[分析] 生成 Word 报告…")
         try:
-            from engines.report_generation.docx_generator import generate_docx_report
+            from engines.report_generation.docx_generator import generate_docx_v3_report
+            from engines.report_generation.v3.report_writer import build_four_layer_report
 
             ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
             out_dir = _PROJECT_ROOT / "outputs" / ts
             out_dir.mkdir(parents=True, exist_ok=True)
             case_data = _build_case_data_dict(record)
-            docx_path = generate_docx_report(
-                output_dir=out_dir,
-                case_data=case_data,
-                result=result_dict,
+            v3_report = build_four_layer_report(
+                adversarial_result=result,
                 issue_tree=record.issue_tree,
-                decision_tree=None,
-                attack_chain=None,
-                exec_summary=None,
-                amount_report=None,
+                evidence_index=record.ev_index,
+                case_data=case_data,
+                perspective="neutral",
+            )
+            docx_path = generate_docx_v3_report(
+                output_dir=out_dir,
+                report_v3=json.loads(v3_report.model_dump_json()),
             )
             record.report_path = docx_path
             record.log(f"[分析] Word 报告：{docx_path.name}")

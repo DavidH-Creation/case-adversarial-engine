@@ -82,7 +82,7 @@ from engines.shared.models import (
     RepaymentTransaction,
     SupplementCost,
 )
-from engines.report_generation.docx_generator import generate_docx_report
+from engines.report_generation.docx_generator import generate_docx_v3_report
 from engines.report_generation.risk_heatmap import build_risk_heatmap, RISK_EMOJI, RISK_LABEL_ZH
 from engines.shared.models import OptimalAttackChain
 
@@ -1654,27 +1654,11 @@ async def main(
         reporter.on_step_start(5, "Generate DOCX")
         print("\n[Step 5] Generating Word report...")
         try:
-            _artifact_dicts = {}
-            for name in ("decision_tree", "attack_chain", "amount_report", "exec_summary"):
-                obj = artifacts.get(name)
-                if obj and hasattr(obj, "model_dump_json"):
-                    _artifact_dicts[name] = json.loads(obj.model_dump_json())
-                else:
-                    _artifact_dicts[name] = None
-
-            ranked_for_docx = artifacts.get("ranked_issues", issue_tree)
-
-            docx_path = generate_docx_report(
+            _v3_json = out / "report_v3.json"
+            v3_data = json.loads(_v3_json.read_text(encoding="utf-8"))
+            docx_path = generate_docx_v3_report(
                 output_dir=out,
-                case_data=case_data,
-                result=json.loads(result.model_dump_json()),
-                issue_tree=ranked_for_docx,
-                ranked_issues=artifacts.get("ranked_issues"),
-                decision_tree=_artifact_dicts.get("decision_tree"),
-                attack_chain=_artifact_dicts.get("attack_chain"),
-                exec_summary=_artifact_dicts.get("exec_summary"),
-                amount_report=_artifact_dicts.get("amount_report"),
-                action_rec=artifacts.get("action_rec"),
+                report_v3=v3_data,
                 similar_cases=similar_cases_data,
             )
             docx_path = _ensure_report_docx_alias(docx_path)
