@@ -6,6 +6,7 @@ API request/response models — independent from internal engine schemas.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
@@ -164,3 +165,36 @@ class ScenarioDiffResponse(BaseModel):
     affected_issue_ids: list[str]
     affected_evidence_ids: list[str]
     status: str
+
+
+# ---------------------------------------------------------------------------
+# GET /api/cases  (list + filter + paginate)
+# ---------------------------------------------------------------------------
+
+
+class CaseListEntry(BaseModel):
+    case_id: str
+    status: CaseStatus
+    case_type: str
+    plaintiff_name: str
+    defendant_name: str
+    created_at: datetime
+    updated_at: datetime
+    has_report: bool
+
+
+class CaseListResponse(BaseModel):
+    items: list[CaseListEntry]
+    total: int
+    page: int
+    page_size: int
+
+
+class CaseListQuery(BaseModel):
+    status: Optional[CaseStatus] = None
+    case_type: Optional[str] = None
+    from_date: Optional[datetime] = None
+    to_date: Optional[datetime] = None
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=20, ge=1, le=100)
+    sort: str = "-created_at"

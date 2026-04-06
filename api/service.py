@@ -54,6 +54,7 @@ from engines.shared.models import (
 )
 from engines.shared.workspace_manager import WorkspaceManager
 
+from .case_index import CaseIndex, CaseIndexEntry, _meta_to_index_entry
 from .schemas import CaseStatus
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -62,6 +63,9 @@ logger = logging.getLogger(__name__)
 # Workspace base dir for API case persistence (Unit 6).
 # Set to None to disable workspace writes (useful in tests).
 _WORKSPACE_BASE: Optional[Path] = _PROJECT_ROOT / "workspaces" / "api"
+
+# v2.5 Phase 1: global in-memory case index (rebuilt on startup)
+case_index = CaseIndex()
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +80,10 @@ class CaseRecord:
         self.case_id = case_id
         self.status = CaseStatus.created
         self.info = info  # case_type, plaintiff, defendant, claims, defenses
+        # v2.5 Phase 1: timestamps for case list index
+        now = datetime.now(timezone.utc)
+        self.created_at: datetime = now
+        self.updated_at: datetime = now
         # 原始材料按角色分组: {"plaintiff": [...], "defendant": [...]}
         self.materials: dict[str, list[dict]] = {"plaintiff": [], "defendant": []}
         # 引擎对象（跨 extract / analyze 步骤共享）
@@ -168,6 +176,10 @@ class CaseStore:
         with self._lock:
             self._cases[case_id] = (record, time.time())
             self._evicted.discard(case_id)
+
+        # v2.5 Phase 1: sync to in-memory case index
+        case_index.upsert(_record_to_index_entry(record))
+
         return record
 
     def get(self, case_id: str) -> Optional[CaseRecord]:
@@ -225,6 +237,15 @@ class CaseStore:
         record.materials = meta.get("materials", {"plaintiff": [], "defendant": []})
         record.workspace_manager = wm
         record.error = meta.get("error")
+        # v2.5 Phase 1: restore timestamps
+        if meta.get("created_at"):
+            record.created_at = datetime.fromisoformat(
+                meta["created_at"].replace("Z", "+00:00")
+            )
+        if meta.get("updated_at"):
+            record.updated_at = datetime.fromisoformat(
+                meta["updated_at"].replace("Z", "+00:00")
+            )
 
         # 恢复提取产物
         record.ev_index = wm.load_evidence_index()
@@ -292,6 +313,8 @@ class CaseStore:
             return False
         try:
             record.workspace_manager.save_case_meta(_record_to_meta(record))
+            # v2.5 Phase 1: sync index on persist
+            case_index.upsert(_record_to_index_entry(record))
             return True
         except Exception:
             logger.exception("Failed to persist case metadata for case %s", case_id)
@@ -369,11 +392,15 @@ def _record_to_meta(record: "CaseRecord") -> dict:
     artifact_refs = {name: _artifact_storage_ref(name) for name in record.artifacts}
     if record.report_path is not None:
         artifact_refs["report.docx"] = _artifact_storage_ref("report.docx")
+    # Update updated_at on every persist
+    record.updated_at = datetime.now(timezone.utc)
     return {
         "case_id": record.case_id,
         "status": record.status.value,
         "info": record.info,
         "materials": record.materials,
+        "created_at": record.created_at.isoformat().replace("+00:00", "Z"),
+        "updated_at": record.updated_at.isoformat().replace("+00:00", "Z"),
         "analysis_data": record.analysis_data,
         "run_id": record.run_id,
         "artifact_names": list(record.artifacts.keys()),
@@ -382,6 +409,21 @@ def _record_to_meta(record: "CaseRecord") -> dict:
         "report_docx_ref": artifact_refs.get("report.docx"),
         "error": record.error,
     }
+
+
+def _record_to_index_entry(record: "CaseRecord") -> CaseIndexEntry:
+    """Build a CaseIndexEntry from a live CaseRecord."""
+    info = record.info
+    return CaseIndexEntry(
+        case_id=record.case_id,
+        status=record.status.value,
+        case_type=info.get("case_type", ""),
+        plaintiff_name=info.get("plaintiff", {}).get("name", ""),
+        defendant_name=info.get("defendant", {}).get("name", ""),
+        created_at=record.created_at.isoformat().replace("+00:00", "Z"),
+        updated_at=record.updated_at.isoformat().replace("+00:00", "Z"),
+        has_report=record.report_path is not None or "report.docx" in record.artifacts,
+    )
 
 
 def _persist_case_meta(record: "CaseRecord") -> None:
