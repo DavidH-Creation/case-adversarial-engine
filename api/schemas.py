@@ -23,6 +23,14 @@ class CaseStatus(str, Enum):
     failed = "failed"
 
 
+class ReviewStatus(str, Enum):
+    none = "none"
+    pending_review = "pending_review"
+    approved = "approved"
+    rejected = "rejected"
+    revision_requested = "revision_requested"
+
+
 # ---------------------------------------------------------------------------
 # POST /api/cases/
 # ---------------------------------------------------------------------------
@@ -74,6 +82,7 @@ class CaseInfoResponse(BaseModel):
     has_extraction: bool = False
     has_analysis: bool = False
     run_id: Optional[str] = None  # Unit 5: analysis run_id for Scenario API
+    review_status: ReviewStatus = ReviewStatus.none
 
 
 # ---------------------------------------------------------------------------
@@ -181,6 +190,7 @@ class CaseListEntry(BaseModel):
     created_at: datetime
     updated_at: datetime
     has_report: bool
+    review_status: ReviewStatus = ReviewStatus.none
 
 
 class CaseListResponse(BaseModel):
@@ -217,3 +227,36 @@ class CaseEventsResponse(BaseModel):
     case_id: str
     events: list[CaseEventResponse]
     count: int
+
+
+# ---------------------------------------------------------------------------
+# POST/GET /api/cases/{case_id}/reviews  (v2.5 Phase 3: human review)
+# ---------------------------------------------------------------------------
+
+
+class SectionFlag(BaseModel):
+    section_key: str  # e.g. "overall_assessment", "issue.issue-001"
+    flag: str  # "approved" | "flagged" | "needs_revision"
+    comment: Optional[str] = None
+
+
+class ReviewRequest(BaseModel):
+    action: ReviewStatus  # pending_review / approved / rejected / revision_requested
+    comment: Optional[str] = None
+    section_flags: list[SectionFlag] = Field(default_factory=list)
+
+
+class ReviewResponse(BaseModel):
+    review_id: str
+    case_id: str
+    action: ReviewStatus
+    reviewer_id: str  # Phase 4 前固定为 "anonymous"
+    comment: Optional[str]
+    section_flags: list[SectionFlag]
+    created_at: datetime
+
+
+class ReviewListResponse(BaseModel):
+    case_id: str
+    current_review_status: ReviewStatus
+    reviews: list[ReviewResponse]
