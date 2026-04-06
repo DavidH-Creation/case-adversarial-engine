@@ -40,6 +40,26 @@ jobs:
         continue-on-error: true  # advisory: 了解现有 CVE 数量后再决定是否强制
 
   # ---------------------------------------------------------------------------
+  # Type check — mypy on core engine modules
+  # ---------------------------------------------------------------------------
+  type-check:
+    name: Type Check (mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package with dev dependencies
+        run: pip install -e ".[dev,api]"
+
+      - name: Run mypy
+        run: mypy engines/ --no-error-summary
+        continue-on-error: true  # advisory until baseline is clean
+
+  # ---------------------------------------------------------------------------
   # Unit tests — all mock tests, integration tests excluded
   # ---------------------------------------------------------------------------
   unit-tests:
