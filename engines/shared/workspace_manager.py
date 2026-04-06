@@ -19,7 +19,10 @@ import os
 import re
 import threading
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from engines.shared.event_log import CaseEvent
 
 from engines.shared.models import (
     AccessDomain,
@@ -637,3 +640,46 @@ class WorkspaceManager:
                 stage.value if isinstance(stage, WorkflowStage) else str(stage)
             )
             self._atomic_write(self._workspace_path(), ws)
+
+    # ------------------------------------------------------------------
+    # 事件日志 / Event log (v2.5 Phase 2)
+    # ------------------------------------------------------------------
+
+    def append_event(self, event: "CaseEvent") -> None:
+        """Append one event to events.jsonl (thread-safe)."""
+        from engines.shared.event_log import EventLog
+
+        EventLog(self.base_dir, self.case_id).append(event)
+
+    def load_events(self, after_event_id: str | None = None) -> list["CaseEvent"]:
+        """Load events from events.jsonl, optionally after a marker event."""
+        from engines.shared.event_log import EventLog
+
+        log = EventLog(self.base_dir, self.case_id)
+        if after_event_id:
+            return log.load_since(after_event_id)
+        return log.load_all()
+
+    # ------------------------------------------------------------------
+    # 产物版本快照 / Artifact versioning (v2.5 Phase 2)
+    # ------------------------------------------------------------------
+
+    def save_artifact_version(self, name: str, data: dict) -> None:
+        """Save artifact with version history.
+
+        Before overwriting, rename the existing file to {name}.v{N}.json
+        (N auto-increments). Then write the new version.
+        Useful for evidence_index.json / issue_tree.json that may be
+        regenerated across multiple runs.
+        """
+        artifacts_dir = self._artifacts_dir()
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        target = artifacts_dir / f"{name}.json"
+        if target.exists():
+            n = 1
+            while (artifacts_dir / f"{name}.v{n}.json").exists():
+                n += 1
+            target.rename(artifacts_dir / f"{name}.v{n}.json")
+        target.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
