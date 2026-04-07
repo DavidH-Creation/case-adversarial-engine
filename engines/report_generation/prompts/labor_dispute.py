@@ -66,3 +66,21 @@ GENERATION_PROMPT = """\
 - 经济补偿金：工作年限精确至月，满 6 个月不满 1 年按 1 年计，不满 6 个月按 0.5 年计
 - 举证重点：用人单位对工资标准、出勤记录、解除事由负主要举证责任\
 """
+
+
+def build_user_prompt(*, case_id: str, issue_tree: dict, evidence_list: list[dict]) -> str:
+    """构建报告生成 user prompt（CaseTypePlugin 协议入口）。
+
+    Format helpers are case-type-agnostic (they shape dict structures, not
+    case-specific text), so labor_dispute reuses civil_loan's helpers via
+    a one-way import. A future cleanup may extract them to a shared module.
+    """
+    from .civil_loan import format_evidence_block, format_issue_tree_block
+
+    issue_tree_block = format_issue_tree_block(issue_tree)
+    evidence_block = format_evidence_block(evidence_list)
+    return GENERATION_PROMPT.format(
+        case_id=case_id,
+        issue_tree_block=issue_tree_block,
+        evidence_block=evidence_block,
+    )

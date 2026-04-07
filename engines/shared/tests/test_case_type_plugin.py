@@ -336,6 +336,7 @@ ENGINES_WITH_FUNCTIONAL_PLUGIN: list[tuple[str, str]] = [
     # Module-based registries newly completed in batch-4-followup
     ("evidence_indexer", "engines.case_structuring.evidence_indexer.prompts"),
     ("issue_extractor", "engines.case_structuring.issue_extractor.prompts"),
+    ("report_generation", "engines.report_generation.prompts"),
 ]
 
 
