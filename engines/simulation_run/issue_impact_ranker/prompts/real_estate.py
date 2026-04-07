@@ -2,8 +2,8 @@
 房屋买卖合同纠纷（real_estate）案件类型的争点影响排序 LLM 提示模板。
 LLM prompt templates for real estate sale contract dispute case type issue impact ranking.
 
-指导 LLM 对每个争点从五个维度进行结构化评估，输出严格 JSON。
-Guides LLM to evaluate each issue on 5 dimensions and output strict JSON.
+指导 LLM 对每个争点从十个维度进行结构化评估，输出严格 JSON。
+Guides LLM to evaluate each issue on 10 dimensions and output strict JSON.
 """
 
 from __future__ import annotations
@@ -22,7 +22,13 @@ _BASE_SYSTEM_PROMPT = """\
 1. outcome_impact：该争点对最终裁判结果的影响程度
    允许值：high / medium / low
 2. impact_targets：该争点影响的诉请对象（可多选）
-   允许值：principal / interest / penalty / attorney_fee / credibility
+   允许值：specific_performance / refund / liquidated_damages / damages / credibility
+   说明：
+   - specific_performance 继续履行：要求过户、交付房屋、办理产权登记等履行之诉
+   - refund 返还房款：解除合同后返还已付购房款（含定金、首付款、按揭款）
+   - liquidated_damages 违约金：合同约定的违约金（法释〔2003〕7号关于审理商品房买卖合同纠纷案件适用法律若干问题的解释）
+   - damages 赔偿损失：差价损失、装修损失、迟延履行损失等其他损害赔偿
+   - credibility 可信度：争点结果对当事人陈述/证据可信度的冲击
 3. proponent_evidence_strength：主张方（举证责任承担方）在该争点的当前证据强度
    允许值：strong / medium / weak
    约束：必须在 proponent_evidence_ids 中引用至少一条具体证据 ID
@@ -72,7 +78,7 @@ _BASE_SYSTEM_PROMPT = """\
     {
       "issue_id": "issue-xxx-001",
       "outcome_impact": "high",
-      "impact_targets": ["principal", "penalty"],
+      "impact_targets": ["specific_performance", "liquidated_damages"],
       "proponent_evidence_strength": "strong",
       "proponent_evidence_ids": ["evidence-plaintiff-001"],
       "opponent_attack_strength": "medium",
@@ -96,7 +102,30 @@ _BASE_SYSTEM_PROMPT = """\
 - 添加任何前言、说明、markdown 标题或注释\
 """
 
-SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text("issue_impact_ranker")
+# Unit 22 Phase C.5b: load real-estate-specific few-shot examples so the
+# example impact_targets stay in lock-step with ALLOWED_IMPACT_TARGETS below.
+# The shared "issue_impact_ranker" file was civil_loan-specific and would have
+# contradicted this module's vocabulary line — see civil_loan.py for context.
+SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text(
+    "issue_impact_ranker.real_estate"
+)
+
+# Unit 22 Phase C.5b: real-estate (商品房买卖合同纠纷) legal vocabulary for
+# Issue.impact_targets. Anchored to 民法典 合同编 + 法释〔2003〕7号 关于审理
+# 商品房买卖合同纠纷案件适用法律若干问题的解释, which classifies real-estate
+# disputes' relief into 继续履行 / 返还房款 / 违约金 / 赔偿损失. credibility
+# is the case-type-neutral pivot. The set MUST stay in lock-step with the
+# "允许值" line of the system prompt above and with the example JSON's
+# impact_targets.
+ALLOWED_IMPACT_TARGETS: frozenset[str] = frozenset(
+    {
+        "specific_performance",
+        "refund",
+        "liquidated_damages",
+        "damages",
+        "credibility",
+    }
+)
 
 
 def build_user_prompt(

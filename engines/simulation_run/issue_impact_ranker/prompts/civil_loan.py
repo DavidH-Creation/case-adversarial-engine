@@ -2,8 +2,8 @@
 民间借贷（civil_loan）案件类型的争点影响排序 LLM 提示模板。
 LLM prompt templates for civil loan case type issue impact ranking.
 
-指导 LLM 对每个争点从五个维度进行结构化评估，输出严格 JSON。
-Guides LLM to evaluate each issue on 5 dimensions and output strict JSON.
+指导 LLM 对每个争点从十个维度进行结构化评估，输出严格 JSON。
+Guides LLM to evaluate each issue on 10 dimensions and output strict JSON.
 """
 
 from __future__ import annotations
@@ -111,7 +111,23 @@ _BASE_SYSTEM_PROMPT = """\
 - 添加任何前言、说明、markdown 标题或注释\
 """
 
-SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text("issue_impact_ranker")
+# Unit 22 Phase C.5b: few-shot examples are split per case type so the
+# example impact_targets stay in lock-step with this module's vocabulary.
+# Loading "issue_impact_ranker" (the old shared file) would inject the
+# civil_loan vocabulary into labor_dispute / real_estate prompts and silently
+# break their post-LLM filter. See test_few_shot_examples.py for the invariant
+# that each case-type prompt's example impact_targets ⊆ ALLOWED_IMPACT_TARGETS.
+SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text(
+    "issue_impact_ranker.civil_loan"
+)
+
+# Unit 22 Phase C.5a: per-case-type vocabulary for Issue.impact_targets.
+# The ranker calls plugin.allowed_impact_targets("civil_loan") at __init__
+# time and uses the returned set to silently drop hallucinated values from
+# LLM output. The set must match the "允许值" line of the system prompt above.
+ALLOWED_IMPACT_TARGETS: frozenset[str] = frozenset(
+    {"principal", "interest", "penalty", "attorney_fee", "credibility"}
+)
 
 
 def build_user_prompt(

@@ -1,0 +1,50 @@
+[
+  {
+    "input_summary": "劳动争议案，争点issue-001「用人单位解除劳动合同是否合法」（根争点，legal类型），劳动者主张违法解除（《劳动合同法》第87条），用人单位主张严重违纪解除（第39条），但未能举证规章制度已通过民主程序公示。fact_dispute_ratio: 2/3条命题存在争议，0/3条已有证据支撑。",
+    "expected_output": {
+      "evaluations": [
+        {
+          "issue_id": "issue-001",
+          "outcome_impact": "high",
+          "impact_targets": ["economic_compensation", "credibility"],
+          "proponent_evidence_strength": "strong",
+          "proponent_evidence_ids": ["ev-p-termination-notice"],
+          "opponent_attack_strength": "weak",
+          "opponent_attack_evidence_ids": ["ev-d-rules"],
+          "recommended_action": "explain_in_trial",
+          "recommended_action_basis": "用人单位规章制度未经民主程序公示，建议庭审中重点质证",
+          "recommended_action_evidence_ids": ["ev-p-termination-notice"],
+          "importance_score": 92,
+          "swing_score": 88,
+          "evidence_strength_gap": 50,
+          "dependency_depth": 0,
+          "credibility_impact": 35
+        }
+      ]
+    }
+  },
+  {
+    "input_summary": "同案争点issue-002「经济补偿金计算基数认定」（子争点，依赖issue-001），劳动者主张以解除前12个月平均工资12,000元/月为基数（含季度奖金），用人单位主张应以基本工资8,000元/月为基数。fact_dispute_ratio: 1/2条命题存在争议。",
+    "expected_output": {
+      "evaluations": [
+        {
+          "issue_id": "issue-002",
+          "outcome_impact": "medium",
+          "impact_targets": ["economic_compensation", "wages"],
+          "proponent_evidence_strength": "medium",
+          "proponent_evidence_ids": ["ev-p-payslip"],
+          "opponent_attack_strength": "medium",
+          "opponent_attack_evidence_ids": ["ev-d-contract"],
+          "recommended_action": "supplement_evidence",
+          "recommended_action_basis": "需补充近12个月完整银行工资流水以证明季度奖金的常规性",
+          "recommended_action_evidence_ids": ["ev-p-payslip"],
+          "importance_score": 65,
+          "swing_score": 70,
+          "evidence_strength_gap": 0,
+          "dependency_depth": 1,
+          "credibility_impact": 25
+        }
+      ]
+    }
+  }
+]

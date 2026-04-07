@@ -32,7 +32,6 @@ from engines.shared.models import (
     AttackStrength,
     Evidence,
     EvidenceStrength,
-    ImpactTarget,
     Issue,
     LLMClient,
     OutcomeImpact,
@@ -104,6 +103,16 @@ class IssueImpactRanker:
         self._max_tokens = max_tokens
         self._max_retries = max_retries
         self._prompt_module = self._load_prompt_module(case_type)
+        # Unit 22 Phase C.5a: per-case-type vocabulary lookup. Resolved once at
+        # __init__ time so the hot path in _resolve_impact_targets stays a
+        # single set-membership test. Raises if case_type's prompt module did
+        # not declare ALLOWED_IMPACT_TARGETS — this surfaces the wiring bug
+        # immediately on construction rather than later inside rank().
+        from .prompts import plugin
+
+        self._allowed_impact_targets: frozenset[str] = plugin.allowed_impact_targets(
+            case_type
+        )
 
     @staticmethod
     def _load_prompt_module(case_type: str):
@@ -866,16 +875,18 @@ class IssueImpactRanker:
         }
         return _MAP.get(raw.strip().lower())
 
-    @staticmethod
-    def _resolve_impact_targets(raw: list[str]) -> list[ImpactTarget]:
-        _MAP = {
-            "principal": ImpactTarget.principal,
-            "interest": ImpactTarget.interest,
-            "penalty": ImpactTarget.penalty,
-            "attorney_fee": ImpactTarget.attorney_fee,
-            "credibility": ImpactTarget.credibility,
-        }
-        return [_MAP[t.strip().lower()] for t in raw if t.strip().lower() in _MAP]
+    def _resolve_impact_targets(self, raw: list[str]) -> list[str]:
+        """Filter LLM-emitted impact_targets against the per-case-type vocabulary.
+
+        The vocabulary is resolved once at __init__ via
+        ``plugin.allowed_impact_targets(case_type)``. Unknown values are
+        silently dropped (宽松降级) so a hallucinating LLM cannot poison
+        structured output. Whitespace and case are normalized before lookup
+        because pre-Phase-C client code did the same and we must preserve the
+        contract.
+        """
+        allowed = self._allowed_impact_targets
+        return [t.strip().lower() for t in raw if t.strip().lower() in allowed]
 
     # ------------------------------------------------------------------
     # LLM 调用（带重试）/ LLM call with retry

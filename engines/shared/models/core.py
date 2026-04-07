@@ -203,14 +203,6 @@ class AgentRole(str, Enum):
     evidence_manager = "evidence_manager"
 
 
-class RepaymentAttribution(str, Enum):
-    """还款归因类型 — 每笔还款必须唯一归因到某一类。"""
-
-    principal = "principal"
-    interest = "interest"
-    penalty = "penalty"
-
-
 class DisputeResolutionStatus(str, Enum):
     """争议解决状态。"""
 
@@ -219,32 +211,12 @@ class DisputeResolutionStatus(str, Enum):
     partially_resolved = "partially_resolved"
 
 
-class ClaimType(str, Enum):
-    """诉请类型 — 对应 ClaimCalculationEntry.claim_type。"""
-
-    principal = "principal"
-    interest = "interest"
-    penalty = "penalty"
-    attorney_fee = "attorney_fee"
-    other = "other"
-
-
 class OutcomeImpact(str, Enum):
     """争点对最终裁判结果的影响程度（P0.1）。"""
 
     high = "high"
     medium = "medium"
     low = "low"
-
-
-class ImpactTarget(str, Enum):
-    """争点影响的诉请对象（P0.1）。"""
-
-    principal = "principal"
-    interest = "interest"
-    penalty = "penalty"
-    attorney_fee = "attorney_fee"
-    credibility = "credibility"
 
 
 class EvidenceStrength(str, Enum):

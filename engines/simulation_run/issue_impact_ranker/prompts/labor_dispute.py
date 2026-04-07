@@ -2,8 +2,8 @@
 劳动争议（labor_dispute）案件类型的争点影响排序 LLM 提示模板。
 LLM prompt templates for labor dispute case type issue impact ranking.
 
-指导 LLM 对每个争点从五个维度进行结构化评估，输出严格 JSON。
-Guides LLM to evaluate each issue on 5 dimensions and output strict JSON.
+指导 LLM 对每个争点从十个维度进行结构化评估，输出严格 JSON。
+Guides LLM to evaluate each issue on 10 dimensions and output strict JSON.
 """
 
 from __future__ import annotations
@@ -22,7 +22,13 @@ _BASE_SYSTEM_PROMPT = """\
 1. outcome_impact：该争点对最终裁判结果的影响程度
    允许值：high / medium / low
 2. impact_targets：该争点影响的诉请对象（可多选）
-   允许值：principal / interest / penalty / attorney_fee / credibility
+   允许值：wages / overtime_pay / economic_compensation / damages / credibility
+   说明：
+   - wages 工资：基本工资、未付工资、工资差额
+   - overtime_pay 加班费：法定加班费及其折算
+   - economic_compensation 经济补偿金/赔偿金：解除合同的经济补偿、违法解除赔偿（法释〔2025〕12号）
+   - damages 其他损害赔偿：未签劳动合同二倍工资、未提前通知扣减、社保损失等
+   - credibility 可信度：争点结果对当事人陈述/证据可信度的冲击
 3. proponent_evidence_strength：主张方（举证责任承担方）在该争点的当前证据强度
    允许值：strong / medium / weak
    约束：必须在 proponent_evidence_ids 中引用至少一条具体证据 ID
@@ -72,7 +78,7 @@ _BASE_SYSTEM_PROMPT = """\
     {
       "issue_id": "issue-xxx-001",
       "outcome_impact": "high",
-      "impact_targets": ["principal", "credibility"],
+      "impact_targets": ["economic_compensation", "credibility"],
       "proponent_evidence_strength": "weak",
       "proponent_evidence_ids": ["evidence-plaintiff-001"],
       "opponent_attack_strength": "strong",
@@ -96,7 +102,23 @@ _BASE_SYSTEM_PROMPT = """\
 - 添加任何前言、说明、markdown 标题或注释\
 """
 
-SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text("issue_impact_ranker")
+# Unit 22 Phase C.5b: load labor-dispute-specific few-shot examples so the
+# example impact_targets stay in lock-step with ALLOWED_IMPACT_TARGETS below.
+# The shared "issue_impact_ranker" file was civil_loan-specific and would have
+# contradicted this module's vocabulary line — see civil_loan.py for context.
+SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text(
+    "issue_impact_ranker.labor_dispute"
+)
+
+# Unit 22 Phase C.5b: labor-dispute legal vocabulary for Issue.impact_targets.
+# Anchored to 中华人民共和国劳动合同法 + 法释〔2025〕12号 关于审理劳动争议案件
+# 适用法律若干问题的解释（一），which classifies labor-dispute claims into
+# 工资 / 加班费 / 经济补偿金（赔偿金）/ 其他损害赔偿. credibility is the
+# case-type-neutral pivot. The set MUST stay in lock-step with the "允许值"
+# line of the system prompt above and with the example JSON's impact_targets.
+ALLOWED_IMPACT_TARGETS: frozenset[str] = frozenset(
+    {"wages", "overtime_pay", "economic_compensation", "damages", "credibility"}
+)
 
 
 def build_user_prompt(
