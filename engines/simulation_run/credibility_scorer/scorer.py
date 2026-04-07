@@ -45,6 +45,21 @@ from engines.shared.rule_config import RuleThresholds
 
 from .schemas import CredibilityScorerInput
 
+
+def _safe_int(value: object) -> int:
+    """Coerce a dict-extracted value to int, treating None as 0.
+
+    Phase B (Unit 22) weakened ``Party.litigation_history`` to
+    ``Optional[dict[str, Any]]``. ``dict[str, Any]`` does not constrain inner
+    values, so callers can legitimately pass ``{"key": None}`` (e.g., from a
+    JSON source with explicit nulls). ``int(None)`` raises ``TypeError``, so
+    this helper guards against it. All non-None values are forwarded to
+    ``int()`` directly — invalid values still raise (intentional, surfaces
+    real bugs).
+    """
+    return int(value) if value is not None else 0
+
+
 # 规则定义表（rule_id → (description, deduction_points)）
 _RULES: dict[str, tuple[str, int]] = {
     "CRED-01": ("存在未解释的金额口径冲突", -20),
@@ -287,9 +302,12 @@ class CredibilityScorer:
             hist = party.litigation_history
             if not hist:
                 continue
-            lending_cases = int(hist.get("lending_case_count", 0))
-            distinct_borrowers = int(hist.get("distinct_borrower_count", 0))
-            time_span = int(hist.get("time_span_months", 0))
+            # Pydantic dict[str, Any] permits None values inside the dict
+            # (e.g., from JSON sources with explicit nulls). int(None) raises
+            # TypeError, so coerce defensively before int().
+            lending_cases = _safe_int(hist.get("lending_case_count"))
+            distinct_borrowers = _safe_int(hist.get("distinct_borrower_count"))
+            time_span = _safe_int(hist.get("time_span_months"))
             if (
                 lending_cases >= t.prof_lender_min_cases
                 and distinct_borrowers >= t.prof_lender_min_borrowers

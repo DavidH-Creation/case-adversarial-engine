@@ -712,6 +712,66 @@ class TestCRED07ProfessionalLender:
         result = scorer.score(inp)
         assert result.final_score == 100 - 25
 
+    def test_none_values_in_dict_do_not_crash(self):
+        """Pydantic dict[str, Any] accepts None values; CRED-07 must coerce safely.
+
+        Regression: int(None) raises TypeError. Phase B's dict[str, Any] field
+        permits {"lending_case_count": None} (e.g., from JSON sources with explicit
+        nulls), so the rule must guard against None before int() coercion.
+        """
+        party = Party(
+            party_id="plaintiff-1",
+            case_id="case1",
+            name="郭某",
+            party_type="natural_person",
+            role_code="plaintiff_agent",
+            side="plaintiff",
+            litigation_history={
+                "lending_case_count": None,
+                "distinct_borrower_count": None,
+                "time_span_months": None,
+            },
+        )
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[party],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        # Must not raise TypeError. None values are treated as 0 (no trigger).
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        assert len(cred07) == 0
+
+    def test_partial_none_values_with_other_thresholds_met(self):
+        """If some keys are None and some are present, the present ones must still
+        be evaluated correctly. None for any required-for-trigger key blocks trigger."""
+        party = Party(
+            party_id="plaintiff-1",
+            case_id="case1",
+            name="郭某",
+            party_type="natural_person",
+            role_code="plaintiff_agent",
+            side="plaintiff",
+            litigation_history={
+                "lending_case_count": 8,
+                "distinct_borrower_count": 8,
+                "time_span_months": None,  # missing time → coerced to 0 → trigger fires
+            },
+        )
+        inp = CredibilityScorerInput(
+            case_id="case1",
+            run_id="run1",
+            amount_report=make_amount_report(),
+            party_list=[party],
+        )
+        scorer = CredibilityScorer(thresholds=RuleThresholds())
+        result = scorer.score(inp)
+        cred07 = [d for d in result.deductions if d.rule_id == "CRED-07"]
+        # time_span=0 ≤ max_span_months → trigger fires
+        assert len(cred07) == 1
+
     def test_defendant_matching_thresholds_not_triggered(self):
         """被告满足职业放贷人条件时不应触发 CRED-07（仅检查原告）。"""
         defendant = Party(
