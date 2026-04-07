@@ -170,7 +170,13 @@ class TestFewShotTokenBudget:
         [
             "adversarial_plaintiff",
             "adversarial_defendant",
-            "issue_impact_ranker",
+            # Unit 22 Phase C.5b: ranker few-shot is now per case type so the
+            # example impact_targets stay in lock-step with the per-case-type
+            # ALLOWED_IMPACT_TARGETS frozensets. See test_ranker_example_*
+            # below for the vocabulary invariant.
+            "issue_impact_ranker.civil_loan",
+            "issue_impact_ranker.labor_dispute",
+            "issue_impact_ranker.real_estate",
             "defense_chain",
         ],
     )
@@ -209,10 +215,21 @@ class TestExampleSchemaConsistency:
                     assert "position" in arg
                     assert "supporting_evidence_ids" in arg
 
-    def test_ranker_example_has_required_fields(self):
-        """排序器 example 包含 LLMIssueEvaluationOutput 所需的核心字段。"""
+    @pytest.mark.parametrize(
+        "case_type",
+        ["civil_loan", "labor_dispute", "real_estate"],
+    )
+    def test_ranker_example_has_required_fields(self, case_type):
+        """排序器 example 包含 LLMIssueEvaluationOutput 所需的核心字段。
+
+        Unit 22 Phase C.5b: parametrized over all 3 case types because each
+        case type now has its own few-shot file with case-type-specific
+        impact_targets vocabulary.
+        """
         examples_dir = Path(__file__).parent.parent / "engines" / "shared" / "few_shot_examples"
-        data = json.loads((examples_dir / "issue_impact_ranker.json").read_text(encoding="utf-8"))
+        data = json.loads(
+            (examples_dir / f"issue_impact_ranker.{case_type}.json").read_text(encoding="utf-8")
+        )
         for ex in data:
             evals = ex["expected_output"]["evaluations"]
             for ev in evals:
@@ -223,6 +240,48 @@ class TestExampleSchemaConsistency:
                 assert 0 <= ev["importance_score"] <= 100
                 assert "swing_score" in ev
                 assert 0 <= ev["swing_score"] <= 100
+
+    @pytest.mark.parametrize(
+        "case_type",
+        ["civil_loan", "labor_dispute", "real_estate"],
+    )
+    def test_ranker_example_impact_targets_match_allowed_vocabulary(self, case_type):
+        """Unit 22 Phase C.5b lock-step invariant.
+
+        Each case-type-specific few-shot file's example ``impact_targets`` MUST
+        be a subset of that case type's prompt module's ``ALLOWED_IMPACT_TARGETS``
+        frozenset. If they ever drift apart, the LLM will follow the example,
+        emit values that the post-LLM filter then silently drops, and the
+        downstream ``Issue.impact_targets`` field will be empty — making the
+        few-shot a net regression.
+
+        This is the rule that makes Phase C.5b functionally correct rather
+        than just textually correct.
+        """
+        from importlib import import_module
+
+        prompt_module = import_module(
+            f"engines.simulation_run.issue_impact_ranker.prompts.{case_type}"
+        )
+        allowed = prompt_module.ALLOWED_IMPACT_TARGETS
+
+        examples_dir = Path(__file__).parent.parent / "engines" / "shared" / "few_shot_examples"
+        data = json.loads(
+            (examples_dir / f"issue_impact_ranker.{case_type}.json").read_text(encoding="utf-8")
+        )
+        for ex in data:
+            for ev in ex["expected_output"]["evaluations"]:
+                targets = ev.get("impact_targets", [])
+                assert targets, (
+                    f"{case_type} example {ev.get('issue_id')} 的 impact_targets 不能为空"
+                )
+                unknown = [t for t in targets if t not in allowed]
+                assert not unknown, (
+                    f"{case_type} few-shot example {ev.get('issue_id')} 使用了不在 "
+                    f"ALLOWED_IMPACT_TARGETS={sorted(allowed)} 中的词汇: {unknown}。"
+                    f"few-shot 与 system prompt 必须保持词汇一致，否则 LLM 会输出"
+                    f"被 ranker 静默过滤的值，造成净回归。"
+                )
 
     def test_defense_chain_example_has_required_fields(self):
         """防御链 example 包含 LLMDefenseChainOutput 所需的核心字段。"""

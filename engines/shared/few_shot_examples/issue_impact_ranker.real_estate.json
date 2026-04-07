@@ -1,0 +1,50 @@
+[
+  {
+    "input_summary": "商品房买卖合同纠纷案，争点issue-001「出卖人是否构成根本违约导致合同目的不能实现」（根争点，legal类型），买受人主张出卖人逾期交付超过180日且未办理产权登记，要求解除合同；出卖人主张已通知交付，逾期系不可抗力。fact_dispute_ratio: 3/4条命题存在争议，0/4条已有证据支撑。",
+    "expected_output": {
+      "evaluations": [
+        {
+          "issue_id": "issue-001",
+          "outcome_impact": "high",
+          "impact_targets": ["specific_performance", "refund", "liquidated_damages"],
+          "proponent_evidence_strength": "strong",
+          "proponent_evidence_ids": ["ev-p-contract", "ev-p-completion-cert"],
+          "opponent_attack_strength": "medium",
+          "opponent_attack_evidence_ids": ["ev-d-force-majeure"],
+          "recommended_action": "explain_in_trial",
+          "recommended_action_basis": "竣工验收备案日期与交付通知时间差异显著，建议庭审中重点说明根本违约成立要件",
+          "recommended_action_evidence_ids": ["ev-p-completion-cert"],
+          "importance_score": 90,
+          "swing_score": 85,
+          "evidence_strength_gap": 40,
+          "dependency_depth": 0,
+          "credibility_impact": 30
+        }
+      ]
+    }
+  },
+  {
+    "input_summary": "同案争点issue-002「合同约定违约金日万分之五是否过高」（子争点，依赖issue-001），买受人主张按合同约定全额支持，出卖人主张参照法释〔2003〕7号第十六条调减至实际损失的130%。fact_dispute_ratio: 1/2条命题存在争议。",
+    "expected_output": {
+      "evaluations": [
+        {
+          "issue_id": "issue-002",
+          "outcome_impact": "medium",
+          "impact_targets": ["liquidated_damages", "damages"],
+          "proponent_evidence_strength": "medium",
+          "proponent_evidence_ids": ["ev-p-contract"],
+          "opponent_attack_strength": "medium",
+          "opponent_attack_evidence_ids": ["ev-d-rent-comparable"],
+          "recommended_action": "supplement_evidence",
+          "recommended_action_basis": "需补充同地段同期租金或房价上涨数据，以证明实际损失高于30%调减后的金额",
+          "recommended_action_evidence_ids": ["ev-p-contract"],
+          "importance_score": 65,
+          "swing_score": 72,
+          "evidence_strength_gap": 0,
+          "dependency_depth": 1,
+          "credibility_impact": 20
+        }
+      ]
+    }
+  }
+]

@@ -111,7 +111,15 @@ _BASE_SYSTEM_PROMPT = """\
 - 添加任何前言、说明、markdown 标题或注释\
 """
 
-SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text("issue_impact_ranker")
+# Unit 22 Phase C.5b: few-shot examples are split per case type so the
+# example impact_targets stay in lock-step with this module's vocabulary.
+# Loading "issue_impact_ranker" (the old shared file) would inject the
+# civil_loan vocabulary into labor_dispute / real_estate prompts and silently
+# break their post-LLM filter. See test_few_shot_examples.py for the invariant
+# that each case-type prompt's example impact_targets ⊆ ALLOWED_IMPACT_TARGETS.
+SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text(
+    "issue_impact_ranker.civil_loan"
+)
 
 # Unit 22 Phase C.5a: per-case-type vocabulary for Issue.impact_targets.
 # The ranker calls plugin.allowed_impact_targets("civil_loan") at __init__
