@@ -185,3 +185,79 @@ class TestSimulationRunPluginExports:
 
         with pytest.raises(UnsupportedCaseTypeError):
             plugin.get_prompt("action_recommender", "criminal_law", {})
+
+
+# ---------------------------------------------------------------------------
+# Integration: Unit 14 (Q1=B) — remaining engines export `plugin`
+# ---------------------------------------------------------------------------
+
+
+class TestRemainingEnginePluginExports:
+    """Engines outside ``simulation_run`` that also expose a ``CaseTypePlugin``.
+
+    Adding new entries here is a forcing function: any engine listed below
+    must satisfy the Protocol and have ``civil_loan`` registered. ``case_extractor``
+    (uses single ``"generic"`` key) and ``document_assistance`` (uses 2D
+    ``(doc_type, case_type)`` key) are intentionally NOT listed — they need
+    a custom plugin design out of Unit 14 scope.
+    """
+
+    def test_admissibility_evaluator_exports_plugin(self):
+        from engines.case_structuring.admissibility_evaluator.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_evidence_indexer_exports_plugin(self):
+        from engines.case_structuring.evidence_indexer.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_evidence_weight_scorer_exports_plugin(self):
+        from engines.case_structuring.evidence_weight_scorer.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_issue_extractor_exports_plugin(self):
+        from engines.case_structuring.issue_extractor.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_adversarial_exports_plugin(self):
+        from engines.adversarial.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_interactive_followup_exports_plugin(self):
+        from engines.interactive_followup.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_pretrial_conference_exports_plugin(self):
+        from engines.pretrial_conference.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_procedure_setup_exports_plugin(self):
+        from engines.procedure_setup.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_report_generation_exports_plugin(self):
+        from engines.report_generation.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_simulation_run_root_exports_plugin(self):
+        from engines.simulation_run.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
