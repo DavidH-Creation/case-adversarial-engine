@@ -22,7 +22,6 @@ from engines.shared.models.core import (
     EvidenceStatus,
     EvidenceStrength,
     EvidenceType,
-    ImpactTarget,
     IssueCategory,
     IssueStatus,
     IssueType,
@@ -162,7 +161,14 @@ class Issue(BaseModel):
     priority: Optional[str] = None
     # P0.1: 争点影响排序扩展字段（向后兼容，全部 Optional）
     outcome_impact: Optional[OutcomeImpact] = None
-    impact_targets: list[ImpactTarget] = Field(default_factory=list)
+    # Unit 22 Phase C: weakened from list[ImpactTarget] to list[str] for case-type
+    # neutrality. The legal vocabulary is now governed by the active CaseTypePlugin
+    # (see issue_impact_ranker._resolve_impact_targets and the per-case-type
+    # ALLOWED_IMPACT_TARGETS constant on each prompt module). Unknown values are
+    # filtered at the ranker layer; the model itself accepts any string so that
+    # 劳动争议 / 房屋买卖 / 民间借贷 etc. can each contribute their own domain
+    # vocabulary without depending on civil_loan-named enum members.
+    impact_targets: list[str] = Field(default_factory=list)
     proponent_evidence_strength: Optional[EvidenceStrength] = None
     opponent_attack_strength: Optional[AttackStrength] = None
     recommended_action: Optional[RecommendedAction] = None

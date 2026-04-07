@@ -84,7 +84,7 @@ class TestIssueP01Fields:
     def test_all_fields_set_roundtrip(self):
         issue = _minimal_issue(
             outcome_impact=OutcomeImpact.high,
-            impact_targets=[ImpactTarget.principal, ImpactTarget.interest],
+            impact_targets=["principal", "interest"],
             proponent_evidence_strength=EvidenceStrength.strong,
             opponent_attack_strength=AttackStrength.medium,
             recommended_action=RecommendedAction.supplement_evidence,
@@ -93,7 +93,7 @@ class TestIssueP01Fields:
         data = issue.model_dump()
         restored = Issue.model_validate(data)
         assert restored.outcome_impact == OutcomeImpact.high
-        assert restored.impact_targets == [ImpactTarget.principal, ImpactTarget.interest]
+        assert restored.impact_targets == ["principal", "interest"]
         assert restored.proponent_evidence_strength == EvidenceStrength.strong
         assert restored.opponent_attack_strength == AttackStrength.medium
         assert restored.recommended_action == RecommendedAction.supplement_evidence

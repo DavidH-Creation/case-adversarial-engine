@@ -32,7 +32,6 @@ from engines.shared.models import (
     AttackStrength,
     Evidence,
     EvidenceStrength,
-    ImpactTarget,
     Issue,
     LLMClient,
     OutcomeImpact,
@@ -866,16 +865,19 @@ class IssueImpactRanker:
         }
         return _MAP.get(raw.strip().lower())
 
+    # Unit 22 Phase C: temporary civil_loan whitelist. C.5a will replace this with
+    # a per-plugin allowed_impact_targets() lookup so that 劳动争议 / 房屋买卖 can
+    # contribute their own domain vocabularies (wages/specific_performance/...).
+    # Until then, the contract is preserved: unknown values are dropped silently
+    # (宽松降级) so a hallucinating LLM cannot poison the structured output.
+    _CIVIL_LOAN_IMPACT_TARGETS: frozenset[str] = frozenset(
+        {"principal", "interest", "penalty", "attorney_fee", "credibility"}
+    )
+
     @staticmethod
-    def _resolve_impact_targets(raw: list[str]) -> list[ImpactTarget]:
-        _MAP = {
-            "principal": ImpactTarget.principal,
-            "interest": ImpactTarget.interest,
-            "penalty": ImpactTarget.penalty,
-            "attorney_fee": ImpactTarget.attorney_fee,
-            "credibility": ImpactTarget.credibility,
-        }
-        return [_MAP[t.strip().lower()] for t in raw if t.strip().lower() in _MAP]
+    def _resolve_impact_targets(raw: list[str]) -> list[str]:
+        allowed = IssueImpactRanker._CIVIL_LOAN_IMPACT_TARGETS
+        return [t.strip().lower() for t in raw if t.strip().lower() in allowed]
 
     # ------------------------------------------------------------------
     # LLM 调用（带重试）/ LLM call with retry

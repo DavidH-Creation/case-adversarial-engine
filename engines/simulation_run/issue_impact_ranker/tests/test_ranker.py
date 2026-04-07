@@ -29,7 +29,6 @@ from engines.shared.models import (
     EvidenceStrength,
     EvidenceType,
     FactProposition,
-    ImpactTarget,
     Issue,
     IssueStatus,
     IssueTree,
@@ -444,7 +443,7 @@ class TestRankFullFlow:
         assert result.unevaluated_issue_ids == []
         issue = result.ranked_issue_tree.issues[0]
         assert issue.outcome_impact == OutcomeImpact.high
-        assert set(issue.impact_targets) == {ImpactTarget.principal, ImpactTarget.interest}
+        assert set(issue.impact_targets) == {"principal", "interest"}
         assert issue.proponent_evidence_strength == EvidenceStrength.weak
         assert issue.opponent_attack_strength == AttackStrength.strong
         assert issue.recommended_action == RecommendedAction.supplement_evidence
