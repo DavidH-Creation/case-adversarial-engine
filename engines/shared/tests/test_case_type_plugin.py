@@ -333,6 +333,8 @@ ENGINES_WITH_FUNCTIONAL_PLUGIN: list[tuple[str, str]] = [
     ("defense_chain", "engines.simulation_run.defense_chain.prompts"),
     ("issue_impact_ranker", "engines.simulation_run.issue_impact_ranker.prompts"),
     ("issue_category_classifier", "engines.simulation_run.issue_category_classifier.prompts"),
+    # Module-based registries newly completed in batch-4-followup
+    ("evidence_indexer", "engines.case_structuring.evidence_indexer.prompts"),
 ]
 
 
