@@ -11,6 +11,8 @@ No real API keys or model calls required.
 
 from __future__ import annotations
 
+import json
+import time
 import uuid
 from unittest.mock import MagicMock, patch
 
@@ -234,6 +236,52 @@ def isolated_client(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# Shared lifecycle driver — used by both export and SSE tests
+# ---------------------------------------------------------------------------
+
+
+def _wait_for_status(store, case_id: str, target: CaseStatus, *, timeout: float = 2.0) -> None:
+    """Poll the test store until the case reaches `target` (or raise on timeout).
+
+    Necessary because the API uses ``asyncio.create_task`` for extraction/analysis,
+    so the work runs after the response returns. Mock impls finish in microseconds,
+    so the polling loop is essentially just yielding to the event loop.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        record = store.get(case_id)
+        if record is not None and record.status == target:
+            return
+        time.sleep(0.05)
+    raise AssertionError(
+        f"Case {case_id} did not reach {target} within {timeout}s "
+        f"(last status: {getattr(record, 'status', None)})"
+    )
+
+
+def _drive_to_analyzed(client: TestClient, store: CaseStore) -> str:
+    """Push a case through the full lifecycle to analyzed state. Returns case_id."""
+    case_id = client.post("/api/cases/", json=_CIVIL_LOAN_CASE).json()["case_id"]
+
+    client.post(f"/api/cases/{case_id}/materials", json=_MATERIAL_PLAINTIFF)
+    client.post(f"/api/cases/{case_id}/materials", json=_MATERIAL_DEFENDANT)
+
+    client.post(f"/api/cases/{case_id}/extract")
+    _wait_for_status(store, case_id, CaseStatus.extracted)
+
+    ext = client.get(f"/api/cases/{case_id}/extraction").json()
+    client.post(
+        f"/api/cases/{case_id}/confirm",
+        json={"issues": ext["issues"], "evidence": ext["evidence"]},
+    )
+
+    client.post(f"/api/cases/{case_id}/analyze")
+    _wait_for_status(store, case_id, CaseStatus.analyzed)
+
+    return case_id
+
+
+# ---------------------------------------------------------------------------
 # Test: Full lifecycle — happy path
 # ---------------------------------------------------------------------------
 
@@ -268,13 +316,8 @@ class TestFullLifecycle:
         assert resp.json()["status"] in ("extracting", "extracted")
 
         # Wait for mock extraction to complete
-        import time
-
-        for _ in range(20):
-            record = store.get(case_id)
-            if record and record.status == CaseStatus.extracted:
-                break
-            time.sleep(0.1)
+        _wait_for_status(store, case_id, CaseStatus.extracted)
+        record = store.get(case_id)
         assert record.status == CaseStatus.extracted
 
         # Step 4: Verify extraction via GET
@@ -299,11 +342,8 @@ class TestFullLifecycle:
         assert resp.status_code == 202
 
         # Wait for mock analysis to complete
-        for _ in range(20):
-            record = store.get(case_id)
-            if record and record.status == CaseStatus.analyzed:
-                break
-            time.sleep(0.1)
+        _wait_for_status(store, case_id, CaseStatus.analyzed)
+        record = store.get(case_id)
         assert record.status == CaseStatus.analyzed
 
         # Step 7: Get case info — should be analyzed
@@ -364,15 +404,18 @@ class TestStateMachine:
     """Verify API rejects operations when case is in wrong state."""
 
     def test_extract_requires_materials(self, isolated_client):
-        """Cannot extract with no materials (depends on implementation)."""
+        """POST /extract on a case with no materials must return 400.
+
+        Pinned to 400 — see ``api/app.py::trigger_extraction`` which raises
+        HTTPException(400, "请先上传至少一份材料再触发提取").
+        """
         client, _ = isolated_client
         resp = client.post("/api/cases/", json=_CIVIL_LOAN_CASE)
         case_id = resp.json()["case_id"]
 
-        # Extraction on empty case — should either 400 or accept and fail gracefully
         resp = client.post(f"/api/cases/{case_id}/extract")
-        # The API may accept (202) and let extraction fail, or reject (400)
-        assert resp.status_code in (202, 400)
+        assert resp.status_code == 400
+        assert "材料" in resp.json()["detail"]
 
     def test_confirm_requires_extracted_state(self, isolated_client):
         """Cannot confirm before extraction."""
@@ -495,56 +538,33 @@ class TestMaterials:
 class TestExport:
     """Verify export endpoints on analyzed cases."""
 
-    def _create_analyzed_case(self, client, store):
-        """Helper: push a case through the full lifecycle to analyzed state."""
-        import time
-
-        resp = client.post("/api/cases/", json=_CIVIL_LOAN_CASE)
-        case_id = resp.json()["case_id"]
-
-        client.post(f"/api/cases/{case_id}/materials", json=_MATERIAL_PLAINTIFF)
-        client.post(f"/api/cases/{case_id}/materials", json=_MATERIAL_DEFENDANT)
-        client.post(f"/api/cases/{case_id}/extract")
-
-        for _ in range(20):
-            record = store.get(case_id)
-            if record and record.status == CaseStatus.extracted:
-                break
-            time.sleep(0.1)
-
-        ext = client.get(f"/api/cases/{case_id}/extraction").json()
-        client.post(
-            f"/api/cases/{case_id}/confirm",
-            json={"issues": ext["issues"], "evidence": ext["evidence"]},
-        )
-        client.post(f"/api/cases/{case_id}/analyze")
-
-        for _ in range(20):
-            record = store.get(case_id)
-            if record and record.status == CaseStatus.analyzed:
-                break
-            time.sleep(0.1)
-
-        return case_id
-
     def test_export_json_format(self, isolated_client):
-        """GET /export?format=json returns JSON analysis data."""
+        """GET /export?format=json returns a CaseSnapshot JSON."""
         client, store = isolated_client
-        case_id = self._create_analyzed_case(client, store)
+        case_id = _drive_to_analyzed(client, store)
 
         resp = client.get(f"/api/cases/{case_id}/export?format=json")
         assert resp.status_code == 200
         data = resp.json()
-        assert "overall_assessment" in data or "analysis_data" in data or "run_id" in data
+        # Pinned to CaseSnapshot contract (api/schemas.py::CaseSnapshot)
+        assert data["case_id"] == case_id
+        assert data["case_type"] == "civil_loan"
+        assert data["status"] == "analyzed"
+        assert "parties" in data
+        assert "evidence" in data
+        assert "issues" in data
+        assert "materials_summary" in data
+        assert data["analysis_data"] is not None
+        assert "overall_assessment" in data["analysis_data"]
 
     def test_export_markdown_format(self, isolated_client):
-        """GET /export?format=markdown returns markdown text."""
+        """GET /export?format=markdown returns the report markdown body."""
         client, store = isolated_client
-        case_id = self._create_analyzed_case(client, store)
+        case_id = _drive_to_analyzed(client, store)
 
         resp = client.get(f"/api/cases/{case_id}/export?format=markdown")
         assert resp.status_code == 200
-        assert "案件分析报告" in resp.text or "分析" in resp.text
+        assert "案件分析报告" in resp.text
 
 
 # ---------------------------------------------------------------------------
@@ -554,8 +574,6 @@ class TestExport:
 
 def _parse_sse_events(body: str) -> list[dict]:
     """Parse SSE response body into list of JSON event dicts."""
-    import json
-
     events = []
     for line in body.split("\n"):
         line = line.strip()
@@ -571,42 +589,10 @@ def _parse_sse_events(body: str) -> list[dict]:
 class TestSSEEndpoints:
     """Verify SSE streaming endpoints return correct event-stream format."""
 
-    def _create_analyzed_case(self, client, store):
-        """Helper: push a case through the full lifecycle to analyzed state."""
-        import time
-
-        resp = client.post("/api/cases/", json=_CIVIL_LOAN_CASE)
-        case_id = resp.json()["case_id"]
-
-        client.post(f"/api/cases/{case_id}/materials", json=_MATERIAL_PLAINTIFF)
-        client.post(f"/api/cases/{case_id}/materials", json=_MATERIAL_DEFENDANT)
-        client.post(f"/api/cases/{case_id}/extract")
-
-        for _ in range(20):
-            record = store.get(case_id)
-            if record and record.status == CaseStatus.extracted:
-                break
-            time.sleep(0.1)
-
-        ext = client.get(f"/api/cases/{case_id}/extraction").json()
-        client.post(
-            f"/api/cases/{case_id}/confirm",
-            json={"issues": ext["issues"], "evidence": ext["evidence"]},
-        )
-        client.post(f"/api/cases/{case_id}/analyze")
-
-        for _ in range(20):
-            record = store.get(case_id)
-            if record and record.status == CaseStatus.analyzed:
-                break
-            time.sleep(0.1)
-
-        return case_id
-
     def test_analysis_stream_returns_done_for_analyzed_case(self, isolated_client):
         """GET /analysis on analyzed case returns SSE with type=done."""
         client, store = isolated_client
-        case_id = self._create_analyzed_case(client, store)
+        case_id = _drive_to_analyzed(client, store)
 
         resp = client.get(f"/api/cases/{case_id}/analysis")
         assert resp.status_code == 200
@@ -646,10 +632,8 @@ class TestSSEEndpoints:
 
     def test_progress_stream_with_registered_queue(self, isolated_client):
         """GET /progress on case with registered queue returns SSE stream."""
-        import asyncio
         from engines.shared.progress_reporter import (
             SSEProgressReporter,
-            get_progress_queue,
             remove_progress_queue,
         )
 
@@ -657,20 +641,24 @@ class TestSSEEndpoints:
         resp = client.post("/api/cases/", json=_CIVIL_LOAN_CASE)
         case_id = resp.json()["case_id"]
 
-        # Register a progress queue and pre-populate it
+        # Register a progress queue and pre-populate it.
+        # Wrapped in try/finally so the queue is always removed even if an
+        # assertion fails — otherwise stale entries leak across tests via
+        # the module-level _PROGRESS_QUEUES dict.
         reporter = SSEProgressReporter(case_id)
-        reporter.on_step_complete(1, "Index Evidence")
-        reporter.on_step_complete(2, "Extract Issues")
-        reporter.close()  # push None sentinel
+        try:
+            reporter.on_step_complete(1, "Index Evidence")
+            reporter.on_step_complete(2, "Extract Issues")
+            reporter.close()  # push None sentinel
 
-        resp = client.get(f"/api/cases/{case_id}/progress")
-        assert resp.status_code == 200
-        assert "text/event-stream" in resp.headers["content-type"]
+            resp = client.get(f"/api/cases/{case_id}/progress")
+            assert resp.status_code == 200
+            assert "text/event-stream" in resp.headers["content-type"]
 
-        events = _parse_sse_events(resp.text)
-        assert len(events) >= 3  # 2 completed + done
-        completed = [e for e in events if e.get("status") == "completed"]
-        assert len(completed) == 2
-        assert events[-1]["type"] == "done"
-
-        remove_progress_queue(case_id)
+            events = _parse_sse_events(resp.text)
+            assert len(events) >= 3  # 2 completed + done
+            completed = [e for e in events if e.get("status") == "completed"]
+            assert len(completed) == 2
+            assert events[-1]["type"] == "done"
+        finally:
+            remove_progress_queue(case_id)
