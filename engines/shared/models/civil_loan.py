@@ -178,6 +178,27 @@ class AmountCalculationReport(BaseModel):
     )
 
 
+# ---------------------------------------------------------------------------
+# 职业放贷人检测 / Professional lender detection (CRED-07 input)
+# ---------------------------------------------------------------------------
+
+
+class LitigationHistory(BaseModel):
+    """当事人近期放贷诉讼统计 — 职业放贷人检测输入。
+
+    民间借贷专属：仅 CRED-07 (credibility_scorer) 在原告方使用此结构判定职业
+    放贷人。Party 上的对应字段已弱化为 dict[str, Any] 以避免通用模型耦合此
+    案件类型；调用方可在序列化前后通过 `LitigationHistory.model_validate(d)` /
+    `hist.model_dump()` 在 dict 与 BaseModel 之间互转。
+    """
+
+    lending_case_count: int = Field(default=0, ge=0, description="近期放贷诉讼数")
+    distinct_borrower_count: int = Field(default=0, ge=0, description="不同借款人数")
+    total_lending_amount: Decimal = Field(default=Decimal("0"), ge=0, description="累计放贷金额")
+    time_span_months: int = Field(default=0, ge=0, description="统计时间跨度（月）")
+    uniform_contract_detected: bool = Field(default=False, description="借条格式是否雷同")
+
+
 __all__ = [
     "AmountCalculationReport",
     "AmountConflict",
@@ -185,6 +206,7 @@ __all__ = [
     "ClaimCalculationEntry",
     "DisputedAmountAttribution",
     "InterestRecalculation",
+    "LitigationHistory",
     "LoanTransaction",
     "RepaymentTransaction",
 ]

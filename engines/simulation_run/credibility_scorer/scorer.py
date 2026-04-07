@@ -276,18 +276,24 @@ class CredibilityScorer:
         触发条件：原告方（side="plaintiff"）的 litigation_history 中，
         lending_case_count 达到阈值且 distinct_borrower_count 达到阈值，
         且时间窗口在上限内。仅检查原告，被告满足条件不触发。
+
+        Unit 22 Phase B：Party.litigation_history 现为 dict[str, Any]
+        以解耦通用模型对 civil_loan 类的依赖。本规则按 dict 键读取。
         """
         t = self._thresholds
         for party in party_list:
             if party.side != "plaintiff":
                 continue
             hist = party.litigation_history
-            if hist is None:
+            if not hist:
                 continue
+            lending_cases = int(hist.get("lending_case_count", 0))
+            distinct_borrowers = int(hist.get("distinct_borrower_count", 0))
+            time_span = int(hist.get("time_span_months", 0))
             if (
-                hist.lending_case_count >= t.prof_lender_min_cases
-                and hist.distinct_borrower_count >= t.prof_lender_min_borrowers
-                and hist.time_span_months <= t.prof_lender_max_span_months
+                lending_cases >= t.prof_lender_min_cases
+                and distinct_borrowers >= t.prof_lender_min_borrowers
+                and time_span <= t.prof_lender_max_span_months
             ):
                 desc, pts = _RULES["CRED-07"]
                 return CredibilityDeduction(

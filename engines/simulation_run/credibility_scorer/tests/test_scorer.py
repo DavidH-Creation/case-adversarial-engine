@@ -583,7 +583,7 @@ class TestCredibilityScorerIntegration:
 # CRED-07: 职业放贷人检测
 # ---------------------------------------------------------------------------
 
-from engines.shared.models import LitigationHistory, Party
+from engines.shared.models import Party
 from engines.shared.rule_config import RuleThresholds
 
 
@@ -597,6 +597,8 @@ class TestCRED07ProfessionalLender:
         months: int = 24,
         uniform: bool = False,
     ) -> Party:
+        # Unit 22 Phase B: litigation_history is now a neutral dict[str, Any]
+        # to keep民间借贷 vocabulary out of the generic Party model.
         return Party(
             party_id="plaintiff-1",
             case_id="case1",
@@ -604,12 +606,12 @@ class TestCRED07ProfessionalLender:
             party_type="natural_person",
             role_code="plaintiff_agent",
             side="plaintiff",
-            litigation_history=LitigationHistory(
-                lending_case_count=case_count,
-                distinct_borrower_count=borrowers,
-                time_span_months=months,
-                uniform_contract_detected=uniform,
-            ),
+            litigation_history={
+                "lending_case_count": case_count,
+                "distinct_borrower_count": borrowers,
+                "time_span_months": months,
+                "uniform_contract_detected": uniform,
+            },
         )
 
     def test_triggers_when_all_thresholds_met(self):
@@ -719,12 +721,12 @@ class TestCRED07ProfessionalLender:
             party_type="natural_person",
             role_code="defendant_agent",
             side="defendant",
-            litigation_history=LitigationHistory(
-                lending_case_count=10,
-                distinct_borrower_count=10,
-                time_span_months=12,
-                uniform_contract_detected=True,
-            ),
+            litigation_history={
+                "lending_case_count": 10,
+                "distinct_borrower_count": 10,
+                "time_span_months": 12,
+                "uniform_contract_detected": True,
+            },
         )
         inp = CredibilityScorerInput(
             case_id="case1",
