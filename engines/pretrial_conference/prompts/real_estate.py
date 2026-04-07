@@ -100,3 +100,17 @@ def build_cross_exam_user_prompt(
 - evidence_id 和 issue_ids 必须使用上面列出的真实 ID
 - reasoning 应具体，不得空泛
 """
+
+
+def build_user_prompt(
+    *,
+    evidences: list[Evidence],
+    issue_tree: IssueTree,
+    examiner_role: str,
+) -> str:
+    """构建质证 user prompt（CaseTypePlugin 协议入口）。"""
+    return build_cross_exam_user_prompt(
+        evidences=evidences,
+        issue_tree=issue_tree,
+        examiner_role=examiner_role,
+    )

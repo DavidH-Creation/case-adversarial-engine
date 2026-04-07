@@ -340,6 +340,7 @@ ENGINES_WITH_FUNCTIONAL_PLUGIN: list[tuple[str, str]] = [
     ("procedure_setup", "engines.procedure_setup.prompts"),
     ("interactive_followup", "engines.interactive_followup.prompts"),
     ("simulation_run_root", "engines.simulation_run.prompts"),
+    ("pretrial_conference", "engines.pretrial_conference.prompts"),
 ]
 
 
