@@ -344,3 +344,50 @@ Same rigor level as Batch 4 review. Look for:
   the model passive).
 - Renaming any prompt files. The file names (`labor_dispute.py`, `real_estate.py`)
   remain stable.
+
+---
+
+## 8. Errata (recorded after adversarial review of implementation)
+
+These corrections were noted by the post-implementation adversarial review and
+preserve the historical record of where the implementation deliberately
+deviated from the plan as written.
+
+- **§5 / C.5a return type**: The plan says
+  `allowed_impact_targets(case_type) -> set[str]`. The implementation returns
+  `frozenset[str]` on both the Protocol and `RegistryPlugin`. `frozenset` was
+  chosen because it is immutable, hashable, and prevents accidental mutation
+  of the cached value on `IssueImpactRanker._allowed_impact_targets`. The
+  Protocol contract is strictly stronger than what the plan promised; no caller
+  is broken.
+- **§5 / C.5a default behavior**: The plan says `RegistryPlugin` "defaults to
+  the civil_loan set if a registry entry does not override this method". The
+  implementation **raises `ValueError`** instead, with a message that names
+  the case type and tells the caller to declare `ALLOWED_IMPACT_TARGETS`. This
+  is the safer behavior — silently falling back to civil_loan vocab in a
+  labor_dispute or real_estate ranker would re-introduce the exact
+  vocabulary-leak bug Phase C is trying to fix. A silent default would have
+  defeated the post-LLM filter.
+- **§6 verification, Phase C.5b lock-step**: The plan asked for "tests assert
+  the new ALLOWED_IMPACT_TARGETS sets are exactly the documented size". The
+  implementation goes further: a parametrized test
+  (`test_ranker_example_impact_targets_match_allowed_vocabulary` in
+  `tests/test_few_shot_examples.py`) asserts that every per-case-type few-shot
+  example's `impact_targets` is a subset of that case type's frozenset. This
+  is the lock-step invariant that prevents the prompt vocabulary line, the
+  example JSON, and the post-LLM filter from drifting apart in the future.
+- **§6 verification, regression coverage**: A post-review follow-up commit
+  added two test classes that the plan implied but did not list:
+  - `engines/shared/tests/test_models_p0_1.py::TestImpactTargetsCoercion`
+    (6 tests) — locks in the Pydantic str-Enum-to-str coercion that justifies
+    keeping `ImpactTarget` alive in `civil_loan.py`.
+  - `engines/simulation_run/issue_impact_ranker/tests/test_ranker.py::TestImpactTargetsVocabularyFilter`
+    (6 tests) — proves end-to-end that the ranker filter actually drops
+    out-of-vocabulary values from LLM output for all 3 case types.
+- **`pyproject.toml` testpaths**: The same follow-up discovered that the
+  top-level `tests/test_few_shot_examples.py` was not collected by the default
+  pytest invocation because the top-level `tests/` directory is not in
+  `[tool.pytest.ini_options].testpaths`. The follow-up adds an explicit entry
+  for that one file (not the whole `tests/` directory — `tests/smoke/` and
+  others contain pre-existing failures out of Phase C scope). Without this fix
+  the lock-step invariant test described above would never run.

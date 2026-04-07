@@ -63,6 +63,14 @@ testpaths = [
     "engines/similar_case_search/tests",
     "engines/report_generation/v3/tests",
     "engines/case_structuring/case_extractor/tests",
+    # Unit 22 Phase C follow-up: tests/test_few_shot_examples.py was
+    # previously uncollected because the top-level tests/ directory is not
+    # in testpaths (only tests/integration is). The C.5b lock-step invariant
+    # `test_ranker_example_impact_targets_match_allowed_vocabulary` lives
+    # in that file. We list the file explicitly rather than adding all of
+    # tests/ to avoid pulling in tests/smoke/ etc., which contain
+    # pre-existing failures out of Phase C scope.
+    "tests/test_few_shot_examples.py",
 ]
 
 [tool.coverage.run]

@@ -757,3 +757,105 @@ class TestOpusStyleNormalization:
         assert by_id["i-evaluated"].composite_score is not None
         # 未评估争点 composite_score 为 None，排在末尾
         assert by_id["i-unevaluated"].composite_score is None
+
+
+# ---------------------------------------------------------------------------
+# 测试：Phase C.5a 案由专属词汇过滤（_resolve_impact_targets）
+# Phase C.5a regression: per-case-type impact_targets vocabulary filter
+# ---------------------------------------------------------------------------
+
+
+class TestImpactTargetsVocabularyFilter:
+    """Unit 22 Phase C.5a/C.5b 回归测试。
+
+    Issue.impact_targets 是 list[str]，没有 enum 校验。LLM 一旦幻想出
+    civil_loan 词汇（如 'principal'）但 ranker 配置为 labor_dispute，过滤器
+    必须静默丢弃这些值，使 Issue.impact_targets 仍然为案由词汇的子集。这是
+    Phase C 的核心保证之一，必须有运行时回归测试覆盖。
+    """
+
+    def test_civil_loan_drops_labor_and_real_estate_vocab(self):
+        """civil_loan ranker 必须丢弃 labor_dispute / real_estate / 完全未知值。"""
+        ranker = IssueImpactRanker(MockLLMClient("{}"), case_type="civil_loan")
+        out = ranker._resolve_impact_targets(
+            [
+                "principal",  # civil_loan ✓
+                "interest",  # civil_loan ✓
+                "wages",  # labor_dispute ✗
+                "specific_performance",  # real_estate ✗
+                "BOGUS_TARGET",  # 完全未知 ✗
+                "credibility",  # 案由中立 pivot ✓
+            ]
+        )
+        assert out == ["principal", "interest", "credibility"]
+
+    def test_labor_dispute_drops_civil_loan_and_real_estate_vocab(self):
+        """labor_dispute ranker 必须丢弃 civil_loan / real_estate / 未知值。"""
+        ranker = IssueImpactRanker(MockLLMClient("{}"), case_type="labor_dispute")
+        out = ranker._resolve_impact_targets(
+            [
+                "principal",  # civil_loan ✗
+                "interest",  # civil_loan ✗
+                "wages",  # labor_dispute ✓
+                "economic_compensation",  # labor_dispute ✓
+                "specific_performance",  # real_estate ✗
+                "credibility",  # 案由中立 pivot ✓
+            ]
+        )
+        assert out == ["wages", "economic_compensation", "credibility"]
+
+    def test_real_estate_drops_civil_loan_and_labor_vocab(self):
+        """real_estate ranker 必须丢弃 civil_loan / labor_dispute / 未知值。"""
+        ranker = IssueImpactRanker(MockLLMClient("{}"), case_type="real_estate")
+        out = ranker._resolve_impact_targets(
+            [
+                "principal",  # civil_loan ✗
+                "wages",  # labor_dispute ✗
+                "specific_performance",  # real_estate ✓
+                "liquidated_damages",  # real_estate ✓
+                "BOGUS_TARGET",  # 未知 ✗
+                "credibility",  # 案由中立 pivot ✓
+            ]
+        )
+        assert out == ["specific_performance", "liquidated_damages", "credibility"]
+
+    def test_filter_normalizes_whitespace_and_case(self):
+        """过滤前先做 strip + lower（保留 Phase C 之前的合约）。"""
+        ranker = IssueImpactRanker(MockLLMClient("{}"), case_type="civil_loan")
+        out = ranker._resolve_impact_targets(
+            ["  PRINCIPAL  ", "Interest", "PENALTY"]
+        )
+        assert out == ["principal", "interest", "penalty"]
+
+    def test_empty_list_returns_empty(self):
+        """空输入返回空列表，不报错。"""
+        ranker = IssueImpactRanker(MockLLMClient("{}"), case_type="civil_loan")
+        assert ranker._resolve_impact_targets([]) == []
+
+    @pytest.mark.asyncio
+    async def test_full_rank_drops_out_of_vocab_from_llm_output(self):
+        """端到端：LLM 返回混合词汇，rank() 后 Issue.impact_targets 仅含案由合法值。
+
+        这是覆盖 ranker.py:686 ``updates['impact_targets'] = self._resolve_impact_targets(...)``
+        的端到端回归 — 单元测试覆盖纯函数，这条测试覆盖通过 rank() 流程的实际写入。
+        """
+        issues = [_make_issue("i-001", evidence_ids=["ev-001"])]
+        ev = _eval_entry(
+            "i-001",
+            impact_targets=[
+                "principal",  # ✓
+                "wages",  # ✗ labor_dispute leak
+                "specific_performance",  # ✗ real_estate leak
+                "credibility",  # ✓ pivot
+                "GARBAGE",  # ✗ unknown
+            ],
+        )
+        client = MockLLMClient(_stub_response([ev]))
+        ranker = IssueImpactRanker(client, case_type="civil_loan")
+        result = await ranker.rank(_make_ranker_input(issues))
+
+        ranked = result.ranked_issue_tree.issues[0]
+        # 仅 civil_loan 词汇被保留；过滤是宽松的（不降级整条评估）
+        assert set(ranked.impact_targets) == {"principal", "credibility"}
+        # 关键：丢弃非法值不应导致整条评估被降级到 unevaluated
+        assert "i-001" not in result.unevaluated_issue_ids

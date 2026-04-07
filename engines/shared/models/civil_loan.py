@@ -40,18 +40,24 @@ from engines.shared.models.core import (
 #       (ClaimType|RepaymentAttribution|ImpactTarget)``
 # are now broken by design.
 #
-# ImpactTarget is intentionally kept as a strongly-typed enum for civil_loan
-# despite Issue.impact_targets being weakened to ``list[str]`` in Phase C.3.
-# Reasons:
-#   1. The civil_loan vocabulary is stable and legally anchored
-#      (民法典 + 法释〔2020〕17号 关于民间借贷的司法解释).
-#   2. Internal civil_loan code (prompts, fixtures, audits) benefits from
-#      auto-completion and "is the value still in the enum" tests.
-#   3. The model boundary stays open (any string), but civil_loan-specific
-#      consumers can still use ``ImpactTarget.principal`` because str-Enum
-#      values are coerced through Pydantic seamlessly.
-# Other case types (劳动争议, 房屋买卖) define their own ALLOWED_IMPACT_TARGETS
-# constants on their prompt modules; they do NOT extend this enum.
+# ImpactTarget is kept as a documentation-grade vocabulary enum, NOT as a
+# type-checked field type. ``Issue.impact_targets`` is ``list[str]`` per Phase
+# C.3, and *no* production code in engines/ does attribute access like
+# ``ImpactTarget.principal`` — every runtime consumer uses raw strings so the
+# Issue model can stay case-type-neutral. The enum survives for two narrower
+# purposes:
+#   1. ``test_models_p0_1.py::TestImpactTarget`` exercises the value set as a
+#      vocabulary completeness check anchored to 民法典 + 法释〔2020〕17号
+#      关于民间借贷的司法解释 — i.e. "did anyone accidentally drop a member?".
+#   2. ``test_models_p0_1.py::TestImpactTargetsCoercion`` uses the enum
+#      members (``ImpactTarget.principal`` etc.) as a regression test that
+#      Pydantic still flattens str-Enum instances to plain ``str`` when
+#      assigned to a ``list[str]`` field. That coercion is what makes the
+#      Phase C neutralization safe — without it, civil_loan-internal code
+#      could leak ImpactTarget instances into JSON output and the ranker's
+#      ``str in frozenset[str]`` filter.
+# Other case types (劳动争议, 房屋买卖) declare their own ALLOWED_IMPACT_TARGETS
+# frozenset on their prompt modules; they do NOT extend this enum.
 
 
 class RepaymentAttribution(str, Enum):

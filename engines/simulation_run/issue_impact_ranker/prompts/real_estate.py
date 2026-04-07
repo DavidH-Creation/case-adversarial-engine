@@ -2,8 +2,8 @@
 房屋买卖合同纠纷（real_estate）案件类型的争点影响排序 LLM 提示模板。
 LLM prompt templates for real estate sale contract dispute case type issue impact ranking.
 
-指导 LLM 对每个争点从五个维度进行结构化评估，输出严格 JSON。
-Guides LLM to evaluate each issue on 5 dimensions and output strict JSON.
+指导 LLM 对每个争点从十个维度进行结构化评估，输出严格 JSON。
+Guides LLM to evaluate each issue on 10 dimensions and output strict JSON.
 """
 
 from __future__ import annotations
