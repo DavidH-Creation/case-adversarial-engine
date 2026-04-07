@@ -179,17 +179,19 @@ class FollowupResponder:
         report_issue_ids = self._collect_report_issue_ids(report)
 
         # 构建 prompt / Build prompt
+        from .prompts import plugin
+
         system_prompt = self._prompt_module.SYSTEM_PROMPT
-        report_context_block = self._prompt_module.format_report_context(report.model_dump())
-        history_block = self._prompt_module.format_history_block(
-            [t.model_dump() for t in previous_turns]
-        )
-        user_prompt = self._prompt_module.RESPONSE_PROMPT.format(
-            case_id=report.case_id,
-            report_id=report.report_id,
-            report_context_block=report_context_block,
-            history_block=history_block,
-            question=question,
+        user_prompt = plugin.get_prompt(
+            "interactive_followup",
+            self._case_type,
+            {
+                "case_id": report.case_id,
+                "report_id": report.report_id,
+                "report": report.model_dump(),
+                "previous_turns": [t.model_dump() for t in previous_turns],
+                "question": question,
+            },
         )
 
         # 调用 LLM（结构化输出）/ Call LLM with structured output
