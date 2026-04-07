@@ -211,16 +211,6 @@ class DisputeResolutionStatus(str, Enum):
     partially_resolved = "partially_resolved"
 
 
-class ClaimType(str, Enum):
-    """诉请类型 — 对应 ClaimCalculationEntry.claim_type。"""
-
-    principal = "principal"
-    interest = "interest"
-    penalty = "penalty"
-    attorney_fee = "attorney_fee"
-    other = "other"
-
-
 class OutcomeImpact(str, Enum):
     """争点对最终裁判结果的影响程度（P0.1）。"""
 

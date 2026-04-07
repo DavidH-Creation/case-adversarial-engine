@@ -8,12 +8,12 @@ Backward-compatible re-export of all public names from sub-modules.
 # ---------------------------------------------------------------------------
 # core: enumerations and foundational types
 # ---------------------------------------------------------------------------
-# Note: RepaymentAttribution has been physically isolated to
-# engines.shared.models.civil_loan (Unit 22 Phase C.1). It is re-exported below
-# from civil_loan to preserve ``from engines.shared.models import RepaymentAttribution``
-# compatibility, but the deep path
-# ``from engines.shared.models.core import RepaymentAttribution`` is now broken
-# by design. Phase C.2 / C.4 will move ClaimType / ImpactTarget the same way.
+# Note: ClaimType and RepaymentAttribution have been physically isolated to
+# engines.shared.models.civil_loan (Unit 22 Phase C.1 and C.2). They are
+# re-exported below from civil_loan to preserve ``from engines.shared.models
+# import X`` compatibility, but the deep path
+# ``from engines.shared.models.core import (ClaimType|RepaymentAttribution)``
+# is now broken by design. Phase C.4 will move ImpactTarget the same way.
 from engines.shared.models.core import (
     AccessDomain,
     AdmissibilityStatus,
@@ -24,7 +24,6 @@ from engines.shared.models.core import (
     BurdenStatus,
     CaseType,
     ChangeItemObjectType,
-    ClaimType,
     ContractValidity,
     DiffDirection,
     DisputeResolutionStatus,
@@ -58,6 +57,7 @@ from engines.shared.models.core import (
     WorkflowStage,
 )
 from engines.shared.models.civil_loan import (
+    ClaimType,
     RepaymentAttribution,
 )
 

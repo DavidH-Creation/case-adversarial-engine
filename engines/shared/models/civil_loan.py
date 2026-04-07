@@ -22,7 +22,6 @@ from typing import Optional
 from pydantic import BaseModel, Field, model_validator
 
 from engines.shared.models.core import (
-    ClaimType,
     ContractValidity,
     DisputeResolutionStatus,
 )
@@ -36,7 +35,8 @@ from engines.shared.models.core import (
 # the generic core layer no longer carries 民间借贷-specific vocabulary. These
 # enums remain importable as ``from engines.shared.models import X`` because
 # ``engines/shared/models/__init__.py`` re-exports them. Direct deep imports
-# of the form ``from engines.shared.models.core import RepaymentAttribution``
+# of the form
+# ``from engines.shared.models.core import (ClaimType|RepaymentAttribution)``
 # are now broken by design.
 
 
@@ -46,6 +46,16 @@ class RepaymentAttribution(str, Enum):
     principal = "principal"
     interest = "interest"
     penalty = "penalty"
+
+
+class ClaimType(str, Enum):
+    """诉请类型 — 对应 ClaimCalculationEntry.claim_type。"""
+
+    principal = "principal"
+    interest = "interest"
+    penalty = "penalty"
+    attorney_fee = "attorney_fee"
+    other = "other"
 
 
 # ---------------------------------------------------------------------------
@@ -224,6 +234,7 @@ __all__ = [
     "AmountConflict",
     "AmountConsistencyCheck",
     "ClaimCalculationEntry",
+    "ClaimType",
     "DisputedAmountAttribution",
     "InterestRecalculation",
     "LitigationHistory",
