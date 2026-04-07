@@ -34,7 +34,7 @@ RESPONSE_PROMPT = """\
 
 ## 当前追问
 
-{question_block}
+{question}
 
 ## 输出要求
 
@@ -59,3 +59,29 @@ RESPONSE_PROMPT = """\
 - 面积差异处理：差异不超过 3% 通常按实结算；超过 3% 买受方可请求解除合同
 - 房屋质量瑕疵时效：自发现或应当发现瑕疵之日起计算，不适用一般诉讼时效截断规则\
 """
+
+
+def build_user_prompt(
+    *,
+    case_id: str,
+    report_id: str,
+    report: dict,
+    previous_turns: list[dict],
+    question: str,
+) -> str:
+    """构建追问响应 user prompt（CaseTypePlugin 协议入口）。
+
+    Reuses civil_loan's case-type-agnostic format helpers via one-way
+    local import (see labor_dispute.py for the same rationale).
+    """
+    from .civil_loan import format_history_block, format_report_context
+
+    report_context_block = format_report_context(report)
+    history_block = format_history_block(previous_turns)
+    return RESPONSE_PROMPT.format(
+        case_id=case_id,
+        report_id=report_id,
+        report_context_block=report_context_block,
+        history_block=history_block,
+        question=question,
+    )

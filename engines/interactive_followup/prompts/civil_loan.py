@@ -144,3 +144,28 @@ def format_history_block(turns: list[dict]) -> str:
         )
 
     return "\n".join(lines)
+
+
+def build_user_prompt(
+    *,
+    case_id: str,
+    report_id: str,
+    report: dict,
+    previous_turns: list[dict],
+    question: str,
+) -> str:
+    """构建追问响应 user prompt（CaseTypePlugin 协议入口）。
+
+    Composes ``RESPONSE_PROMPT`` with the rendered report-context and
+    history blocks. Called via ``RegistryPlugin.get_prompt(...)`` and
+    directly by the runner.
+    """
+    report_context_block = format_report_context(report)
+    history_block = format_history_block(previous_turns)
+    return RESPONSE_PROMPT.format(
+        case_id=case_id,
+        report_id=report_id,
+        report_context_block=report_context_block,
+        history_block=history_block,
+        question=question,
+    )
