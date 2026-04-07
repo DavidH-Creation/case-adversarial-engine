@@ -18,7 +18,6 @@ from engines.shared.models import (  # noqa: F401
     AttackStrength,
     EvidenceIndex,
     EvidenceStrength,
-    ImpactTarget,
     IssueTree,
     OutcomeImpact,
     RecommendedAction,

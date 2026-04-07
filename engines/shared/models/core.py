@@ -219,16 +219,6 @@ class OutcomeImpact(str, Enum):
     low = "low"
 
 
-class ImpactTarget(str, Enum):
-    """争点影响的诉请对象（P0.1）。"""
-
-    principal = "principal"
-    interest = "interest"
-    penalty = "penalty"
-    attorney_fee = "attorney_fee"
-    credibility = "credibility"
-
-
 class EvidenceStrength(str, Enum):
     """主张方证据强度（P0.1）。"""
 

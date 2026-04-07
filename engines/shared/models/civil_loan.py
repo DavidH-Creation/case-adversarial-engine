@@ -36,8 +36,22 @@ from engines.shared.models.core import (
 # enums remain importable as ``from engines.shared.models import X`` because
 # ``engines/shared/models/__init__.py`` re-exports them. Direct deep imports
 # of the form
-# ``from engines.shared.models.core import (ClaimType|RepaymentAttribution)``
+# ``from engines.shared.models.core import
+#       (ClaimType|RepaymentAttribution|ImpactTarget)``
 # are now broken by design.
+#
+# ImpactTarget is intentionally kept as a strongly-typed enum for civil_loan
+# despite Issue.impact_targets being weakened to ``list[str]`` in Phase C.3.
+# Reasons:
+#   1. The civil_loan vocabulary is stable and legally anchored
+#      (民法典 + 法释〔2020〕17号 关于民间借贷的司法解释).
+#   2. Internal civil_loan code (prompts, fixtures, audits) benefits from
+#      auto-completion and "is the value still in the enum" tests.
+#   3. The model boundary stays open (any string), but civil_loan-specific
+#      consumers can still use ``ImpactTarget.principal`` because str-Enum
+#      values are coerced through Pydantic seamlessly.
+# Other case types (劳动争议, 房屋买卖) define their own ALLOWED_IMPACT_TARGETS
+# constants on their prompt modules; they do NOT extend this enum.
 
 
 class RepaymentAttribution(str, Enum):
@@ -56,6 +70,21 @@ class ClaimType(str, Enum):
     penalty = "penalty"
     attorney_fee = "attorney_fee"
     other = "other"
+
+
+class ImpactTarget(str, Enum):
+    """争点影响的诉请对象（P0.1，民间借贷专属语义）。
+
+    含义对应 ClaimType + 'credibility'：principal/interest/penalty/attorney_fee
+    覆盖民间借贷的全部诉请类型，credibility 单独刻画"对当事人陈述/证据可信度的
+    影响"，与诉请金额维度正交。
+    """
+
+    principal = "principal"
+    interest = "interest"
+    penalty = "penalty"
+    attorney_fee = "attorney_fee"
+    credibility = "credibility"
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +265,7 @@ __all__ = [
     "ClaimCalculationEntry",
     "ClaimType",
     "DisputedAmountAttribution",
+    "ImpactTarget",
     "InterestRecalculation",
     "LitigationHistory",
     "LoanTransaction",
