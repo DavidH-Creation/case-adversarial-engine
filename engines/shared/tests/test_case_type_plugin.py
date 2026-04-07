@@ -341,6 +341,7 @@ ENGINES_WITH_FUNCTIONAL_PLUGIN: list[tuple[str, str]] = [
     ("interactive_followup", "engines.interactive_followup.prompts"),
     ("simulation_run_root", "engines.simulation_run.prompts"),
     ("pretrial_conference", "engines.pretrial_conference.prompts"),
+    ("adversarial", "engines.adversarial.prompts"),
 ]
 
 

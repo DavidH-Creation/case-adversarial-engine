@@ -38,3 +38,23 @@ EVIDENCE_REVIEW_CRITERIA = """
 - 收条：真实性、对应关系
 - 证人证词：利害关系、陈述一致性
 """
+
+
+def build_user_prompt(**_kwargs: object) -> str:
+    """构建对抗引擎案由上下文（CaseTypePlugin 协议入口）。
+
+    Returns the case-type-specific context block to be injected into agent
+    system prompts (Plaintiff/Defendant/EvidenceManager). Concatenates
+    ``CASE_CONTEXT`` and ``EVIDENCE_REVIEW_CRITERIA`` so a single call from
+    ``plugin.get_prompt(...)`` returns the complete adversarial context for
+    this case type.
+
+    Accepts (and ignores) arbitrary kwargs so callers don't have to know
+    which subset of an engine context dict is relevant. The constants are
+    static — there are no placeholders to substitute.
+
+    Note: agent code currently builds prompts inline and does not yet
+    consume this. Wiring agents to inject ``plugin.get_prompt(...)`` is
+    tracked as Unit 14 follow-up Group 2 work.
+    """
+    return f"{CASE_CONTEXT}\n{EVIDENCE_REVIEW_CRITERIA}"

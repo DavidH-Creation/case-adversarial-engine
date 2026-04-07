@@ -44,3 +44,13 @@ EVIDENCE_REVIEW_CRITERIA = """
 - 面积测绘报告：是否由具备资质的测绘机构出具，测量方法是否规范
 - 往来函件/微信记录：催告违约行为的送达时效，截图完整性与设备溯源
 """
+
+
+def build_user_prompt(**_kwargs: object) -> str:
+    """构建对抗引擎案由上下文（CaseTypePlugin 协议入口）。
+
+    Returns the case-type-specific context block to be injected into agent
+    system prompts. See ``civil_loan.build_user_prompt`` for the rationale
+    behind the kwargs-tolerant signature.
+    """
+    return f"{CASE_CONTEXT}\n{EVIDENCE_REVIEW_CRITERIA}"
