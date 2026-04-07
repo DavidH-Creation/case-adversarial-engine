@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
@@ -24,8 +25,27 @@ from engines.shared.models.core import (
     ClaimType,
     ContractValidity,
     DisputeResolutionStatus,
-    RepaymentAttribution,
 )
+
+
+# ---------------------------------------------------------------------------
+# 民间借贷专属枚举 / civil-loan-specific enums
+# ---------------------------------------------------------------------------
+#
+# Unit 22 Phase C: physically isolated from engines.shared.models.core so that
+# the generic core layer no longer carries 民间借贷-specific vocabulary. These
+# enums remain importable as ``from engines.shared.models import X`` because
+# ``engines/shared/models/__init__.py`` re-exports them. Direct deep imports
+# of the form ``from engines.shared.models.core import RepaymentAttribution``
+# are now broken by design.
+
+
+class RepaymentAttribution(str, Enum):
+    """还款归因类型 — 每笔还款必须唯一归因到某一类。"""
+
+    principal = "principal"
+    interest = "interest"
+    penalty = "penalty"
 
 
 # ---------------------------------------------------------------------------
@@ -208,5 +228,6 @@ __all__ = [
     "InterestRecalculation",
     "LitigationHistory",
     "LoanTransaction",
+    "RepaymentAttribution",
     "RepaymentTransaction",
 ]

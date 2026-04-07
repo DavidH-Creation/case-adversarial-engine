@@ -203,14 +203,6 @@ class AgentRole(str, Enum):
     evidence_manager = "evidence_manager"
 
 
-class RepaymentAttribution(str, Enum):
-    """还款归因类型 — 每笔还款必须唯一归因到某一类。"""
-
-    principal = "principal"
-    interest = "interest"
-    penalty = "penalty"
-
-
 class DisputeResolutionStatus(str, Enum):
     """争议解决状态。"""
 
