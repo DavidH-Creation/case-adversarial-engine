@@ -17,6 +17,8 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=5.0",
     "ruff>=0.4.0",
+    "mypy>=1.10.0",
+    "pre-commit>=3.7.0",
 ]
 api = [
     "fastapi>=0.110.0",
@@ -57,6 +59,7 @@ testpaths = [
     "api/tests",
     "engines/similar_case_search/tests",
     "engines/report_generation/v3/tests",
+    "engines/case_structuring/case_extractor/tests",
 ]
 
 [tool.coverage.run]
@@ -86,6 +89,14 @@ ignore = [
 
 [tool.setuptools.packages.find]
 include = ["engines*"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
 
 [build-system]
 requires = ["setuptools>=68.0"]

@@ -1,0 +1,22 @@
+# Pre-commit hooks for case-adversarial-engine
+# Install: pre-commit install
+# Run all: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        args: [--ignore-missing-imports, --check-untyped-defs]
+        additional_dependencies:
+          - pydantic>=2.0
+          - fastapi>=0.110.0
+        pass_filenames: false
+        entry: mypy engines/
