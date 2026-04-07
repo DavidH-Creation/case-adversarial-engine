@@ -249,14 +249,11 @@ class Defense(BaseModel):
     status: str = Field(default="open")
 
 
-class LitigationHistory(BaseModel):
-    """当事人近期放贷诉讼统计 — 职业放贷人检测输入。"""
-
-    lending_case_count: int = Field(default=0, ge=0, description="近期放贷诉讼数")
-    distinct_borrower_count: int = Field(default=0, ge=0, description="不同借款人数")
-    total_lending_amount: Decimal = Field(default=Decimal("0"), ge=0, description="累计放贷金额")
-    time_span_months: int = Field(default=0, ge=0, description="统计时间跨度（月）")
-    uniform_contract_detected: bool = Field(default=False, description="借条格式是否雷同")
+# LitigationHistory has been physically isolated to engines.shared.models.civil_loan
+# (Unit 22 Phase B). It is re-exported below for backward compatibility, and
+# Party.litigation_history is now typed as a neutral dict[str, Any] so that the
+# generic case-object layer no longer carries民间借贷-specific fields.
+from engines.shared.models.civil_loan import LitigationHistory  # noqa: F401  (re-export)
 
 
 class Party(BaseModel):
@@ -271,8 +268,10 @@ class Party(BaseModel):
     case_type: str = Field(default="civil")
     access_domain_scope: list[str] = Field(default_factory=list)
     active: bool = True
-    # v1.5 bugfix: 职业放贷人检测扩展字段
-    litigation_history: Optional[LitigationHistory] = None
+    # v1.5 bugfix: 职业放贷人检测扩展字段（Unit 22 Phase B 起改为 dict 以
+    # 移除对 civil_loan 模型的硬依赖；调用方按 dict[str, Any] 读写，必要时
+    # 通过 LitigationHistory.model_validate / model_dump 转换）
+    litigation_history: Optional[dict[str, Any]] = None
 
 
 # ---------------------------------------------------------------------------

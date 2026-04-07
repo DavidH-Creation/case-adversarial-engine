@@ -46,6 +46,13 @@ class TestLitigationHistory:
 
 
 class TestPartyLitigationHistory:
+    """Unit 22 Phase B: Party.litigation_history is now a neutral dict[str, Any].
+
+    The LitigationHistory pydantic model still exists in civil_loan.py and is
+    tested above; here we exercise the dict-based contract on the generic
+    Party object.
+    """
+
     def test_party_default_no_history(self):
         p = Party(
             party_id="p1",
@@ -57,8 +64,9 @@ class TestPartyLitigationHistory:
         )
         assert p.litigation_history is None
 
-    def test_party_with_history(self):
-        hist = LitigationHistory(lending_case_count=5, distinct_borrower_count=5)
+    def test_party_with_history_dict(self):
+        # 调用方既可以直接传 dict, 也可以走 LitigationHistory.model_dump()
+        hist_dict = {"lending_case_count": 5, "distinct_borrower_count": 5}
         p = Party(
             party_id="p1",
             case_id="c1",
@@ -66,9 +74,25 @@ class TestPartyLitigationHistory:
             party_type="natural_person",
             role_code="plaintiff_agent",
             side="plaintiff",
-            litigation_history=hist,
+            litigation_history=hist_dict,
         )
-        assert p.litigation_history.lending_case_count == 5
+        assert p.litigation_history is not None
+        assert p.litigation_history["lending_case_count"] == 5
+
+    def test_party_with_history_via_model_dump(self):
+        # LitigationHistory 可经 model_dump() 序列化后写入 Party
+        hist = LitigationHistory(lending_case_count=8, distinct_borrower_count=8)
+        p = Party(
+            party_id="p1",
+            case_id="c1",
+            name="A",
+            party_type="natural_person",
+            role_code="plaintiff_agent",
+            side="plaintiff",
+            litigation_history=hist.model_dump(),
+        )
+        assert p.litigation_history is not None
+        assert p.litigation_history["lending_case_count"] == 8
 
 
 class TestAmountConsistencyCheckExtensions:

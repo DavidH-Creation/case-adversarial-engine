@@ -185,3 +185,213 @@ class TestSimulationRunPluginExports:
 
         with pytest.raises(UnsupportedCaseTypeError):
             plugin.get_prompt("action_recommender", "criminal_law", {})
+
+
+# ---------------------------------------------------------------------------
+# Integration: Unit 14 (Q1=B) — remaining engines export `plugin`
+# ---------------------------------------------------------------------------
+
+
+class TestRemainingEnginePluginExports:
+    """Engines outside ``simulation_run`` that also expose a ``CaseTypePlugin``.
+
+    Adding new entries here is a forcing function: any engine listed below
+    must satisfy the Protocol and have ``civil_loan`` registered. ``case_extractor``
+    (uses single ``"generic"`` key) and ``document_assistance`` (uses 2D
+    ``(doc_type, case_type)`` key) are intentionally NOT listed — they need
+    a custom plugin design out of Unit 14 scope.
+    """
+
+    def test_admissibility_evaluator_exports_plugin(self):
+        from engines.case_structuring.admissibility_evaluator.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_evidence_indexer_exports_plugin(self):
+        from engines.case_structuring.evidence_indexer.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_evidence_weight_scorer_exports_plugin(self):
+        from engines.case_structuring.evidence_weight_scorer.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_issue_extractor_exports_plugin(self):
+        from engines.case_structuring.issue_extractor.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_adversarial_exports_plugin(self):
+        from engines.adversarial.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_interactive_followup_exports_plugin(self):
+        from engines.interactive_followup.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_pretrial_conference_exports_plugin(self):
+        from engines.pretrial_conference.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_procedure_setup_exports_plugin(self):
+        from engines.procedure_setup.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_report_generation_exports_plugin(self):
+        from engines.report_generation.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+    def test_simulation_run_root_exports_plugin(self):
+        from engines.simulation_run.prompts import plugin
+
+        assert isinstance(plugin, CaseTypePlugin)
+        assert "civil_loan" in plugin._registry
+
+
+# ---------------------------------------------------------------------------
+# Integration: end-to-end behavioral verification of every exported plugin
+#
+# The TestRemainingEnginePluginExports class above only verifies *Protocol
+# shape* (isinstance) and that "civil_loan" is a key. That is necessary but
+# not sufficient — it would still pass even if the plugin's underlying
+# registry were malformed (e.g., entries that are neither dict-with-build_user
+# nor module-with-build_user_prompt). The two parameterized classes below
+# close that gap by exercising actual plugin behavior on every engine listed.
+# ---------------------------------------------------------------------------
+
+
+def _import_engine_plugin(dotted_path: str):
+    """Helper: import an engine's prompts.plugin by dotted package path."""
+    import importlib
+
+    module = importlib.import_module(dotted_path)
+    return module.plugin
+
+
+# All 16 engines that export `plugin = RegistryPlugin(PROMPT_REGISTRY)`.
+# These all satisfy the Protocol *shape* (isinstance + has civil_loan key),
+# so they all participate in the unsupported-case-type behavioral check.
+ALL_PLUGIN_ENGINES: list[tuple[str, str]] = [
+    # (engine_name, dotted_import_path)
+    ("admissibility_evaluator", "engines.case_structuring.admissibility_evaluator.prompts"),
+    ("evidence_indexer", "engines.case_structuring.evidence_indexer.prompts"),
+    ("evidence_weight_scorer", "engines.case_structuring.evidence_weight_scorer.prompts"),
+    ("issue_extractor", "engines.case_structuring.issue_extractor.prompts"),
+    ("adversarial", "engines.adversarial.prompts"),
+    ("interactive_followup", "engines.interactive_followup.prompts"),
+    ("pretrial_conference", "engines.pretrial_conference.prompts"),
+    ("procedure_setup", "engines.procedure_setup.prompts"),
+    ("report_generation", "engines.report_generation.prompts"),
+    ("simulation_run_root", "engines.simulation_run.prompts"),
+    ("action_recommender", "engines.simulation_run.action_recommender.prompts"),
+    ("attack_chain_optimizer", "engines.simulation_run.attack_chain_optimizer.prompts"),
+    ("decision_path_tree", "engines.simulation_run.decision_path_tree.prompts"),
+    ("defense_chain", "engines.simulation_run.defense_chain.prompts"),
+    ("issue_impact_ranker", "engines.simulation_run.issue_impact_ranker.prompts"),
+    ("issue_category_classifier", "engines.simulation_run.issue_category_classifier.prompts"),
+]
+
+# The subset of engines whose registry entries are FUNCTIONALLY DISPATCHABLE,
+# i.e. each entry is either a dict with a callable ``build_user`` or a module
+# whose top-level ``build_user_prompt`` is callable. Calling
+# ``plugin.get_prompt(name, case_type, ctx)`` on one of these engines actually
+# returns a built prompt string (does not raise AttributeError).
+#
+# The COMPLEMENT of this list — interface-only stubs whose prompt modules do
+# NOT yet expose ``build_user_prompt`` — was discovered during the batch-4
+# adversarial review. Those engines satisfy the Protocol *shape* (so they
+# pass isinstance and the unsupported-case-type behavioral check) but their
+# runners still bypass the plugin and access the prompt module directly. The
+# plugin export on those engines is currently a forward-looking handle that
+# completes once each runner migrates to ``plugin.get_prompt()`` and each
+# prompt module conforms to the build_user_prompt convention. Tracked as
+# Unit 14 follow-up work.
+ENGINES_WITH_FUNCTIONAL_PLUGIN: list[tuple[str, str]] = [
+    # Dict-based registries with callable build_user (admissibility/weight_scorer)
+    ("admissibility_evaluator", "engines.case_structuring.admissibility_evaluator.prompts"),
+    ("evidence_weight_scorer", "engines.case_structuring.evidence_weight_scorer.prompts"),
+    # Module-based registries whose civil_loan/labor_dispute/real_estate modules
+    # all expose build_user_prompt (the 6 simulation_run sub-engines)
+    ("action_recommender", "engines.simulation_run.action_recommender.prompts"),
+    ("attack_chain_optimizer", "engines.simulation_run.attack_chain_optimizer.prompts"),
+    ("decision_path_tree", "engines.simulation_run.decision_path_tree.prompts"),
+    ("defense_chain", "engines.simulation_run.defense_chain.prompts"),
+    ("issue_impact_ranker", "engines.simulation_run.issue_impact_ranker.prompts"),
+    ("issue_category_classifier", "engines.simulation_run.issue_category_classifier.prompts"),
+]
+
+
+class TestEveryPluginRaisesUnsupportedOnUnknownCaseType:
+    """Calling get_prompt(...) with an unknown case_type must raise
+    ``UnsupportedCaseTypeError`` on EVERY exported plugin — not KeyError,
+    not AttributeError, not silently return None.
+
+    Catches the regression class where a future engine assigns
+    ``plugin = PROMPT_REGISTRY`` (forgetting the RegistryPlugin wrapper) or
+    refactors RegistryPlugin in a way that breaks the unsupported-error path.
+    Applies to all 16 engines because the unsupported-case-type code path in
+    RegistryPlugin short-circuits before touching the entry contents.
+    """
+
+    @pytest.mark.parametrize(("engine_name", "dotted_path"), ALL_PLUGIN_ENGINES)
+    def test_unknown_case_type_raises_unsupported(self, engine_name: str, dotted_path: str):
+        plugin = _import_engine_plugin(dotted_path)
+        with pytest.raises(UnsupportedCaseTypeError) as exc_info:
+            plugin.get_prompt(engine_name, "_nonexistent_case_type_xyz_", {})
+        assert exc_info.value.case_type == "_nonexistent_case_type_xyz_"
+
+
+class TestFunctionalPluginRegistryShape:
+    """Structural integrity check for engines whose plugin is fully functional.
+
+    Each entry in ``plugin._registry`` must be either:
+      (a) a dict containing a callable ``build_user`` (dict-based pattern), OR
+      (b) an object exposing a callable ``build_user_prompt`` attribute
+          (module-based pattern).
+
+    Catches the regression class where a future commit registers a malformed
+    entry (a string, a module that lacks build_user_prompt, or a dict missing
+    the build_user key). Without this test, such breakage would only surface
+    at LLM call time in production.
+
+    Parameterized over ENGINES_WITH_FUNCTIONAL_PLUGIN only — the 8 interface-
+    only stubs are excluded by design (see ALL_PLUGIN_ENGINES docstring).
+    """
+
+    @pytest.mark.parametrize(("engine_name", "dotted_path"), ENGINES_WITH_FUNCTIONAL_PLUGIN)
+    def test_every_registry_entry_is_dispatchable(
+        self, engine_name: str, dotted_path: str
+    ):
+        plugin = _import_engine_plugin(dotted_path)
+        registry = plugin._registry
+        assert len(registry) > 0, f"{engine_name}: registry is empty"
+        for case_type, entry in registry.items():
+            if isinstance(entry, dict):
+                assert "build_user" in entry, (
+                    f"{engine_name}/{case_type}: dict entry missing 'build_user' key"
+                )
+                assert callable(entry["build_user"]), (
+                    f"{engine_name}/{case_type}: dict entry 'build_user' is not callable"
+                )
+            else:
+                assert hasattr(entry, "build_user_prompt"), (
+                    f"{engine_name}/{case_type}: module-style entry missing build_user_prompt"
+                )
+                assert callable(entry.build_user_prompt), (
+                    f"{engine_name}/{case_type}: build_user_prompt is not callable"
+                )
