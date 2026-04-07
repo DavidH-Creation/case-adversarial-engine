@@ -128,6 +128,17 @@ def format_issue_tree_block(issue_tree: dict) -> str:
     return "\n".join(lines)
 
 
+def build_user_prompt(*, case_id: str, issue_tree: dict, evidence_list: list[dict]) -> str:
+    """构建报告生成 user prompt（CaseTypePlugin 协议入口）。"""
+    issue_tree_block = format_issue_tree_block(issue_tree)
+    evidence_block = format_evidence_block(evidence_list)
+    return GENERATION_PROMPT.format(
+        case_id=case_id,
+        issue_tree_block=issue_tree_block,
+        evidence_block=evidence_block,
+    )
+
+
 def format_evidence_block(evidence_list: list[dict]) -> str:
     """将证据列表格式化为 prompt 输入块。
     Format the evidence list into a readable prompt block.

@@ -283,16 +283,18 @@ class ProcedurePlanner:
 
         try:
             # 构建 prompt / Build prompt
+            from .prompts import plugin
+
             system_prompt = self._prompt_module.SYSTEM_PROMPT
-            parties_block = self._prompt_module.format_parties_block(
-                [p.model_dump() for p in setup_input.parties]
-            )
-            issue_tree_block = self._prompt_module.format_issue_tree_block(issue_tree.model_dump())
-            user_prompt = self._prompt_module.SETUP_PROMPT.format(
-                case_id=case_id,
-                case_type=setup_input.case_type,
-                parties_block=parties_block,
-                issue_tree_block=issue_tree_block,
+            user_prompt = plugin.get_prompt(
+                "procedure_setup",
+                self._case_type,
+                {
+                    "case_id": case_id,
+                    "case_type": setup_input.case_type,
+                    "parties": [p.model_dump() for p in setup_input.parties],
+                    "issue_tree": issue_tree.model_dump(),
+                },
             )
 
             # 调用 LLM（结构化输出）/ Call LLM with structured output

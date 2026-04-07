@@ -43,3 +43,13 @@ EVIDENCE_REVIEW_CRITERIA = """
 - 违纪记录/绩效考核：是否经劳动者签字确认，处分程序是否合规（工会告知等）
 - 仲裁裁决书/庭审记录：是否已经过劳动仲裁前置程序
 """
+
+
+def build_user_prompt(**_kwargs: object) -> str:
+    """构建对抗引擎案由上下文（CaseTypePlugin 协议入口）。
+
+    Returns the case-type-specific context block to be injected into agent
+    system prompts. See ``civil_loan.build_user_prompt`` for the rationale
+    behind the kwargs-tolerant signature.
+    """
+    return f"{CASE_CONTEXT}\n{EVIDENCE_REVIEW_CRITERIA}"

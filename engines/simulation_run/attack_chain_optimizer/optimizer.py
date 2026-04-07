@@ -46,7 +46,7 @@ from engines.shared.models import (
 
 from engines.shared.structured_output import call_structured_llm
 
-from .prompts import PROMPT_REGISTRY
+from .prompts import PROMPT_REGISTRY, plugin
 from .schemas import (
     AttackChainOptimizerInput,
     LLMAttackChainOutput,
@@ -83,6 +83,7 @@ class AttackChainOptimizer:
         if case_type not in PROMPT_REGISTRY:
             raise ValueError(f"不支持的案件类型: {case_type}")
         self._llm = llm_client
+        self._case_type = case_type
         self._prompts = PROMPT_REGISTRY[case_type]
         self._model = model
         self._temperature = temperature
@@ -148,10 +149,14 @@ class AttackChainOptimizer:
     async def _call_llm(self, inp: AttackChainOptimizerInput) -> LLMAttackChainOutput | None:
         """调用 LLM（结构化输出），失败时返回 None（不抛异常）。"""
         system = self._prompts["system"]
-        user = self._prompts["build_user"](
-            owner_party_id=inp.owner_party_id,
-            issue_tree=inp.issue_tree,
-            evidence_index=inp.evidence_index,
+        user = plugin.get_prompt(
+            "attack_chain_optimizer",
+            self._case_type,
+            {
+                "owner_party_id": inp.owner_party_id,
+                "issue_tree": inp.issue_tree,
+                "evidence_index": inp.evidence_index,
+            },
         )
 
         try:

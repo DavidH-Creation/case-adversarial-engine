@@ -66,3 +66,20 @@ GENERATION_PROMPT = """\
 - 违约金调整：违约金过高或过低均可申请调整，以实际损失为主要参考
 - 贷款审批：贷款未获批是否属于不可抗力或合同约定的解除条件，影响定金退还义务\
 """
+
+
+def build_user_prompt(*, case_id: str, issue_tree: dict, evidence_list: list[dict]) -> str:
+    """构建报告生成 user prompt（CaseTypePlugin 协议入口）。
+
+    Reuses civil_loan's case-type-agnostic format helpers via one-way import
+    (see labor_dispute.py for the same rationale).
+    """
+    from .civil_loan import format_evidence_block, format_issue_tree_block
+
+    issue_tree_block = format_issue_tree_block(issue_tree)
+    evidence_block = format_evidence_block(evidence_list)
+    return GENERATION_PROMPT.format(
+        case_id=case_id,
+        issue_tree_block=issue_tree_block,
+        evidence_block=evidence_block,
+    )

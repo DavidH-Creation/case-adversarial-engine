@@ -34,7 +34,7 @@ RESPONSE_PROMPT = """\
 
 ## 当前追问
 
-{question_block}
+{question}
 
 ## 输出要求
 
@@ -59,3 +59,32 @@ RESPONSE_PROMPT = """\
 - 社保欠缴：可向社保征缴部门举报，也可主张经济损失赔偿，两者路径不同
 - 竞业限制：补偿金标准不得低于劳动者在职最后 12 个月月平均工资的 30%\
 """
+
+
+def build_user_prompt(
+    *,
+    case_id: str,
+    report_id: str,
+    report: dict,
+    previous_turns: list[dict],
+    question: str,
+) -> str:
+    """构建追问响应 user prompt（CaseTypePlugin 协议入口）。
+
+    Format helpers (``format_report_context``, ``format_history_block``) are
+    case-type-agnostic — they shape report/turn dict structures, not
+    case-specific text — so labor_dispute reuses civil_loan's helpers via
+    a one-way local import. A future cleanup may extract them to a shared
+    module (same pattern as report_generation/labor_dispute).
+    """
+    from .civil_loan import format_history_block, format_report_context
+
+    report_context_block = format_report_context(report)
+    history_block = format_history_block(previous_turns)
+    return RESPONSE_PROMPT.format(
+        case_id=case_id,
+        report_id=report_id,
+        report_context_block=report_context_block,
+        history_block=history_block,
+        question=question,
+    )

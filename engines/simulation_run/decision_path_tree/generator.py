@@ -46,7 +46,7 @@ from engines.shared.models import (
     PathRankingItem,
 )
 
-from .prompts import PROMPT_REGISTRY
+from .prompts import PROMPT_REGISTRY, plugin
 from .schemas import (
     DecisionPathTreeInput,
     LLMBlockingConditionItem,
@@ -157,6 +157,7 @@ class DecisionPathTreeGenerator:
         if case_type not in PROMPT_REGISTRY:
             raise ValueError(f"不支持的案件类型: {case_type}")
         self._llm = llm_client
+        self._case_type = case_type
         self._prompts = PROMPT_REGISTRY[case_type]
         self._model = model
         self._temperature = temperature
@@ -250,10 +251,14 @@ class DecisionPathTreeGenerator:
     ) -> LLMDecisionPathTreeOutput | None:
         """调用 LLM（结构化输出），失败时返回 None（不抛异常）。"""
         system = self._prompts["system"]
-        user = self._prompts["build_user"](
-            issue_tree=inp.ranked_issue_tree,
-            evidence_index=admitted_index,
-            amount_report=inp.amount_calculation_report,
+        user = plugin.get_prompt(
+            "decision_path_tree",
+            self._case_type,
+            {
+                "issue_tree": inp.ranked_issue_tree,
+                "evidence_index": admitted_index,
+                "amount_report": inp.amount_calculation_report,
+            },
         )
 
         try:

@@ -178,3 +178,29 @@ def format_change_set_block(change_set: list[dict]) -> str:
             f"</change>"
         )
     return "\n\n".join(blocks)
+
+
+def build_user_prompt(
+    *,
+    case_id: str,
+    scenario_id: str,
+    issue_tree: dict,
+    evidence_list: list[dict],
+    change_set: list[dict],
+) -> str:
+    """构建场景推演 user prompt（CaseTypePlugin 协议入口）。
+
+    Composes ``SIMULATION_PROMPT`` with the rendered issue-tree, evidence,
+    and change-set blocks. Called via ``RegistryPlugin.get_prompt(...)`` and
+    directly by the runner.
+    """
+    issue_tree_block = format_issue_tree_block(issue_tree)
+    evidence_block = format_evidence_block(evidence_list)
+    change_set_block = format_change_set_block(change_set)
+    return SIMULATION_PROMPT.format(
+        case_id=case_id,
+        scenario_id=scenario_id,
+        issue_tree_block=issue_tree_block,
+        evidence_block=evidence_block,
+        change_set_block=change_set_block,
+    )

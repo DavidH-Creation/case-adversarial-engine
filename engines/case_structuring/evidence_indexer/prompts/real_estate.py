@@ -80,3 +80,9 @@ def format_materials_block(materials) -> str:
         safe_text = m.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         blocks.append(f'<material source_id="{safe_source_id}">\n{safe_text}\n</material>')
     return "\n\n".join(blocks)
+
+
+def build_user_prompt(*, case_id: str, materials) -> str:
+    """构建证据索引器 user prompt（CaseTypePlugin 协议入口）。"""
+    materials_block = format_materials_block(materials)
+    return EXTRACTION_PROMPT.format(case_id=case_id, materials=materials_block)

@@ -213,15 +213,17 @@ class ReportGenerator:
         case_id = issue_tree.case_id
 
         # 构建 prompt / Build prompt
+        from .prompts import plugin
+
         system_prompt = self._prompt_module.SYSTEM_PROMPT
-        issue_tree_block = self._prompt_module.format_issue_tree_block(issue_tree.model_dump())
-        evidence_block = self._prompt_module.format_evidence_block(
-            [e.model_dump() for e in evidence_index.evidence]
-        )
-        user_prompt = self._prompt_module.GENERATION_PROMPT.format(
-            case_id=case_id,
-            issue_tree_block=issue_tree_block,
-            evidence_block=evidence_block,
+        user_prompt = plugin.get_prompt(
+            "report_generation",
+            self._case_type,
+            {
+                "case_id": case_id,
+                "issue_tree": issue_tree.model_dump(),
+                "evidence_list": [e.model_dump() for e in evidence_index.evidence],
+            },
         )
 
         # 调用 LLM（结构化输出）/ Call LLM with structured output

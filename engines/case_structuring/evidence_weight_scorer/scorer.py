@@ -40,7 +40,7 @@ from engines.shared.models import (
 
 from engines.shared.structured_output import call_structured_llm
 
-from .prompts import PROMPT_REGISTRY
+from .prompts import PROMPT_REGISTRY, plugin
 from .schemas import (
     EvidenceWeightScorerInput,
     LLMEvidenceWeightItem,
@@ -80,6 +80,7 @@ class EvidenceWeightScorer:
         if case_type not in PROMPT_REGISTRY:
             raise ValueError(f"不支持的案件类型: {case_type}")
         self._llm = llm_client
+        self._case_type = case_type
         self._prompts = PROMPT_REGISTRY[case_type]
         self._model = model
         self._temperature = temperature
@@ -151,7 +152,11 @@ class EvidenceWeightScorer:
         Call LLM (structured output first, fallback to json_utils); returns None on failure.
         """
         system = self._prompts["system"]
-        user = self._prompts["build_user"](evidence_index=inp.evidence_index)
+        user = plugin.get_prompt(
+            "evidence_weight_scorer",
+            self._case_type,
+            {"evidence_index": inp.evidence_index},
+        )
 
         try:
             data = await call_structured_llm(

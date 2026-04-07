@@ -178,11 +178,13 @@ class EvidenceIndexer:
         self._validate_input(materials)
 
         # 构建 prompt / Build prompt
+        from .prompts import plugin
+
         system_prompt = self._prompt_module.SYSTEM_PROMPT
-        materials_block = self._prompt_module.format_materials_block(materials)
-        user_prompt = self._prompt_module.EXTRACTION_PROMPT.format(
-            case_id=case_id,
-            materials=materials_block,
+        user_prompt = plugin.get_prompt(
+            "evidence_indexer",
+            self._case_type,
+            {"case_id": case_id, "materials": materials},
         )
 
         # 调用 LLM（结构化输出优先，fallback 到 json_utils）

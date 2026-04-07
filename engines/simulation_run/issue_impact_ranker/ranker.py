@@ -98,6 +98,7 @@ class IssueImpactRanker:
         max_retries: int = 3,
     ) -> None:
         self._llm = llm_client
+        self._case_type = case_type
         self._model = model
         self._temperature = temperature
         self._max_tokens = max_tokens
@@ -149,6 +150,8 @@ class IssueImpactRanker:
             self._BATCH_SIZE,
         )
 
+        from .prompts import plugin
+
         system_prompt = self._prompt_module.SYSTEM_PROMPT
         all_evaluations: list[LLMSingleIssueEvaluation] = []
         _rescaled_ids: list[str] = []
@@ -158,15 +161,19 @@ class IssueImpactRanker:
             try:
                 # 为本批次构建独立 prompt（临时 IssueTree 仅含本批争点）
                 batch_tree = inp.issue_tree.model_copy(update={"issues": batch_issues})
-                user_prompt = self._prompt_module.build_user_prompt(
-                    issue_tree=batch_tree,
-                    evidence_index=inp.evidence_index,
-                    proponent_party_id=inp.proponent_party_id,
-                    amount_check=(
-                        inp.amount_calculation_report.consistency_check_result
-                        if inp.amount_calculation_report is not None
-                        else None
-                    ),
+                user_prompt = plugin.get_prompt(
+                    "issue_impact_ranker",
+                    self._case_type,
+                    {
+                        "issue_tree": batch_tree,
+                        "evidence_index": inp.evidence_index,
+                        "proponent_party_id": inp.proponent_party_id,
+                        "amount_check": (
+                            inp.amount_calculation_report.consistency_check_result
+                            if inp.amount_calculation_report is not None
+                            else None
+                        ),
+                    },
                 )
 
                 raw_dict = await self._call_llm_structured(system_prompt, user_prompt)

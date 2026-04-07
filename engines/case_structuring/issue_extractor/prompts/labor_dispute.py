@@ -177,6 +177,12 @@ def format_input_block(
     return "\n".join(parts)
 
 
+def build_user_prompt(*, case_id: str, claims: list, defenses: list, evidence: list) -> str:
+    """构建争点抽取器 user prompt（CaseTypePlugin 协议入口）。"""
+    input_block = format_input_block(claims, defenses, evidence)
+    return EXTRACTION_PROMPT.format(case_id=case_id, input_block=input_block)
+
+
 def _escape_xml(text: str) -> str:
     """转义 XML 特殊字符，防止提示注入。
     Escape XML special characters to prevent prompt injection.

@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 from engines.shared.evidence_state_machine import EvidenceStateMachine
 from engines.shared.models import EvidenceIndex, EvidenceStatus, LLMClient
 
-from .prompts import PROMPT_REGISTRY
+from .prompts import PROMPT_REGISTRY, plugin
 from .schemas import (
     AdmissibilityEvaluatorInput,
     LLMAdmissibilityItem,
@@ -66,6 +66,7 @@ class AdmissibilityEvaluator:
         if case_type not in PROMPT_REGISTRY:
             raise ValueError(f"不支持的案件类型: {case_type}")
         self._llm = llm_client
+        self._case_type = case_type
         self._prompts = PROMPT_REGISTRY[case_type]
         self._model = model
         self._temperature = temperature
@@ -128,7 +129,11 @@ class AdmissibilityEvaluator:
     async def _call_llm(self, inp: AdmissibilityEvaluatorInput) -> LLMAdmissibilityOutput | None:
         """调用 LLM，失败时返回 None（不抛异常）。"""
         system = self._prompts["system"]
-        user = self._prompts["build_user"](evidence_index=inp.evidence_index)
+        user = plugin.get_prompt(
+            "admissibility_evaluator",
+            self._case_type,
+            {"evidence_index": inp.evidence_index},
+        )
 
         from engines.shared.llm_utils import call_llm_with_retry
 

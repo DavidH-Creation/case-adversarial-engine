@@ -126,6 +126,7 @@ class ActionRecommender:
         max_tokens: int = 4096,
     ) -> None:
         self._llm = llm_client
+        self._case_type = case_type
         self._model = model
         self._temperature = temperature
         self._max_tokens = max_tokens
@@ -430,12 +431,18 @@ class ActionRecommender:
                 logger.warning("evidence_index 未提供，跳过 LLM 策略层")
                 return None
 
+            from .prompts import plugin
+
             system_prompt = self._prompt_module.SYSTEM_PROMPT
-            user_prompt = self._prompt_module.build_user_prompt(
-                issue_list=inp.issue_list,
-                evidence_index=inp.evidence_index,
-                dispute_category=dispute_category,
-                proponent_party_id=inp.proponent_party_id,
+            user_prompt = plugin.get_prompt(
+                "action_recommender",
+                self._case_type,
+                {
+                    "issue_list": inp.issue_list,
+                    "evidence_index": inp.evidence_index,
+                    "dispute_category": dispute_category,
+                    "proponent_party_id": inp.proponent_party_id,
+                },
             )
 
             data = await call_structured_llm(

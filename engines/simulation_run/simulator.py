@@ -193,20 +193,19 @@ class ScenarioSimulator:
 
         try:
             # 构建 prompt / Build prompt
+            from .prompts import plugin
+
             system_prompt = self._prompt_module.SYSTEM_PROMPT
-            issue_tree_block = self._prompt_module.format_issue_tree_block(issue_tree.model_dump())
-            evidence_block = self._prompt_module.format_evidence_block(
-                [e.model_dump() for e in evidence_index.evidence]
-            )
-            change_set_block = self._prompt_module.format_change_set_block(
-                [c.model_dump() for c in scenario_input.change_set]
-            )
-            user_prompt = self._prompt_module.SIMULATION_PROMPT.format(
-                case_id=case_id,
-                scenario_id=scenario_input.scenario_id,
-                issue_tree_block=issue_tree_block,
-                evidence_block=evidence_block,
-                change_set_block=change_set_block,
+            user_prompt = plugin.get_prompt(
+                "simulation_run",
+                self._case_type,
+                {
+                    "case_id": case_id,
+                    "scenario_id": scenario_input.scenario_id,
+                    "issue_tree": issue_tree.model_dump(),
+                    "evidence_list": [e.model_dump() for e in evidence_index.evidence],
+                    "change_set": [c.model_dump() for c in scenario_input.change_set],
+                },
             )
 
             # 调用 LLM（结构化输出）/ Call LLM with structured output

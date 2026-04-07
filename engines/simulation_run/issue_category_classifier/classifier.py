@@ -64,6 +64,7 @@ class IssueCategoryClassifier:
         max_retries: int = 3,
     ) -> None:
         self._llm = llm_client
+        self._case_type = case_type
         self._model = model
         self._temperature = temperature
         self._max_tokens = max_tokens
@@ -112,11 +113,17 @@ class IssueCategoryClassifier:
 
         try:
             # 构建 prompt
+            from .prompts import plugin
+
             system_prompt = self._prompt_module.SYSTEM_PROMPT
-            user_prompt = self._prompt_module.build_user_prompt(
-                issue_tree=inp.issue_tree,
-                evidence_index=inp.evidence_index,
-                amount_calculation_report=inp.amount_calculation_report,
+            user_prompt = plugin.get_prompt(
+                "issue_category_classifier",
+                self._case_type,
+                {
+                    "issue_tree": inp.issue_tree,
+                    "evidence_index": inp.evidence_index,
+                    "amount_calculation_report": inp.amount_calculation_report,
+                },
             )
 
             # 调用 LLM（结构化输出）

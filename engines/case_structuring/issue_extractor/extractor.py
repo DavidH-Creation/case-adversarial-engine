@@ -200,11 +200,18 @@ class IssueExtractor:
         self._validate_input(claims, defenses, evidence)
 
         # 构建 prompt / Build prompt
+        from .prompts import plugin
+
         system_prompt = self._prompt_module.SYSTEM_PROMPT
-        input_block = self._prompt_module.format_input_block(claims, defenses, evidence)
-        user_prompt = self._prompt_module.EXTRACTION_PROMPT.format(
-            case_id=case_id,
-            input_block=input_block,
+        user_prompt = plugin.get_prompt(
+            "issue_extractor",
+            self._case_type,
+            {
+                "case_id": case_id,
+                "claims": claims,
+                "defenses": defenses,
+                "evidence": evidence,
+            },
         )
 
         # 调用 LLM（结构化输出优先，fallback 到 json_utils）

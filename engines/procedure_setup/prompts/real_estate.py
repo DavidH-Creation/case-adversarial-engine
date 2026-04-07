@@ -237,3 +237,17 @@ def format_issue_tree_block(issue_tree: dict) -> str:
             )
 
     return "\n".join(lines)
+
+
+def build_user_prompt(
+    *, case_id: str, case_type: str, parties: list[dict], issue_tree: dict
+) -> str:
+    """构建程序设置 user prompt（CaseTypePlugin 协议入口）。"""
+    parties_block = format_parties_block(parties)
+    issue_tree_block = format_issue_tree_block(issue_tree)
+    return SETUP_PROMPT.format(
+        case_id=case_id,
+        case_type=case_type,
+        parties_block=parties_block,
+        issue_tree_block=issue_tree_block,
+    )
