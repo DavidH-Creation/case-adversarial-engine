@@ -130,6 +130,109 @@ class TestRegistryPluginDictBased:
 
 
 # ---------------------------------------------------------------------------
+# RegistryPlugin — allowed_impact_targets (Unit 22 Phase C.5a)
+# ---------------------------------------------------------------------------
+
+
+class _ModuleWithVocab:
+    """Module-style entry that declares an ALLOWED_IMPACT_TARGETS attribute."""
+
+    ALLOWED_IMPACT_TARGETS: frozenset[str] = frozenset({"a", "b", "c"})
+
+    def build_user_prompt(self, *, k: str = "x") -> str:
+        return f"vocab-module:{k}"
+
+
+class _ModuleWithoutVocab:
+    """Module-style entry that omits ALLOWED_IMPACT_TARGETS."""
+
+    def build_user_prompt(self, *, k: str = "x") -> str:
+        return f"no-vocab-module:{k}"
+
+
+class TestAllowedImpactTargets:
+    """plugin.allowed_impact_targets(case_type) lookup behavior."""
+
+    def test_module_based_returns_frozenset(self):
+        plugin = RegistryPlugin({"civil_loan": _ModuleWithVocab()})
+        result = plugin.allowed_impact_targets("civil_loan")
+        assert isinstance(result, frozenset)
+        assert result == frozenset({"a", "b", "c"})
+
+    def test_dict_based_returns_frozenset(self):
+        plugin = RegistryPlugin(
+            {
+                "civil_loan": {
+                    "build_user": lambda *, k="x": f"dict:{k}",
+                    "allowed_impact_targets": frozenset({"d", "e"}),
+                }
+            }
+        )
+        result = plugin.allowed_impact_targets("civil_loan")
+        assert isinstance(result, frozenset)
+        assert result == frozenset({"d", "e"})
+
+    def test_dict_based_accepts_set_or_list_and_returns_frozenset(self):
+        """The plugin must coerce set/list/tuple input to frozenset."""
+        plugin = RegistryPlugin(
+            {
+                "civil_loan": {
+                    "build_user": lambda: "x",
+                    "allowed_impact_targets": ["x", "y", "x"],  # list with dup
+                }
+            }
+        )
+        result = plugin.allowed_impact_targets("civil_loan")
+        assert result == frozenset({"x", "y"})
+
+    def test_unregistered_raises_unsupported_case_type_error(self):
+        plugin = RegistryPlugin({"civil_loan": _ModuleWithVocab()})
+        with pytest.raises(UnsupportedCaseTypeError) as exc:
+            plugin.allowed_impact_targets("criminal")
+        assert exc.value.case_type == "criminal"
+        assert "civil_loan" in exc.value.available
+
+    def test_module_missing_constant_raises_value_error(self):
+        plugin = RegistryPlugin({"civil_loan": _ModuleWithoutVocab()})
+        with pytest.raises(ValueError, match="ALLOWED_IMPACT_TARGETS"):
+            plugin.allowed_impact_targets("civil_loan")
+
+    def test_dict_missing_key_raises_value_error(self):
+        plugin = RegistryPlugin(
+            {"civil_loan": {"build_user": lambda: "x"}}
+        )
+        with pytest.raises(ValueError, match="allowed_impact_targets"):
+            plugin.allowed_impact_targets("civil_loan")
+
+
+class TestIssueImpactRankerPluginVocabulary:
+    """The real issue_impact_ranker plugin must declare every case type's
+    ALLOWED_IMPACT_TARGETS so that ranker construction never raises ValueError.
+    """
+
+    def test_all_three_case_types_declare_vocabulary(self):
+        from engines.simulation_run.issue_impact_ranker.prompts import plugin
+
+        for ct in ("civil_loan", "labor_dispute", "real_estate"):
+            vocab = plugin.allowed_impact_targets(ct)
+            assert isinstance(vocab, frozenset)
+            assert vocab, f"{ct}: ALLOWED_IMPACT_TARGETS must be non-empty"
+            # 'credibility' is the case-type-neutral pivot — every case type
+            # must include it because issues that destroy a party's credibility
+            # have cross-cutting impact.
+            assert "credibility" in vocab, (
+                f"{ct}: ALLOWED_IMPACT_TARGETS must include 'credibility'"
+            )
+
+    def test_civil_loan_vocabulary_matches_expected(self):
+        from engines.simulation_run.issue_impact_ranker.prompts import plugin
+
+        assert plugin.allowed_impact_targets("civil_loan") == frozenset(
+            {"principal", "interest", "penalty", "attorney_fee", "credibility"}
+        )
+
+
+# ---------------------------------------------------------------------------
 # Integration: all 6 simulation_run prompt modules export `plugin`
 # ---------------------------------------------------------------------------
 

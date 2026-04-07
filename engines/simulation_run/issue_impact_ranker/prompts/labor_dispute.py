@@ -98,6 +98,16 @@ _BASE_SYSTEM_PROMPT = """\
 
 SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text("issue_impact_ranker")
 
+# Unit 22 Phase C.5a: per-case-type vocabulary for Issue.impact_targets.
+# NOTE: this constant currently mirrors the civil_loan vocabulary because the
+# system prompt above still uses civil_loan terms (the legacy bug Phase C is
+# fixing). Phase C.5b replaces both the prompt text AND this constant with
+# the proper labor-dispute vocabulary in a single commit so that the prompt
+# and the post-LLM filter are always in lock-step.
+ALLOWED_IMPACT_TARGETS: frozenset[str] = frozenset(
+    {"principal", "interest", "penalty", "attorney_fee", "credibility"}
+)
+
 
 def build_user_prompt(
     *,

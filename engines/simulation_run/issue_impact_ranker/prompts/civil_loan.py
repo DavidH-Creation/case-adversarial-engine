@@ -113,6 +113,14 @@ _BASE_SYSTEM_PROMPT = """\
 
 SYSTEM_PROMPT = _BASE_SYSTEM_PROMPT + load_few_shot_text("issue_impact_ranker")
 
+# Unit 22 Phase C.5a: per-case-type vocabulary for Issue.impact_targets.
+# The ranker calls plugin.allowed_impact_targets("civil_loan") at __init__
+# time and uses the returned set to silently drop hallucinated values from
+# LLM output. The set must match the "允许值" line of the system prompt above.
+ALLOWED_IMPACT_TARGETS: frozenset[str] = frozenset(
+    {"principal", "interest", "penalty", "attorney_fee", "credibility"}
+)
+
 
 def build_user_prompt(
     *,
