@@ -1,0 +1,86 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\simulation_run\credibility_scorer\tests\test_scorer.py"
+type: "code"
+community: "C: Users"
+location: "L1"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/C:_Users
+---
+
+# test_scorer.py
+
+## Connections
+- [[CredibilityScorer 单元测试（P2.9）。 测试策略： - 使用 Pydantic 模型构建测试数据（不用 Mock） - 每条规则（]] - `rationale_for` [EXTRACTED]
+- [[MockLLMClient_4]] - `contains` [EXTRACTED]
+- [[TestAdmissibilityNotesEnforcement]] - `contains` [EXTRACTED]
+- [[TestCRED07ProfessionalLender]] - `contains` [EXTRACTED]
+- [[TestConstructorValidation_1]] - `contains` [EXTRACTED]
+- [[TestCred01]] - `contains` [EXTRACTED]
+- [[TestCred02]] - `contains` [EXTRACTED]
+- [[TestCred03]] - `contains` [EXTRACTED]
+- [[TestCred04]] - `contains` [EXTRACTED]
+- [[TestCred05]] - `contains` [EXTRACTED]
+- [[TestCred06]] - `contains` [EXTRACTED]
+- [[TestCredibilityScorerBasic]] - `contains` [EXTRACTED]
+- [[TestCredibilityScorerIntegration]] - `contains` [EXTRACTED]
+- [[TestInvalidEnumFiltering]] - `contains` [EXTRACTED]
+- [[TestLLMFailureHandling_1]] - `contains` [EXTRACTED]
+- [[TestMixedValidInvalid]] - `contains` [EXTRACTED]
+- [[TestPromptContent_1]] - `contains` [EXTRACTED]
+- [[TestSuccessfulScoring]] - `contains` [EXTRACTED]
+- [[_llm_response()_1]] - `contains` [EXTRACTED]
+- [[_make_evidence_index_for_prompt()_1]] - `contains` [EXTRACTED]
+- [[_make_index()_1]] - `contains` [EXTRACTED]
+- [[_make_party()]] - `contains` [EXTRACTED]
+- [[_make_scorer()]] - `contains` [EXTRACTED]
+- [[make_amount_report()_1]] - `contains` [EXTRACTED]
+- [[make_conflict()]] - `contains` [EXTRACTED]
+- [[make_evidence()]] - `contains` [EXTRACTED]
+- [[make_input()]] - `contains` [EXTRACTED]
+- [[make_issue()_1]] - `contains` [EXTRACTED]
+- [[test_admissibility_notes_from_llm_stored_on_evidence()]] - `contains` [EXTRACTED]
+- [[test_authenticity_risk_enum_values()]] - `contains` [EXTRACTED]
+- [[test_both_high_with_notes_updates_successfully()]] - `contains` [EXTRACTED]
+- [[test_case_id_preserved_in_output()]] - `contains` [EXTRACTED]
+- [[test_correct_enum_values_assigned()]] - `contains` [EXTRACTED]
+- [[test_duplicate_evidence_id_in_llm_output_last_wins()]] - `contains` [EXTRACTED]
+- [[test_empty_enum_string_skips_evidence()]] - `contains` [EXTRACTED]
+- [[test_empty_evidence_list_no_llm_call()_1]] - `contains` [EXTRACTED]
+- [[test_evidence_has_weight_fields()]] - `contains` [EXTRACTED]
+- [[test_evidence_weight_fields_accept_enum_values()]] - `contains` [EXTRACTED]
+- [[test_evidence_weight_scored_flag_set_to_true()]] - `contains` [EXTRACTED]
+- [[test_high_authenticity_risk_without_notes_skips_scoring()]] - `contains` [EXTRACTED]
+- [[test_high_risk_with_empty_string_notes_skips_scoring()]] - `contains` [EXTRACTED]
+- [[test_high_risk_with_notes_updates_successfully()]] - `contains` [EXTRACTED]
+- [[test_high_vulnerability_with_notes_updates_successfully()]] - `contains` [EXTRACTED]
+- [[test_high_vulnerability_without_notes_skips_scoring()]] - `contains` [EXTRACTED]
+- [[test_invalid_authenticity_risk_skips_evidence()]] - `contains` [EXTRACTED]
+- [[test_invalid_relevance_score_skips_evidence()]] - `contains` [EXTRACTED]
+- [[test_llm_empty_response_returns_original()]] - `contains` [EXTRACTED]
+- [[test_llm_failure_retries_then_returns_original()]] - `contains` [EXTRACTED]
+- [[test_llm_failure_returns_original_index_unchanged()]] - `contains` [EXTRACTED]
+- [[test_llm_invalid_json_returns_original_index()]] - `contains` [EXTRACTED]
+- [[test_llm_item_defaults_to_empty_strings()]] - `contains` [EXTRACTED]
+- [[test_llm_output_defaults_to_empty_list()]] - `contains` [EXTRACTED]
+- [[test_low_risk_without_notes_updates_successfully()]] - `contains` [EXTRACTED]
+- [[test_multiple_evidence_all_scored()]] - `contains` [EXTRACTED]
+- [[test_one_high_risk_missing_notes_one_valid()]] - `contains` [EXTRACTED]
+- [[test_original_fields_unchanged()_1]] - `contains` [EXTRACTED]
+- [[test_partial_success_only_valid_evidence_scored()]] - `contains` [EXTRACTED]
+- [[test_probative_value_enum_values()]] - `contains` [EXTRACTED]
+- [[test_prompt_contains_evidence_ids()_1]] - `contains` [EXTRACTED]
+- [[test_prompt_registry_has_civil_loan()_1]] - `contains` [EXTRACTED]
+- [[test_relevance_score_enum_values()]] - `contains` [EXTRACTED]
+- [[test_scored_evidence_has_all_four_fields()]] - `contains` [EXTRACTED]
+- [[test_scorer_input_requires_case_id_and_evidence_index()]] - `contains` [EXTRACTED]
+- [[test_system_prompt_mentions_four_dimensions()]] - `contains` [EXTRACTED]
+- [[test_system_prompt_passed_to_llm()_1]] - `contains` [EXTRACTED]
+- [[test_unknown_evidence_id_in_llm_output_ignored()]] - `contains` [EXTRACTED]
+- [[test_user_prompt_contains_evidence_count()_1]] - `contains` [EXTRACTED]
+- [[test_user_prompt_contains_evidence_id()_1]] - `contains` [EXTRACTED]
+- [[test_user_prompt_mentions_admissibility_notes()]] - `contains` [EXTRACTED]
+- [[test_vulnerability_enum_values()]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/C:_Users

@@ -1,0 +1,19 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\report_generation\v3\evidence_battle_matrix.py"
+type: "code"
+community: "C: Users"
+location: "L288"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/C:_Users
+---
+
+# _extract_unified_electronic_strategy()
+
+## Connections
+- [[Identify common electronic evidence reinforcement actions. Args al]] - `rationale_for` [EXTRACTED]
+- [[build_evidence_cards()]] - `calls` [INFERRED]
+- [[evidence_battle_matrix.py]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/C:_Users

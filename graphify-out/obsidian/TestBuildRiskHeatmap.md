@@ -1,0 +1,25 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\report_generation\tests\test_risk_heatmap.py"
+type: "code"
+community: "C: Users"
+location: "L70"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/C:_Users
+---
+
+# TestBuildRiskHeatmap
+
+## Connections
+- [[.test_happy_path_three_issues()]] - `method` [EXTRACTED]
+- [[.test_missing_fields_graceful()]] - `method` [EXTRACTED]
+- [[.test_returns_none_when_empty_issues()]] - `method` [EXTRACTED]
+- [[.test_returns_none_when_no_issues_attr()]] - `method` [EXTRACTED]
+- [[.test_returns_none_when_none()]] - `method` [EXTRACTED]
+- [[.test_row_fields_populated()]] - `method` [EXTRACTED]
+- [[HeatmapRow]] - `uses` [INFERRED]
+- [[RiskLevel]] - `uses` [INFERRED]
+- [[test_risk_heatmap.py]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/C:_Users

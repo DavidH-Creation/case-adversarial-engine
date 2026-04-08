@@ -1,0 +1,18 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\simulation_run\validator.py"
+type: "rationale"
+community: "C: Users"
+location: "L338"
+tags:
+  - graphify/rationale
+  - graphify/EXTRACTED
+  - community/C:_Users
+---
+
+# 严格模式校验：有 error 时抛出 ScenarioValidationError。 Strict validation raises Scena
+
+## Connections
+- [[ScenarioResult]] - `uses` [INFERRED]
+- [[validate_scenario_strict()]] - `rationale_for` [EXTRACTED]
+
+#graphify/rationale #graphify/EXTRACTED #community/C:_Users

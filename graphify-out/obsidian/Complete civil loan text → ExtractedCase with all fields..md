@@ -1,0 +1,27 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\case_structuring\case_extractor\tests\test_extractor.py"
+type: "rationale"
+community: "C: Users"
+location: "L218"
+tags:
+  - graphify/rationale
+  - graphify/INFERRED
+  - community/C:_Users
+---
+
+# Complete civil loan text → ExtractedCase with all fields.
+
+## Connections
+- [[CaseExtractor]] - `uses` [INFERRED]
+- [[ExtractedCase]] - `uses` [INFERRED]
+- [[LLMExtractedClaim]] - `uses` [INFERRED]
+- [[LLMExtractedDefense]] - `uses` [INFERRED]
+- [[LLMExtractedFinancials]] - `uses` [INFERRED]
+- [[LLMExtractedLoan]] - `uses` [INFERRED]
+- [[LLMExtractedMaterial]] - `uses` [INFERRED]
+- [[LLMExtractedParty]] - `uses` [INFERRED]
+- [[LLMExtractedRepayment]] - `uses` [INFERRED]
+- [[LLMExtractedSummaryRow]] - `uses` [INFERRED]
+- [[LLMExtractionOutput]] - `uses` [INFERRED]
+
+#graphify/rationale #graphify/INFERRED #community/C:_Users

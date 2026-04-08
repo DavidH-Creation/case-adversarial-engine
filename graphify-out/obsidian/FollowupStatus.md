@@ -1,0 +1,70 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\api\schemas.py"
+type: "code"
+community: "C: Users"
+location: "L355"
+tags:
+  - graphify/code
+  - graphify/INFERRED
+  - community/C:_Users
+---
+
+# FollowupStatus
+
+## Connections
+- [[A job belonging to case A should not be accessible via case B.]] - `uses` [INFERRED]
+- [[Atomically flush the in-memory record for case_id to case_meta.json.]] - `uses` [INFERRED]
+- [[Build a CaseIndexEntry from a live CaseRecord.]] - `uses` [INFERRED]
+- [[CORS headers should be present on responses.]] - `uses` [INFERRED]
+- [[CaseRecord]] - `uses` [INFERRED]
+- [[CaseScenarioManager]] - `uses` [INFERRED]
+- [[CaseStore]] - `uses` [INFERRED]
+- [[Create a case and force it to 'analyzed' state.]] - `uses` [INFERRED]
+- [[Create a followup job and launch it asynchronously. Returns job_id.]] - `uses` [INFERRED]
+- [[Create a scenario job and launch it asynchronously. Returns scenario_id.]] - `uses` [INFERRED]
+- [[Emit audit event to the case's events.jsonl (non-fatal on failure).]] - `uses` [INFERRED]
+- [[Enum]] - `inherits` [EXTRACTED]
+- [[Even non-analyzed cases return result (with null analysis_data).]] - `uses` [INFERRED]
+- [[Execute the followup via FollowupResponder and store result.]] - `uses` [INFERRED]
+- [[Execute the scenario via ScenarioService and store the result.]] - `uses` [INFERRED]
+- [[Failed jobs should include error message.]] - `uses` [INFERRED]
+- [[FastAPI application for the case adversarial analysis service.]] - `uses` [INFERRED]
+- [[FollowupJobManager]] - `uses` [INFERRED]
+- [[GET api cases {case_id} artifacts {name} — download specific artifact.]] - `uses` [INFERRED]
+- [[GET api cases {case_id} followup {job_id} — poll followup result.]] - `uses` [INFERRED]
+- [[GET api cases {case_id} result — full analysis result.]] - `uses` [INFERRED]
+- [[Manages async followup Q&A jobs. Uses asyncio.create_task to run Followup]] - `uses` [INFERRED]
+- [[Manages async scenario jobs scoped to a specific case. Uses asyncio.creat]] - `uses` [INFERRED]
+- [[POST api cases {case_id} followup — async 202 followup.]] - `uses` [INFERRED]
+- [[Public alias for _load_from_disk — reconstruct a CaseRecord from workspace.]] - `uses` [INFERRED]
+- [[Reconstruct a CaseRecord from workspace persistence (restart recovery).]] - `uses` [INFERRED]
+- [[Return all scenario jobs for a given case_id.]] - `uses` [INFERRED]
+- [[Return followup job state, or None if not found.]] - `uses` [INFERRED]
+- [[Return scenario job state, or None if not found.]] - `uses` [INFERRED]
+- [[SSE 用异步生成器 — 先回放历史进度，再跟踪实时进度。]] - `uses` [INFERRED]
+- [[ScenarioService]] - `uses` [INFERRED]
+- [[Serialize durable CaseRecord fields for workspace persistence.]] - `uses` [INFERRED]
+- [[Simulate a completed followup job and verify the result schema.]] - `uses` [INFERRED]
+- [[TestCORSMiddleware]] - `uses` [INFERRED]
+- [[TestClient with isolated workspace dir, no auth required._1]] - `uses` [INFERRED]
+- [[TestCreateFollowup]] - `uses` [INFERRED]
+- [[TestGetCaseArtifact]] - `uses` [INFERRED]
+- [[TestGetCaseResult]] - `uses` [INFERRED]
+- [[TestGetFollowupResult]] - `uses` [INFERRED]
+- [[Unit 15+17 Web API Enhancement endpoint tests. Tests for GET api cases]] - `uses` [INFERRED]
+- [[Write durable CaseRecord state to workspace (non-fatal on failure).]] - `uses` [INFERRED]
+- [[schemas.py]] - `contains` [EXTRACTED]
+- [[str]] - `inherits` [EXTRACTED]
+- [[业务逻辑层 — 桥接 FastAPI 和现有对抗式分析引擎。 Service layer — bridges FastAPI endpoints and th]] - `uses` [INFERRED]
+- [[从 WorkspaceManager 持久化存储中恢复 CaseRecord。]] - `uses` [INFERRED]
+- [[从 analysis_data 和 case info 生成 Markdown 格式报告。]] - `uses` [INFERRED]
+- [[从 outputs {run_id} 加载 baseline，执行场景推演，返回序列化的 ScenarioResult。]] - `uses` [INFERRED]
+- [[单案件的运行时状态容器。线程 任务安全性由 asyncio 单线程保证。]] - `uses` [INFERRED]
+- [[封装 ScenarioSimulator 调用，管理场景结果的存储和查询。]] - `uses` [INFERRED]
+- [[将 CaseRecord.info 转换为 generate_docx_report 期望的 case_data dict。]] - `uses` [INFERRED]
+- [[异步后台任务：三轮对抗辩论 + LLM 总结 + 生成 DOCX 报告。]] - `uses` [INFERRED]
+- [[查询已运行 scenario 的结果（先查内存，再查磁盘）。]] - `uses` [INFERRED]
+- [[清理过期条目，返回清理数量。保存最后状态到磁盘后再删除。]] - `uses` [INFERRED]
+- [[返回具体产物内容，不存在时返回 None。]] - `uses` [INFERRED]
+
+#graphify/code #graphify/INFERRED #community/C:_Users

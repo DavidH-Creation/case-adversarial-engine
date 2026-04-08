@@ -1,0 +1,18 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\simulation_run\defense_chain\tests\test_optimizer.py"
+type: "code"
+community: "C: Users"
+location: "L83"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/C:_Users
+---
+
+# _make_evidence()
+
+## Connections
+- [[_make_evidence_index()_8]] - `calls` [INFERRED]
+- [[test_optimizer.py]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/C:_Users

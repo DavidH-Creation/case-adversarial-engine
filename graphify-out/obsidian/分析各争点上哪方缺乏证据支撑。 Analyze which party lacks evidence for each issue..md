@@ -1,0 +1,30 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\adversarial\round_engine.py"
+type: "rationale"
+community: "C: Users"
+location: "L328"
+tags:
+  - graphify/rationale
+  - graphify/INFERRED
+  - community/C:_Users
+---
+
+# 分析各争点上哪方缺乏证据支撑。 Analyze which party lacks evidence for each issue.
+
+## Connections
+- [[AccessController]] - `uses` [INFERRED]
+- [[AdversarialResult]] - `uses` [INFERRED]
+- [[AdversarialSummarizer]] - `uses` [INFERRED]
+- [[Argument]] - `uses` [INFERRED]
+- [[ConflictEntry]] - `uses` [INFERRED]
+- [[DefendantAgent]] - `uses` [INFERRED]
+- [[EvidenceManagerAgent]] - `uses` [INFERRED]
+- [[JobManager]] - `uses` [INFERRED]
+- [[MissingEvidenceReport]] - `uses` [INFERRED]
+- [[PlaintiffAgent]] - `uses` [INFERRED]
+- [[RoundConfig]] - `uses` [INFERRED]
+- [[RoundPhase]] - `uses` [INFERRED]
+- [[RoundState]] - `uses` [INFERRED]
+- [[WorkspaceManager]] - `uses` [INFERRED]
+
+#graphify/rationale #graphify/INFERRED #community/C:_Users

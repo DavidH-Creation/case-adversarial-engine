@@ -1,0 +1,88 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\api\service.py"
+type: "code"
+community: "C: Users"
+location: "L970"
+tags:
+  - graphify/code
+  - graphify/INFERRED
+  - community/C:_Users
+---
+
+# ScenarioService
+
+## Connections
+- [[.__init__()_4]] - `method` [EXTRACTED]
+- [[.get()_1]] - `method` [EXTRACTED]
+- [[.run()]] - `method` [EXTRACTED]
+- [[AccessController]] - `uses` [INFERRED]
+- [[AdversarialResult]] - `uses` [INFERRED]
+- [[AdversarialSummarizer]] - `uses` [INFERRED]
+- [[After analysis, case_meta.json must contain run_id.]] - `uses` [INFERRED]
+- [[After clearing memory, load_from_workspace must reconstruct analyzed CaseRecord.]] - `uses` [INFERRED]
+- [[Baseline issue_tree.json + evidence_index.json must be written under outputs {ru]] - `uses` [INFERRED]
+- [[Build a minimal AdversarialResult with the given cited evidence IDs.]] - `uses` [INFERRED]
+- [[Build a minimal private Evidence object.]] - `uses` [INFERRED]
+- [[CaseEvent]] - `uses` [INFERRED]
+- [[CaseIndex]] - `uses` [INFERRED]
+- [[CaseIndexEntry]] - `uses` [INFERRED]
+- [[CaseStatus]] - `uses` [INFERRED]
+- [[CaseStore.create() must initialize a workspace directory.]] - `uses` [INFERRED]
+- [[Cited private evidence must reach admitted_for_discussion via state machine.]] - `uses` [INFERRED]
+- [[ClaudeCLIClient]] - `uses` [INFERRED]
+- [[DefendantAgent]] - `uses` [INFERRED]
+- [[EventType]] - `uses` [INFERRED]
+- [[Evidence not cited in any round must remain private.]] - `uses` [INFERRED]
+- [[EvidenceIndexer]] - `uses` [INFERRED]
+- [[EvidenceManagerAgent]] - `uses` [INFERRED]
+- [[EvidenceStateMachine]] - `uses` [INFERRED]
+- [[FollowupResponder]] - `uses` [INFERRED]
+- [[FollowupStatus]] - `uses` [INFERRED]
+- [[IssueExtractor]] - `uses` [INFERRED]
+- [[PlaintiffAgent]] - `uses` [INFERRED]
+- [[ReviewStatus]] - `uses` [INFERRED]
+- [[RoundConfig]] - `uses` [INFERRED]
+- [[RoundEngine]] - `uses` [INFERRED]
+- [[RoundPhase]] - `uses` [INFERRED]
+- [[RoundState]] - `uses` [INFERRED]
+- [[ScenarioInput]] - `uses` [INFERRED]
+- [[ScenarioService must be able to locate baseline via run_id from analysis.]] - `uses` [INFERRED]
+- [[ScenarioSimulator]] - `uses` [INFERRED]
+- [[ScenarioStatus]] - `uses` [INFERRED]
+- [[SessionManager]] - `uses` [INFERRED]
+- [[TTL 过期后，evict_expired 应删除该 case，get 应返回 None。]] - `uses` [INFERRED]
+- [[TestCaseStoreTTL]] - `uses` [INFERRED]
+- [[TestGetArtifact]] - `uses` [INFERRED]
+- [[TestGetMarkdownReport]] - `uses` [INFERRED]
+- [[TestIterProgressReplay]] - `uses` [INFERRED]
+- [[TestListArtifacts]] - `uses` [INFERRED]
+- [[TestUnit4EvidenceStateMachine]] - `uses` [INFERRED]
+- [[TestUnit5BaselineEmission]] - `uses` [INFERRED]
+- [[TestUnit6WorkspacePersistence]] - `uses` [INFERRED]
+- [[Unit 4 API analysis must promote evidence via EvidenceStateMachine, not direct]] - `uses` [INFERRED]
+- [[Unit 5 analysis must write baseline artifacts and expose stable run_id.]] - `uses` [INFERRED]
+- [[Unit 6 CaseStore must persist durable state and support restart recovery.]] - `uses` [INFERRED]
+- [[Unit 9 分析结果查询端点测试 Tests for GET api cases {case_id} artifacts GET api]] - `uses` [INFERRED]
+- [[WorkspaceManager]] - `uses` [INFERRED]
+- [[access_domain must be admitted_record after promotion — no stale domain.]] - `uses` [INFERRED]
+- [[analysis_data must contain run_id after analysis completes.]] - `uses` [INFERRED]
+- [[get() 访问时如果条目已过期应直接返回 None（懒驱逐）。]] - `uses` [INFERRED]
+- [[load_from_workspace must return None for a case_id that was never created.]] - `uses` [INFERRED]
+- [[run_id 不存在 → 统一 404 错误格式]] - `uses` [INFERRED]
+- [[run_id 不存在 → 统一 404 错误格式_1]] - `uses` [INFERRED]
+- [[run_id 不存在 → 统一 404 错误格式_2]] - `uses` [INFERRED]
+- [[run_id 存在 + artifact 存在 → 200 + 有效 JSON]] - `uses` [INFERRED]
+- [[run_id 存在 + artifacts 已填充 → 200 + 文件名列表]] - `uses` [INFERRED]
+- [[run_id 存在 + 报告已生成 → 200 + Markdown 文本]] - `uses` [INFERRED]
+- [[run_id 存在但 artifact 不存在（pipeline 中断）→ 404 + 说明 artifact not yet available]] - `uses` [INFERRED]
+- [[run_id 存在但 report_markdown 为 None → 404 + 统一错误格式]] - `uses` [INFERRED]
+- [[service.py]] - `contains` [EXTRACTED]
+- [[分析完成但 artifacts 为空 → 200 + 空列表]] - `uses` [INFERRED]
+- [[响应 Content-Type 应为 text markdown]] - `uses` [INFERRED]
+- [[在全局 store 中创建一条预设好的 CaseRecord。]] - `uses` [INFERRED]
+- [[多个 artifacts 时，每个都可独立访问]] - `uses` [INFERRED]
+- [[封装 ScenarioSimulator 调用，管理场景结果的存储和查询。]] - `rationale_for` [EXTRACTED]
+- [[已完成的 case，SSE 重连应先回放 progress 历史，再发送完成事件，不能直接返回空。]] - `uses` [INFERRED]
+- [[每个测试前后清空全局 store，确保测试隔离。]] - `uses` [INFERRED]
+
+#graphify/code #graphify/INFERRED #community/C:_Users

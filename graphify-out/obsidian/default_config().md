@@ -1,0 +1,18 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\shared\tests\test_model_selector.py"
+type: "code"
+community: "C: Users"
+location: "L32"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/C:_Users
+---
+
+# default_config()
+
+## Connections
+- [[Write a standard config YAML and return its path.]] - `rationale_for` [EXTRACTED]
+- [[test_model_selector.py]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/C:_Users

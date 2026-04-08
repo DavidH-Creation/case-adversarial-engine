@@ -1,0 +1,18 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\shared\tests\test_workspace_manager.py"
+type: "code"
+community: "C: Users"
+location: "L397"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/C:_Users
+---
+
+# test_load_evidence_index_returns_none_when_missing()
+
+## Connections
+- [[_mgr()_1]] - `calls` [INFERRED]
+- [[test_workspace_manager.py]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/C:_Users

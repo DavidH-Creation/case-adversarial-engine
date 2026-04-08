@@ -1,0 +1,47 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\shared\models\analysis.py"
+type: "code"
+community: "C: Users"
+location: "L574"
+tags:
+  - graphify/code
+  - graphify/INFERRED
+  - community/C:_Users
+---
+
+# PartyActionPlan
+
+## Connections
+- [[AccessDomain]] - `uses` [INFERRED]
+- [[AdmissibilityStatus]] - `uses` [INFERRED]
+- [[AgentRole]] - `uses` [INFERRED]
+- [[AttackStrength]] - `uses` [INFERRED]
+- [[AuthenticityRisk]] - `uses` [INFERRED]
+- [[BaseModel]] - `inherits` [EXTRACTED]
+- [[BurdenStatus]] - `uses` [INFERRED]
+- [[EvidenceStatus]] - `uses` [INFERRED]
+- [[EvidenceStrength]] - `uses` [INFERRED]
+- [[EvidenceType]] - `uses` [INFERRED]
+- [[IssueCategory]] - `uses` [INFERRED]
+- [[IssueStatus]] - `uses` [INFERRED]
+- [[IssueType]] - `uses` [INFERRED]
+- [[LegalityRisk]] - `uses` [INFERRED]
+- [[LitigationHistory]] - `uses` [INFERRED]
+- [[OutcomeImpact]] - `uses` [INFERRED]
+- [[OutcomeImpactSize]] - `uses` [INFERRED]
+- [[Perspective_1]] - `uses` [INFERRED]
+- [[PracticallyObtainable]] - `uses` [INFERRED]
+- [[ProbativeValue]] - `uses` [INFERRED]
+- [[ProcedurePhase]] - `uses` [INFERRED]
+- [[PropositionStatus]] - `uses` [INFERRED]
+- [[RecommendedAction]] - `uses` [INFERRED]
+- [[RelevanceScore]] - `uses` [INFERRED]
+- [[RiskImpactObject]] - `uses` [INFERRED]
+- [[StatementClass]] - `uses` [INFERRED]
+- [[SupplementCost]] - `uses` [INFERRED]
+- [[Vulnerability]] - `uses` [INFERRED]
+- [[analysis.py]] - `contains` [EXTRACTED]
+- [[单方行动计划（P1.8 v2）。聚合规则层结构行动和 LLM 策略建议。]] - `rationale_for` [EXTRACTED]
+- [[场景推演 Prompt 模板注册表 Scenario simulation prompt template registry.]] - `uses` [INFERRED]
+
+#graphify/code #graphify/INFERRED #community/C:_Users

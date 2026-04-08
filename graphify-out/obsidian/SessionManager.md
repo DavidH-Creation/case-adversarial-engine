@@ -1,0 +1,87 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\engines\interactive_followup\session_manager.py"
+type: "code"
+community: "C: Users"
+location: "L25"
+tags:
+  - graphify/code
+  - graphify/INFERRED
+  - community/C:_Users
+---
+
+# SessionManager
+
+## Connections
+- [[.__init__()_32]] - `method` [EXTRACTED]
+- [[._save()]] - `method` [EXTRACTED]
+- [[.append_turn()]] - `method` [EXTRACTED]
+- [[.create()_1]] - `method` [EXTRACTED]
+- [[.load()]] - `method` [EXTRACTED]
+- [[.load_or_create()]] - `method` [EXTRACTED]
+- [[Add case_id and owner_party_id to claim dicts.]] - `uses` [INFERRED]
+- [[Add case_id and owner_party_id to defense dicts.]] - `uses` [INFERRED]
+- [[Atomically flush the in-memory record for case_id to case_meta.json.]] - `uses` [INFERRED]
+- [[Build EvidenceGapDescriptor list for P1.7 from two sources 1. Rule-based]] - `uses` [INFERRED]
+- [[Build a CaseIndexEntry from a live CaseRecord.]] - `uses` [INFERRED]
+- [[CaseRecord]] - `uses` [INFERRED]
+- [[CaseScenarioManager]] - `uses` [INFERRED]
+- [[CaseStore]] - `uses` [INFERRED]
+- [[Convert YAML financials section to AmountCalculatorInput. Returns None if no fin]] - `uses` [INFERRED]
+- [[Convert YAML material dicts to RawMaterial objects.]] - `uses` [INFERRED]
+- [[Create a followup job and launch it asynchronously. Returns job_id.]] - `uses` [INFERRED]
+- [[Create a scenario job and launch it asynchronously. Returns scenario_id.]] - `uses` [INFERRED]
+- [[Derive evidence gap indicators from pretrial cross-examination results. U]] - `uses` [INFERRED]
+- [[Emit audit event to the case's events.jsonl (non-fatal on failure).]] - `uses` [INFERRED]
+- [[Execute the followup via FollowupResponder and store result.]] - `uses` [INFERRED]
+- [[Execute the scenario via ScenarioService and store the result.]] - `uses` [INFERRED]
+- [[FollowupJobManager]] - `uses` [INFERRED]
+- [[Load and validate a YAML case file.]] - `uses` [INFERRED]
+- [[Load pipeline section from config.yaml at project root. Returns {} if missing.]] - `uses` [INFERRED]
+- [[Manages async followup Q&A jobs. Uses asyncio.create_task to run Followup]] - `uses` [INFERRED]
+- [[Manages async scenario jobs scoped to a specific case. Uses asyncio.creat]] - `uses` [INFERRED]
+- [[Public alias for _load_from_disk — reconstruct a CaseRecord from workspace.]] - `uses` [INFERRED]
+- [[Reconstruct a CaseRecord from workspace persistence (restart recovery).]] - `uses` [INFERRED]
+- [[Return True if step was already completed according to checkpoint.]] - `uses` [INFERRED]
+- [[Return all scenario jobs for a given case_id.]] - `uses` [INFERRED]
+- [[Return followup job state, or None if not found.]] - `uses` [INFERRED]
+- [[Return scenario job state, or None if not found.]] - `uses` [INFERRED]
+- [[Run 3-round adversarial debate.]] - `uses` [INFERRED]
+- [[Run post-debate analysis pipeline. Returns dict of all artifacts.]] - `uses` [INFERRED]
+- [[SSE 用异步生成器 — 先回放历史进度，再跟踪实时进度。]] - `uses` [INFERRED]
+- [[ScenarioService]] - `uses` [INFERRED]
+- [[Serialize durable CaseRecord fields for workspace persistence.]] - `uses` [INFERRED]
+- [[SessionManager 单元测试。 Unit tests for SessionManager. 测试覆盖 Test coverage -]] - `uses` [INFERRED]
+- [[SessionState]] - `uses` [INFERRED]
+- [[TestSessionManagerAppendTurn]] - `uses` [INFERRED]
+- [[TestSessionManagerCreate]] - `uses` [INFERRED]
+- [[TestSessionManagerLoad]] - `uses` [INFERRED]
+- [[TestSessionManagerLoadOrCreate]] - `uses` [INFERRED]
+- [[Write durable CaseRecord state to workspace (non-fatal on failure).]] - `uses` [INFERRED]
+- [[append_turn() 方法测试 Tests for append_turn() method.]] - `uses` [INFERRED]
+- [[create() 应自动创建不存在的输出目录。]] - `uses` [INFERRED]
+- [[create() 应返回 SessionState 并持久化文件。]] - `uses` [INFERRED]
+- [[create() 方法测试 Tests for create() method.]] - `uses` [INFERRED]
+- [[load() 在 JSON 合法但 schema 不匹配时应返回 None。]] - `uses` [INFERRED]
+- [[load() 在文件不存在时应返回 None。]] - `uses` [INFERRED]
+- [[load() 在文件损坏时应返回 None（不抛异常）。]] - `uses` [INFERRED]
+- [[load() 方法测试 Tests for load() method.]] - `uses` [INFERRED]
+- [[load_or_create() 方法测试 Tests for load_or_create() method.]] - `uses` [INFERRED]
+- [[session.json 应为合法 JSON 且可直接被 json.loads 解析。]] - `uses` [INFERRED]
+- [[session_manager.py]] - `contains` [EXTRACTED]
+- [[业务逻辑层 — 桥接 FastAPI 和现有对抗式分析引擎。 Service layer — bridges FastAPI endpoints and th]] - `uses` [INFERRED]
+- [[从 WorkspaceManager 持久化存储中恢复 CaseRecord。]] - `uses` [INFERRED]
+- [[从 analysis_data 和 case info 生成 Markdown 格式报告。]] - `uses` [INFERRED]
+- [[从 outputs {run_id} 加载 baseline，执行场景推演，返回序列化的 ScenarioResult。]] - `uses` [INFERRED]
+- [[创建测试用 InteractionTurn Create test InteractionTurn.]] - `uses` [INFERRED]
+- [[单案件的运行时状态容器。线程 任务安全性由 asyncio 单线程保证。]] - `uses` [INFERRED]
+- [[场景推演 Prompt 模板注册表 Scenario simulation prompt template registry.]] - `uses` [INFERRED]
+- [[多轮追问会话管理器。 Multi-turn followup session manager. 管理会话的创建、持久化和轮次追加。会话状]] - `rationale_for` [EXTRACTED]
+- [[封装 ScenarioSimulator 调用，管理场景结果的存储和查询。]] - `uses` [INFERRED]
+- [[将 CaseRecord.info 转换为 generate_docx_report 期望的 case_data dict。]] - `uses` [INFERRED]
+- [[异步后台任务：三轮对抗辩论 + LLM 总结 + 生成 DOCX 报告。]] - `uses` [INFERRED]
+- [[查询已运行 scenario 的结果（先查内存，再查磁盘）。]] - `uses` [INFERRED]
+- [[清理过期条目，返回清理数量。保存最后状态到磁盘后再删除。]] - `uses` [INFERRED]
+- [[返回具体产物内容，不存在时返回 None。]] - `uses` [INFERRED]
+- [[追加一轮后 turn_count 应递增。]] - `uses` [INFERRED]
+
+#graphify/code #graphify/INFERRED #community/C:_Users

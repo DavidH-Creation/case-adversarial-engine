@@ -1,0 +1,17 @@
+---
+source_file: "C:\Users\david\dev\case-adversarial-engine\tests\acceptance\test_pipeline_structural.py"
+type: "code"
+community: "C: Users"
+location: "L170"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/C:_Users
+---
+
+# test_module_has_evidence_review_criteria()
+
+## Connections
+- [[test_pipeline_structural.py]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/C:_Users
